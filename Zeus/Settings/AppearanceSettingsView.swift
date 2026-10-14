@@ -44,7 +44,7 @@ private struct ThemeCard: View {
 
     var body: some View {
         let colors = theme.palette(for: colorScheme, contrast: contrast)
-        Button(action: choose) {
+        KeyboardButton(action: choose) {
             // The Zeus field frame; the chosen theme gets the gold focus frame, like the character picker.
             ZeusFieldChrome(isFocused: selected) {
                 VStack(alignment: .leading, spacing: 6) {

@@ -40,6 +40,7 @@ struct GeneralSettingsView: View {
                 .accessibilityLabel("Enable global shortcut")
             HStack {
                 Picker("Key", selection: $settings.talkHotKey.key) { ForEach(TalkHotKey.letters, id: \.self) { Text($0).tag($0) } }
+                    .accessibilityLabel("Shortcut key")
                 Toggle("Control", isOn: $settings.talkHotKey.control)
                     .accessibilityLabel("Control")
                 Toggle("Option", isOn: $settings.talkHotKey.option)

@@ -112,9 +112,9 @@ struct LibraryFileActions: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Button(model.kind.importTitle) { chooseFile() }.accessibilityLabel(model.kind.importTitle).disabled(choosingFile)
-                Button(model.kind.exampleTitle) { open(try? model.exampleFile()) }.accessibilityLabel(model.kind.exampleTitle)
-                Button(model.kind.folderTitle) { open(try? model.folder()) }.accessibilityLabel(model.kind.folderTitle)
+                KeyboardButton(model.kind.importTitle) { chooseFile() }.accessibilityLabel(model.kind.importTitle).disabled(choosingFile)
+                KeyboardButton(model.kind.exampleTitle) { open(try? model.exampleFile()) }.accessibilityLabel(model.kind.exampleTitle)
+                KeyboardButton(model.kind.folderTitle) { open(try? model.folder()) }.accessibilityLabel(model.kind.folderTitle)
             }
             if let prompt = model.replacePrompt { replaceConfirmation(prompt) }
             notice
@@ -141,11 +141,11 @@ struct LibraryFileActions: View {
         VStack(alignment: .leading, spacing: ZeusTheme.Spacing.s) {
             Text(prompt).zeusFont(.caption).foregroundStyle(palette.text).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: ZeusTheme.Spacing.s) {
-                Button("Replace") { model.confirmReplace() }.accessibilityLabel("Replace")
-                    .buttonStyle(ZeusButtonStyle(.destructive, size: .small)).focusable()
-                Button("Cancel") { model.cancelReplace() }.accessibilityLabel("Cancel")
+                KeyboardButton("Replace") { model.confirmReplace() }.accessibilityLabel("Replace")
+                    .buttonStyle(ZeusButtonStyle(.destructive, size: .small))
+                KeyboardButton("Cancel", focus: $cancelFocused) { model.cancelReplace() }.accessibilityLabel("Cancel")
                     .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
-                    .focusable().focused($cancelFocused).keyboardShortcut(.cancelAction)
+                    .keyboardShortcut(.cancelAction)
             }
         }
         .padding(ZeusTheme.Spacing.s).background(palette.field)

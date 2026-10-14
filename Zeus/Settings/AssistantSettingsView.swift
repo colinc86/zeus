@@ -70,7 +70,7 @@ struct AssistantSettingsView: View {
             Spacer()
             // Only useful after installing an agent while Settings is open (D2-19).
             if managed.showsCheckAgain {
-                Button("Check Again") { managed.refreshAvailability() }
+                KeyboardButton("Check Again") { managed.refreshAvailability() }
                     .accessibilityLabel("Check Again")
                     .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
             }
@@ -84,11 +84,11 @@ struct AssistantSettingsView: View {
         title("Folder")
         HStack(spacing: ZeusTheme.Spacing.s) {
             ManagedFolderField(settings: settings)
-            Button("Choose…", action: chooseFolder).accessibilityLabel("Choose Folder").buttonStyle(ZeusButtonStyle(.secondary, size: .small))
+            KeyboardButton("Choose…", action: chooseFolder).accessibilityLabel("Choose Folder").buttonStyle(ZeusButtonStyle(.secondary, size: .small))
                 .disabled(choosingFolder)
         }
         if managed.createFolder != nil {
-            Button("Create one for me") { managed.createDefaultFolder() }.accessibilityLabel("Create one for me")
+            KeyboardButton("Create one for me") { managed.createDefaultFolder() }.accessibilityLabel("Create one for me")
                 .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).disabled(choosingFolder || managed.switching)
         }
         caption(managed.config.agent == .claude ? "It works here, and reads this folder's CLAUDE.md or AGENTS.md." : "It works here, and reads this folder's AGENTS.md.")
@@ -111,9 +111,9 @@ struct AssistantSettingsView: View {
         .onDisappear { managed.finishInstructionsEditing() }
         caption(managed.instructionsCaption)
         HStack(spacing: ZeusTheme.Spacing.s) {
-            Button("Start a New Conversation") { managed.confirmation = .newConversation }.accessibilityLabel("Start a New Conversation")
+            KeyboardButton("Start a New Conversation") { managed.confirmation = .newConversation }.accessibilityLabel("Start a New Conversation")
                 .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).disabled(!managed.canStart)
-            Button("Reset to Default") { managed.update { $0.launchPrompt = ZeusManagedCopy.defaultLaunchPrompt } }.accessibilityLabel("Reset to Default")
+            KeyboardButton("Reset to Default") { managed.update { $0.launchPrompt = ZeusManagedCopy.defaultLaunchPrompt } }.accessibilityLabel("Reset to Default")
                 .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
                 .disabled(managed.config.launchPrompt == ZeusManagedCopy.defaultLaunchPrompt)
         }
@@ -133,10 +133,8 @@ struct AssistantSettingsView: View {
         VStack(alignment: .leading, spacing: ZeusTheme.Spacing.s) {
             Text(text).zeusFont(.caption).foregroundStyle(palette.text).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: ZeusTheme.Spacing.s) {
-                Button(action) { managed.confirm() }.accessibilityLabel(action).buttonStyle(ZeusButtonStyle(.destructive, size: .small))
-                    .focusable()
-                Button(cancel) { if let onCancel { onCancel() } else { managed.cancelConfirmation() } }.accessibilityLabel(cancel).buttonStyle(ZeusButtonStyle(.secondary, size: .small))
-                    .focusable().focused($confirmationFocused)
+                KeyboardButton(action) { managed.confirm() }.accessibilityLabel(action).buttonStyle(ZeusButtonStyle(.destructive, size: .small))
+                KeyboardButton(cancel, focus: $confirmationFocused) { if let onCancel { onCancel() } else { managed.cancelConfirmation() } }.accessibilityLabel(cancel).buttonStyle(ZeusButtonStyle(.secondary, size: .small))
                     .keyboardShortcut(.cancelAction)
             }
         }.padding(ZeusTheme.Spacing.s).background(palette.field)
