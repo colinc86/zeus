@@ -93,7 +93,8 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
         let settings = shell.settings
         let runtime = ZeusRuntime(cards: shell.cards, status: shell.status,
                                   characters: settings, routing: settings,
-                                  quietHours: { [weak settings] date in settings?.isQuiet(at: date) ?? false })
+                                  quietHours: { [weak settings] date in settings?.isQuiet(at: date) ?? false },
+                                  appControl: shell.appControl, learnings: shell.learn.learnings)
         do {
             try runtime.start()
             self.runtime = runtime
