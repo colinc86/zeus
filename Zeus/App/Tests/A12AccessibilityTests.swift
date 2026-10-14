@@ -341,7 +341,7 @@ import ZeusProtocol
         #expect(f.settings.currentThemeID == "phosphor")
         let general = try await f.mount(GeneralSettingsView(settings: f.settings, login: LoginItemModel(), hotKey: GlobalHotKey()))
         try await focus("Let my assistant control Zeus", in: general)
-        try key("\r", code: 36, in: general); try await f.settle(general)
+        try key(" ", code: 49, in: general); try await f.settle(general)
         #expect(!f.settings.assistantMayControlApp)
         var undos = 0
         f.cards.recordAppChange(.init(summary: "Changed the theme", undoTitle: "Undo", undo: { undos += 1 }))

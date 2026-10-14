@@ -83,7 +83,7 @@ import Testing
     }
 
     @Test(.enabled(if: ProcessInfo.processInfo.environment["ZEUS_A12_LIVE_KEYS"] == "1", "Requires an unlocked Mac; private offscreen window only."))
-    func nativeChoiceAndCheckboxSpaceReturnAndModifierGuard() async throws {
+    func nativeChoiceAndCheckboxUseSpaceAndLeaveReturnToTheWindow() async throws {
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
         let state = KeyboardAuditState()
@@ -114,13 +114,19 @@ import Testing
             app.sendEvent(event)
         }
         try await focus("Codex. Installed")
-        try key("\r", code: 36, modifiers: .option)
+        try key("\r", code: 36)
         try await Task.sleep(for: .milliseconds(50))
         #expect(state.selected == "claude")
-        try key("\r", code: 36)
+        try key(" ", code: 49, modifiers: .option)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(state.selected == "claude")
+        try key(" ", code: 49)
         try await Task.sleep(for: .milliseconds(50))
         #expect(state.selected == "codex")
         try await focus("Let my assistant control Zeus")
+        try key("\r", code: 36)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(!state.checked)
         try key(" ", code: 49)
         try await Task.sleep(for: .milliseconds(50))
         #expect(state.checked)
