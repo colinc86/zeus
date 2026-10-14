@@ -1,0 +1,581 @@
+{
+  "wire_hooks": [
+    {
+      "agent": "codex",
+      "ancestors": [
+        {
+          "pid": 16888,
+          "startTime": 1792011790701718
+        },
+        {
+          "pid": 16885,
+          "startTime": 1792011790666480
+        },
+        {
+          "pid": 16881,
+          "startTime": 1792011790628310
+        }
+      ],
+      "cwd": "/FIXTURE/project",
+      "deliveryID": "d_sa3_fast",
+      "firedAt": 1792011792.081149,
+      "nativeSessionID": "01a13c39-eeaf-7bc1-b986-4bbbda028bf6",
+      "pid": 16997,
+      "ppid": 16888,
+      "reason": "completed",
+      "tmuxPane": "%0",
+      "wireVersion": 1
+    },
+    {
+      "agent": "codex",
+      "ancestors": [
+        {
+          "pid": 16888,
+          "startTime": 1792011790701718
+        },
+        {
+          "pid": 16885,
+          "startTime": 1792011790666480
+        },
+        {
+          "pid": 16881,
+          "startTime": 1792011790628310
+        }
+      ],
+      "cwd": "/FIXTURE/project",
+      "deliveryID": "d_sa3_fast",
+      "firedAt": 1792011792.128319,
+      "nativeSessionID": "01a13c39-eb83-7ae0-8bf7-1f128e49f407",
+      "pid": 17003,
+      "ppid": 16888,
+      "reason": "completed",
+      "tmuxPane": "%0",
+      "wireVersion": 1
+    },
+    {
+      "agent": "codex",
+      "ancestors": [
+        {
+          "pid": 16888,
+          "startTime": 1792011790701718
+        },
+        {
+          "pid": 16885,
+          "startTime": 1792011790666480
+        },
+        {
+          "pid": 16881,
+          "startTime": 1792011790628310
+        }
+      ],
+      "cwd": "/FIXTURE/project",
+      "deliveryID": "d_sa3_second",
+      "firedAt": 1792011793.076895,
+      "nativeSessionID": "01a13c39-f297-74a1-a612-a2b4f81beb95",
+      "pid": 17048,
+      "ppid": 16888,
+      "reason": "completed",
+      "tmuxPane": "%0",
+      "wireVersion": 1
+    },
+    {
+      "agent": "codex",
+      "ancestors": [
+        {
+          "pid": 16888,
+          "startTime": 1792011790701718
+        },
+        {
+          "pid": 16885,
+          "startTime": 1792011790666480
+        },
+        {
+          "pid": 16881,
+          "startTime": 1792011790628310
+        }
+      ],
+      "cwd": "/FIXTURE/project",
+      "deliveryID": "d_sa3_second",
+      "firedAt": 1792011793.12694,
+      "nativeSessionID": "01a13c39-eb83-7ae0-8bf7-1f128e49f407",
+      "pid": 17057,
+      "ppid": 16888,
+      "reason": "completed",
+      "tmuxPane": "%0",
+      "wireVersion": 1
+    }
+  ],
+  "hook_inputs": [],
+  "transcript": [],
+  "agent": "codex",
+  "version": "codex-cli 0.162.1",
+  "launch_command": "tmux new-session -s codex codex --no-daemon -c 'mcp_servers.zeus.env_vars=[\"TMUX\",\"TMUX_PANE\"]' -c 'notify=[\"/BUNDLE/Zeus.app/Contents/MacOS/zeus-mcp\",\"--turn-ended\",\"--agent\",\"codex\",\"--socket\",\"/FIXTURE/bridge.sock\"]'",
+  "managed": "off",
+  "private_socket": true,
+  "disposable_home": true,
+  "localhost_model": true,
+  "scenarios": [
+    {
+      "name": "fast",
+      "delivery": "d_sa3_fast",
+      "completion_t": 1.5773088750429451,
+      "ended_t": 1.6120691660325974,
+      "after_model_completion_s": 0.034760290989652276,
+      "within_2s": true
+    },
+    {
+      "name": "second",
+      "delivery": "d_sa3_second",
+      "completion_t": 2.573249625042081,
+      "ended_t": 2.6426034159958363,
+      "after_model_completion_s": 0.06935379095375538,
+      "within_2s": true
+    }
+  ],
+  "frames": {
+    "initial-idle": {
+      "screen": "\n  \u001b[38;5;75m>_ \u001b[1m\u001b[39mOpenAI Codex\u001b[0;2m (v0.162.1)\u001b[0m\n     \u001b[2m/FIXTURE/project\u001b[0m\n\n\u001b[2m  To get started, describe a task or try one of these commands:\u001b[0m\n\n  /init\u001b[2m - create an AGENTS.md file with instructions for Codex\u001b[0m\n  /status\u001b[2m - show current session configuration\u001b[0m\n  /permissions\u001b[2m - choose what Codex is allowed to do\u001b[0m\n  /model\u001b[2m - choose what model and reasoning effort to use\u001b[0m\n  /review\u001b[2m - review any changes and find issues\u001b[0m\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\u001b[1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;5;223msa3 default\u001b[39m · \u001b[38;5;151m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts\n",
+      "inputMetadata": "2|36|120|0|1|"
+    },
+    "fast-complete": {
+      "screen": "\n  \u001b[38;5;75m>_ \u001b[1m\u001b[39mOpenAI Codex\u001b[0;2m (v0.162.1)\u001b[0m\n     \u001b[2m/FIXTURE/project\u001b[0m\n\n\u001b[2m  To get started, describe a task or try one of these commands:\u001b[0m\n\n  /init\u001b[2m - create an AGENTS.md file with instructions for Codex\u001b[0m\n  /status\u001b[2m - show current session configuration\u001b[0m\n  /permissions\u001b[2m - choose what Codex is allowed to do\u001b[0m\n  /model\u001b[2m - choose what model and reasoning effort to use\u001b[0m\n  /review\u001b[2m - review any changes and find issues\u001b[0m\n\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa3_fast] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;5;75mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa3_fast\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\n\n\n\n\n\n\n\n\n\n\n\n\n• \u001b[2mWorking\u001b[0m \u001b[2m(0s • \u001b[0;1mesc\u001b[0;2m to interrupt) · 1 background terminal running · /ps to view · /stop to close\u001b[0m\n\n\n\u001b[1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;5;223msa3 default\u001b[39m · \u001b[38;5;151m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;5;179m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n",
+      "inputMetadata": "2|36|120|0|1|"
+    },
+    "second-complete": {
+      "screen": "  /status\u001b[2m - show current session configuration\u001b[0m\n  /permissions\u001b[2m - choose what Codex is allowed to do\u001b[0m\n  /model\u001b[2m - choose what model and reasoning effort to use\u001b[0m\n  /review\u001b[2m - review any changes and find issues\u001b[0m\n\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa3_fast] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;5;75mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa3_fast\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA3_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA3_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA3_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 4:03 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa3_second] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;5;75mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa3_second\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA3_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA3_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA3_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 4:03 PM\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;5;223msa3 default\u001b[39m · \u001b[38;5;151m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;5;179m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n",
+      "inputMetadata": "2|36|120|0|1|"
+    },
+    "final": {
+      "screen": "  /status\u001b[2m - show current session configuration\u001b[0m\n  /permissions\u001b[2m - choose what Codex is allowed to do\u001b[0m\n  /model\u001b[2m - choose what model and reasoning effort to use\u001b[0m\n  /review\u001b[2m - review any changes and find issues\u001b[0m\n\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa3_fast] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;5;75mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa3_fast\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA3_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA3_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA3_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 4:03 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa3_second] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;5;75mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa3_second\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA3_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA3_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA3_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 4:03 PM\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;5;223msa3 default\u001b[39m · \u001b[38;5;151m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;5;179m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n",
+      "inputMetadata": "2|36|120|0|1|"
+    }
+  },
+  "events": [
+    {
+      "name": "compose",
+      "delivery": "d_sa3_fast",
+      "state": {
+        "activity_delivery": "d_sa3_fast",
+        "avatar": "thinking",
+        "cards": [],
+        "deliveries": [
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa3_fast"
+          }
+        ],
+        "managed": "off",
+        "phase": "sent",
+        "row": "Sent to Codex…",
+        "sessions": [
+          {
+            "key": "codex:/FIXTURE/project#16888.1792011790701718",
+            "pane": "%0"
+          }
+        ],
+        "t": 1.4765069484710693
+      }
+    },
+    {
+      "name": "compose",
+      "delivery": "d_sa3_second",
+      "state": {
+        "activity_delivery": "d_sa3_second",
+        "avatar": "thinking",
+        "cards": [],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa3_fast"
+          },
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa3_second"
+          }
+        ],
+        "managed": "off",
+        "phase": "sent",
+        "row": "Sent to Codex…",
+        "sessions": [
+          {
+            "key": "codex:/FIXTURE/project#16888.1792011790701718",
+            "pane": "%0"
+          }
+        ],
+        "t": 2.5048019886016846
+      }
+    }
+  ],
+  "timeline": [
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [],
+      "t": 0.0005810260772705078
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#16888.1792011790701718",
+          "pane": "%0"
+        }
+      ],
+      "t": 0.8028639554977417
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#16888.1792011790701718",
+          "pane": "%0"
+        }
+      ],
+      "t": 1.364974021911621
+    },
+    {
+      "activity_delivery": "d_sa3_fast",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": "sent",
+      "row": "Sent to Codex…",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#16888.1792011790701718",
+          "pane": "%0"
+        }
+      ],
+      "t": 1.500918984413147
+    },
+    {
+      "activity_delivery": "d_sa3_fast",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#16888.1792011790701718",
+          "pane": "%0"
+        }
+      ],
+      "t": 1.527292013168335
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#16888.1792011790701718",
+          "pane": "%0"
+        }
+      ],
+      "t": 1.5874660015106201
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa3_second"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#16888.1792011790701718",
+          "pane": "%0"
+        }
+      ],
+      "t": 2.4083839654922485
+    },
+    {
+      "activity_delivery": "d_sa3_second",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa3_second"
+        }
+      ],
+      "managed": "off",
+      "phase": "sent",
+      "row": "Sent to Codex…",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#16888.1792011790701718",
+          "pane": "%0"
+        }
+      ],
+      "t": 2.520727038383484
+    },
+    {
+      "activity_delivery": "d_sa3_second",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_second"
+        }
+      ],
+      "managed": "off",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#16888.1792011790701718",
+          "pane": "%0"
+        }
+      ],
+      "t": 2.550976037979126
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_second"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#16888.1792011790701718",
+          "pane": "%0"
+        }
+      ],
+      "t": 2.581230044364929
+    }
+  ],
+  "model_calls": [
+    {
+      "t": 1.5411597909405828,
+      "scenario": "SA3_FAST",
+      "delivery": "d_sa3_fast",
+      "step": 0,
+      "tool": "zeus_ack",
+      "tool_results": []
+    },
+    {
+      "t": 1.5560602080076933,
+      "scenario": "SA3_FAST",
+      "delivery": "d_sa3_fast",
+      "step": 1,
+      "tool": "exec_command",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c39-eeb6-7a80-ab1b-85e514cdeb7a",
+          "call_id": "call_42b4558b651249e0bae4ae935ea67687",
+          "output": "Wall time: 0.0049 seconds\nOutput:\n{\"acked\":[\"d_sa3_fast\"]}"
+        }
+      ]
+    },
+    {
+      "t": 1.5771909158211201,
+      "scenario": "SA3_FAST",
+      "delivery": "d_sa3_fast",
+      "step": 2,
+      "tool": null,
+      "tool_results": []
+    },
+    {
+      "t": 1.6201836250256747,
+      "scenario": "SA3_FAST",
+      "delivery": "d_sa3_fast",
+      "step": 3,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c39-eeb6-7a80-ab1b-85e514cdeb7a",
+          "call_id": "call_42b4558b651249e0bae4ae935ea67687",
+          "output": "Wall time: 0.0049 seconds\nOutput:\n{\"acked\":[\"d_sa3_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c39-eef6-70a1-a193-000c06fe0282",
+          "call_id": "call_309d10b7f9c84f2e99bcceb7c50a0a08",
+          "output": "Chunk ID: 565c98\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA3_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 2.543418957851827,
+      "scenario": "SA3_FAST",
+      "delivery": "d_sa3_second",
+      "step": 0,
+      "tool": "zeus_ack",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c39-eeb6-7a80-ab1b-85e514cdeb7a",
+          "call_id": "call_42b4558b651249e0bae4ae935ea67687",
+          "output": "Wall time: 0.0049 seconds\nOutput:\n{\"acked\":[\"d_sa3_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c39-eef6-70a1-a193-000c06fe0282",
+          "call_id": "call_309d10b7f9c84f2e99bcceb7c50a0a08",
+          "output": "Chunk ID: 565c98\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA3_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 2.5540962079539895,
+      "scenario": "SA3_FAST",
+      "delivery": "d_sa3_second",
+      "step": 1,
+      "tool": "exec_command",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c39-eeb6-7a80-ab1b-85e514cdeb7a",
+          "call_id": "call_42b4558b651249e0bae4ae935ea67687",
+          "output": "Wall time: 0.0049 seconds\nOutput:\n{\"acked\":[\"d_sa3_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c39-eef6-70a1-a193-000c06fe0282",
+          "call_id": "call_309d10b7f9c84f2e99bcceb7c50a0a08",
+          "output": "Chunk ID: 565c98\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA3_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c39-f29c-7ec1-ba52-4d472ee3feff",
+          "call_id": "call_b6e4b987779a46b08300a3ff7e42e49b",
+          "output": "Wall time: 0.0023 seconds\nOutput:\n{\"acked\":[\"d_sa3_second\"]}"
+        }
+      ]
+    },
+    {
+      "t": 2.5731409159488976,
+      "scenario": "SA3_FAST",
+      "delivery": "d_sa3_second",
+      "step": 2,
+      "tool": null,
+      "tool_results": []
+    },
+    {
+      "t": 2.6198212078306824,
+      "scenario": "SA3_FAST",
+      "delivery": "d_sa3_second",
+      "step": 3,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c39-eeb6-7a80-ab1b-85e514cdeb7a",
+          "call_id": "call_42b4558b651249e0bae4ae935ea67687",
+          "output": "Wall time: 0.0049 seconds\nOutput:\n{\"acked\":[\"d_sa3_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c39-eef6-70a1-a193-000c06fe0282",
+          "call_id": "call_309d10b7f9c84f2e99bcceb7c50a0a08",
+          "output": "Chunk ID: 565c98\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA3_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c39-f29c-7ec1-ba52-4d472ee3feff",
+          "call_id": "call_b6e4b987779a46b08300a3ff7e42e49b",
+          "output": "Wall time: 0.0023 seconds\nOutput:\n{\"acked\":[\"d_sa3_second\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c39-f2dd-74f3-a319-f0e69e2b241c",
+          "call_id": "call_97c1554580094abb853145261bedbf8f",
+          "output": "Chunk ID: 646a14\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA3_SHELL_DONE"
+        }
+      ]
+    }
+  ],
+  "native_tools": []
+}

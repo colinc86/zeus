@@ -131,6 +131,10 @@ swift run --package-path Packages/ZeusKit zeus-sprites validate ~/Library/Applic
 
 Use this if you'd rather start the agent yourself, or keep a setup you already have. In **Settings → Assistant**, choose **Connect your own**. The pane shows each step with the commands ready to copy, with your Zeus path already filled in.
 
+Use the **Start your agent** command copied from Settings for prompt completion reporting. It adds a hook for that launch only, so Zeus stops looking busy even when the agent finishes without posting a Zeus message. The short examples below establish the connection but omit that hook. If you launch another way, Zeus may keep looking busy until a Zeus reply arrives or the five-minute activity timeout expires. **Zeus runs it** includes completion reporting automatically.
+
+Claude's hook settings add to your existing hooks. Codex's launch command supplies `notify` for that launch, replacing any custom notification command until Codex exits; omit that override if you need your own notifier instead. OpenCode's command supplies a local Zeus plugin through `OPENCODE_CONFIG_CONTENT`, leaving saved configuration intact. If you already use that environment variable, merge the generated plugin setting with your launch configuration instead of replacing it.
+
 Zeus ships a small bridge, `zeus-mcp`, inside the app. You add it to your agent once; each agent session then starts its own copy, so replies go back to the session that asked. If you move `Zeus.app`, add it again with the new path.
 
 The pane has:
