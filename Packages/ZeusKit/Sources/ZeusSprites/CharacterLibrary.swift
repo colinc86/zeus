@@ -14,8 +14,14 @@ public struct CharacterLibrary: Sendable {
     /// then other user characters by name.
     public private(set) var characters: [SpriteCharacter]
 
-    /// Validation problems found while loading (non-fatal: bad files are skipped).
-    public private(set) var issues: [String]
+    /// Validation problems found while loading (non-fatal: bad files are skipped), as one line each.
+    public var issues: [String] { problems.map(\.description) }
+
+    /// Validation problems found while loading, for showing in plain words (`SpriteIssue.plainMessage`).
+    public private(set) var problems: [SpriteIssue]
+
+    /// Ids starting with `_` are reserved for examples and notes (`Example Character.json`): the loader skips them.
+    public static func isReservedID(_ id: String) -> Bool { id.hasPrefix("_") }
 
     /// The directory of bundled character JSON files.
     public static var bundledDirectory: URL? {
@@ -40,7 +46,7 @@ public struct CharacterLibrary: Sendable {
             case (nil, nil): return a.name.localizedStandardCompare(b.name) == .orderedAscending
             }
         }
-        return CharacterLibrary(characters: sorted, issues: issues.map(\.description))
+        return CharacterLibrary(characters: sorted, problems: issues)
     }
 
     /// Loads every `*.json` file in `directory` (non-recursive), in filename order.
@@ -51,7 +57,13 @@ public struct CharacterLibrary: Sendable {
         var issues: [SpriteIssue] = []
         var seen: [String: String] = [:]
         for url in files.filter({ $0.pathExtension.lowercased() == "json" }).sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
-            let (character, found) = SpriteCharacter.load(contentsOf: url)
+            let data: Data
+            do { data = try Data(contentsOf: url) } catch {
+                issues.append(SpriteIssue(severity: .error, source: url.lastPathComponent, message: "can't read file: \(error.localizedDescription)"))
+                continue
+            }
+            if let id = declaredID(in: data), isReservedID(id) { continue }
+            let (character, found) = SpriteCharacter.load(data: data, source: url.lastPathComponent)
             issues += found
             guard let character else { continue }
             if let other = seen[character.id] {
@@ -62,6 +74,12 @@ public struct CharacterLibrary: Sendable {
             characters.append(character)
         }
         return (characters, issues)
+    }
+
+    /// The `id` a file declares, read without validating the rest. Nil when it isn't JSON or has no string `id`.
+    public static func declaredID(in data: Data) -> String? {
+        struct Peek: Decodable { var id: String? }
+        return (try? JSONDecoder().decode(Peek.self, from: data))?.id
     }
 
     /// The character with `id`, if loaded.

@@ -11,6 +11,9 @@ public struct SpriteCharacter: Identifiable, Sendable {
     /// overrides a bundled id (same `id`, different art) never reuses the other's cached frames.
     let contentID: UInt64
 
+    /// Changes whenever the character file's bytes change. Two loads of an unchanged file are equal.
+    public var fingerprint: UInt64 { contentID }
+
     /// The canvas every frame renders into. Constant per character, across all states and frames.
     public var canvasSize: PixelSize { model.canvas }
 
@@ -44,7 +47,7 @@ public struct SpriteCharacter: Identifiable, Sendable {
         do {
             file = try JSONDecoder().decode(CharacterFile.self, from: data)
         } catch {
-            return (nil, [SpriteIssue(severity: .error, source: source, message: "invalid character JSON: \(Self.describe(error))")])
+            return (nil, [SpriteIssue(severity: .error, source: source, message: "invalid character JSON: \(Self.describe(error, data: data))")])
         }
         var compiler = SpriteCompiler(source: source)
         guard let model = compiler.compile(file) else { return (nil, compiler.issues) }
@@ -62,7 +65,7 @@ public struct SpriteCharacter: Identifiable, Sendable {
         }
     }
 
-    private static func describe(_ error: any Error) -> String {
+    private static func describe(_ error: any Error, data: Data) -> String {
         guard let error = error as? DecodingError else { return error.localizedDescription }
         func path(_ context: DecodingError.Context) -> String {
             context.codingPath.map { $0.intValue.map { "[\($0)]" } ?? ".\($0.stringValue)" }.joined()
@@ -70,7 +73,23 @@ public struct SpriteCharacter: Identifiable, Sendable {
         switch error {
         case .keyNotFound(let key, let context): return "missing \(path(context)).\(key.stringValue)"
         case .typeMismatch(_, let context), .valueNotFound(_, let context): return "\(path(context)): \(context.debugDescription)"
-        case .dataCorrupted(let context): return "\(path(context)): \(context.debugDescription)"
+        case .dataCorrupted(let context):
+            // A syntax error: Foundation's parser says where ("around line 3, column 1"); pass that on.
+            if context.codingPath.isEmpty, let underlying = context.underlyingError as NSError? {
+                let detail = (underlying.userInfo[NSDebugDescriptionErrorKey] as? String) ?? context.debugDescription
+                if !detail.contains(" line "), let index = underlying.userInfo["NSJSONSerializationErrorIndex"] as? Int {
+                    let before = data.prefix(max(0, index))
+                    let line = before.reduce(1) { $1 == UInt8(ascii: "\n") ? $0 + 1 : $0 }
+                    return "syntax error: \(detail.hasSuffix(".") ? String(detail.dropLast()) : detail) around line \(line)."
+                }
+                if detail.localizedCaseInsensitiveContains("end of file") {
+                    // Something isn't closed: a missing } or ], or an unfinished string.
+                    let lines = data.reduce(1) { $1 == UInt8(ascii: "\n") ? $0 + 1 : $0 }
+                    return "syntax error: the file ends too soon (line \(lines)); check for a missing } or ] or an unclosed quote."
+                }
+                return "syntax error: \(detail)"
+            }
+            return "\(path(context)): \(context.debugDescription)"
         @unknown default: return error.localizedDescription
         }
     }

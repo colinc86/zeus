@@ -188,8 +188,9 @@ struct SpriteCompiler {
         if rows.isEmpty || width == 0 {
             warning("layers.\(name) is empty")
         }
-        if rows.contains(where: { $0.count != width }) {
-            error("layers.\(name): rows have different lengths")
+        // Name the first row that doesn't match the first row, so the fix is obvious.
+        if let first = rows.first, let bad = rows.firstIndex(where: { $0.count != first.count }) {
+            error("layers.\(name): row \(bad + 1) is \(rows[bad].count) pixel\(rows[bad].count == 1 ? "" : "s") wide; every row must be \(first.count) (rows have different lengths)")
         }
         var pixels = [ColorKey](repeating: 0, count: width * rows.count)
         var unknown: Set<Character> = []

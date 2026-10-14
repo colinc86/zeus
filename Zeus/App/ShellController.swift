@@ -108,6 +108,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     }
 
     func start() {
+        settings.startWatchingCharacters()
         configure(avatar)
         configure(card)
         configure(peekPanel)
@@ -184,6 +185,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     func stop() {
         stopped = true
+        settings.stopWatchingCharacters()
         tickTask?.cancel()
         closingTask?.cancel()
         peekExitTask?.cancel()
@@ -549,6 +551,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     private func observeCharacterSettings() {
         withObservationTracking {
             _ = settings.currentCharacterID
+            _ = settings.currentCharacter?.fingerprint  // an edited character file can change its canvas
             _ = settings.avatarSize
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
