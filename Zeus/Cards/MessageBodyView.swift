@@ -31,7 +31,8 @@ struct MessageBodyView: View {
         Text(visible).zeusFont(.body).textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityLabel(accessibilityText)
-            .onTapGesture { reveal?.finish() }
+            // Simultaneous, not exclusive: a click on a link inside the text must still open it (user report, 2026-10-14).
+            .simultaneousGesture(TapGesture().onEnded { reveal?.finish() })
             .onDisappear { reveal?.finish() }
             .task(id: request) {
                 let request = request

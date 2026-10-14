@@ -44,8 +44,40 @@ public enum ZeusMarkdown {
                 text[run.range].backgroundColor = palette.secondaryFill
             }
         }
+        linkify(&text, palette: palette)
         return text
     }
+
+    /// Bare `http(s)://`, `file://` and `mailto:` addresses become links (agents rarely write markdown links), and every
+    /// link run is shown as one: accent color and underlined. Addresses inside code spans stay plain text.
+    static func linkify(_ text: inout AttributedString, palette: ZeusPalette) {
+        var additions: [(Range<AttributedString.Index>, URL)] = []
+        for run in text.runs where run.link == nil && run.inlinePresentationIntent?.contains(.code) != true && run[DecorationAttribute.self] == nil {
+            let slice = text[run.range]
+            let string = String(slice.characters)
+            for match in string.matches(of: Self.urlPattern) {
+                let range = match.range
+                var candidate = String(string[range])
+                // Trailing punctuation belongs to the sentence, not the address.
+                while let last = candidate.last, ".,;:!?)]}>\"'".contains(last) {
+                    if last == ")" && candidate.filter({ $0 == "(" }).count >= candidate.filter({ $0 == ")" }).count { break }
+                    candidate.removeLast()
+                }
+                guard !candidate.isEmpty, let url = URL(string: candidate) else { continue }
+                let lower = slice.characters.index(slice.startIndex, offsetBy: string.distance(from: string.startIndex, to: range.lowerBound))
+                let upper = slice.characters.index(lower, offsetBy: candidate.count)
+                additions.append((lower..<upper, url))
+            }
+        }
+        for (range, url) in additions { text[range].link = url }
+        for run in text.runs where run.link != nil {
+            text[run.range].foregroundColor = palette.accent
+            text[run.range].underlineStyle = .single
+        }
+    }
+
+    /// Built per call: `Regex` isn't Sendable, so it can't be a shared constant under strict concurrency.
+    private static var urlPattern: Regex<Substring> { /(?:https?:\/\/|file:\/\/|mailto:)[^\s<>]+/.ignoresCase() }
 
     /// The text for an accessibility label: the rendered characters without decorations
     /// (quote bars, code padding, bullet glyphs), so VoiceOver reads only the content.
