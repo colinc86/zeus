@@ -3,8 +3,39 @@
 Run from the checkout or worktree root on macOS with Xcode, XcodeGen and Python 3:
 
 ```sh
+scripts/live.sh
 scripts/release.sh
 ```
+
+Before every release, run the **full** live gate on the revision being packaged:
+`scripts/live.sh`. It builds the app once, then serially verifies app control,
+learnings/Skip, managed and own-session completion, native screen variants,
+Connect-your-own delivery, and real bridge E2E. Every native CLI uses its own
+private tmux socket, disposable HOME/config, scratch folder and localhost model.
+It never uses your agent credentials or default tmux server. Missing CLIs print
+an explicit SKIP row; review those omissions before releasing. Any failed or
+timed-out probe fails the gate; there are no automatic retries.
+
+The final table and `summary.json` are under `build/live/<UTC timestamp>/`, with
+per-probe logs, proof and native test result bundles. Recorded fixtures remain
+unchanged unless you explicitly use `--record`. Host source fingerprints cache
+headless builds across agent rows; the app is not rebuilt by each probe.
+
+```sh
+scripts/live.sh --quick                    # smoke: shortest scenario per probe
+scripts/live.sh --agents claude,codex      # explicit agent subset
+scripts/live.sh --only sa3,sa4,cy1,e2e      # selected probes
+scripts/live.sh --only sa4 --record        # explicitly replace recorded evidence
+python3 -B scripts/test_live_gate.py        # offline gate/helper regressions
+```
+
+`--quick` omits long/secondary cases: LV1's Skip transports; SA1's TTL, questions,
+permissions and own stale observation; SA2's queue/draft cases; SA3/SA4's second
+turn and Claude failure; PC1's scheduled/working/permission/update variants.
+CY1 and E2E keep their complete scenarios. Quick smoke does **not** replace the
+full release gate. `--record --quick` is rejected so reduced coverage cannot
+replace a full recorded fixture. Recording PC1 Claude intentionally enables the
+native updater only for its disposable copy, as that probe requires.
 
 This runs `scripts/test.sh`, recreates `build/release/`, builds Release for **arm64
 and x86_64**, and creates `build/release/Zeus-<version>.dmg` and the Sparkle

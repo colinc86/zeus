@@ -21,13 +21,15 @@ import threading
 import time
 import uuid
 
+from LiveSupport import OpenAIModel, output_dir, create_root, isolated_environment, start_model, finish_host_build, host_package, scrub_paths, cleanup_root
+
 REPO = pathlib.Path(__file__).resolve().parents[4]
-OUT = REPO / "build/sa4-live"
+OUT = output_dir("sa4-live")
 OUT.mkdir(parents=True, exist_ok=True)
 
 
 def build_host():
-    package = OUT / "host"
+    package = host_package(OUT, "sa4")
     source = package / "Sources/Host"
     source.mkdir(parents=True, exist_ok=True)
     inputs = [REPO / p for p in ["Zeus/App/Tests/Runtime/SA4RuntimeHost.swift", "Zeus/Shared/AppSeams.swift", "Zeus/Settings/AppSettings.swift", "Zeus/Settings/AssistantBackend.swift", "Zeus/Settings/SessionLabels.swift", "Zeus/Settings/OpenCodePasswordStore.swift", "Zeus/Settings/OpenCodeSessionDiscovery.swift", "Zeus/Settings/TmuxPaneDiscovery.swift", "Zeus/Settings/LibraryImport.swift", "Zeus/Settings/SettingsStyle.swift", "Zeus/App/KeyboardButton.swift", "Zeus/Settings/TalkHotKey.swift", "Zeus/Cards/ConversationWidth.swift", "Zeus/Avatar/AvatarGhostState.swift", "Zeus/App/PopupSound.swift", "Zeus/Cards/PeekModel.swift",
@@ -40,100 +42,16 @@ def build_host():
     products = ",".join(f'.product(name: "{name}", package: "ZeusKit")' for name in ["ZeusProtocol", "ZeusLink", "ZeusSprites", "ZeusDesign"])
     (package / "Package.swift").write_text('// swift-tools-version: 6.2\nimport PackageDescription\n' +
         f'let package = Package(name: "SA4Host", platforms: [.macOS(.v26)], dependencies: [.package(path: {json.dumps(str(REPO / "Packages/ZeusKit"))})], targets: [.executableTarget(name: "Host", dependencies: [{products}], swiftSettings: [.define("SA4_PROBE_HOST")])])\n')
-    with (OUT / "host-build.log").open("w") as log:
-        subprocess.run(["xcrun", "swift", "build", "--package-path", str(package), "--product", "Host"], stdout=log, stderr=subprocess.STDOUT, check=True, timeout=180)
-    directory = subprocess.check_output(["xcrun", "swift", "build", "--package-path", str(package), "--show-bin-path"], text=True, timeout=30).strip()
-    return pathlib.Path(directory) / "Host"
+    return finish_host_build(OUT, package)
 
 
-class Model(http.server.BaseHTTPRequestHandler):
-    steps = {}
-    pauses = {}
-    events = []
-    lock = threading.Lock()
-    began = 0
-    completions = []
-
-    def log_message(self, *_):
-        pass
-
-    def do_GET(self):
-        self.send_response(200); self.end_headers(); self.wfile.write(b'{"data":[]}')
-
-    def do_POST(self):
-        body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
-        chat = self.path.split("?")[0].endswith("/chat/completions")
-        messages = body.get("messages" if chat else "input", [])
-        users = [m.get("content", "") for m in messages if isinstance(m, dict) and m.get("role") == "user"]
-        history = json.dumps(users)
-        triggers = re.findall(r"SA4_(?:SAY|SHELL|FAST|BUSY|FOLLOWUP|DRAFT)", history)
-        scenario = triggers[-1] if triggers else "bootstrap"
-        ids = re.findall(r"delivery_id=(d_sa4_[a-z]+)", history)
-        delivery = ids[-1] if ids else None
-        tools = []
-        for entry in body.get("tools", []):
-            if entry.get("type") == "namespace":
-                tools += [(nested.get("name", ""), entry["name"]) for nested in entry.get("tools", [])]
-            else: tools.append((entry.get("function", entry).get("name", ""), None))
-        names = [n for n, _ in tools]
-        def name(target):
-            found = next((n for n in names if n == target or n.endswith("__" + target) or n.endswith("_" + target)), None)
-            if found is None: raise RuntimeError(f"No native {target} tool: {names}")
-            return found
-        with Model.lock:
-            step = Model.steps.get(delivery, 0)
-            tool, args = None, {}
-            if delivery and step == 0:
-                tool, args = name("zeus_ack"), {"delivery_ids": [delivery]}
-            elif delivery and step == 1 and scenario in ["SA4_SAY", "SA4_FOLLOWUP"]:
-                tool, args = name("zeus_say"), {"text": scenario + " native bridge reply."}
-            elif delivery and step == 1:
-                tool = name("exec_command" if "exec_command" in names else "bash")
-                args = {"cmd": "printf SA4_SHELL_DONE"} if tool == "exec_command" else {"command": "printf SA4_SHELL_DONE", "description": "Print the isolated state fixture marker"}
-            Model.steps[delivery] = step + 1
-            Model.events.append({"t": time.monotonic() - Model.began, "scenario": scenario, "delivery": delivery, "step": step, "tool": tool,
-                "tool_results": [m for m in messages if isinstance(m, dict) and (m.get("type") == "function_call_output" or m.get("role") == "tool")]})
-        self.send_response(200); self.send_header("Content-Type", "text/event-stream"); self.end_headers()
-        def event(value):
-            self.wfile.write(("data: " + json.dumps(value) + "\n\n").encode()); self.wfile.flush()
-        pause = Model.pauses.get(scenario) if delivery and step >= 2 and not tool else None
-        text = "SA4_READY" if not delivery else scenario + " native turn complete."
-        try:
-            if chat:
-                chunk = {"id": "chat_fixture", "object": "chat.completion.chunk", "created": int(time.time()), "model": body.get("model", "fixture"),
-                    "choices": [{"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}]}
-                event(chunk)
-                if pause: pause.wait(timeout=45)
-                delta = {"tool_calls": [{"index": 0, "id": "call_" + uuid.uuid4().hex, "type": "function", "function": {"name": tool, "arguments": json.dumps(args)}}]} if tool else {"content": text}
-                chunk["choices"][0] = {"index": 0, "delta": delta, "finish_reason": None}; event(chunk)
-                chunk["choices"][0] = {"index": 0, "delta": {}, "finish_reason": "tool_calls" if tool else "stop"}; event(chunk)
-                self.wfile.write(b"data: [DONE]\n\n"); self.wfile.flush()
-            else:
-                item = {"id": "fc_" + uuid.uuid4().hex, "type": "function_call", "name": tool, "call_id": "call_" + uuid.uuid4().hex,
-                    "arguments": json.dumps(args), "status": "completed"} if tool else {
-                    "id": "msg_" + uuid.uuid4().hex, "type": "message", "role": "assistant", "status": "completed",
-                    "content": [{"type": "output_text", "text": text, "annotations": []}]}
-                namespace = next((ns for n, ns in tools if n == tool), None)
-                if namespace: item["namespace"] = namespace
-                response = {"id": "resp_" + uuid.uuid4().hex, "object": "response", "created_at": int(time.time()), "status": "completed", "model": "fixture",
-                    "output": [item], "error": None, "incomplete_details": None, "usage": {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2}}
-                event({"type": "response.created", "response": dict(response, status="in_progress", output=[])})
-                event({"type": "response.output_item.added", "output_index": 0, "item": dict(item, status="in_progress")})
-                if pause: pause.wait(timeout=45)
-                if not tool:
-                    event({"type": "response.content_part.added", "item_id": item["id"], "output_index": 0, "content_index": 0, "part": {"type": "output_text", "text": "", "annotations": []}})
-                    event({"type": "response.output_text.delta", "item_id": item["id"], "output_index": 0, "content_index": 0, "delta": text})
-                event({"type": "response.output_item.done", "output_index": 0, "item": item})
-                event({"type": "response.completed", "response": response})
-            if delivery and not tool:
-                Model.completions.append({"delivery":delivery,"t":time.monotonic()-Model.began})
-        except (BrokenPipeError, ConnectionResetError):
-            pass
+class Model(OpenAIModel):
+    tag="SA4"
 
 
 
-from PC1LiveScreens import Pane
-from AC1LiveProbe import Model as ClaudeModel, HostControl, eventually
+from LiveSupport import Pane
+from LiveSupport import Model as ClaudeModel, HostControl, eventually
 
 class ClaudeCompletion(ClaudeModel):
     completed = []
@@ -162,13 +80,8 @@ class ClaudeCompletion(ClaudeModel):
 class Probe:
     def __init__(self, host, agent):
         self.agent=agent
-        self.pane=Pane(agent)
-        # Pane's helpers own their process group, tmux socket and profile. Move
-        # the unopened namespace to this task's prefix before any launch.
-        old=self.pane.root; root=pathlib.Path(tempfile.mkdtemp(prefix="zsa4_",dir="/tmp")).resolve(); root.rmdir(); old.rename(root)
-        self.pane.root=root; self.pane.home=root/"home"; self.pane.project=root/"project"; self.pane.socket=str(root/"tmux.sock")
-        self.pane.env={k:v.replace(str(old),str(root)) for k,v in self.pane.env.items()}
-        self.pane.env["CFFIXED_USER_HOME"]=str(self.pane.home)
+        self.pane=Pane(agent, prefix="zsa4_", output=OUT)
+        root=self.pane.root
         self.root=root; self.frames={}; self.events=[]; self.scenarios=[]; self.began=time.monotonic()
         self.bridge=REPO/"build/DerivedData/Build/Products/Debug/Zeus.app/Contents/MacOS/zeus-mcp"
         self.log=(OUT/(agent+"-host.log")).open("w")
@@ -243,9 +156,9 @@ class Probe:
         assert self.state()["screen_reads"]==0
         assert self.state()["managed"]=="off","This proof must not use managed screen polling"
         time.sleep(.5)
-    def run(self):
+    def run(self, quick=False):
         self.start()
-        for scenario in ["fast","second"]:
+        for scenario in (["fast"] if quick else ["fast","second"]):
             did="d_sa4_"+scenario
             response=self.control.call("send",text="SA4_FAST",id=did);self.events.append({"name":"compose","delivery":did,"state":response["state"]})
             eventually(lambda:any(d["id"]==did and d["acked"] for d in self.state()["deliveries"]),"Native ack missing",timeout=30)
@@ -284,15 +197,15 @@ class Probe:
             self.control.selector.close();self.log.close()
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument("--agent",choices=["all","claude","codex","opencode"],default="all");parser.add_argument("--record",action="store_true");args=parser.parse_args()
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument("--quick",action="store_true");parser.add_argument("--agent",choices=["all","claude","codex","opencode"],default="all");parser.add_argument("--record",action="store_true");args=parser.parse_args()
     host=build_host();failed=[]
     for agent in ["claude","codex","opencode"] if args.agent=="all" else [args.agent]:
         probe=Probe(host,agent)
         try:
-            try:proof=probe.run()
+            try:proof=probe.run(quick=args.quick)
             except Exception as error:proof=probe.proof();proof["error"]=str(error);failed.append(agent)
             raw=json.dumps(proof,ensure_ascii=False,indent=2);(OUT/(agent+"-proof.json")).write_text(raw)
-            public=raw.replace(str(probe.root),"/FIXTURE").replace("/tmp/"+probe.root.name,"/FIXTURE").replace(str(probe.bridge.parent.parent.parent),"/BUNDLE/Zeus.app").replace(probe.pane.cli,"/CLI/"+agent)
+            public=scrub_paths(raw, {str(probe.root):"/FIXTURE", str(probe.bridge.parent.parent.parent):"/BUNDLE/Zeus.app", probe.pane.cli:"/CLI/"+agent})
             if args.record:
                 target=REPO/"TestFixtures/live/sa4";target.mkdir(parents=True,exist_ok=True);(target/(agent+"-probe.json")).write_text(public+"\n")
             print(json.dumps({"agent":agent,"scenarios":proof["scenarios"],"error":proof.get("error")}),flush=True)

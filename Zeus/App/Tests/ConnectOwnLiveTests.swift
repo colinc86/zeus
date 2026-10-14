@@ -22,7 +22,10 @@ private struct CY1ScopedRunner: ProcessRunning {
 
 /// Real, separately configured agents: no managed launch/adoption and no user profile.
 @Suite(.serialized) @MainActor struct ConnectOwnLiveTests {
-    @Test(.enabled(if: ProcessInfo.processInfo.environment["ZEUS_CY1_LIVE"] == "1"), .timeLimit(.minutes(3)), arguments: [AgentKind.claude, .codex, .opencode])
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["ZEUS_CY1_LIVE"] == "1"), .timeLimit(.minutes(3)), arguments: [AgentKind.claude, .codex, .opencode].filter {
+        guard let selected = ProcessInfo.processInfo.environment["ZEUS_CY1_AGENTS"] else { return true }
+        return selected.split(separator: ",").contains(Substring($0.rawValue))
+    })
     func sessionPickerComposerAndRealBridgeReply(agent: AgentKind) async throws {
         let executables = ManagedExecutables.detect()
         let tmux = try #require(executables.tmux), cli = try #require(executables.agents[agent])
@@ -142,11 +145,12 @@ private struct CY1ScopedRunner: ProcessRunning {
             let saved = try String(contentsOf: home.appendingPathComponent(".codex/config.toml"), encoding: .utf8)
             #expect(!saved.contains("TMUX"), "Namespace pass-through must remain launch-only, not save an old pane")
         }
-        if ProcessInfo.processInfo.environment["ZEUS_CY1_RECORD_FIXTURES"] == "1" {
+        if ProcessInfo.processInfo.environment["ZEUS_CY1_RECORD_FIXTURES"] == "1" || ProcessInfo.processInfo.environment["ZEUS_CY1_EVIDENCE_DIR"] != nil {
             _ = try await capture()
             var worktree = URL(fileURLWithPath: #filePath)
             for _ in 0..<4 { worktree.deleteLastPathComponent() }
-            let evidence = worktree.appendingPathComponent("TestFixtures/live/cy1")
+            let evidence = ProcessInfo.processInfo.environment["ZEUS_CY1_EVIDENCE_DIR"].map { URL(fileURLWithPath: $0) }
+                ?? worktree.appendingPathComponent("TestFixtures/live/cy1")
             try FileManager.default.createDirectory(at: evidence, withIntermediateDirectories: true)
             func scrub(_ value: String) -> String {
                 value.replacingOccurrences(of: root.path, with: "/FIXTURE")
@@ -162,6 +166,13 @@ private struct CY1ScopedRunner: ProcessRunning {
             try JSONEncoder().encode(facts).write(to: evidence.appendingPathComponent(agent.rawValue + ".json"))
             for file in ["launch.json", "registration.json"] where FileManager.default.fileExists(atPath: root.appendingPathComponent(file).path) {
                 try Data(scrub(try String(contentsOf: root.appendingPathComponent(file), encoding: .utf8)).utf8).write(to: evidence.appendingPathComponent(agent.rawValue + "-" + file))
+            }
+            if ProcessInfo.processInfo.environment["ZEUS_CY1_RECORD_FIXTURES"] == "1", ProcessInfo.processInfo.environment["ZEUS_CY1_EVIDENCE_DIR"] != nil {
+                let fixtures = worktree.appendingPathComponent("TestFixtures/live/cy1")
+                try FileManager.default.createDirectory(at: fixtures, withIntermediateDirectories: true)
+                for file in try FileManager.default.contentsOfDirectory(at: evidence, includingPropertiesForKeys: nil) where file.lastPathComponent.hasPrefix(agent.rawValue) {
+                    try Data(contentsOf: file).write(to: fixtures.appendingPathComponent(file.lastPathComponent))
+                }
             }
         }
     }
