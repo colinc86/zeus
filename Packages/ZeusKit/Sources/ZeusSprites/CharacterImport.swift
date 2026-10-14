@@ -1,4 +1,5 @@
 import Foundation
+import ZeusProtocol
 
 // Importing a character file into the user's Characters folder (Settings › Character › Import Character…), the
 // plain-words form of validation problems that Settings shows, and the example file it can write.
@@ -112,30 +113,22 @@ public enum CharacterImport {
         guard let character = loaded else { return .failure(.invalid(issues)) }
         let warnings = issues.filter { $0.severity == .warning }
 
-        let existing = userFiles(in: userDirectory)
-        if let mine = existing.first(where: { $0.id == character.id }) {
-            let same = (try? Data(contentsOf: userDirectory.appendingPathComponent(mine.fileName))) == data
-            return .success(Plan(character: character, fileName: mine.fileName, conflict: same ? nil : .yours(name: mine.name, fileName: mine.fileName),
-                                 warnings: warnings, alreadyInstalled: same, data: data))
+        let place = UserLibraryFolder.placement(id: character.id, data: data, in: userDirectory)
+        let conflict: Conflict? = if let mine = place.replaces {
+            .yours(name: mine.name, fileName: mine.fileName)
+        } else if place.alreadyInstalled {
+            nil
+        } else {
+            builtIn.first { $0.id == character.id }.map { Conflict.builtIn(name: $0.name) }
         }
-        let conflict = builtIn.first { $0.id == character.id }.map { Conflict.builtIn(name: $0.name) }
-        let taken = Set(existing.map { $0.fileName.lowercased() })
-        var fileName = "\(character.id).json"
-        var n = 2
-        while taken.contains(fileName.lowercased()) || FileManager.default.fileExists(atPath: userDirectory.appendingPathComponent(fileName).path) {
-            fileName = "\(character.id) \(n).json"
-            n += 1
-        }
-        return .success(Plan(character: character, fileName: fileName, conflict: conflict, warnings: warnings, alreadyInstalled: false, data: data))
+        return .success(Plan(character: character, fileName: place.fileName, conflict: conflict, warnings: warnings,
+                             alreadyInstalled: place.alreadyInstalled, data: data))
     }
 
     /// Copies the planned file into `userDirectory` (creating it), byte for byte. Returns where it went.
     @discardableResult
     public static func install(_ plan: Plan, into userDirectory: URL) throws -> URL {
-        try FileManager.default.createDirectory(at: userDirectory, withIntermediateDirectories: true)
-        let url = userDirectory.appendingPathComponent(plan.fileName)
-        if !plan.alreadyInstalled { try plan.data.write(to: url, options: .atomic) }
-        return url
+        try UserLibraryFolder.install(plan.data, as: plan.fileName, into: userDirectory, alreadyInstalled: plan.alreadyInstalled)
     }
 
     /// The question to ask before replacing, e.g. "Replace the built-in Zeus?".
@@ -149,17 +142,6 @@ public enum CharacterImport {
     /// What Settings says after a successful import.
     public static func doneMessage(_ plan: Plan) -> String {
         plan.alreadyInstalled ? "\(plan.character.name) is already added." : "Added \(plan.character.name)."
-    }
-
-    /// The characters in `directory` by declared id (unreadable files and reserved ids are left out).
-    static func userFiles(in directory: URL) -> [(fileName: String, id: String, name: String)] {
-        struct Peek: Decodable { var id: String?; var name: String? }
-        let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
-        return files.filter { $0.pathExtension.lowercased() == "json" }.sorted { $0.lastPathComponent < $1.lastPathComponent }.compactMap { url in
-            guard let data = try? Data(contentsOf: url), let peek = try? JSONDecoder().decode(Peek.self, from: data),
-                  let id = peek.id, !CharacterLibrary.isReservedID(id) else { return nil }
-            return (url.lastPathComponent, id, peek.name ?? id)
-        }
     }
 }
 
@@ -254,9 +236,6 @@ public enum CharacterExample {
     /// An existing example is never overwritten: it may hold the user's edits.
     @discardableResult
     public static func write(into directory: URL) throws -> URL {
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let url = directory.appendingPathComponent(fileName)
-        if !FileManager.default.fileExists(atPath: url.path) { try Data(json.utf8).write(to: url, options: .atomic) }
-        return url
+        try UserLibraryFolder.writeExample(json, as: fileName, into: directory)
     }
 }

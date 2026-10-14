@@ -468,6 +468,29 @@ private let t0 = Date(timeIntervalSince1970: 1_791_100_000) // a fixed afternoon
         }
     }
 
+    /// T1: Settings › Appearance at full height, and the conversation panel in every bundled theme, light and dark.
+    @Test func themes() async throws {
+        for look in Snap.Look.basic {
+            let f = Fixture(font: .system); defer { f.cleanup() }
+            let view = AppearanceSettingsView(settings: f.settings)
+                .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
+                .toggleStyle(ZeusCheckboxStyle())
+                .settingsBody()
+                .frame(width: 524, alignment: .leading).padding(24)
+                .environment(\.zeusFontChoice, .system)
+                .background(Color(nsColor: .windowBackgroundColor))
+            try await Snap.render("settings-appearance", look: look, padding: 0, settle: 0.6) { view }
+            for theme in ZeusThemeLibrary.load(userDirectory: nil).themes {
+                let f = Fixture(font: .pixel); defer { f.cleanup() }
+                f.settings.setTheme(id: theme.id)
+                longThread(f)
+                f.messaging.assistantActivity = AssistantActivity(phase: .working, sessionKey: AuditMessaging.claude.sessionKey, agentName: "Claude Code",
+                                                                   detail: "Drafting release notes", progress: 0.35, since: t0)
+                try await Snap.render("theme-\(theme.id)", look: look, settle: 0.6) { f.conversation() }
+            }
+        }
+    }
+
     @Test func menusAndAccessibility() async throws {
         let f = Fixture(font: .pixel); defer { f.cleanup() }
         let shell = ShellController(defaults: f.defaults, cards: f.store, settings: f.settings)

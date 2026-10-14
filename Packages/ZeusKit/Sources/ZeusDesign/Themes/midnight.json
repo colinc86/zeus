@@ -1,0 +1,39 @@
+{
+  "_help": "Zeus's dark look: a midnight dialog box with a pale frame and gold.",
+  "format": 1,
+  "id": "midnight",
+  "name": "Midnight",
+  "appearance": "dark",
+  "colors": {
+    "outline": "#0D0B16",
+    "frame": "#EFEAFF",
+    "panel": "#1E1A2E",
+    "text": "#F4F1FF",
+    "secondaryText": "#A9A3C7",
+    "title": "#F6C544",
+    "accent": "#F6C544",
+    "onAccent": "#2A1D05",
+    "secondaryFill": "#3A3354",
+    "onSecondary": "#F4F1FF",
+    "destructive": "#F06A7E",
+    "onDestructive": "#1A0710",
+    "field": "#120F1D",
+    "fieldBorder": "#5B5380",
+    "track": "#2C2640",
+    "fill": "#7AD7FF",
+    "badge": "#C8364D",
+    "onBadge": "#FFFFFF",
+    "shadow": "#00000059",
+    "agentBubble": "#29243D",
+    "userBubble": "#2F4E6E",
+    "onUserBubble": "#F4F1FF",
+    "focusRing": "#F6C544",
+    "positive": "#8DE08A",
+    "sessionColors": [
+      "#7AD7FF",
+      "#F6C544",
+      "#8DE08A",
+      "#FF9FD0"
+    ]
+  }
+}

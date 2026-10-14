@@ -1,0 +1,39 @@
+{
+  "_help": "Soft pastels: strawberry, mint and lavender.",
+  "format": 1,
+  "id": "sorbet",
+  "name": "Sorbet",
+  "appearance": "light",
+  "colors": {
+    "outline": "#3B2A4A",
+    "frame": "#E5CFE0",
+    "panel": "#FFF6FA",
+    "text": "#3B2A4A",
+    "secondaryText": "#6A5680",
+    "title": "#9C2F74",
+    "accent": "#FFC2DA",
+    "onAccent": "#3B2A4A",
+    "secondaryFill": "#E3F0FF",
+    "onSecondary": "#3B2A4A",
+    "destructive": "#B4233C",
+    "onDestructive": "#FFFFFF",
+    "field": "#FFFFFF",
+    "fieldBorder": "#D8C2E0",
+    "track": "#F1E4F7",
+    "fill": "#7A5CC7",
+    "badge": "#C8364D",
+    "onBadge": "#FFFFFF",
+    "shadow": "#3B2A4A33",
+    "agentBubble": "#FFFFFF",
+    "userBubble": "#D6F3E7",
+    "onUserBubble": "#2E3B36",
+    "focusRing": "#7A5CC7",
+    "positive": "#1F7A4D",
+    "sessionColors": [
+      "#7A5CC7",
+      "#B85410",
+      "#1F8A70",
+      "#C0397A"
+    ]
+  }
+}

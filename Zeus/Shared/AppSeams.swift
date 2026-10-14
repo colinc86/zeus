@@ -4,6 +4,7 @@
 import Foundation
 import ZeusProtocol
 import ZeusSprites
+import ZeusDesign
 
 /// The app's card store. Implemented by appdev (`CardStore`), driven by platform's `ZeusRuntime`.
 @MainActor
@@ -38,6 +39,15 @@ protocol AvatarStatusControlling: AnyObject {
 protocol CharacterControlling: AnyObject {
     var availableCharacters: [SpriteCharacter] { get }
     var currentCharacterID: String { get set }
+}
+
+/// Switching color themes (T1). A later MCP tool can list and set themes through this; none does yet.
+@MainActor
+protocol ThemeControlling: AnyObject {
+    var availableThemes: [ZeusThemeDefinition] { get }
+    var currentThemeID: String { get }
+    /// Selects a theme and remembers it; false for an unknown id.
+    @discardableResult func setTheme(id: String) -> Bool
 }
 
 /// A live bridge connection as shown in Settings' session picker.

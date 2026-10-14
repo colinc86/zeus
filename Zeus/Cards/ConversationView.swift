@@ -35,7 +35,10 @@ struct ConversationView: View {
     @State private var userHasScrolled = false
     @State private var scrollDriver = ConversationScrollDriver()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.zeusPalette) private var palette
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
+    /// This root's own colors come from the theme directly: the environment it sets applies to its children.
+    private var palette: ZeusPalette { settings.currentTheme.palette(for: colorScheme, contrast: colorSchemeContrast) }
 
     private var entries: [ConversationEntry] { Array(model.thread.suffix(pageCount)) }
     private var threadHeight: CGFloat { ConversationLayout.threadHeight(content: contentHeight, composer: composerHeight, screen: panel.screenHeight) }
@@ -88,7 +91,10 @@ struct ConversationView: View {
         return ZeusAgentName.composerPlaceholder(assistantLabel)
     }
 
-    var body: some View {
+    // T1: the selected theme reaches every view below through \.zeusTheme (and so \.zeusPalette).
+    var body: some View { rootBody.environment(\.zeusTheme, settings.currentTheme) }
+
+    @ViewBuilder private var rootBody: some View {
         ScrollViewReader { proxy in
             VStack(spacing: 8) {
                 thread(proxy: proxy)

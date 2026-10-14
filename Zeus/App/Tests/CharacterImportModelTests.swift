@@ -12,17 +12,17 @@ import ZeusSprites
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-c1-\(UUID())/Characters", isDirectory: true)
     let source = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-c1-src-\(UUID())", isDirectory: true)
     let settings: AppSettings
-    let model: CharacterImportModel
+    let model: LibraryImportModel
 
     init() {
         defaults = UserDefaults(suiteName: suite) ?? .standard
         try? FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
         settings = AppSettings(defaults: defaults, userDirectory: directory)
-        model = CharacterImportModel(settings: settings)
+        model = .characters(settings)
     }
 
     func cleanup() {
-        settings.stopWatchingCharacters()
+        settings.stopWatchingUserFolders()
         try? FileManager.default.removeItem(at: directory.deletingLastPathComponent())
         try? FileManager.default.removeItem(at: source)
         defaults.removePersistentDomain(forName: suite)
@@ -81,7 +81,7 @@ import ZeusSprites
 
     @Test func exampleAndFolderAreCreatedAndTheExampleNeverLoads() throws {
         let f = CharacterFixture(); defer { f.cleanup() }
-        let folder = try #require(try f.model.charactersFolder())
+        let folder = try #require(try f.model.folder())
         #expect(folder == f.directory && FileManager.default.fileExists(atPath: folder.path))
         let example = try #require(try f.model.exampleFile())
         #expect(example.lastPathComponent == "Example Character.json")
@@ -135,7 +135,7 @@ import ZeusSprites
 
     @Test func watcherReloadsWhenAFileChanges() async throws {
         let f = CharacterFixture(); defer { f.cleanup() }
-        f.settings.startWatchingCharacters()
+        f.settings.startWatchingUserFolders()
         #expect(FileManager.default.fileExists(atPath: f.directory.path), "the folder is created to watch it")
         try Data(CharacterFixture.json(id: "blob", name: "Watched Blob").utf8).write(to: f.directory.appendingPathComponent("blob.json"))
         let deadline = Date().addingTimeInterval(10)
@@ -150,7 +150,7 @@ import ZeusSprites
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
         var reloads = 0
-        let watcher = CharacterFolderWatcher(directory: dir) { reloads += 1 }
+        let watcher = FolderWatcher(directory: dir) { reloads += 1 }
         defer { watcher.stop() }
         try await Task.sleep(for: .milliseconds(200))
         for i in 0..<5 { try Data("\(i)".utf8).write(to: dir.appendingPathComponent("f\(i).json")) }

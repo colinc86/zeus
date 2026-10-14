@@ -8,7 +8,10 @@ struct DeliveryWarningView: View {
     let close: () -> Void
     let openSettings: () -> Void
     @State private var retried = false
-    @Environment(\.zeusPalette) private var palette
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
+    /// This root's own colors come from the theme directly: the environment it sets applies to its children.
+    private var palette: ZeusPalette { settings.currentTheme.palette(for: colorScheme, contrast: colorSchemeContrast) }
 
     var recovery: DeliveryWarningPresentation {
         let hub = messaging as? AgentMessagingHub
@@ -38,7 +41,10 @@ struct DeliveryWarningView: View {
     }
     func discard() { messaging.discardPendingDeliveries(); close() }
 
-    var body: some View {
+    // T1: the selected theme reaches every view below through \.zeusTheme (and so \.zeusPalette).
+    var body: some View { rootBody.environment(\.zeusTheme, settings.currentTheme) }
+
+    @ViewBuilder private var rootBody: some View {
         Group {
             if let issue = messaging.deliveryIssue {
                 VStack(spacing: 8) {

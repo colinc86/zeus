@@ -108,7 +108,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     }
 
     func start() {
-        settings.startWatchingCharacters()
+        settings.startWatchingUserFolders()
         configure(avatar)
         configure(card)
         configure(peekPanel)
@@ -185,7 +185,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     func stop() {
         stopped = true
-        settings.stopWatchingCharacters()
+        settings.stopWatchingUserFolders()
         tickTask?.cancel()
         closingTask?.cancel()
         peekExitTask?.cancel()

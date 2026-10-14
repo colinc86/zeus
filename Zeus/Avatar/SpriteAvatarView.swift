@@ -33,7 +33,10 @@ struct SpriteAvatarView: View {
     let artLayout: AvatarArtLayout
     let activity: SurfaceActivity
 
-    var body: some View {
+    // T1: the selected theme reaches every view below through \.zeusTheme (and so \.zeusPalette).
+    var body: some View { rootBody.environment(\.zeusTheme, settings.currentTheme) }
+
+    @ViewBuilder private var rootBody: some View {
         Group {
             if let character = settings.currentCharacter {
                 CharacterAnimationView(character: character, state: status.state, scale: settings.pixelScale)

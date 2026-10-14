@@ -1,4 +1,5 @@
 import Foundation
+import ZeusProtocol
 
 /// The characters available to the app: bundled ones plus any in the user's directory.
 /// A user file with the same `id` as a bundled character overrides it.
@@ -21,7 +22,7 @@ public struct CharacterLibrary: Sendable {
     public private(set) var problems: [SpriteIssue]
 
     /// Ids starting with `_` are reserved for examples and notes (`Example Character.json`): the loader skips them.
-    public static func isReservedID(_ id: String) -> Bool { id.hasPrefix("_") }
+    public static func isReservedID(_ id: String) -> Bool { UserLibraryFolder.isReservedID(id) }
 
     /// The directory of bundled character JSON files.
     public static var bundledDirectory: URL? {
@@ -77,10 +78,7 @@ public struct CharacterLibrary: Sendable {
     }
 
     /// The `id` a file declares, read without validating the rest. Nil when it isn't JSON or has no string `id`.
-    public static func declaredID(in data: Data) -> String? {
-        struct Peek: Decodable { var id: String? }
-        return (try? JSONDecoder().decode(Peek.self, from: data))?.id
-    }
+    public static func declaredID(in data: Data) -> String? { UserLibraryFolder.declaredID(in: data) }
 
     /// The character with `id`, if loaded.
     public func character(id: String) -> SpriteCharacter? {

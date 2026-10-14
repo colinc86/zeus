@@ -26,7 +26,7 @@ let package = Package(
 
         // designer
         .target(name: "ZeusSprites", dependencies: ["ZeusProtocol"], resources: [.copy("Characters")]),
-        .target(name: "ZeusDesign", dependencies: ["ZeusProtocol"], resources: [.copy("Fonts")]),
+        .target(name: "ZeusDesign", dependencies: ["ZeusProtocol"], resources: [.copy("Fonts"), .copy("Themes")]),
         .executableTarget(name: "zeus-sprites", dependencies: ["ZeusSprites", "ZeusDesign", "ZeusProtocol"]),
         .testTarget(name: "ZeusSpritesTests", dependencies: ["ZeusSprites", "ZeusProtocol"]),
         .testTarget(name: "ZeusDesignTests", dependencies: ["ZeusDesign", "ZeusProtocol"]),

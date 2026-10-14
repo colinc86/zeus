@@ -71,6 +71,15 @@ The full format is in [design/SPRITE_FORMAT.md](design/SPRITE_FORMAT.md). Buildi
 swift run --package-path Packages/ZeusKit zeus-sprites validate ~/Library/Application\ Support/Zeus/Characters
 ```
 
+### Themes
+
+**Settings → Appearance** picks the colors of the conversation panel, Zeus's speech bubble and Settings. The character keeps its own colors.
+- **Classic** (the default) follows your Mac: Midnight in dark mode, Parchment in light mode.
+- Also built in: Midnight, Parchment, Olympus, Phosphor, Pocket and Sorbet.
+- With **Increase Contrast** on in macOS, Zeus switches to high-contrast colors whatever the theme.
+
+**Make your own theme:** press **Open Example**, save a copy in the Themes folder with a new `"id"`, and edit its colors. Zeus picks up changes as soon as you save. **Import Theme…** adds a theme file someone sent you, and **Open Themes Folder** shows `~/Library/Application Support/Zeus/Themes/`. A theme with hard-to-read colors still works but shows **Low contrast**. The format is in [design/THEME_FORMAT.md](design/THEME_FORMAT.md).
+
 ## 4. Connect your own session (advanced)
 
 Use this if you'd rather start the agent yourself, or keep a setup you already have. In **Settings → Assistant**, choose **Connect your own**. The pane shows each step with the commands ready to copy, with your Zeus path already filled in.

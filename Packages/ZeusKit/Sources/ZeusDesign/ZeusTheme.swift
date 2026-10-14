@@ -197,9 +197,9 @@ extension EnvironmentValues {
     /// frame, and the peek typewriter shows the full text. The app sets it per surface (P8 #2/#4).
     @Entry public var zeusAnimationsActive: Bool = true
 
-    /// The Zeus palette for this view: the color scheme plus Increase Contrast. Read it with
-    /// `@Environment(\.zeusPalette) private var palette` instead of `ZeusPalette.for(colorScheme)`.
-    public var zeusPalette: ZeusPalette { ZeusPalette.for(colorScheme, contrast: colorSchemeContrast) }
+    /// The Zeus palette for this view: the selected theme (`\.zeusTheme`), the color scheme and Increase Contrast.
+    /// Read it with `@Environment(\.zeusPalette) private var palette` instead of `ZeusPalette.for(colorScheme)`.
+    public var zeusPalette: ZeusPalette { zeusTheme.palette(for: colorScheme, contrast: colorSchemeContrast) }
 
     /// Set by `ZeusBubble` for a dismissed or expired card, so its header and text recede without opacity.
     @Entry public var zeusMuted: Bool = false

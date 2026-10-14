@@ -17,7 +17,7 @@ enum AvatarSize: String, CaseIterable, Identifiable {
 /// Settings-backed implementations of the character and routing seams.
 @MainActor
 @Observable
-final class AppSettings: CharacterControlling, AgentRoutingSettings, OpenCodeSessionRouting, OpenCodeDestinationRouting, TmuxTargetRouting {
+final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSettings, OpenCodeSessionRouting, OpenCodeDestinationRouting, TmuxTargetRouting {
     var managedSession: ManagedSessionConfig? {
         didSet {
             if oldValue != managedSession { managedAgentInitialized = true }
@@ -52,8 +52,16 @@ final class AppSettings: CharacterControlling, AgentRoutingSettings, OpenCodeSes
     private(set) var characterProblems: [SpriteIssue]
     /// The user's Characters folder; nil keeps tests away from the real one.
     @ObservationIgnored let userCharacterDirectory: URL?
-    @ObservationIgnored private var characterWatcher: CharacterFolderWatcher?
+    @ObservationIgnored private var characterWatcher: FolderWatcher?
     private var selectedCharacterID: String
+    /// Classic, the bundled themes and the user's, reloaded when the Themes folder changes (T1).
+    private(set) var availableThemes: [ZeusThemeDefinition]
+    /// Problems in theme files, including ones that didn't load.
+    private(set) var themeProblems: [ZeusThemeIssue]
+    /// The user's Themes folder: next to the Characters folder, so tests that pass no folder never see the real one.
+    @ObservationIgnored let userThemeDirectory: URL?
+    @ObservationIgnored private var themeWatcher: FolderWatcher?
+    private var selectedThemeID: String
     var avatarSize: AvatarSize { didSet { defaults.set(avatarSize.rawValue, forKey: "avatar.size") } }
     var assistantSessionKey: String? {
         didSet {
@@ -158,6 +166,11 @@ final class AppSettings: CharacterControlling, AgentRoutingSettings, OpenCodeSes
         availableCharacters = library.characters
         characterProblems = library.problems
         selectedCharacterID = Self.characterID(saved: defaults.string(forKey: "character.id"), in: library)
+        userThemeDirectory = userDirectory?.deletingLastPathComponent().appendingPathComponent("Themes", isDirectory: true)
+        let themes = ZeusThemeLibrary.load(userDirectory: userThemeDirectory)
+        availableThemes = themes.themes
+        themeProblems = themes.problems
+        selectedThemeID = Self.themeID(saved: defaults.string(forKey: "appearance.theme"), in: themes)
         avatarSize = AvatarSize(rawValue: defaults.string(forKey: "avatar.size") ?? "") ?? .medium
         assistantSessionKey = defaults.string(forKey: "agent.assistantSessionKey")
         let backend = AssistantBackend(rawValue: defaults.string(forKey: "agent.backend") ?? "") ?? .claude
@@ -220,17 +233,51 @@ final class AppSettings: CharacterControlling, AgentRoutingSettings, OpenCodeSes
         if id != selectedCharacterID { selectedCharacterID = id }
     }
 
-    /// Starts reloading characters whenever a file in the Characters folder changes (creating the folder if needed).
-    func startWatchingCharacters() {
-        guard characterWatcher == nil, let directory = userCharacterDirectory else { return }
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        characterWatcher = CharacterFolderWatcher(directory: directory) { [weak self] in self?.reloadCharacters() }
-        reloadCharacters()
+    /// The selected color theme (Settings › Appearance). Set it at each SwiftUI root as `\.zeusTheme`.
+    var currentTheme: ZeusThemeDefinition { availableThemes.first { $0.id == selectedThemeID } ?? .classic }
+    var currentThemeID: String { selectedThemeID }
+
+    /// Selects a theme by id and remembers it. False (and no change) for an id that isn't loaded.
+    @discardableResult func setTheme(id: String) -> Bool {
+        guard availableThemes.contains(where: { $0.id == id }) else { return false }
+        selectedThemeID = id
+        defaults.set(id, forKey: "appearance.theme")
+        return true
     }
 
-    func stopWatchingCharacters() {
+    /// The saved theme if it loaded, else Classic. As with characters, the saved choice is kept for when it returns.
+    private static func themeID(saved: String?, in library: ZeusThemeLibrary) -> String {
+        library.themes.first { $0.id == saved }?.id ?? ZeusThemeLibrary.defaultThemeID
+    }
+
+    /// Reloads bundled and user themes; the selection falls back to Classic while its file is missing or broken.
+    func reloadThemes() {
+        let library = ZeusThemeLibrary.load(userDirectory: userThemeDirectory)
+        if library.themes != availableThemes { availableThemes = library.themes }
+        if library.problems != themeProblems { themeProblems = library.problems }
+        let id = Self.themeID(saved: defaults.string(forKey: "appearance.theme"), in: library)
+        if id != selectedThemeID { selectedThemeID = id }
+    }
+
+    /// Starts reloading characters and themes whenever a file in their folders changes (creating the folders).
+    func startWatchingUserFolders() {
+        if characterWatcher == nil, let directory = userCharacterDirectory {
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            characterWatcher = FolderWatcher(directory: directory) { [weak self] in self?.reloadCharacters() }
+            reloadCharacters()
+        }
+        if themeWatcher == nil, let directory = userThemeDirectory {
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            themeWatcher = FolderWatcher(directory: directory) { [weak self] in self?.reloadThemes() }
+            reloadThemes()
+        }
+    }
+
+    func stopWatchingUserFolders() {
         characterWatcher?.stop()
         characterWatcher = nil
+        themeWatcher?.stop()
+        themeWatcher = nil
     }
     var pixelScale: Int { scale(for: currentCharacterID) }
     func scale(for id: String) -> Int { avatarSize.scale(preferred: availableCharacters.first { $0.id == id }?.preferredScale ?? 4) }
