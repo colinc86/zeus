@@ -76,6 +76,20 @@ private let date = Date(timeIntervalSince1970: 1_700_000_000.125)
     #expect(throws: (any Error).self) { try ZeusJSON.decoder().decode(CardResponse.self, from: invalid) }
 }
 
+@Test func skippedResponseIsExplicitAndOldSnapshotsDefaultToAnswered() throws {
+    let old = Data(#"{"optionID":"yes","optionLabel":"Yes","text":"Keep it","device":"mac","respondedAt":"2023-11-14T22:13:20Z"}"#.utf8)
+    let decoded = try ZeusJSON.decoder().decode(CardResponse.self, from: old)
+    #expect(!decoded.skipped && decoded.summary == "Yes\nKeep it")
+    #expect(!CardResponse(device: .mac).skipped)
+    let skipped = CardResponse(respondedAt: date, device: .mac, skipped: true)
+    try roundTrip(skipped)
+    #expect(try JSONValue.from(skipped)["skipped"] == true)
+    let card = Card(kind: .question, body: "Later?", createdAt: date, updatedAt: date, status: .answered, response: skipped)
+    try roundTrip(card)
+    let invalid = Data(#"{"skipped":"true","device":"mac","respondedAt":"2023-11-14T22:13:20Z"}"#.utf8)
+    #expect(throws: (any Error).self) { try ZeusJSON.decoder().decode(CardResponse.self, from: invalid) }
+}
+
 @Test func standardPathsAndDirectoryCreation() throws {
     #expect(ZeusPaths.appSupport.path.hasSuffix("/Library/Application Support/Zeus"))
     #expect(ZeusPaths.bridgeSocket.lastPathComponent == "bridge.sock")

@@ -78,14 +78,28 @@ public struct CardResponse: Codable, Sendable, Equatable {
     public var respondedAt: Date
     /// Device where the answer originated.
     public var device: Device
+    /// The user chose to move on without answering; absent in older snapshots means false.
+    public var skipped: Bool
 
     /// Creates CardResponse.
-    public init(optionID: String? = nil, optionLabel: String? = nil, text: String? = nil, respondedAt: Date = Date(), device: Device) {
+    public init(optionID: String? = nil, optionLabel: String? = nil, text: String? = nil, respondedAt: Date = Date(), device: Device, skipped: Bool = false) {
         self.optionID = optionID
         self.optionLabel = optionLabel
         self.text = text
         self.respondedAt = respondedAt
         self.device = device
+        self.skipped = skipped
+    }
+    private enum CodingKeys: String, CodingKey { case optionID, optionLabel, text, respondedAt, device, skipped }
+    /// Decodes responses saved before the Skip action existed.
+    public init(from decoder: any Decoder) throws {
+        let fields = try decoder.container(keyedBy: CodingKeys.self)
+        optionID = try fields.decodeIfPresent(String.self, forKey: .optionID)
+        optionLabel = try fields.decodeIfPresent(String.self, forKey: .optionLabel)
+        text = try fields.decodeIfPresent(String.self, forKey: .text)
+        respondedAt = try fields.decode(Date.self, forKey: .respondedAt)
+        device = try fields.decode(Device.self, forKey: .device)
+        skipped = try fields.decodeIfPresent(Bool.self, forKey: .skipped) ?? false
     }
     /// Device on which the answer was submitted.
     public enum Device: String, Codable, Sendable, CaseIterable { case mac, ios }
