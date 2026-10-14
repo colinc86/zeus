@@ -25,6 +25,10 @@ struct GeneralSettingsView: View {
                 .disabled(!settings.assistantMayControlApp)
             Text(Self.assistantControlCaption).settingsCaption()
             SettingsDivider()
+            Toggle("Show menu bar icon", isOn: $settings.showMenuBarIcon)
+                .accessibilityLabel("Show menu bar icon")
+            Text(Self.menuBarIconCaption(hotKey: settings.talkHotKey)).settingsCaption()
+            SettingsDivider()
             Toggle("Launch Zeus at login", isOn: Binding(get: { login.enabled }, set: { value in Task { await login.setEnabled(value) } }))
                 .accessibilityLabel("Launch Zeus at login")
                 .disabled(login.isUpdating)
@@ -93,6 +97,14 @@ struct GeneralSettingsView: View {
     }
 
     static let soundCaption = "Plays at your Mac's alert volume, set in System Settings → Sound. Zeus stays quiet while it's hidden, during quiet hours and while the conversation is open."
+    /// MB1. The shortcut follows the user's Talk shortcut (⌥⌘Z by default) and is left out when it's off.
+    static func menuBarIconCaption(hotKey: TalkHotKey) -> String {
+        let base = "Right-click Zeus for the same menu. If Zeus is hidden and the icon is off, open Zeus again from Spotlight or Launchpad"
+        guard hotKey.enabled, hotKey.isValid else { return base + "." }
+        // Settings is set in the system font, which has ⌃ and ⇧ (the pixel font doesn't), so they're escaped for the glyph audit.
+        let symbols = (hotKey.control ? "\u{2303}" : "") + (hotKey.option ? "⌥" : "") + (hotKey.shift ? "\u{21E7}" : "") + (hotKey.command ? "⌘" : "")
+        return base + ", or press " + symbols + hotKey.key.uppercased() + "."
+    }
     static let assistantControlCaption = "Your assistant can change how Zeus looks and where it sits. Every change shows in the conversation with Undo. It can never answer its own questions or change its own settings."
 
     static func historyCaption(count: Int) -> String {

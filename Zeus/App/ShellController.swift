@@ -202,6 +202,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         }
         hotKey.configure(settings.talkHotKey)
         observeHotKeySettings()
+        observeMenuBarIconSetting()
         observeAssistantSessionSelection()
         observeDraftCancellation()
         let managedOnboarding = settings.consumeManagedOnboarding(hasHistory: !cards.cards.isEmpty, isHidden: visibility.isHidden)
@@ -957,72 +958,140 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         NSPasteboard.general.setString(text, forType: .string)
     }
 
+    /// The character's right-click menu: the same `ZeusMenuModel` as the menu bar icon (MB1).
     func makeContextMenu() -> NSMenu {
-        let menu = NSMenu()
-        func add(_ title: String, _ action: Selector) {
-            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
-            item.target = self
-            menu.addItem(item)
+        menuModel.makeNSMenu { [weak self] in self?.perform($0) }
+    }
+
+    /// "1 assistant session connected", for Connect your own.
+    var agentStatusText: String {
+        if messaging.previewEnabled { return "Preview messaging" }
+        guard messaging.runtime != nil else { return "Not connected to your assistant" }
+        switch messaging.sessions.count {
+        case 0: return "No assistant connected"
+        case 1: return "1 assistant session connected"
+        case let n: return "\(n) assistant sessions connected"
         }
-        add("Talk to Zeus…", #selector(contextTalk))
-        add("Settings…", #selector(contextSettings))
-        menu.items[0].keyEquivalent = settings.talkHotKey.enabled && settings.talkHotKey.isValid ? settings.talkHotKey.key.lowercased() : ""
-        var modifiers: NSEvent.ModifierFlags = []
-        if settings.talkHotKey.command { modifiers.insert(.command) }
-        if settings.talkHotKey.option { modifiers.insert(.option) }
-        if settings.talkHotKey.control { modifiers.insert(.control) }
-        if settings.talkHotKey.shift { modifiers.insert(.shift) }
-        menu.items[0].keyEquivalentModifierMask = modifiers
-        menu.items[1].keyEquivalent = ","
-        menu.items[1].keyEquivalentModifierMask = .command
-        if messaging.deliveryIssue != nil { add("Delivery problem…", #selector(contextDeliveryProblem)) }
-        menu.addItem(.separator())
-        let characterItem = NSMenuItem(title: "Character", action: nil, keyEquivalent: "")
-        let characters = NSMenu()
-        var addedUserSeparator = false
-        for character in settings.availableCharacters {
-            if !addedUserSeparator, !CharacterLibrary.bundledOrder.contains(character.id) {
-                if !characters.items.isEmpty { characters.addItem(.separator()) }
-                addedUserSeparator = true
+    }
+
+    /// The one Zeus menu (MB1, CONTRACT §10.5), top to bottom: status, Zeus itself, its look, the app, Quit.
+    var menuModel: ZeusMenuModel {
+        typealias Item = ZeusMenuModel.Item
+        var top: [Item] = []
+        // What the strip says when a question or unread is waiting; choosing it is the strip's jump.
+        let target = StatusStripState.avatarTarget(cards: .init(values: cards.cards, seen: cards.seenIDs), status: self.status.presentation)
+        let jumpLine: Item? = target.map { target in
+            let strip: ZeusStatusStripModel = switch target {
+            case .question: .waiting(questions: StatusStripState.questions(.init(values: cards.cards, seen: cards.seenIDs)).count)
+            default: .unread(max(cards.unseenCount, 1))
             }
-            let item = NSMenuItem(title: character.name, action: #selector(contextSelectCharacter(_:)), keyEquivalent: "")
-            item.target = self; item.representedObject = character.id
-            item.state = character.id == settings.currentCharacterID ? .on : .off
-            characters.addItem(item)
+            return .line([strip.glyph?.rawValue, [strip.sentence, strip.actionTitle].compactMap { $0 }.joined(separator: " · ")]
+                .compactMap { $0 }.joined(separator: " "), action: .openStatusTarget)
         }
-        characterItem.submenu = characters
-        menu.addItem(characterItem)
-        let sizeItem = NSMenuItem(title: "Size", action: nil, keyEquivalent: "")
-        let sizes = NSMenu()
-        for size in AvatarSize.allCases {
-            let item = NSMenuItem(title: size.rawValue.capitalized, action: #selector(contextSelectSize(_:)), keyEquivalent: "")
-            item.target = self; item.representedObject = size.rawValue
-            item.state = size == settings.avatarSize ? .on : .off
-            sizes.addItem(item)
+        if let jumpLine, !managed.prioritizesMenuStatus { top.append(jumpLine) } else { top.append(.line(menuStatus)) }
+        if managed.enabled {
+            for action in managed.menuActions {
+                top.append(.action("managed:\(action)", action.menuTitle, .managed(action), isEnabled: !managed.disabledActions.contains(action)))
+            }
+        } else {
+            top.append(.line(agentStatusText))
+            let sessions = messaging.sessions
+            var picker: [Item] = [.action("session:auto", AssistantSessionPicker.autoTitle(settings: settings, sessions: sessions),
+                                          .selectAssistantSession(nil), isOn: settings.assistantSessionKey == nil)]
+            picker += AssistantSessionPicker.choices(settings: settings, sessions: sessions).map {
+                .action("session:" + $0.id, $0.title, .selectAssistantSession($0.id), isOn: settings.assistantSessionKey == $0.id)
+            }
+            top.append(Item(id: "session", title: "Assistant session", kind: .submenu([picker])))
+            if let notice = settings.assistantSessionNotice { top.append(.line(notice)) }
         }
-        sizeItem.submenu = sizes
-        menu.addItem(sizeItem)
-        menu.addItem(.separator())
-        add(MenuPresentation.hideForHour, #selector(contextHideHour))
-        add(MenuPresentation.hideUntilTomorrow, #selector(contextHideTomorrow))
-        add("About Zeus", #selector(contextAbout))
-        menu.addItem(.separator())
-        add("Quit Zeus", #selector(contextQuit))
-        return menu
+        if let jumpLine, managed.prioritizesMenuStatus { top.append(jumpLine) } else if let detail = menuUnreadDetail { top.append(.line(detail)) }
+        if let issue = menuIssueDetail { top.append(.line(issue)) }
+        if let until = visibility.hiddenUntil, visibility.isHidden {
+            top.append(.line("Hidden until \(until.formatted(date: .abbreviated, time: .shortened))"))
+        }
+
+        var zeus: [Item] = [
+            .action("talk", "Talk to Zeus…", .talk, shortcut: talkShortcut),
+            .action("visibility", visibility.isHidden ? "Show Zeus" : "Hide Zeus", .toggleVisibility),
+            .action("hideHour", MenuPresentation.hideForHour, .hideForHour),
+            .action("hideTomorrow", MenuPresentation.hideUntilTomorrow, .hideUntilTomorrow),
+        ]
+        if messaging.deliveryIssue != nil { zeus.append(.action("delivery", "Delivery problem…", .deliveryProblem)) }
+
+        func grouped<T>(_ values: [T], bundled: [String], id: (T) -> String, item: (T) -> Item) -> [[Item]] {
+            let builtIn = values.filter { bundled.contains(id($0)) }.map(item)
+            let own = values.filter { !bundled.contains(id($0)) }.map(item)
+            return [builtIn, own].filter { !$0.isEmpty }
+        }
+        let characters = grouped(settings.availableCharacters, bundled: CharacterLibrary.bundledOrder, id: \.id) {
+            .action("character:" + $0.id, $0.name, .character($0.id), isOn: $0.id == settings.currentCharacterID)
+        }
+        let sizes = AvatarSize.allCases.map { Item.action("size:" + $0.rawValue, $0.rawValue.capitalized, .size($0), isOn: $0 == settings.avatarSize) }
+        let themes = grouped(settings.availableThemes, bundled: ZeusThemeLibrary.bundledOrder, id: \.id) {
+            .action("theme:" + $0.id, $0.name, .theme($0.id), isOn: $0.id == settings.currentThemeID)
+        }
+        let look: [Item] = [Item(id: "character", title: "Character", kind: .submenu(characters)),
+                            Item(id: "size", title: "Size", kind: .submenu([sizes])),
+                            Item(id: "theme", title: "Theme", kind: .submenu(themes))]
+
+        var app: [Item] = [
+            .action("settings", "Settings…", .settings, shortcut: .init(key: ",", command: true)),
+            .action("updates", updater.menuTitle, .checkForUpdates, isEnabled: updater.canCheckForUpdates,
+                    help: updater.unavailableReason ?? "Check for a new version of Zeus"),
+        ]
+        if let reason = updater.unavailableReason { app.append(.line(reason)) }
+        app.append(.action("about", "About Zeus", .about))
+        return ZeusMenuModel(sections: [top, zeus, look, app, [.action("quit", "Quit Zeus", .quit, shortcut: .init(key: "q", command: true))]])
     }
-    @objc private func contextTalk() { showTalkPanel() }
-    @objc private func contextSelectCharacter(_ sender: NSMenuItem) {
-        if let id = sender.representedObject as? String { settings.currentCharacterID = id }
+
+    private var talkShortcut: ZeusMenuModel.Shortcut? {
+        let hotKey = settings.talkHotKey
+        guard hotKey.enabled, hotKey.isValid, let key = hotKey.key.lowercased().first else { return nil }
+        return .init(key: key, command: hotKey.command, option: hotKey.option, control: hotKey.control, shift: hotKey.shift)
     }
-    @objc private func contextSelectSize(_ sender: NSMenuItem) {
-        if let value = sender.representedObject as? String, let size = AvatarSize(rawValue: value) { settings.avatarSize = size }
+
+    /// Runs a menu item's action, from either surface.
+    func perform(_ action: ZeusMenuModel.Action) {
+        switch action {
+        case .openStatusTarget: showAvatarConversation()
+        case .managed(let action): performManagedAction(action)
+        case .selectAssistantSession(let key): settings.assistantSessionKey = key
+        case .talk: showTalkPanel()
+        case .toggleVisibility: toggleVisibility()
+        case .hideForHour: hide(for: .hour)
+        case .hideUntilTomorrow: hide(for: .tomorrow)
+        case .deliveryProblem: showDeliveryProblem()
+        case .character(let id): settings.currentCharacterID = id
+        case .size(let size): settings.avatarSize = size
+        case .theme(let id): settings.setTheme(id: id)
+        case .settings: showSettings()
+        case .checkForUpdates: updater.checkForUpdates()
+        case .about: showSettings(tab: .about)
+        case .quit: NSApplication.shared.terminate(nil)
+        }
     }
-    @objc private func contextDeliveryProblem() { showDeliveryProblem() }
-    @objc private func contextSettings() { showSettings() }
-    @objc private func contextHideHour() { hide(for: .hour) }
-    @objc private func contextHideTomorrow() { hide(for: .tomorrow) }
-    @objc private func contextAbout() { showSettings(tab: .about) }
-    @objc private func contextQuit() { NSApplication.shared.terminate(nil) }
+
+    /// Reopening Zeus from Finder, Spotlight, Launchpad or the Dock: show Zeus (clearing a timed hide) and open the
+    /// conversation; if Zeus still can't be shown, open Settings, so there is always a way back in (MB1).
+    func handleReopen() {
+        showAvatar()
+        if isVisible { showAvatarConversation() } else { showSettings() }
+    }
+
+    /// Turning the menu bar icon off while Zeus is hidden shows Zeus first, so there is always one entry point (MB1).
+    func menuBarIconSettingChanged() {
+        if !settings.showMenuBarIcon && visibility.isHidden { showAvatar() }
+    }
+
+    func observeMenuBarIconSetting() {
+        withObservationTracking { _ = settings.showMenuBarIcon } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.menuBarIconSettingChanged()
+                self.observeMenuBarIconSetting()
+            }
+        }
+    }
 
 }
 

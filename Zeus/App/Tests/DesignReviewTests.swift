@@ -110,10 +110,10 @@ import ZeusSprites
         let menu = shell.makeContextMenu()
         let items = try #require(menu.items.first { $0.title == "Character" }?.submenu).items
         #expect(items.filter(\.isSeparatorItem).count == 1)
-        #expect(items.prefix(12).compactMap { $0.representedObject as? String } == CharacterLibrary.bundledOrder)
+        #expect(items.prefix(12).compactMap { $0.identifier?.rawValue.replacingOccurrences(of: "character:", with: "") } == CharacterLibrary.bundledOrder)
         #expect(items[1].title == "Overridden Ghost")
         #expect(items[12].isSeparatorItem)
-        #expect(items[13].representedObject as? String == "user-zeus")
+        #expect(items[13].identifier?.rawValue == "character:user-zeus")
         let bundled = AppSettings(defaults: defaults, userDirectory: nil)
         let builtinShell = ShellController(defaults: defaults, cards: CardStore(fileURL: root.appendingPathComponent("other-history.data")), settings: bundled)
         let builtinItems = try #require(builtinShell.makeContextMenu().items.first { $0.title == "Character" }?.submenu).items
