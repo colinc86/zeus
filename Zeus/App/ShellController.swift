@@ -117,6 +117,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         let usual = MenuPresentation.status(state: status.state, unread: cards.unseenCount, activity: messaging.assistantActivity, sessionLabel: messaging.assistantActivity.map { settings.sessionLabels.label($0.sessionKey) })
         if managed.prioritizesMenuStatus { return managed.menuStatus(usual: usual, unread: cards.unseenCount) }
         if cards.unseenCount > 0 { return usual }
+        if managed.assistantIsOff(connectedSessionCount: messaging.sessions.count), status.state == .idle,
+           runtimeError == nil, cards.persistenceError == nil, status.deliveryProblem == nil { return "Your assistant is off" }
         return runtimeError ?? cards.persistenceError ?? status.deliveryProblem ?? managed.menuStatus(usual: usual, unread: cards.unseenCount)
     }
 
@@ -205,9 +207,11 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         observeMenuBarIconSetting()
         observeAssistantSessionSelection()
         observeDraftCancellation()
-        let managedOnboarding = settings.consumeManagedOnboarding(hasHistory: !cards.cards.isEmpty, isHidden: visibility.isHidden)
-        let welcomeAdded = settings.managedSession?.enabled == true ? false : WelcomeCard.installIfNeeded(cards: cards, settings: settings)
-        if (managedOnboarding || welcomeAdded) && !visibility.isHidden { showTalkPanel() }
+        let welcomeAdded = WelcomeCard.installForLaunch(cards: cards, settings: settings, isHidden: visibility.isHidden)
+        if welcomeAdded && !visibility.isHidden {
+            cards.markSeen(id: WelcomeCard.id)
+            showTalkPanel()
+        }
         installLifecycleObservers()
         refreshTimedState()
         observeDeadlineInputs()
@@ -792,6 +796,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     }
 
     private func receivedCard(_ newCard: Card) {
+        // The local introduction is not assistant speech, a peek or a popup sound.
+        guard newCard.id != WelcomeCard.id else { return }
         noteGhostInteraction()
         if messaging.previewEnabled { messaging.previewActivity = .none }
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion

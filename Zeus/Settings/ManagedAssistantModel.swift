@@ -123,6 +123,12 @@ final class ManagedAssistantModel {
     var hasActiveSession: Bool {
         switch status { case .starting, .running, .blocked, .restarting: true; default: false }
     }
+    /// A stopped Zeus-run assistant is distinct from a connected, user-run session.
+    func assistantIsOff(connectedSessionCount: Int) -> Bool {
+        guard controller != nil, connectedSessionCount == 0, retainedSession == nil,
+              status == .off || status == .stopped else { return false }
+        return enabled || launchedConfig != nil
+    }
     var retainedSessionNotice: String? {
         guard !enabled, let retainedSession else { return nil }
         return "Your Zeus-run agent is still running in tmux (\(retainedSession.attachCommand))"
@@ -229,7 +235,7 @@ final class ManagedAssistantModel {
         if isNotStarted {
             result.title = "Ready to Start"
             result.detail = config.folder.isEmpty ? "Choose a folder to start." : "\(agentName) isn't running. Press Start when you want it."
-            result.menuStatus = "\(agentName) hasn't started"
+            result.menuStatus = "Your assistant is off"
             result.actions = [.start]
         } else if status == .stopped {
             // The seam doesn't distinguish an explicit Stop from a clean CLI exit.

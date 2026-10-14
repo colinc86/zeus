@@ -10,7 +10,8 @@ import ZeusProtocol
 @MainActor @Observable private final class Q3ScrollMessaging: AgentMessaging {
     var sessions: [ConnectedSession] = []
     var assistantActivity: AssistantActivity?
-    func sendUserMessage(_ text: String) async -> MessageSendResult { .delivered }
+    var outcome: MessageSendResult = .delivered
+    func sendUserMessage(_ text: String) async -> MessageSendResult { outcome }
 }
 
 @MainActor private final class Q3OffscreenPanel: NSPanel {
@@ -57,7 +58,7 @@ import ZeusProtocol
         cards.add(newest); newestID = newest.id
     }
 
-    func mount(target: String? = nil, duringOpening: (() -> Void)? = nil) {
+    func mount(target: String? = nil, duringOpening: (() -> Void)? = nil, accessibilityEnabled: Bool = false) {
         panel.isVisible = false; panel.scrollTargetCardID = target
         let view = ConversationView(settings: settings, store: cards, model: model, messaging: messaging,
             status: AvatarStatusModel(cards: cards), panel: panel, activity: activity, openSettings: {}, copySetup: {},
@@ -65,7 +66,8 @@ import ZeusProtocol
                 guard let window else { return }
                 window.setContentSize(CGSize(width: 380, height: height))
             })
-        let host = NSHostingView(rootView: AnyView(view.transaction { $0.disablesAnimations = true }))
+        let root = AnyView(view.transaction { $0.disablesAnimations = true })
+        let host = NSHostingView(rootView: accessibilityEnabled ? AnyView(root.environment(\.accessibilityEnabled, true)) : root)
         self.host = host; window.contentView = host
         // Establish the hidden host and its observation subscriptions before making it visible.
         // This mirrors ShellController.mountConversation -> position -> showInteractionPanel.
@@ -112,6 +114,41 @@ import ZeusProtocol
 }
 
 @Suite(.serialized) @MainActor struct Q3NativeScrollAuditTests {
+    @Test(arguments: [true, false]) func nativeComposerSendFollowsOnlyAcceptedMessagesFromHistory(accepted: Bool) async throws {
+        let f = try Q3ScrollHarness(longNewest: false); defer { f.cleanup() }
+        f.messaging.outcome = accepted ? .delivered : .failed(reason: "Private fixture unavailable")
+        f.mount(accessibilityEnabled: true); try await f.settle()
+        f.panel.keyboardScroll = .oldest; f.panel.keyboardScrollRequest += 1
+        try await f.settle()
+        #expect(!f.panel.atBottom)
+        f.model.draft = "OB1 message after reading earlier history"
+        try await f.settle()
+        let root = try #require(f.host)
+        var visited: Set<ObjectIdentifier> = []
+        func findSend(_ object: Any) -> NSObject? {
+            guard let node = object as? NSObject, visited.insert(ObjectIdentifier(node)).inserted else { return nil }
+            func string(_ selector: String) -> String? {
+                let name = NSSelectorFromString(selector)
+                return node.responds(to: name) ? node.perform(name)?.takeUnretainedValue() as? String : nil
+            }
+            if string("accessibilityRole") == "AXButton", string("accessibilityLabel") == "Send" { return node }
+            let selector = NSSelectorFromString("accessibilityChildren")
+            let children = node.responds(to: selector) ? node.perform(selector)?.takeUnretainedValue() as? [Any] ?? [] : []
+            for child in children + ((node as? NSView)?.subviews ?? []) { if let button = findSend(child) { return button } }
+            return nil
+        }
+        let send = try #require(findSend(root), "Native composer Send button")
+        #expect((send as AnyObject).accessibilityPerformPress?() == true)
+        try await f.settle()
+        #expect(f.cards.cards.last?.body == "OB1 message after reading earlier history")
+        if accepted {
+            #expect(f.model.draft.isEmpty && f.panel.atBottom)
+            try expectNewestVisible(f)
+        } else {
+            #expect(f.model.draft == "OB1 message after reading earlier history" && !f.panel.atBottom)
+        }
+    }
+
     @Test func newShortMessageAfterATallCappedMessageIsRealizedAndFollowed() async throws {
         let f = try Q3ScrollHarness(longNewest: true); defer { f.cleanup() }
         f.mount(); try await f.settle(); f.record("tall-before")

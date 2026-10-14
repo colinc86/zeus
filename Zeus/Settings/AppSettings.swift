@@ -239,13 +239,12 @@ final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSet
         quietEndHour = Self.hour(defaults, key: "quiet.endHour", fallback: 7)
     }
 
-    /// Consume onboarding once without adding a synthetic message ahead of the agent's check-in.
-    func consumeManagedOnboarding(hasHistory: Bool, isHidden: Bool) -> Bool {
+    /// Persist the first-run managed mode before the welcome marker makes a later launch look like legacy setup.
+    func prepareManagedOnboarding(hasHistory: Bool, isHidden: Bool) -> Bool {
         guard !hasShownWelcome, !hasHistory, !isHidden, managedSettingsError == nil,
               let config = managedSession, config.enabled, config.folder.isEmpty else { return false }
         // Persist the chosen mode before the welcome marker makes a future launch look like a legacy setup.
         managedSession = config
-        hasShownWelcome = true
         return true
     }
 

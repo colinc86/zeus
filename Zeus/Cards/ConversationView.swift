@@ -95,7 +95,7 @@ struct ConversationView: View {
     private var stripManaged: StatusStripState.Managed {
         let enabled = settings.managedSession?.enabled == true
         let own = ConversationTerminalTarget.make(session: assistant, configuredPane: settings.tmuxTarget, configuredSocket: settings.tmuxTargetSocketPath)
-        return .init(enabled: enabled, status: managedController?.managedStatus ?? .off,
+        return .init(enabled: enabled, isOff: managed?.assistantIsOff(connectedSessionCount: messaging.sessions.count) == true, status: managedController?.managedStatus ?? .off,
                      hasTerminal: enabled ? managedController?.managedTmuxSessionName != nil : own != nil,
                      canStartNew: managed?.canStart == true && managed?.switching != true)
     }
@@ -136,6 +136,8 @@ struct ConversationView: View {
                                      Task {
                                          await Self.sendFromComposer(model)
                                          focusComposer()
+                                         // An accepted send returns from history or a thread control to the new bubble.
+                                         if model.draft.isEmpty { latest(proxy) }
                                      }
                                  })
                     if let hub = messaging as? AgentMessagingHub { AgentLinkStatusView(hub: hub) }

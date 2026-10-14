@@ -25,21 +25,22 @@ import ZeusProtocol
         let name = "zeus-r3a-settings-\(UUID())"
         return (name, try #require(UserDefaults(suiteName: name)))
     }
-    @Test func managedOnboardingShowsOnceWithoutInventingAConversationMessageOrChangingTheMode() throws {
+    @Test func managedOnboardingPersistsModeBeforeTheDurableWelcomeMarker() throws {
         let (name, defaults) = try defaults(); defer { defaults.removePersistentDomain(forName: name) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
-        #expect(settings.consumeManagedOnboarding(hasHistory: false, isHidden: false))
-        #expect(settings.hasShownWelcome && settings.managedSession?.enabled == true)
-        #expect(!settings.consumeManagedOnboarding(hasHistory: false, isHidden: false))
+        #expect(settings.prepareManagedOnboarding(hasHistory: false, isHidden: false))
+        #expect(!settings.hasShownWelcome && settings.managedSession?.enabled == true)
+        settings.hasShownWelcome = true
+        #expect(!settings.prepareManagedOnboarding(hasHistory: false, isHidden: false))
         let restored = AppSettings(defaults: defaults, userDirectory: nil)
         #expect(restored.managedSession?.enabled == true && restored.managedSession?.folder.isEmpty == true)
-        #expect(!restored.consumeManagedOnboarding(hasHistory: false, isHidden: false))
+        #expect(!restored.prepareManagedOnboarding(hasHistory: false, isHidden: false))
     }
     @Test func firstRunDoesNotStealAnExistingHistoryOrOverrideExplicitHiding() throws {
         let (name, defaults) = try defaults(); defer { defaults.removePersistentDomain(forName: name) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
-        #expect(!settings.consumeManagedOnboarding(hasHistory: true, isHidden: false))
-        #expect(!settings.consumeManagedOnboarding(hasHistory: false, isHidden: true))
+        #expect(!settings.prepareManagedOnboarding(hasHistory: true, isHidden: false))
+        #expect(!settings.prepareManagedOnboarding(hasHistory: false, isHidden: true))
         #expect(!settings.hasShownWelcome)
     }
     @Test func availabilityPreservesSavedAgentAndPermissionWithoutAMigrationFlag() throws {
@@ -64,14 +65,14 @@ import ZeusProtocol
         #expect(settings.managedSettingsError != nil && settings.managedSession?.enabled == false)
         if dataValue { #expect(defaults.data(forKey: "agent.managedSession") == bad) }
         else { #expect(defaults.string(forKey: "agent.managedSession") == "broken") }
-        #expect(!settings.consumeManagedOnboarding(hasHistory: false, isHidden: false))
+        #expect(!settings.prepareManagedOnboarding(hasHistory: false, isHidden: false))
         model.chooseManaged(true); model.chooseAgent(.codex)
         #expect(settings.managedSettingsError == nil && settings.managedSession?.agent == .codex)
     }
     @Test func onboardingStillChoosesFirstInstalledAgentWhenItsPanelWasOpenedBeforeRuntimeStartup() throws {
         let (name, defaults) = try defaults(); defer { defaults.removePersistentDomain(forName: name) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
-        #expect(settings.consumeManagedOnboarding(hasHistory: false, isHidden: false))
+        #expect(settings.prepareManagedOnboarding(hasHistory: false, isHidden: false))
         let controller = R3aManagedController(); controller.installed = [.codex]
         let model = ManagedAssistantModel(settings: settings, controller: { controller })
         model.refreshAvailability()
