@@ -136,6 +136,8 @@ struct ConversationView: View {
                                      Task {
                                          await Self.sendFromComposer(model)
                                          focusComposer()
+                                         // An accepted send returns from history or a thread control to the new bubble.
+                                         if model.draft.isEmpty { latest(proxy) }
                                      }
                                  })
                     if let hub = messaging as? AgentMessagingHub { AgentLinkStatusView(hub: hub) }
