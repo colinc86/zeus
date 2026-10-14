@@ -58,7 +58,9 @@ extension ZeusRuntime {
             } else {
                 completed = record.deliveryID.map { ManagedTurnCompletion.deliveryID(in: snapshot, agent: lease.destination.agent) == $0 } ?? false
             }
-            noteScreenActivity(sessionKey: lease.destination.sessionKey, classification: ManagedPaneClassifier.classify(snapshot, agent: lease.destination.agent), completed: completed)
+            // The completed record's delivery ID is already tombstoned. Preserve
+            // the receipt epoch of any newer input concurrently in flight.
+            noteScreenActivity(sessionKey: lease.destination.sessionKey, classification: ManagedPaneClassifier.classify(snapshot, agent: lease.destination.agent), completed: completed, invalidateReceipts: false)
         } catch { /* Unknown/dead/replaced panes are not completion evidence. Stale fallback remains. */ }
         return !Task.isCancelled && ownScreenLease() == lease
     }

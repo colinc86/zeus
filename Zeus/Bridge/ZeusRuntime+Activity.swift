@@ -102,7 +102,7 @@ extension ZeusRuntime {
     }
 
     /// Common managed/selected-own evidence rules; never creates activity or changes an explicit TTL.
-    func noteScreenActivity(sessionKey key: String, classification: ManagedPaneClassifier.Classification, completed: Bool) {
+    func noteScreenActivity(sessionKey key: String, classification: ManagedPaneClassifier.Classification, completed: Bool, invalidateReceipts: Bool = true) {
         guard running, var record = activityRecords[key] else { return }
         switch classification {
         case .working:
@@ -115,7 +115,7 @@ extension ZeusRuntime {
             guard record.value.phase != .working,
                   activityWorkingSeen.contains(key) || completed
                     || clock.now.timeIntervalSince(record.value.since) >= Self.managedIdleEndsActivityAfter else { return }
-            endAssistantActivity(sessionKey: key)
+            endAssistantActivity(sessionKey: key, invalidateReceipts: invalidateReceipts)
         default: return
         }
     }

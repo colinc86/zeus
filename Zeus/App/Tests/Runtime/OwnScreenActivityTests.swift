@@ -113,6 +113,21 @@ private func ownRecorded(_ agent: AgentKind, _ name: String, group: String = "sa
         f.clock.advance(29); #expect(screen.captures.count == count && f.runtime.activityRecords[key]?.deadline == deadline)
         f.clock.advance(1); try await eventually { f.runtime.assistantActivity == nil }
     }
+    @Test func oldCompletionDoesNotSuppressNewerInFlightDeliveryReceipt() async throws {
+        let screen = OwnFakeScreen(), f = try RuntimeFixture(ownScreenReader: screen); defer { f.stop() }
+        let key = connect(f)
+        #expect(await f.runtime.sendUserMessage("First", deliveryID: "d_sa3_second") == .delivered)
+        try await eventually { screen.captures.count == 1 }
+        f.connector.hold = true
+        let next = Task { await f.runtime.sendUserMessage("New input", deliveryID: "d_sa4_new") }
+        try await eventually { f.connector.waits.count == 1 }
+        screen.frame = try ownRecorded(.claude, "second-complete")
+        f.clock.advance(3)
+        try await eventually { f.runtime.assistantActivity == nil }
+        f.connector.release()
+        #expect(await next.value == .delivered)
+        #expect(f.runtime.activityRecords[key]?.deliveryID == "d_sa4_new")
+    }
     @Test(arguments: ["new-response", "pane", "socket", "session", "disconnect", "stop", "say"])
     func suspendedCaptureCannotEndReplacementOrOutliveAuthorization(_ change: String) async throws {
         let screen = OwnFakeScreen(), f = try RuntimeFixture(ownScreenReader: screen); defer { screen.release(); f.stop() }
