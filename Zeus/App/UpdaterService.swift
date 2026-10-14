@@ -10,6 +10,15 @@ import Observation
     var menuTitle: String { get }
     var automaticallyChecksForUpdates: Bool { get set }
     func checkForUpdates()
+    var availableVersion: String? { get }
+    func checkForUpdateInformation() async throws -> UpdateCheckResult
+    func installUpdate(version: String) async throws
+}
+
+extension AppUpdating {
+    var availableVersion: String? { nil }
+    func checkForUpdateInformation() async throws -> UpdateCheckResult { throw AppControlError.updaterUnavailable(unavailableReason ?? "Updates are unavailable.") }
+    func installUpdate(version: String) async throws { throw AppControlError.updaterUnavailable(unavailableReason ?? "Updates are unavailable.") }
 }
 
 /// Adapter seam for Sparkle's controller, settings observation and quiet pending-update reminders.
@@ -20,12 +29,24 @@ import Observation
     var onPendingUpdate: ((Bool) -> Void)? { get set }
     func start() throws
     func checkForUpdates()
+    var onUpdateFound: ((UpdateCheckResult) -> Void)? { get set }
+    func checkForUpdateInformation() async throws -> UpdateCheckResult
+    func installUpdate(version: String) async throws
+}
+
+extension UpdateDriving {
+    var onUpdateFound: ((UpdateCheckResult) -> Void)? { get { nil } set {} }
+    func checkForUpdateInformation() async throws -> UpdateCheckResult { throw AppControlError.updaterUnavailable("Silent update checks are unavailable.") }
+    func installUpdate(version: String) async throws { throw AppControlError.updaterUnavailable("Assistant update installation is unavailable.") }
 }
 
 /// Standard Sparkle updates for public releases. Debug and test builds create no controller.
 @MainActor @Observable final class UpdaterService: AppUpdating {
     private(set) var canCheckForUpdates = false
     private(set) var hasPendingUpdate = false
+    private(set) var availableVersion: String?
+    @ObservationIgnored private var lastCheckedVersion: String?
+    @ObservationIgnored private var controlOperation = false
     private var automaticChecks = false
     private(set) var unavailableReason: String?
     var isAvailable: Bool { unavailableReason == nil }
@@ -82,6 +103,7 @@ import Observation
         self.driver = driver
         driver.onChange = { [weak self] in self?.refresh() }
         driver.onPendingUpdate = { [weak self] pending in self?.hasPendingUpdate = pending }
+        driver.onUpdateFound = { [weak self] result in self?.availableVersion = result.available ? result.version : nil }
         do {
             try driver.start()
             refresh()
@@ -102,7 +124,30 @@ import Observation
 
     private func refresh() {
         guard isAvailable, let driver else { return }
-        canCheckForUpdates = driver.canCheckForUpdates
+        canCheckForUpdates = driver.canCheckForUpdates && !controlOperation
         automaticChecks = driver.automaticallyChecksForUpdates
+    }
+
+    func checkForUpdateInformation() async throws -> UpdateCheckResult {
+        start()
+        guard isAvailable, let driver else { throw AppControlError.updaterUnavailable(unavailableReason ?? "Updates are unavailable.") }
+        guard !controlOperation, driver.canCheckForUpdates else { throw AppControlError.updaterUnavailable("An update check is already in progress.") }
+        controlOperation = true; lastCheckedVersion = nil; refresh()
+        defer { controlOperation = false; refresh() }
+        let result = try await driver.checkForUpdateInformation()
+        lastCheckedVersion = result.available ? result.version : nil
+        availableVersion = lastCheckedVersion
+        hasPendingUpdate = result.available
+        return result
+    }
+
+    func installUpdate(version: String) async throws {
+        start()
+        guard isAvailable, let driver else { throw AppControlError.updaterUnavailable(unavailableReason ?? "Updates are unavailable.") }
+        guard version == lastCheckedVersion else { throw AppControlError.noKnownUpdate }
+        guard !controlOperation, driver.canCheckForUpdates else { throw AppControlError.updaterUnavailable("An update operation is already in progress.") }
+        controlOperation = true; lastCheckedVersion = nil; refresh()
+        defer { controlOperation = false; refresh() }
+        try await driver.installUpdate(version: version)
     }
 }

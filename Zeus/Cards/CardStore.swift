@@ -16,6 +16,7 @@ final class CardStore: CardStoring {
     /// Quiet app-owned lines in the thread, such as "Sent your daily summary · View" (L1).
     private(set) var notices: [ThreadNotice] = [] { didSet { if notices != oldValue { threadRevision &+= 1 } } }
     @ObservationIgnored private var noticeActions: [String: (run: @MainActor () -> Void, doneTitle: String?)] = [:]
+    @ObservationIgnored private var pendingAppChanges: [(notice: ThreadNotice, action: @MainActor () -> Void)] = []
     // Definitive app-owned send outcomes survive a failed caption write in this process.
     // They are published only when the complete history transaction can be saved.
     @ObservationIgnored private var pendingOutgoingStates: [String: OutgoingMessageState] = [:]
@@ -149,7 +150,7 @@ final class CardStore: CardStoring {
         }
         outgoingStates = next
         pendingOutgoingStates.removeValue(forKey: cardID)
-        if pendingOutgoingStates.isEmpty { persistenceError = nil }
+        if pendingOutgoingStates.isEmpty && pendingAppChanges.isEmpty { persistenceError = nil }
         return true
     }
 
@@ -228,6 +229,9 @@ final class CardStore: CardStoring {
                             outgoingStates: outgoingStates.filter { ids.contains($0.key) }, outgoingDeliveryIDs: outgoingDeliveryIDs.filter { ids.contains($0.key) }, notices: [])
         guard save(snapshot: next) else { return false }
         cards = next.cards; seenIDs = next.seenIDs; revealedIDs = next.revealedIDs; outgoingStates = next.outgoingStates; outgoingDeliveryIDs = next.outgoingDeliveryIDs; notices = next.notices
+        pruneNoticeActions()
+        pendingAppChanges.removeAll()
+        if pendingOutgoingStates.isEmpty && pendingAppChanges.isEmpty { persistenceError = nil }
         onHistoryCleared?()
         return true
     }
@@ -367,6 +371,7 @@ final class CardStore: CardStoring {
     @discardableResult private func commit(_ next: Snapshot) -> Bool {
         guard save(snapshot: next) else { return false }
         cards = next.cards; seenIDs = next.seenIDs; revealedIDs = next.revealedIDs; outgoingStates = next.outgoingStates; outgoingDeliveryIDs = next.outgoingDeliveryIDs; notices = next.notices
+        pruneNoticeActions()
         return true
     }
 
@@ -377,7 +382,12 @@ final class CardStore: CardStoring {
             if next.outgoingStates[id]?.isTerminal != true { next.outgoingStates[id] = state }
         }
         _ = applyOutgoingDeliveries(outgoingMessaging?.userMessageDeliveries ?? [], to: &next)
+        next.notices = Array((next.notices + pendingAppChanges.map(\.notice)).suffix(ThreadNotice.keep))
         guard commit(next) else { return false }
+        for pending in pendingAppChanges where notices.contains(where: { $0.id == pending.notice.id }) {
+            noticeActions[pending.notice.id] = (pending.action, "Undone")
+        }
+        pendingAppChanges.removeAll()
         pendingOutgoingStates.removeAll()
         persistenceError = nil
         return true
@@ -421,9 +431,23 @@ final class CardStore: CardStoring {
             try data.write(to: fileURL, options: .atomic)
             // Another successful transaction can still contain an older send caption.
             // Keep the repair action available until the known outcome is committed.
-            if pendingOutgoingStates.isEmpty { persistenceError = nil }
+            if pendingOutgoingStates.isEmpty && pendingAppChanges.isEmpty { persistenceError = nil }
             return true
         } catch { persistenceError = "Zeus couldn't save your conversation history. \(error.localizedDescription)"; return false }
+    }
+}
+
+extension CardStore: AppChangeRecording {
+    func recordAppChange(_ change: AppChange) {
+        let notice = ThreadNotice(kind: .appChange, createdAt: clock(), summary: change.summary, actionTitle: change.undoTitle)
+        if !recordNotice(notice, action: change.undo, doneTitle: "Undone") {
+            // The app already changed. Retain its history/Undo for the existing Retry Saving History action.
+            pendingAppChanges.append((notice, change.undo))
+        }
+    }
+    private func pruneNoticeActions() {
+        let ids = Set(notices.map(\.id))
+        noticeActions = noticeActions.filter { ids.contains($0.key) }
     }
 }
 

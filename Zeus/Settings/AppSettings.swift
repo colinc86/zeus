@@ -146,6 +146,8 @@ final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSet
     var popupSoundEnabled: Bool { didSet { defaults.set(popupSoundEnabled, forKey: "general.popupSound") } }
     var popupSound: PopupSound { didSet { defaults.set(popupSound.rawValue, forKey: "general.popupSoundName") } }
     var hasShownWelcome: Bool { didSet { defaults.set(hasShownWelcome, forKey: "general.welcomeShown") } }
+    var assistantMayControlApp: Bool { didSet { defaults.set(assistantMayControlApp, forKey: "general.assistantControl") } }
+    var assistantMayInstallUpdates: Bool { didSet { defaults.set(assistantMayInstallUpdates, forKey: "general.assistantUpdates") } }
     var quietHoursEnabled: Bool { didSet { defaults.set(quietHoursEnabled, forKey: "quiet.enabled") } }
     var quietStartHour: Int { didSet { defaults.set(quietStartHour, forKey: "quiet.startHour") } }
     var quietEndHour: Int { didSet { defaults.set(quietEndHour, forKey: "quiet.endHour") } }
@@ -214,6 +216,8 @@ final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSet
         popupSoundEnabled = defaults.bool(forKey: "general.popupSound")
         popupSound = defaults.string(forKey: "general.popupSoundName").flatMap(PopupSound.init(rawValue:)) ?? .chime
         hasShownWelcome = defaults.bool(forKey: "general.welcomeShown")
+        assistantMayControlApp = defaults.object(forKey: "general.assistantControl") as? Bool ?? true
+        assistantMayInstallUpdates = defaults.object(forKey: "general.assistantUpdates") as? Bool ?? true
         quietHoursEnabled = defaults.bool(forKey: "quiet.enabled")
         quietStartHour = Self.hour(defaults, key: "quiet.startHour", fallback: 22)
         quietEndHour = Self.hour(defaults, key: "quiet.endHour", fallback: 7)

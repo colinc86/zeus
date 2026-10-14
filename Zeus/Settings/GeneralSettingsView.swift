@@ -18,6 +18,13 @@ struct GeneralSettingsView: View {
             UpdateSettingsView(updater: updater).id(GeneralSettingsSection.updates)
                 .accessibilityFocused($focusedSection, equals: .updates)
             SettingsDivider()
+            Toggle("Let my assistant control Zeus", isOn: $settings.assistantMayControlApp)
+                .accessibilityLabel("Let my assistant control Zeus")
+            Toggle("Let my assistant install updates", isOn: $settings.assistantMayInstallUpdates)
+                .accessibilityLabel("Let my assistant install updates")
+                .disabled(!settings.assistantMayControlApp)
+            Text(Self.assistantControlCaption).settingsCaption()
+            SettingsDivider()
             Toggle("Launch Zeus at login", isOn: Binding(get: { login.enabled }, set: { value in Task { await login.setEnabled(value) } }))
                 .accessibilityLabel("Launch Zeus at login")
                 .disabled(login.isUpdating)
@@ -85,6 +92,7 @@ struct GeneralSettingsView: View {
     }
 
     static let soundCaption = "Plays at your Mac's alert volume, set in System Settings → Sound. Zeus stays quiet while it's hidden, during quiet hours and while the conversation is open."
+    static let assistantControlCaption = "Your assistant can change how Zeus looks and where it sits. Every change shows in the conversation with Undo. It can never answer its own questions or change its own settings."
 
     static func historyCaption(count: Int) -> String {
         "\(count) \(count == 1 ? "message" : "messages") saved on this Mac. \(ConversationHistoryCopy.preservation)"

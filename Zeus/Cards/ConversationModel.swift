@@ -20,6 +20,7 @@ struct ConversationEntry: Identifiable, Equatable, Sendable {
         case userAnswer(cardID: String, response: CardResponse)
         /// A quiet app-owned line, e.g. "Sent your daily summary · View" (L1).
         case notice(ThreadNotice)
+        case appChange(ThreadNotice)
     }
     let id: String
     let timestamp: Date
@@ -27,9 +28,10 @@ struct ConversationEntry: Identifiable, Equatable, Sendable {
     var outcome: ConversationOutcome?
 
     var isUser: Bool {
-        switch content { case .agentCard, .notice: false; case .userMessage, .userAnswer: true }
+        switch content { case .agentCard, .notice, .appChange: false; case .userMessage, .userAnswer: true }
     }
-    var isNotice: Bool { if case .notice = content { return true }; return false }
+    var isNotice: Bool { switch content { case .notice, .appChange: true; default: false } }
+    var threadNotice: ThreadNotice? { switch content { case .notice(let notice), .appChange(let notice): notice; default: nil } }
     var isMuted: Bool {
         if case .agentCard(let card) = content { return card.status == .dismissed || card.status == .expired }
         return false
@@ -38,14 +40,14 @@ struct ConversationEntry: Identifiable, Equatable, Sendable {
         switch content {
         case .agentCard(let card), .userMessage(let card): card.id
         case .userAnswer(let id, _): id
-        case .notice(let notice): notice.id
+        case .notice(let notice), .appChange(let notice): notice.id
         }
     }
     var body: String {
         switch content {
         case .agentCard(let card), .userMessage(let card): card.body
         case .userAnswer(_, let response): response.summary
-        case .notice(let notice): notice.summary
+        case .notice(let notice), .appChange(let notice): notice.summary
         }
     }
 }
@@ -105,7 +107,8 @@ final class ConversationModel {
             }
         }
         for (index, notice) in cards.notices.enumerated() {
-            entries.append((ConversationEntry(id: "notice:\(notice.id)", timestamp: notice.createdAt, content: .notice(notice)),
+            entries.append((ConversationEntry(id: "notice:\(notice.id)", timestamp: notice.createdAt,
+                                             content: notice.kind == .appChange ? .appChange(notice) : .notice(notice)),
                             cards.cards.count + index, false))
         }
         cachedThread = entries.sorted {
