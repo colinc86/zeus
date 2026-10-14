@@ -7,6 +7,8 @@ struct GeneralSettingsView: View {
     let hotKey: GlobalHotKey
     var cards: CardStore? = nil
     var updater: any AppUpdating = UpdaterService()
+    /// Previews a pop-up sound when it's chosen or turned on.
+    var preview: (PopupSound) -> Void = { SystemPopupSoundPlayer.shared.play($0) }
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -43,6 +45,20 @@ struct GeneralSettingsView: View {
             if let error = hotKey.error { Text(error).settingsError() }
             Button("Reset Shortcut") { settings.talkHotKey = TalkHotKey() }.accessibilityLabel("Reset Shortcut")
             SettingsDivider()
+            Text("Sounds").settingsTitle()
+            Toggle("Play a sound when Zeus pops up", isOn: Binding(get: { settings.popupSoundEnabled }, set: { on in
+                settings.popupSoundEnabled = on
+                if on { preview(settings.popupSound) }
+            }))
+            .accessibilityLabel("Play a sound when Zeus pops up")
+            Picker("Sound", selection: Binding(get: { settings.popupSound }, set: { sound in
+                settings.popupSound = sound
+                preview(sound)
+            })) { ForEach(PopupSound.allCases) { Text($0.title).tag($0) } }
+            .accessibilityLabel("Pop-up sound")
+            .disabled(!settings.popupSoundEnabled)
+            Text(Self.soundCaption).settingsCaption()
+            SettingsDivider()
             Text("Message reveal").settingsTitle()
             Toggle("Typewriter reveal", isOn: $settings.typewriterEnabled)
                 .accessibilityLabel("Typewriter reveal")
@@ -63,6 +79,8 @@ struct GeneralSettingsView: View {
             .onAppear { login.refresh() }
             .onChange(of: scenePhase) { if scenePhase == .active { login.refresh() } }
     }
+
+    static let soundCaption = "Plays at your Mac's alert volume, set in System Settings → Sound. Zeus stays quiet while it's hidden, during quiet hours and while the conversation is open."
 
     static func historyCaption(count: Int) -> String {
         "\(count) \(count == 1 ? "message" : "messages") saved on this Mac. \(ConversationHistoryCopy.preservation)"

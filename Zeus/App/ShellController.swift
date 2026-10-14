@@ -62,9 +62,13 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     private var previousApplication: NSRunningApplication?
     private var renderedAnchorOffset = CGPoint.zero
     @ObservationIgnored private var tickTask: Task<Void, Never>?
+    @ObservationIgnored private var popupSoundGate = PopupSoundGate()
+    @ObservationIgnored private let popupSound: any PopupSoundPlaying
 
-    init(defaults: UserDefaults = .standard, cards: CardStore? = nil, settings: AppSettings? = nil) {
+    init(defaults: UserDefaults = .standard, cards: CardStore? = nil, settings: AppSettings? = nil,
+         popupSound: any PopupSoundPlaying = SystemPopupSoundPlayer.shared) {
         self.defaults = defaults
+        self.popupSound = popupSound
         visibility = AvatarVisibilityModel(defaults: defaults)
         let cards = cards ?? CardStore()
         let settings = settings ?? AppSettings(defaults: defaults)
@@ -593,7 +597,10 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     private func receivedCard(_ newCard: Card) {
         if messaging.previewEnabled { messaging.previewActivity = .none }
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        if peek.receive(newCard, suppression: peekSuppression, reduceMotion: reduceMotion, typewriter: settings.typewriterEnabled) {
+        let wasShowing = peek.isVisible
+        let suppression = peekSuppression
+        if peek.receive(newCard, suppression: suppression, reduceMotion: reduceMotion, typewriter: settings.typewriterEnabled) {
+            playPopupSound(appeared: !wasShowing, suppression: suppression)
             status.notePeek(newCard, reduceMotion: reduceMotion, typewriter: peek.types)
             peekExitTask?.cancel()
             positionPeek()
@@ -607,6 +614,12 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
                                      animate: settings.typewriterEnabled && !reduceMotion)
             if !peek.isVisible { status.noteNewCard(newCard) }
         }
+    }
+
+    /// Once per pop-up, rate-limited, and never while the peek itself would be suppressed (N2).
+    func playPopupSound(appeared: Bool, suppression: PeekModel.Suppression, now: Date = Date()) {
+        guard popupSoundGate.shouldPlay(enabled: settings.popupSoundEnabled, appeared: appeared, suppression: suppression, now: now) else { return }
+        popupSound.play(settings.popupSound)
     }
 
     private func expandPeek(_ action: PeekModel.OpenAction) {

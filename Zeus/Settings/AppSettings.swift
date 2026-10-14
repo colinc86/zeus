@@ -110,6 +110,9 @@ final class AppSettings: CharacterControlling, AgentRoutingSettings, OpenCodeSes
     }
     var typewriterEnabled: Bool { didSet { defaults.set(typewriterEnabled, forKey: "general.typewriter") } }
     var soundEnabled: Bool { didSet { defaults.set(soundEnabled, forKey: "general.sound") } }
+    /// Play a sound when the peek bubble pops up. Off by default: it's opt-in, like the typewriter blip.
+    var popupSoundEnabled: Bool { didSet { defaults.set(popupSoundEnabled, forKey: "general.popupSound") } }
+    var popupSound: PopupSound { didSet { defaults.set(popupSound.rawValue, forKey: "general.popupSoundName") } }
     var hasShownWelcome: Bool { didSet { defaults.set(hasShownWelcome, forKey: "general.welcomeShown") } }
     var quietHoursEnabled: Bool { didSet { defaults.set(quietHoursEnabled, forKey: "quiet.enabled") } }
     var quietStartHour: Int { didSet { defaults.set(quietStartHour, forKey: "quiet.startHour") } }
@@ -167,6 +170,8 @@ final class AppSettings: CharacterControlling, AgentRoutingSettings, OpenCodeSes
         } else { talkHotKey = TalkHotKey() }
         typewriterEnabled = defaults.object(forKey: "general.typewriter") == nil ? true : defaults.bool(forKey: "general.typewriter")
         soundEnabled = defaults.bool(forKey: "general.sound")
+        popupSoundEnabled = defaults.bool(forKey: "general.popupSound")
+        popupSound = defaults.string(forKey: "general.popupSoundName").flatMap(PopupSound.init(rawValue:)) ?? .chime
         hasShownWelcome = defaults.bool(forKey: "general.welcomeShown")
         quietHoursEnabled = defaults.bool(forKey: "quiet.enabled")
         quietStartHour = Self.hour(defaults, key: "quiet.startHour", fallback: 22)
