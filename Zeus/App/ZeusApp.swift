@@ -40,6 +40,10 @@ struct ZeusApp: App {
                 .keyboardShortcut(delegate.shell.settings.talkHotKey.menuShortcut)
             Button("Settings…") { delegate.shell.showSettings() }
                 .keyboardShortcut(",")
+            Button(delegate.shell.updater.menuTitle) { delegate.shell.updater.checkForUpdates() }
+                .disabled(!delegate.shell.updater.canCheckForUpdates)
+                .help(delegate.shell.updater.unavailableReason ?? "Check for a new version of Zeus")
+            if let reason = delegate.shell.updater.unavailableReason { Text(reason) }
             Button("About Zeus") { delegate.shell.showSettings(tab: .about) }
             Divider()
             Button("Quit Zeus") { NSApplication.shared.terminate(nil) }
@@ -72,6 +76,7 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
               NSClassFromString("XCTestCase") == nil else { return }
         NSApplication.shared.setActivationPolicy(.accessory)
         ZeusFonts.registerBundled()
+        shell.updater.start()
         shell.start()
         #if DEBUG || ZEUS_PERFORMANCE_PROBE
         PerformanceProbe.start(shell: shell)

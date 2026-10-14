@@ -25,6 +25,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     let visibility: AvatarVisibilityModel
     let hotKey = GlobalHotKey()
     let login = LoginItemModel()
+    let updater = UpdaterService()
     let settingsNavigation = SettingsNavigation()
     let peek: PeekModel
     let peekPanelState = PeekPanelState()
@@ -716,7 +717,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
                                                                       messaging: messaging, preview: messaging, testMessage: testMessage,
                                                                       injectDemo: { [weak self] in self?.injectDemo($0) },
                                                                       resetPosition: { [weak self] in self?.resetPosition() },
-                                                                      navigation: settingsNavigation, login: login, hotKey: hotKey, activity: surfaceActivity))
+                                                                      navigation: settingsNavigation, login: login, hotKey: hotKey, activity: surfaceActivity, updater: updater))
             window.center()
             settingsWindow = window
         }

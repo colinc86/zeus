@@ -6,10 +6,13 @@ struct GeneralSettingsView: View {
     let login: LoginItemModel
     let hotKey: GlobalHotKey
     var cards: CardStore? = nil
+    var updater: any AppUpdating = UpdaterService()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            UpdateSettingsView(updater: updater)
+            SettingsDivider()
             Text("Appearance").settingsTitle()
             SettingsSegments(label: "Conversation font", options: ZeusFontChoice.allCases.map { ($0, $0.displayName) }, selection: $settings.fontChoice)
             SettingsDivider()

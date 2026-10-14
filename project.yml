@@ -6,6 +6,9 @@ options:
 packages:
   ZeusKit:
     path: Packages/ZeusKit
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.10.0
 settings:
   base:
     SWIFT_VERSION: '6.0'
@@ -24,7 +27,7 @@ targets:
     platform: macOS
     sources:
       - path: Zeus
-        excludes: ['App/Tests']
+        excludes: ['App/Tests', 'App/UpdateInfo.plist']
       - path: AgentHome/AGENTS.md
         buildPhase: resources
       - path: AgentHome/CLAUDE.md
@@ -34,6 +37,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.colinc86.Zeus
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: Zeus/App/UpdateInfo.plist
         INFOPLIST_KEY_LSUIElement: YES
         INFOPLIST_KEY_CFBundleDisplayName: Zeus
         ENABLE_APP_SANDBOX: NO
@@ -55,6 +59,9 @@ targets:
         product: ZeusSprites
       - package: ZeusKit
         product: ZeusDesign
+      - package: Sparkle
+        product: Sparkle
+        codeSign: true
     postBuildScripts:
       - name: Build and embed zeus-mcp
         basedOnDependencyAnalysis: false
@@ -78,6 +85,22 @@ targets:
           else
             /usr/bin/codesign --force --sign - "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/zeus-mcp"
           fi
+      - name: Sign Sparkle release helpers
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - $(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework
+        script: |
+          set -euo pipefail
+          if [ "$CONFIGURATION" != "Release" ] || [ "${CODE_SIGNING_ALLOWED:-YES}" = "NO" ]; then exit 0; fi
+          ZEUS_SPARKLE_FRAMEWORK="$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/Sparkle.framework"
+          ZEUS_SPARKLE_VERSION="$ZEUS_SPARKLE_FRAMEWORK/Versions/Current"
+          # Xcode's Code Sign on Copy seals the framework, but our build (not archive/export)
+          # release pipeline must also sign its nested code, from the inside out.
+          /usr/bin/codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --options runtime --timestamp "$ZEUS_SPARKLE_VERSION/XPCServices/Installer.xpc"
+          /usr/bin/codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --options runtime --timestamp --preserve-metadata=entitlements "$ZEUS_SPARKLE_VERSION/XPCServices/Downloader.xpc"
+          /usr/bin/codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --options runtime --timestamp "$ZEUS_SPARKLE_VERSION/Autoupdate"
+          /usr/bin/codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --options runtime --timestamp "$ZEUS_SPARKLE_VERSION/Updater.app"
+          /usr/bin/codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --options runtime --timestamp "$ZEUS_SPARKLE_FRAMEWORK"
   ZeusTests:
     type: bundle.unit-test
     platform: macOS

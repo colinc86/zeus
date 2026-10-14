@@ -157,3 +157,11 @@ When you answer a question or type a message, Zeus saves it before sending anyth
 | Zeus looks asleep all day | Settings → Assistant → **Quiet hours**. Equal start and end times mean *all day*. |
 | My own character doesn't show up | Run `zeus-sprites validate` on your folder (§3). Files with errors are skipped. |
 | The assistant posts too often or too rarely | Edit "When to reach out" in your assistant folder's `AGENTS.md`. It's yours to tune. |
+
+## Updates
+
+Release builds check for updates once a day. Choose **Check for Updates…** in the
+Zeus menu to check now. A scheduled update appears quietly as **Update Available…**;
+select it to see the release notes and install. Settings → General has
+**Automatically check for updates**, with the current version and build below it.
+Debug builds never check for updates.
