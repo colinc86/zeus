@@ -950,7 +950,31 @@ extension DesignerAuditRenders {
             try await Readme.still("peek-\(look.name)", appearance: look.appearance, ReadmePeek())
             try await conversation(look)
             try await settings(look)
+            try await themes(look)
         }
+    }
+
+    /// "Make me a cat character" → the Undo line → the assistant's reply, in two themes side by side (R4).
+    private func themes(_ look: (name: String, appearance: NSAppearance.Name)) async throws {
+        var fixtures: [Fixture] = []
+        defer { fixtures.forEach { $0.cleanup() } }
+        let base = Date(timeIntervalSince1970: 1_791_137_100)
+        func at(_ minutes: Double) -> Date { base.addingTimeInterval(minutes * 60) }
+        for theme in ["olympus", "phosphor"] {
+            let f = Fixture(font: .pixel)
+            fixtures.append(f)
+            f.settings.setTheme(id: theme)
+            f.messaging.sessions = [Readme.session]
+            f.store.add(Card(id: "u_1", kind: .userMessage, body: "Make me a cat character.", createdAt: at(0), updatedAt: at(0)))
+            f.store.recordNotice(ThreadNotice(kind: .appChange, createdAt: at(1), summary: "Added Pixel Cat", actionTitle: "Undo"),
+                                 action: {}, doneTitle: "Undone")
+            f.store.add(Card(id: "c_1", kind: .message, body: "Here's **Pixel Cat**. Want a different coat color?",
+                             sessionKey: Readme.session.sessionKey, createdAt: at(1.1), updatedAt: at(1.1)))
+        }
+        let pair = HStack(alignment: .top, spacing: 24) {
+            ForEach(Array(fixtures.enumerated()), id: \.offset) { _, f in f.conversation().padding(2) }
+        }
+        try await Readme.still("themes-\(look.name)", appearance: look.appearance, settle: 0.8, pair)
     }
 
     /// Ask → one-click answer → finished work with Open and Reveal → the next job in progress.
