@@ -71,7 +71,7 @@ Twelve cute characters to choose from, or build your own (see [the sprite format
 - Your replies go back into the assistant's terminal session through tmux. Each one is acknowledged, so a message is never lost or delivered twice.
 - Everything stays on your Mac. Zeus never calls model APIs, never edits your agent's settings and never accepts prompts on your behalf.
 
-The full design is in [PRODUCT_PLAN.md](PRODUCT_PLAN.md) and [docs/CONTRACT.md](docs/CONTRACT.md).
+The interfaces are documented in [docs/CONTRACT.md](docs/CONTRACT.md).
 
 ## Install
 

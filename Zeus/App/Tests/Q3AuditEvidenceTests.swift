@@ -244,9 +244,9 @@ import ZeusProtocol
     @Test func pm7FileAttachmentWithSpacesPreservesTheActualLocalPath() throws {
         var worktree = URL(fileURLWithPath: #filePath)
         for _ in 0..<4 { worktree.deleteLastPathComponent() }
-        let path = worktree.appendingPathComponent("AgentHome/AGENTS.md").path
+        let path = worktree.appendingPathComponent("Zeus/Resources/AssistantTemplate/AGENTS.md").path
         #expect(path.contains(" "))
-        let url = try #require(AttachmentTarget.url(for: Attachment(kind: .file, label: "Agent home", target: path)))
+        let url = try #require(AttachmentTarget.url(for: Attachment(kind: .file, label: "Assistant template", target: path)))
         #expect(url.isFileURL && url.path == path && url.absoluteString.contains("%20"))
         #expect(FileManager.default.isReadableFile(atPath: url.path))
         // Launch Services/Finder activation is intentionally not performed in this audit.

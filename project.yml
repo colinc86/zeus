@@ -28,10 +28,6 @@ targets:
     sources:
       - path: Zeus
         excludes: ['App/Tests', 'App/UpdateInfo.plist']
-      - path: AgentHome/AGENTS.md
-        buildPhase: resources
-      - path: AgentHome/CLAUDE.md
-        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.colinc86.Zeus

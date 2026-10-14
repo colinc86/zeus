@@ -6,7 +6,6 @@ Zeus is a macOS menu-bar app: an animated pixel character that is the face of yo
 
 ## Read first
 - `README.md`: what Zeus is and how to build it.
-- `PRODUCT_PLAN.md`: goals, non-goals and the decisions log.
 - `docs/CONTRACT.md`: the interfaces between the app, the bridge, the runtime and the design system. Keep it in sync with the code; a change to an interface is a change to this file in the same commit.
 - `docs/design/*.md`: the specs for each surface (conversation, cards, managed session, rendering).
 - `docs/SETUP.md` and `docs/RELEASE.md`: user setup and the release pipeline.
@@ -17,7 +16,7 @@ Zeus is a macOS menu-bar app: an animated pixel character that is the face of yo
 | `Zeus/` | The macOS app target (SwiftUI + AppKit). `Zeus/App/Tests` is the app test target. |
 | `Zeus/Bridge`, `Zeus/Agents` | The MCP bridge server and the agent runtime (delivery into tmux panes, managed sessions). |
 | `Packages/ZeusKit` | Local Swift package: `ZeusProtocol`, `ZeusMCPCore`, `ZeusLink`, `ZeusSprites`, `ZeusDesign`, the `zeus-mcp` bridge and the `zeus-sprites` CLI. |
-| `AgentHome/` | The template instructions Zeus gives a new assistant folder. |
+| `Zeus/Resources/AssistantTemplate/` | The `AGENTS.md`/`CLAUDE.md` Zeus copies into a new assistant folder ("Create one for me"). |
 | `TestFixtures/` | Recorded terminal screens and frames the runtime tests parse. |
 | `scripts/` | `build.sh`, `test.sh`, `e2e.sh`, `release.sh`, the DMG builder and performance tools. |
 

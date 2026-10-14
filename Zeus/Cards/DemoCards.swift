@@ -32,7 +32,7 @@ enum DemoCardKind: String, CaseIterable, Identifiable {
             return Card(kind: .content, title: "Your work products", body: "Here are some example attachments:\n\n**Open** a file or link, or **Reveal** a local item in Finder.",
                         options: [CardOption(id: "good", label: "Looks good", style: .primary),
                                   CardOption(id: "revise", label: "Revise")],
-                        attachments: [Attachment(kind: .file, label: "Product plan", target: sourceRoot.appendingPathComponent("PRODUCT_PLAN.md").path),
+                        attachments: [Attachment(kind: .file, label: "README", target: sourceRoot.appendingPathComponent("README.md").path),
                                       Attachment(kind: .folder, label: "Project folder", target: sourceRoot.path),
                                       Attachment(kind: .url, label: "Apple Developer", target: "https://developer.apple.com")],
                         createdAt: now, updatedAt: now)

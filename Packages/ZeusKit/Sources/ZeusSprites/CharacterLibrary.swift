@@ -6,7 +6,7 @@ public struct CharacterLibrary: Sendable {
     /// The id of the default character.
     public static let defaultCharacterID = "zeus"
 
-    /// The bundled roster in display order (PRODUCT_PLAN §5.4).
+    /// The bundled roster in display order.
     public static let bundledOrder = ["zeus", "ghost", "pumpkin", "robot", "hero", "wizard",
                                       "cat", "skeleton", "slime", "bat", "owl", "mushroom"]
 
