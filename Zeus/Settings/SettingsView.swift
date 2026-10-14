@@ -150,6 +150,7 @@ struct SettingsView: View {
 /// Keeps the Settings navigation controls named independently of the selected pane.
 struct SettingsTabBar: View {
     @Bindable var navigation: SettingsNavigation
+    @State private var frames = SettingsTabFrames()
     var body: some View {
         // Whole labels when they fit (L1 made six tabs; equal widths cut "Appearance" at the minimum window width),
         // otherwise equal widths.
@@ -167,9 +168,74 @@ struct SettingsTabBar: View {
                     else { Text(tab.rawValue).lineLimit(1).fixedSize().frame(maxWidth: .infinity) }
                 }
                 .buttonStyle(ZeusButtonStyle(navigation.tab == tab ? .primary : .secondary, size: .small))
-                .accessibilityLabel(tab.rawValue)
-                .accessibilityAddTraits(navigation.tab == tab ? [.isSelected] : [])
+                // A12b: SwiftUI publishes a button's name only as its AX description; System Events and other processes read
+                // the AX title. An AppKit button as the accessibility representation carries both, and its selected value.
+                .background(SettingsTabFrameReader(tab: tab, frames: frames))
+                .accessibilityRepresentation {
+                    SettingsTabAccessibility(tab: tab, isSelected: navigation.tab == tab, frames: frames) { navigation.tab = tab }
+                }
             }
         }
+    }
+}
+
+/// Where each Settings tab is on screen, for its accessibility stand-in (A12b).
+@MainActor final class SettingsTabFrames {
+    var views: [SettingsTab: NSView] = [:]
+    func screenFrame(_ tab: SettingsTab) -> NSRect? {
+        guard let view = views[tab], let window = view.window else { return nil }
+        return window.convertToScreen(view.convert(view.bounds, to: nil))
+    }
+}
+
+/// A zero-cost view behind each tab that registers itself, so the stand-in can report the tab's real frame.
+private struct SettingsTabFrameReader: NSViewRepresentable {
+    let tab: SettingsTab
+    let frames: SettingsTabFrames
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        view.setAccessibilityElement(false)
+        frames.views[tab] = view
+        return view
+    }
+    func updateNSView(_ view: NSView, context: Context) { frames.views[tab] = view }
+}
+
+/// The accessibility stand-in for one Settings tab (A12b). SwiftUI publishes a button's name only as its AX description;
+/// System Events and other processes read the AX title (`name`). A native button cell carries the title, the
+/// description, AX selected for the current tab, the tab's real on-screen frame, and press.
+private struct SettingsTabAccessibility: NSViewRepresentable {
+    let tab: SettingsTab
+    let isSelected: Bool
+    let frames: SettingsTabFrames
+    let action: () -> Void
+
+    final class Cell: NSButtonCell {
+        var frameProvider: (() -> NSRect?)?
+        var selected = false
+        var press: (() -> Void)?
+        var name = ""
+        override func accessibilityTitle() -> String? { name }
+        override func accessibilityLabel() -> String? { name }
+        override func accessibilityFrame() -> NSRect { frameProvider?() ?? super.accessibilityFrame() }
+        override func isAccessibilitySelected() -> Bool { selected }
+        override func accessibilityPerformPress() -> Bool { press?(); return press != nil }
+    }
+
+    func makeNSView(context: Context) -> NSButton {
+        let button = NSButton(frame: .zero)
+        button.cell = Cell(textCell: tab.rawValue)
+        button.setButtonType(.momentaryPushIn)
+        return button
+    }
+    func updateNSView(_ button: NSButton, context: Context) {
+        button.title = tab.rawValue
+        button.setAccessibilityLabel(tab.rawValue)
+        guard let cell = button.cell as? Cell else { return }
+        cell.name = tab.rawValue
+        let frames = frames, tab = tab
+        cell.frameProvider = { MainActor.assumeIsolated { frames.screenFrame(tab) } }
+        cell.selected = isSelected
+        cell.press = action
     }
 }
