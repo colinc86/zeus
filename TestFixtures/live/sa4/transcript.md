@@ -6,12 +6,12 @@ Recorded 2026-10-14. Real Claude Code 2.1.300, Codex 0.162.1 and OpenCode 1.18.3
 
 | Agent | Turn | Prompt returned → no row | Final model response → no row |
 |---|---|---|---|
-| claude 2.1.300 (Claude Code) | fast | 2.875 s | 2.941 s |
-| claude 2.1.300 (Claude Code) | second | 3.009 s | 3.056 s |
-| codex codex-cli 0.162.1 | fast | 2.961 s | 3.101 s |
-| codex codex-cli 0.162.1 | second | 3.003 s | 3.105 s |
-| opencode 1.18.31 | fast | 2.467 s | 2.739 s |
-| opencode 1.18.31 | second | 2.545 s | 2.651 s |
+| claude 2.1.300 (Claude Code) | fast | 2.848 s | 2.911 s |
+| claude 2.1.300 (Claude Code) | second | 3.072 s | 3.108 s |
+| codex codex-cli 0.162.1 | fast | 2.925 s | 3.057 s |
+| codex codex-cli 0.162.1 | second | 2.977 s | 3.086 s |
+| opencode 1.18.31 | fast | 2.839 s | 2.959 s |
+| opencode 1.18.31 | second | 2.901 s | 3.037 s |
 
 All six turns pass the ≤5-second gate. Each user-style launch omits Zeus completion hooks: no Claude `--settings`, no Codex `notify`, no OpenCode plugin. The recorded argv asserts that absence. Claude injects only its scratch MCP definition and tested tool allowances. Codex saves MCP config only in its disposable CODEX_HOME and passes verified namespace env_vars with --no-daemon. OpenCode uses its scratch inline provider/MCP config, starts a native conversation manually, and has external plugins disabled. No development-channel flag or default tmux server is used.
 
@@ -42,7 +42,7 @@ scripts/test.sh
 scripts/check-public.sh
 ```
 
-The live host is opt-in and excluded from the normal app test executable by SA4_PROBE_HOST. It copies production sources to build/ without modifying their behavior; Settings dependencies compile unchanged. A fake password store guarantees no Keychain lookup. The pending full-gate result is recorded in the hand-back.
+The live host is opt-in and excluded from the normal app test executable by SA4_PROBE_HOST. It copies production sources to build/ without modifying their behavior; Settings dependencies compile unchanged. A fake password store guarantees no Keychain lookup. Final gates passed: scripts/build.sh with no new warnings; scripts/test.sh with 241 package tests and 775 app tests (161 suites); the focused own/managed activity set with 23 tests; all six private real-CLI turns; scripts/check-public.sh. The final native matrix above is the post-receipt-race-fix rerun. No fixture-owned helpers remained running.
 
 ## Proposed CONTRACT §10.8 addition (PM-owned)
 
