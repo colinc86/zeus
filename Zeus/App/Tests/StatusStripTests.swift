@@ -125,7 +125,8 @@ import ZeusProtocol
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-tb1-reply-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }
         let store = CardStore(fileURL: root.appendingPathComponent("cards.json")), model = ConversationModel(cards: store, messaging: StripMessages())
-        let a = card("oldest", options: [.init(id: "yes", label: "Yes")]), b = card("newer", at: 2, input: InputSpec())
+        let a = card("oldest", options: [.init(id: "yes", label: "Yes")])
+        let b = card("newer", at: 2, options: [.init(id: "no", label: "No")])
         store.add(a); store.add(b); model.beginPlainMessage(); model.rearmReplyTarget(cardID: a.id)
         #expect(model.replyTarget?.id == a.id)
         store.add(card("new arrival", at: 3, input: InputSpec()))

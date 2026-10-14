@@ -146,6 +146,8 @@ import ZeusDesign
         messaging.assistantActivity = nil
         #expect(status.state == .waiting)
         cards.setConversationOpen(true)
+        #expect(status.state == .waiting) // Reading doesn't close an open question (TB1).
+        #expect(cards.skip(id: question.id))
         #expect(status.state == .sleeping)
     }
 
