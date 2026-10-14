@@ -55,7 +55,17 @@ In **Settings → Assistant**, choose **Zeus runs it**. Zeus starts the agent in
 
 Your assistant can also change the costume when you ask it to.
 
-**Your own characters:** drop a character JSON file into `~/Library/Application Support/Zeus/Characters/`. A file with the same `id` replaces a built-in one. The format is in [design/SPRITE_FORMAT.md](design/SPRITE_FORMAT.md). Check your file with:
+### Make your own character
+
+A character is one JSON file: a palette, a few layers of pixel rows, and an animation for each state. No code.
+
+1. In **Settings → Character**, press **Open Example**. Zeus writes `Example Character.json` into your Characters folder and opens it. Every part has a `"_help"` note explaining it.
+2. Save a copy in the same folder under a new name and change its `"id"` to your own (letters, digits, `-` and `_`). Zeus skips any file whose id starts with `_`, which is why the example itself never shows up.
+3. Edit and save. Zeus reloads the folder as soon as a file changes, so your character redraws on the desktop while you work. If a file has a mistake, Settings → Character says what and where, for example *Layer "body": row 5 is 15 pixels wide; every row must be 16.*
+
+Got a character file from someone else? Press **Import Character…** and choose it. Zeus checks it first, copies it into the Characters folder and switches to it. A character with the same `id` as a built-in one replaces it, and Zeus asks before it does. **Open Characters Folder** shows the folder (`~/Library/Application Support/Zeus/Characters/`) in Finder; delete a file there to remove that character.
+
+The full format is in [design/SPRITE_FORMAT.md](design/SPRITE_FORMAT.md). Building from source? Check a folder of files with:
 
 ```sh
 swift run --package-path Packages/ZeusKit zeus-sprites validate ~/Library/Application\ Support/Zeus/Characters

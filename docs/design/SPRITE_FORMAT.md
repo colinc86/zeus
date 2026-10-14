@@ -1,6 +1,8 @@
 # Zeus Sprite Format (v1)
 
-Characters are JSON files: one character per file, no code. Bundled characters live in `Packages/ZeusKit/Sources/ZeusSprites/Characters/`. Users can drop their own into `~/Library/Application Support/Zeus/Characters/`, and a user file with the same `id` replaces the bundled one.
+Characters are JSON files: one character per file, no code. Bundled characters live in `Packages/ZeusKit/Sources/ZeusSprites/Characters/`. Users can drop their own into `~/Library/Application Support/Zeus/Characters/` (or use Settings → Character → **Import Character…**), and a user file with the same `id` replaces the bundled one. The app reloads that folder whenever a file in it changes.
+
+Ids starting with `_` are reserved: the loader skips those files without reporting them. `Example Character.json` (Settings → Character → **Open Example**, `CharacterExample` in ZeusSprites) uses `"_example"`, and its notes are `"_help"` / `"_help_<section>"` strings, which the decoder ignores.
 
 Check your work with:
 

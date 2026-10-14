@@ -46,8 +46,13 @@ final class AppSettings: CharacterControlling, AgentRoutingSettings, OpenCodeSes
     }
     private var openCodeSelections: OpenCodeSelections
     private(set) var sessionLabels: SessionLabelRegistry
-    let availableCharacters: [SpriteCharacter]
-    let characterIssues: [String]
+    /// Bundled characters plus the user's, reloaded when the Characters folder changes (C1).
+    private(set) var availableCharacters: [SpriteCharacter]
+    /// Problems in character files, including ones that didn't load. Settings shows them in plain words.
+    private(set) var characterProblems: [SpriteIssue]
+    /// The user's Characters folder; nil keeps tests away from the real one.
+    @ObservationIgnored let userCharacterDirectory: URL?
+    @ObservationIgnored private var characterWatcher: CharacterFolderWatcher?
     private var selectedCharacterID: String
     var avatarSize: AvatarSize { didSet { defaults.set(avatarSize.rawValue, forKey: "avatar.size") } }
     var assistantSessionKey: String? {
@@ -148,12 +153,11 @@ final class AppSettings: CharacterControlling, AgentRoutingSettings, OpenCodeSes
             openCodeSelections = .init(unverifiedIDs: legacy)
         }
         sessionLabels = defaults.data(forKey: "agent.sessionLabels").flatMap { try? JSONDecoder().decode(SessionLabelRegistry.self, from: $0) } ?? SessionLabelRegistry()
+        userCharacterDirectory = userDirectory
         let library = CharacterLibrary.load(userDirectory: userDirectory)
         availableCharacters = library.characters
-        characterIssues = library.issues
-        let saved = defaults.string(forKey: "character.id")
-        selectedCharacterID = library.characters.first { $0.id == saved }?.id
-            ?? library.character(id: "zeus")?.id ?? library.characters.first?.id ?? "zeus"
+        characterProblems = library.problems
+        selectedCharacterID = Self.characterID(saved: defaults.string(forKey: "character.id"), in: library)
         avatarSize = AvatarSize(rawValue: defaults.string(forKey: "avatar.size") ?? "") ?? .medium
         assistantSessionKey = defaults.string(forKey: "agent.assistantSessionKey")
         let backend = AssistantBackend(rawValue: defaults.string(forKey: "agent.backend") ?? "") ?? .claude
@@ -197,6 +201,37 @@ final class AppSettings: CharacterControlling, AgentRoutingSettings, OpenCodeSes
         }
     }
     var currentCharacter: SpriteCharacter? { availableCharacters.first { $0.id == currentCharacterID } }
+
+    /// The saved choice if it loaded, else Zeus. The saved choice itself is kept, so a character that disappears for
+    /// a moment (an editor saving by replacing the file) comes back when it reappears.
+    private static func characterID(saved: String?, in library: CharacterLibrary) -> String {
+        library.characters.first { $0.id == saved }?.id
+            ?? library.character(id: CharacterLibrary.defaultCharacterID)?.id ?? library.characters.first?.id ?? CharacterLibrary.defaultCharacterID
+    }
+
+    /// Reloads bundled and user characters. Unchanged characters keep their identity, so the current one keeps
+    /// playing; an edited current one re-renders in place; a removed one falls back to Zeus.
+    func reloadCharacters() {
+        let library = CharacterLibrary.load(userDirectory: userCharacterDirectory)
+        func key(_ list: [SpriteCharacter]) -> [String] { list.map { "\($0.id)#\($0.fingerprint)" } }
+        if key(library.characters) != key(availableCharacters) { availableCharacters = library.characters }
+        if library.problems != characterProblems { characterProblems = library.problems }
+        let id = Self.characterID(saved: defaults.string(forKey: "character.id"), in: library)
+        if id != selectedCharacterID { selectedCharacterID = id }
+    }
+
+    /// Starts reloading characters whenever a file in the Characters folder changes (creating the folder if needed).
+    func startWatchingCharacters() {
+        guard characterWatcher == nil, let directory = userCharacterDirectory else { return }
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        characterWatcher = CharacterFolderWatcher(directory: directory) { [weak self] in self?.reloadCharacters() }
+        reloadCharacters()
+    }
+
+    func stopWatchingCharacters() {
+        characterWatcher?.stop()
+        characterWatcher = nil
+    }
     var pixelScale: Int { scale(for: currentCharacterID) }
     func scale(for id: String) -> Int { avatarSize.scale(preferred: availableCharacters.first { $0.id == id }?.preferredScale ?? 4) }
 

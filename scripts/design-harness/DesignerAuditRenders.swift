@@ -445,6 +445,29 @@ private let t0 = Date(timeIntervalSince1970: 1_791_100_000) // a fixed afternoon
         }
     }
 
+    /// C1: Settings › Character at full height with the import buttons and one broken file listed in plain words.
+    @Test func settingsCharacterImport() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-c1-render-\(UUID())", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try Data("{\n  \"id\": \"blob\"\n  \"name\": \"Blob\"\n}".utf8).write(to: folder.appendingPathComponent("Blob.json"))
+        for look in Snap.Look.basic {
+            let suite = "zeus-c1-render-\(UUID())"
+            let defaults = UserDefaults(suiteName: suite) ?? .standard
+            defer { defaults.removePersistentDomain(forName: suite) }
+            let settings = AppSettings(defaults: defaults, userDirectory: folder)
+            let view = CharacterSettingsView(settings: settings, resetPosition: {})
+                .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
+                .toggleStyle(ZeusCheckboxStyle())
+                .settingsBody()
+                .frame(width: 524, alignment: .leading).padding(24)
+                .environment(\.zeusFontChoice, .system)
+                .environment(\.zeusAnimationsActive, false)
+                .background(Color(nsColor: .windowBackgroundColor))
+            try await Snap.render("settings-character-import", look: look, padding: 0, settle: 0.6) { view }
+        }
+    }
+
     @Test func menusAndAccessibility() async throws {
         let f = Fixture(font: .pixel); defer { f.cleanup() }
         let shell = ShellController(defaults: f.defaults, cards: f.store, settings: f.settings)

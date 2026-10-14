@@ -63,7 +63,7 @@ Already run your assistant yourself? Choose **Connect your own** and Zeus joins 
   </picture>
 </p>
 
-Twelve cute characters to choose from, or build your own (see [the sprite format](docs/design/SPRITE_FORMAT.md)).
+Twelve cute characters to choose from, or build your own (see [Make your own character](docs/SETUP.md#make-your-own-character) and [the sprite format](docs/design/SPRITE_FORMAT.md)).
 
 ## How it works
 
