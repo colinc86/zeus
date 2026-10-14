@@ -23,11 +23,13 @@ enum TmuxExecutable {
     }
 }
 
-/// Shared single-paragraph envelope for text-injection transports (CONTRACT §5.4).
+/// Shared envelope for text-injection transports. Multiline text keeps its line breaks.
 enum AgentInjectionText {
     static func format(_ delivery: Delivery) -> String {
         let card = delivery.cardID.map { " card_id=" + $0 } ?? ""
-        let content = delivery.content.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        let normalized = MessageText.preservingLines(delivery.content)
+        let multiline = delivery.content.utf8.contains(10)
+        let content = multiline ? normalized : delivery.content.split(whereSeparator: \.isWhitespace).joined(separator: " ")
         return "[zeus delivery_id=\(delivery.id)\(card)] \(content) (call zeus_ack with this delivery_id)"
     }
 }
@@ -40,16 +42,21 @@ struct TmuxInputSnapshot: Equatable {
     let y: Int
     let width: Int
     let cursorVisible: Bool
+    /// Newer tmux reports the mode. Older releases return no field; only the
+    /// known, live composers verified by our real-CLI fixtures may use that fallback.
+    let bracketedPaste: Bool?
     private let mutedBody: [Bool]
     init?(metadata: Data, screen: Data) {
         let fields = String(decoding: metadata, as: UTF8.self).trimmingCharacters(in: .newlines).split(separator: "|", omittingEmptySubsequences: false)
-        guard fields.count == 5, let x = Int(fields[0]), let y = Int(fields[1]), let width = Int(fields[2]),
+        guard (5...6).contains(fields.count), let x = Int(fields[0]), let y = Int(fields[1]), let width = Int(fields[2]),
               fields[3] == "0", ["0", "1"].contains(fields[4]), x >= 0, y >= 0, width > 0 else { return nil }
+        if fields.count == 6, !["", "0", "1"].contains(fields[5]) { return nil }
         let rawLines = String(decoding: screen, as: UTF8.self).components(separatedBy: "\n")
         let decoded = rawLines.map(Self.decodeLine)
         lines = decoded.map { $0.0 }; mutedBody = decoded.map { $0.1 }
         guard lines.indices.contains(y) else { return nil }
         self.x = x; self.y = y; self.width = width; cursorVisible = fields[4] == "1"
+        bracketedPaste = fields.count == 6 && !fields[5].isEmpty ? fields[5] == "1" : nil
         // Claude draws its own inverse-video caret and hides the hardware cursor.
         // Only its positively bounded composer may use that logical cursor.
         guard cursorVisible || claudeInputStart != nil else { return nil }
@@ -73,6 +80,18 @@ struct TmuxInputSnapshot: Equatable {
     /// The blank separator and model footer distinguish live input from history.
     private var codexInputRows: Range<Int>? {
         guard let start = lines[..<(y + 1)].lastIndex(where: { $0.hasPrefix("› ") }) else { return nil }
+        // The model footer bounds blank lines inside the live composer, including
+        // when the user moves the caret above a blank line. Prefer the last footer
+        // so a quoted prompt/footer in the body cannot redefine this boundary.
+        if let footer = lines.indices.reversed().first(where: {
+            $0 >= max(0, lines.count - 4) && $0 > start + 1
+                && lines[$0].hasPrefix("  ") && !lines[$0].hasPrefix("   ") && lines[$0].contains(" · ")
+                && lines[$0 - 1].trimmingCharacters(in: .whitespaces).isEmpty
+        }), footer > start + 1, lines[footer - 1].trimmingCharacters(in: .whitespaces).isEmpty,
+           (start..<(footer - 1)).contains(y),
+           ((start + 1)..<(footer - 1)).allSatisfy({ lines[$0].hasPrefix("  ") || lines[$0].isEmpty }) {
+            return start..<(footer - 1)
+        }
         var end = start + 1
         while lines.indices.contains(end), !lines[end].trimmingCharacters(in: .whitespaces).isEmpty {
             guard lines[end].hasPrefix("  ") else { return nil }
@@ -247,7 +266,36 @@ struct TmuxInputSnapshot: Equatable {
     }
     /// Refuse a paste before mutation when it can scroll its beginning out of
     /// the visible capture. Verification must compare the complete envelope.
+    var acceptsMultilinePaste: Bool {
+        bracketedPaste != false && (claudeInputRows != nil || codexInputRows != nil || openCodeComposer)
+    }
     func canVerifyPaste(_ text: String) -> Bool {
+        if text.contains("\n") {
+            guard acceptsMultilinePaste else { return false }
+            let available: Int, columns: Int
+            if let rows = claudeInputRows { available = rows.lowerBound - 2; columns = width - 4 }
+            else if let rows = codexInputRows { available = rows.lowerBound - 2; columns = width - 4 }
+            else if openCodeComposer {
+                // OpenCode 1.18's default textarea is capped at a third of the
+                // pane (at least six rows), even when there is space above it.
+                // A custom smaller cap is still caught by exact post-paste verification.
+                available = min(y - 2, max(6, (lines.count - 1) / 3)); columns = width - 8
+            }
+            else { return false }
+            // Word wrapping can leave unused cells. Count every explicit (including blank) line.
+            let count = text.components(separatedBy: "\n").reduce(0) { total, line in
+                var rows = 1, used = 0
+                for word in line.split(separator: " ", omittingEmptySubsequences: false) {
+                    let cells = Self.cellWidth(String(word))
+                    if used > 0 && used + 1 + cells > max(1, columns) { rows += 1; used = 0 }
+                    if used > 0 { used += 1 }
+                    used += cells
+                    if used > 0 { rows += (used - 1) / max(1, columns); used = (used - 1) % max(1, columns) + 1 }
+                }
+                return total + rows
+            }
+            return count <= available
+        }
         if openCodeComposer {
             let available = max(0, y - 2), columns = max(1, width - 8)
             var rows = 1, used = 0
@@ -280,17 +328,21 @@ struct TmuxInputSnapshot: Equatable {
         let columns = max(1, columns)
         for row in start...end {
             let prefix = row == start ? firstPrefix : "  "
-            guard lines[row].hasPrefix(prefix) else { return false }
+            guard lines[row].hasPrefix(prefix) || (row != start && lines[row].isEmpty && remaining.first == "\n") else { return false }
             var body = String(lines[row].dropFirst(2))
             if row == end, y == end, !cursorVisible, body.hasSuffix(" "), Self.cellWidth(lines[row]) == x + 1 { body.removeLast() }
-            guard !body.isEmpty, remaining.hasPrefix(body) else { return false }
+            guard remaining.hasPrefix(body), !body.isEmpty || remaining.first == "\n" else { return false }
             remaining = remaining.dropFirst(body.count)
             if row != end {
+                // capture-pane omits spaces at the right of a logical line.
+                // Consume them only at an explicit LF; never skip body text.
+                let endSpaces = remaining.prefix { $0 == " " }.count
+                if remaining.dropFirst(endSpaces).first == "\n" { remaining = remaining.dropFirst(endSpaces + 1); continue }
                 let gap = columns - Self.cellWidth(body)
                 guard gap >= 0 else { return false }
                 if remaining.first == " " {
                     remaining = remaining.dropFirst()
-                    let nextWord = String(remaining.prefix { $0 != " " })
+                    let nextWord = String(remaining.prefix { $0 != " " && $0 != "\n" })
                     guard 1 + Self.cellWidth(nextWord) > gap else { return false }
                 } else {
                     // A long word can wrap at a cell boundary instead.
@@ -303,7 +355,12 @@ struct TmuxInputSnapshot: Equatable {
     /// Verify only the text we pasted is present, including wrapped lines. Extra
     /// human input prevents Enter. Claude submits the complete bounded paragraph
     /// regardless of its caret position; Codex's known composer is also bounded.
-    func containsOnlyPaste(_ text: String, after before: TmuxInputSnapshot) -> Bool {
+    func containsOnlyPaste(_ text: String, after before: TmuxInputSnapshot, freshOwnedAgent: AgentKind? = nil) -> Bool {
+        // An opaque label isn't proof of bytes or delivery identity. It may be
+        // accepted only during the fresh, journaled empty->owned-paste operation.
+        // Recovery never enables this path: a human could have replaced the hidden payload.
+        if let agent = freshOwnedAgent, before.isEmpty, before.bracketedPaste != false, bracketedPaste != false,
+           containsFreshPasteLabel(text, agent: agent, before: before) { return true }
         if before.openCodeComposer, let start = openCodeBoxStart {
             // OpenCode word-wraps its box upward while the cursor stays near the bottom.
             // Compare every visible input row to the exact paragraph, consuming only
@@ -314,9 +371,13 @@ struct TmuxInputSnapshot: Equatable {
             for row in (start + 1)...y {
                 guard lines[row].hasPrefix("  ┃  ") else { return false }
                 let body = String(lines[row].dropFirst(5)).replacingOccurrences(of: " +$", with: "", options: .regularExpression)
-                guard !body.isEmpty, remaining.hasPrefix(body) else { return false }
+                guard remaining.hasPrefix(body), !body.isEmpty || remaining.first == "\n" else { return false }
                 remaining = remaining.dropFirst(body.count)
-                if row < y { remaining = remaining.drop(while: { $0 == " " }) }
+                if row < y {
+                    let endSpaces = remaining.prefix { $0 == " " }.count
+                    if remaining.dropFirst(endSpaces).first == "\n" { remaining = remaining.dropFirst(endSpaces + 1) }
+                    else { remaining = remaining.drop(while: { $0 == " " }) }
+                }
                 else if x != 5 + Self.cellWidth(body) { return false }
             }
             return remaining.isEmpty
@@ -345,6 +406,33 @@ struct TmuxInputSnapshot: Equatable {
             return lines
         }
         return remaining == lines[y] && suffix(self) == suffix(before)
+    }
+
+    private func containsFreshPasteLabel(_ text: String, agent: AgentKind, before: TmuxInputSnapshot) -> Bool {
+        guard text.contains("\n") else { return false }
+        switch agent {
+        case .claude:
+            guard before.claudeInputRows != nil, let rows = claudeInputRows, rows.count == 1 else { return false }
+            var body = String(lines[rows.lowerBound].dropFirst(2))
+            if !cursorVisible, body.hasSuffix(" "), Self.cellWidth(lines[y]) == x + 1 { body.removeLast() }
+            let prefix = "[Pasted text #", suffix = " +\(text.filter { $0 == "\n" }.count) lines]"
+            guard body.hasPrefix(prefix), body.hasSuffix(suffix) else { return false }
+            let number = body.dropFirst(prefix.count).dropLast(suffix.count)
+            return !number.isEmpty && number.unicodeScalars.allSatisfy { (48...57).contains($0.value) }
+        case .codex:
+            guard before.codexInputRows != nil, let rows = codexInputRows, rows.count == 1 else { return false }
+            // Codex counts Unicode scalars (Rust chars), not UTF-8 bytes or graphemes.
+            let label = "[Pasted Content \(text.unicodeScalars.count) chars]"
+            return String(lines[rows.lowerBound].dropFirst(2)) == label && x == 2 + Self.cellWidth(label)
+        case .opencode:
+            guard before.openCodeComposer, let start = openCodeBoxStart, start + 1 == y,
+                  lines[start].dropFirst(3).trimmingCharacters(in: .whitespaces).isEmpty,
+                  Array(lines.dropFirst(y + 1)) == Array(before.lines.dropFirst(before.y + 1)) else { return false }
+            let label = "[Pasted ~\(text.components(separatedBy: "\n").count) lines]"
+            return lines[y].hasPrefix("  ┃  ") && lines[y].dropFirst(5).trimmingCharacters(in: .whitespaces) == label
+                && x == 5 + Self.cellWidth(label) + 1 // OpenCode inserts a space after the virtual paste token.
+        case .other: return false
+        }
     }
 }
 
@@ -438,13 +526,14 @@ struct TmuxConnector: DeliveryConnector {
             try Task.checkCancellation()
             try validateTarget() // Settings may change while subprocess I/O is suspended.
             try await (routing as? DeliveryRoutingContext)?.managedValidateDestination?()
-            let metadata = try await runner.run(executable: executable, arguments: namespace + ["display-message", "-p", "-t", target, "#{cursor_x}|#{cursor_y}|#{pane_width}|#{pane_dead}|#{cursor_flag}"], input: nil)
+            let metadata = try await runner.run(executable: executable, arguments: namespace + ["display-message", "-p", "-t", target, "#{cursor_x}|#{cursor_y}|#{pane_width}|#{pane_dead}|#{cursor_flag}|#{bracket_paste_flag}"], input: nil)
             let screen = try await runner.run(executable: executable, arguments: namespace + ["capture-pane", "-p", "-e", "-t", target], input: nil)
             try Task.checkCancellation()
             guard metadata.status == 0, screen.status == 0 else { throw ConnectorError.processExit(metadata.status != 0 ? metadata.status : screen.status) }
             if let context = routing as? DeliveryRoutingContext, let allowed = context.managedInputAllowed {
                 guard allowed() else { throw ConnectorError.inputBusy }
-                let classification = ManagedPaneClassifier.classify(.init(screen: String(decoding: screen.stdout, as: UTF8.self), inputMetadata: String(decoding: metadata.stdout, as: UTF8.self)), agent: session.agent)
+                let classificationMetadata = String(decoding: metadata.stdout, as: UTF8.self).trimmingCharacters(in: .newlines).components(separatedBy: "|").prefix(5).joined(separator: "|")
+                let classification = ManagedPaneClassifier.classify(.init(screen: String(decoding: screen.stdout, as: UTF8.self), inputMetadata: classificationMetadata), agent: session.agent)
                 if case .blocked = classification { throw ConnectorError.inputBusy }
                 if classification == .working { throw ConnectorError.inputBusy }
                 // After our own paste, the nonempty composer is expected; draft guards still apply.
@@ -481,21 +570,23 @@ struct TmuxConnector: DeliveryConnector {
             if pending != nil, !initial.isEmpty { throw ConnectorError.inputBusy }
             guard initial.isEmpty else { throw ConnectorError.inputBusy }
             if pending != nil || recovering { try submitted() }
+            if text.contains("\n"), !initial.acceptsMultilinePaste { throw ConnectorError.inputBusy }
             guard initial.canVerifyPaste(text) else { throw ConnectorError.inputTooLong }
             try await command(["load-buffer", "-b", buffer, "-"], input: Data(text.utf8))
             loaded = true
             let before = try await snapshot()
             guard before.isEmpty else { throw ConnectorError.inputBusy }
+            if text.contains("\n"), !before.acceptsMultilinePaste { throw ConnectorError.inputBusy }
             guard before.canVerifyPaste(text) else { throw ConnectorError.inputTooLong }
             // Save ownership before any mutation. A lost completion or cancelled
             // verifier must never turn our own paragraph into a human draft.
             try context?.confirmTmuxPaste?(destination)
             context?.didMutateTmuxInput = true
             pastes.values[destination] = .init(deliveryID: delivery.id, before: before)
-            try await command(["paste-buffer", "-p", "-d", "-b", buffer, "-t", target])
+            try await command(["paste-buffer", "-p"] + (text.contains("\n") ? ["-r"] : []) + ["-d", "-b", buffer, "-t", target])
             loaded = false
             let deadline = ContinuousClock.now + .milliseconds(500)
-            while !(try await snapshot().containsOnlyPaste(text, after: before)) {
+            while !(try await snapshot().containsOnlyPaste(text, after: before, freshOwnedAgent: session.agent)) {
                 guard ContinuousClock.now < deadline else { throw ConnectorError.inputChanged }
                 try await Task.sleep(for: .milliseconds(20))
             }

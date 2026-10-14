@@ -1,0 +1,40 @@
+
+  [38;5;75m>_ [1m[39mOpenAI Codex[0;2m (v0.162.1)[0m
+     [2m/FIXTURE/project[0m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1m›[0m [zeus delivery_id=d_1234abc0] Message from the user: first line
+  second line
+  third line (call zeus_ack with this delivery_id)
+
+  [38;5;223mn1 default[39m · [38;5;151m/FIXTURE/project[39m
+

@@ -212,7 +212,7 @@ final class ConversationModel {
 
     /// Captures routing before an async send. A newly arriving question cannot consume an older send.
     @discardableResult func send(_ text: String) async -> ConversationSendResult? {
-        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = MessageText.submitted(text)
         guard !isSending, !text.isEmpty else { return nil }
         isSending = true
         result = nil
@@ -270,7 +270,7 @@ final class ConversationModel {
     }
 
     private func clearMatchingDraft(_ submitted: String) {
-        if draft.trimmingCharacters(in: .whitespacesAndNewlines) == submitted { draft = "" }
+        if MessageText.submitted(draft) == submitted { draft = "" }
     }
     private static func cardEntryID(_ id: String) -> String { "card:\(id)" }
     private static func answerEntryID(_ id: String) -> String { "answer:\(id)" }
