@@ -274,7 +274,7 @@ opening. It never fades while the panel or a peek is showing, or while hidden. F
 Reduce Motion removes the fade animation. `AvatarGhostState` is the pure reducer; the shell owns the timer.
 
 **Panel width** (§10). The conversation panel is resizable by dragging its edge: minimum `ZeusTheme.Conversation.panelWidth` (today's
-width), maximum half the screen, persisted in Settings and clamped on screen change. `ZeusBubble(maxWidth:)` follows it.
+width), maximum half the screen, persisted in Settings and clamped on screen change. `ZeusBubble(maxWidth:)` follows it. Keyboard (A12): ⌘⌥← / ⌘⌥→ change the width by 20 pt from anywhere in the panel, ← / → do the same with the handle focused, and **Reset width** is in the panel and handle context menus and the handle's accessibility actions. All paths use the same clamp and persistence.
 
 ---
 
