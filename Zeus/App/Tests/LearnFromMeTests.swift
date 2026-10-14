@@ -294,6 +294,39 @@ private var fixtures: URL {
         #expect(again.isExcluded(bundleID: "COM.APPLE.NOTES", name: nil) && again.isExcluded(bundleID: nil, name: "notes"))
     }
 
+    /// PERF2: the idle poll runs every 30 s or less often, stops while the Mac is locked or asleep, and resumes after.
+    @Test func idlePollSuspendsWhileLockedOrAsleep() throws {
+        let f = try LearnFixture(now: at("2026-10-13T09:00:00Z")); defer { f.cleanup() }
+        #expect(LearnFromMe.tickInterval >= .seconds(30))
+        f.learn.settings.introShown = true
+        f.learn.setEnabled(true)
+        #expect(f.learn.isRecording && f.learn.isTicking)
+        f.source.send(.locked)
+        #expect(!f.learn.isTicking)
+        f.source.send(.unlocked)
+        #expect(f.learn.isTicking)
+        f.source.send(.sleep)
+        #expect(!f.learn.isTicking)
+        f.source.send(.wake)
+        #expect(f.learn.isTicking)
+        f.source.send(.locked)
+        f.learn.setEnabled(false)
+        #expect(!f.learn.isRecording && !f.learn.isTicking, "stopping while locked never restarts the poll")
+    }
+
+    /// PERF2: today's list is kept in memory per event, in the same order the store reads back.
+    @Test func todayStaysInStoreOrderWithoutRereading() throws {
+        let f = try LearnFixture(now: at("2026-10-13T11:00:00Z")); defer { f.cleanup() }
+        f.learn.settings.introShown = true
+        f.learn.setEnabled(true)
+        f.source.send(.activated(bundleID: "com.apple.dt.Xcode", name: "Xcode"))
+        f.learn.record(ActivityEvent(t: at("2026-10-13T10:40:00Z"), kind: .idle))
+        f.clock.now = at("2026-10-13T11:05:00Z")
+        f.source.send(.activated(bundleID: "com.apple.Safari", name: "Safari"))
+        #expect(f.learn.today == f.store.events(on: f.clock.now))
+        #expect(f.learn.today.map(\.t) == f.learn.today.map(\.t).sorted())
+    }
+
     @Test func shellTestsWithoutAFolderNeverRecord() {
         let learn = LearnFromMe(settings: LearnSettings(defaults: UserDefaults(suiteName: "zeus-l1-none-\(UUID())") ?? .standard), root: nil)
         learn.setEnabled(true)

@@ -20,6 +20,10 @@ final class LearnFromMe {
     @ObservationIgnored private var ticker: Task<Void, Never>?
     @ObservationIgnored private var lastTickDay: String?
     @ObservationIgnored private var startCache: [String: Date?] = [:]
+    /// How often the idle poll runs while recording; it's suspended while the Mac is locked or asleep (PERF2).
+    static let tickInterval: Duration = .seconds(30)
+    /// Whether the idle poll is scheduled: recording, and the Mac is neither locked nor asleep.
+    var isTicking: Bool { ticker != nil }
     /// Set by the app: "Delete everything" also removes the summaries' thread lines.
     @ObservationIgnored var onDeleteEverything: (() -> Void)?
 
@@ -45,8 +49,7 @@ final class LearnFromMe {
         refreshToday()
     }
     func stop() {
-        ticker?.cancel()
-        ticker = nil
+        stopTicker()
         recorder?.stop()
         recorder = nil
     }
@@ -81,7 +84,7 @@ final class LearnFromMe {
         recorder?.tick(now: now)
         if let files {
             let day = files.dayKey(now)
-            if let lastTickDay, lastTickDay != day { prune() }
+            if let lastTickDay, lastTickDay != day { prune(); refreshToday() }
             lastTickDay = day
         }
         if let idleSince = recorder?.idleSince, let moment = LearningSummarizer.windingDown(idleSince: idleSince, now: now, calendar: calendar) {
@@ -97,7 +100,10 @@ final class LearnFromMe {
             writeError = "Zeus couldn't save today's activity. \(error.localizedDescription)"
             return
         }
-        if calendar.isDate(event.t, inSameDayAs: clock()) { refreshToday() }
+        // Keep today's list in memory, in the store's time order, instead of re-reading the day's file per event (PERF2).
+        if calendar.isDate(event.t, inSameDayAs: clock()) {
+            today.insert(event, at: today.lastIndex { $0.t <= event.t }.map { $0 + 1 } ?? 0)
+        }
         guard event.showsPresence else { return }
         sendDigestIfDue(now: event.t)
         let median = LearningSummarizer.medianStart(previousStarts(before: event.t), calendar: calendar)
@@ -152,13 +158,27 @@ final class LearnFromMe {
                                         isPaused: { [weak settings] in settings?.isPaused(at: $0) ?? true },
                                         clock: clock) { [weak self] in self?.record($0) }
         self.recorder = recorder
+        recorder.onSuspendedChange = { [weak self] suspended in
+            // Stopping the recorder also clears its lock state; only a running recorder resumes the poll.
+            guard let self, isRecording else { return }
+            if suspended { stopTicker() } else { tick(); startTicker() }
+        }
         recorder.start()
+        startTicker()
+    }
+
+    private func startTicker() {
+        guard ticker == nil else { return }
         ticker = Task { @MainActor [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(30))
+                do { try await Task.sleep(for: Self.tickInterval) } catch { return }
                 self?.tick()
             }
         }
+    }
+    private func stopTicker() {
+        ticker?.cancel()
+        ticker = nil
     }
 }
 
