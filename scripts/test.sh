@@ -7,6 +7,9 @@ ROOT="$PWD"
 echo "==> Release/appcast tests (offline fixtures)"
 python3 -B scripts/test_release.py
 
+echo "==> Live-gate tests (offline fixtures)"
+python3 -B scripts/test_live_gate.py
+
 echo "==> ZeusKit tests"
 swift test --package-path Packages/ZeusKit --scratch-path "$ROOT/build/ZeusKit"
 

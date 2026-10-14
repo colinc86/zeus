@@ -6,6 +6,7 @@ LV1: add --scenario lv1 (or lv1-learnings / lv1-skipped) for live summary/Skip c
 Writes under build/ and its own /tmp scratch; --record-fixtures also writes scrubbed
 LV1 evidence in TestFixtures/live/. Never reads the user's agent configs/credentials.
 """
+from LiveSupport import Model, HostControl, eventually, output_dir, create_root, isolated_environment, start_model, finish_host_build, host_package, scrub_paths, cleanup_root, stop_host
 import argparse
 import http.server
 import json
@@ -22,13 +23,13 @@ import time
 import uuid
 
 REPO = pathlib.Path(__file__).resolve().parents[4]
-OUT = REPO / "build/ac1-live"
+OUT = output_dir("ac1-live")
 OUT.mkdir(parents=True, exist_ok=True)
 LV1_ROOTS = []
 
 
 def build_host():
-    package = OUT / "host"
+    package = host_package(OUT, "ac1")
     source = package / "Sources/Host"
     source.mkdir(parents=True, exist_ok=True)
     inputs = [REPO / p for p in ["TestFixtures/E2EHost/RuntimeHost.swift", "Zeus/Shared/AppSeams.swift", "Zeus/Cards/CardStore.swift", "Zeus/Cards/AttachmentTarget.swift"]]
@@ -41,66 +42,22 @@ def build_host():
     dependency = json.dumps(str(REPO / "Packages/ZeusKit"))
     products = ",".join(f'.product(name: "{name}", package: "ZeusKit")' for name in ["ZeusProtocol", "ZeusLink", "ZeusSprites", "ZeusDesign"])
     (package / "Package.swift").write_text(f'// swift-tools-version: 6.2\nimport PackageDescription\nlet package = Package(name: "AC1Host", platforms: [.macOS(.v26)], dependencies: [.package(path: {dependency})], targets: [.executableTarget(name: "Host", dependencies: [{products}])])\n')
-    with (OUT / "host-build.log").open("w") as log:
-        subprocess.run(["xcrun", "swift", "build", "--package-path", str(package), "--product", "Host"], stdout=log, stderr=subprocess.STDOUT, check=True, timeout=180)
-    binary_dir = subprocess.check_output(["xcrun", "swift", "build", "--package-path", str(package), "--show-bin-path"], text=True, timeout=30).strip()
-    return pathlib.Path(binary_dir) / "Host"
+    return finish_host_build(OUT, package)
 
 
-class Model(http.server.BaseHTTPRequestHandler):
-    stage = 0
-    results = []
-    lock = threading.Lock()
-    action = None
-    requests = []
-    completion_text = None
-
-    def log_message(self, *_):
-        pass
-
-    def do_GET(self):
-        self.send_response(200); self.end_headers(); self.wfile.write(b'{"data":[]}')
-
-    def do_POST(self):
-        body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
-        if self.path.split("?")[0].endswith("count_tokens"):
-            self.send_response(200); self.end_headers(); self.wfile.write(b'{"input_tokens":1}'); return
-        names = [tool["name"] for tool in body.get("tools", [])]
-        with Model.lock:
-            stage = Model.stage
-            Model.requests.append(body)
-            background = Model.action is not None and not names
-            target, arguments = (None, {}) if background else Model.action(body) if Model.action else ("zeus_app_state" if stage == 0 else "zeus_move" if stage == 1 else None, {"position": "near-active-window"} if stage == 1 else {})
-            name = next((n for n in names if n == target or n.endswith("__" + target)), None) if target else None
-            if target and not name:
-                raise RuntimeError(f"Expected {target} in real Claude model tools: {names}")
-            if not background:
-                Model.stage += 1
-                Model.results = [block for message in body.get("messages", []) if isinstance(message.get("content"), list)
-                    for block in message["content"] if block.get("type") == "tool_result"]
-        self.send_response(200); self.send_header("Content-Type", "text/event-stream"); self.end_headers()
-        def event(value):
-            self.wfile.write(("event: " + value["type"] + "\ndata: " + json.dumps(value) + "\n\n").encode()); self.wfile.flush()
-        event({"type": "message_start", "message": {"id": "msg_" + uuid.uuid4().hex, "type": "message", "role": "assistant", "model": body.get("model"), "content": [], "stop_reason": None, "stop_sequence": None, "usage": {"input_tokens": 1, "output_tokens": 1}}})
-        content = {"type": "tool_use", "id": "tool_" + uuid.uuid4().hex, "name": name, "input": {}} if name else {"type": "text", "text": ""}
-        event({"type": "content_block_start", "index": 0, "content_block": content})
-        delta = {"type": "input_json_delta", "partial_json": json.dumps(arguments)} if name else {"type": "text_delta", "text": Model.completion_text if Model.completion_text is not None else "AC1_PROVED" if Model.action is None else "LV1_PROVED"}
-        event({"type": "content_block_delta", "index": 0, "delta": delta}); event({"type": "content_block_stop", "index": 0})
-        event({"type": "message_delta", "delta": {"stop_reason": "tool_use" if name else "end_turn", "stop_sequence": None}, "usage": {"output_tokens": 1}}); event({"type": "message_stop"})
 
 
 def ac1_main():
     executable = build_host()
     tmux, claude = shutil.which("tmux"), shutil.which("claude")
     assert tmux and claude, "tmux and Claude must be installed"
-    root = pathlib.Path(tempfile.mkdtemp(prefix="zac1_", dir="/tmp"))
+    root = create_root("zac1_")
     home, project = root / "home", root / "project"
     profile = home / ".claude"
     profile.mkdir(parents=True); project.mkdir()
     socket = str(root / "tmux.sock")
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Model)
-    thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
-    env = {"HOME": str(home), "PATH": "/opt/homebrew/bin:/usr/bin:/bin", "LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8", "TERM": "xterm-256color", "ZEUS_AC1_HOST": "1"}
+    server, thread = start_model(Model)
+    env = isolated_environment(home, {"ZEUS_AC1_HOST": "1"})
     host = None
     try:
         host = subprocess.Popen([str(executable), str(root)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=(OUT / "host.log").open("w"), env=env, text=True)
@@ -128,49 +85,16 @@ def ac1_main():
         summary = {"claude": version, "pane": "120x40", "private_socket": True, "disposable_home": True, "localhost_model": True, "app_state_received": True, "moves": 1, "tool_results": Model.results}
         (OUT / "proof.json").write_text(json.dumps(summary, indent=2)); print(json.dumps(summary), flush=True)
     finally:
-        subprocess.run([tmux, "-S", socket, "kill-server"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+        cleanup_root(root, remove=False)
         if host:
-            host.stdin.close()
-            try: host.wait(timeout=5)
-            except subprocess.TimeoutExpired: host.kill(); host.wait()
+            stop_host(host)
         server.shutdown(); server.server_close(); thread.join(timeout=2)
-        shutil.rmtree(root, ignore_errors=True)
+        cleanup_root(root)
 
 
 
-class HostControl:
-    """Serial test-only stdin commands; a response is required, never inferred from sleep."""
-    def __init__(self, process):
-        self.process = process
-        self.lock = threading.Lock()
-        self.selector = selectors.DefaultSelector()
-        self.selector.register(process.stdout, selectors.EVENT_READ)
-
-    def read(self):
-        if not self.selector.select(timeout=15):
-            raise TimeoutError("LV1 host response stalled")
-        line = self.process.stdout.readline()
-        if not line:
-            raise RuntimeError("LV1 host exited")
-        value = json.loads(line)
-        assert value.get("ok", value.get("ready", False)), value
-        return value
-
-    def call(self, command, **fields):
-        with self.lock:
-            self.process.stdin.write(json.dumps(dict(command=command, **fields)) + "\n")
-            self.process.stdin.flush()
-            return self.read()
 
 
-def eventually(check, description, timeout=30):
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        value = check()
-        if value:
-            return value
-        time.sleep(.05)
-    raise TimeoutError(description)
 
 
 def frames(path, direction=None):
@@ -232,7 +156,7 @@ finally:
 def lv1_case(executable, case):
     out = OUT / case
     out.mkdir(parents=True, exist_ok=True)
-    root = pathlib.Path(tempfile.mkdtemp(prefix="zlv1_", dir="/tmp")).resolve()
+    root = create_root("zlv1_")
     LV1_ROOTS.append(root)
     (out / "proof.json").unlink(missing_ok=True)
     home, project = root / "home", root / "project"
@@ -243,7 +167,7 @@ def lv1_case(executable, case):
     tmux_socket = str(root / "tmux.sock")
     trace = root / "mcp-trace.jsonl"
     relay = root / "relay.py"; relay.write_text(MCP_RELAY)
-    env = {"HOME": str(home), "PATH": "/opt/homebrew/bin:/usr/bin:/bin", "LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8", "TERM": "xterm-256color", "ZEUS_LV1_HOST": "1"}
+    env = isolated_environment(home, {"ZEUS_LV1_HOST": "1"})
     host = None
     server = None
     pending_release = threading.Event()
@@ -290,8 +214,7 @@ def lv1_case(executable, case):
             return None, {}
 
         Model.action = action
-        server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Model)
-        thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+        server, thread = start_model(Model)
         env.update({"CLAUDE_CONFIG_DIR": str(profile), "ANTHROPIC_API_KEY": "lv1-local-fixture", "ANTHROPIC_BASE_URL": f"http://127.0.0.1:{server.server_port}", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1", "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1", "DISABLE_AUTOUPDATER": "1", "ENABLE_TOOL_SEARCH": "false"})
         onboarding = {"hasCompletedOnboarding": True, "theme": "dark", "hasAcknowledgedCostThreshold": True, "projects": {str(project): {"hasTrustDialogAccepted": True}}}
         (home / ".claude.json").write_text(json.dumps(onboarding)); (profile / ".claude.json").write_text(json.dumps(onboarding))
@@ -397,17 +320,15 @@ def lv1_case(executable, case):
             (out / "final-pane.txt").write_text(capture.stdout)
         if trace.exists(): (out / "mcp-trace.jsonl").write_text(trace.read_text())
         (out / "model-requests.json").write_text(json.dumps(Model.requests, indent=2))
-        subprocess.run([tmux, "-S", tmux_socket, "kill-server"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+        cleanup_root(root, remove=False)
         if (root / "agent.pid").exists():
             eventually(lambda: (root / "exit").exists(), "Probe agent failed to exit after private tmux shutdown", timeout=6)
         if host:
-            host.stdin.close()
-            try: host.wait(timeout=5)
-            except subprocess.TimeoutExpired: host.kill(); host.wait()
+            stop_host(host)
         if server:
             server.shutdown(); server.server_close()
         Model.action = None
-        shutil.rmtree(root, ignore_errors=True)
+        cleanup_root(root)
         assert not root.exists(), "Probe scratch cleanup failed"
 
 
@@ -434,6 +355,7 @@ def record_lv1(proofs):
 def main():
     global OUT
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--quick", action="store_true", help="Run the shortest LV1 learning scenario")
     parser.add_argument("--scenario", choices=["ac1", "lv1", "lv1-learnings", "lv1-skipped", "lv1-tmux"], default="ac1")
     parser.add_argument("--record-fixtures", action="store_true", help="Write scrubbed LV1 JSON evidence after successful full scenarios")
     args = parser.parse_args()
@@ -442,9 +364,10 @@ def main():
     if args.scenario == "ac1":
         ac1_main()
         return
-    OUT = REPO / "build/lv1-live"; OUT.mkdir(parents=True, exist_ok=True)
+    OUT = output_dir("lv1-live"); OUT.mkdir(parents=True, exist_ok=True)
     executable = build_host()
     cases = ["learnings", "skip-waiter", "skip-channel", "skip-tmux"] if args.scenario == "lv1" else ["learnings"] if args.scenario == "lv1-learnings" else ["skip-tmux"] if args.scenario == "lv1-tmux" else ["skip-waiter", "skip-channel", "skip-tmux"]
+    if args.quick and args.scenario == "lv1": cases = ["learnings"]
     proofs = [lv1_case(executable, case) for case in cases]
     def helpers_cleaned():
         processes = subprocess.check_output(["/bin/ps", "-axo", "command="], text=True)

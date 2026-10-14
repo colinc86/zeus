@@ -19,13 +19,15 @@ import threading
 import time
 import uuid
 
+from LiveSupport import OpenAIModel, output_dir, create_root, isolated_environment, start_model, finish_host_build, host_package, scrub_paths, cleanup_root, stop_host
+
 REPO = pathlib.Path(__file__).resolve().parents[4]
-OUT = REPO / "build/sa2-live"
+OUT = output_dir("sa2-live")
 OUT.mkdir(parents=True, exist_ok=True)
 
 
 def build_host():
-    package = OUT / "host"
+    package = host_package(OUT, "sa2")
     source = package / "Sources/Host"
     source.mkdir(parents=True, exist_ok=True)
     inputs = [REPO / p for p in ["Zeus/App/Tests/Runtime/SA2RuntimeHost.swift", "Zeus/Shared/AppSeams.swift",
@@ -37,109 +39,22 @@ def build_host():
     products = ",".join(f'.product(name: "{name}", package: "ZeusKit")' for name in ["ZeusProtocol", "ZeusLink", "ZeusSprites", "ZeusDesign"])
     (package / "Package.swift").write_text('// swift-tools-version: 6.2\nimport PackageDescription\n' +
         f'let package = Package(name: "SA2Host", platforms: [.macOS(.v26)], dependencies: [.package(path: {json.dumps(str(REPO / "Packages/ZeusKit"))})], targets: [.executableTarget(name: "Host", dependencies: [{products}], swiftSettings: [.define("SA2_PROBE_HOST")])])\n')
-    with (OUT / "host-build.log").open("w") as log:
-        subprocess.run(["xcrun", "swift", "build", "--package-path", str(package), "--product", "Host"], stdout=log, stderr=subprocess.STDOUT, check=True, timeout=180)
-    directory = subprocess.check_output(["xcrun", "swift", "build", "--package-path", str(package), "--show-bin-path"], text=True, timeout=30).strip()
-    return pathlib.Path(directory) / "Host"
+    return finish_host_build(OUT, package)
 
 
-class Model(http.server.BaseHTTPRequestHandler):
-    steps = {}
-    pauses = {}
-    events = []
-    lock = threading.Lock()
-    began = 0
-
-    def log_message(self, *_):
-        pass
-
-    def do_GET(self):
-        self.send_response(200); self.end_headers(); self.wfile.write(b'{"data":[]}')
-
-    def do_POST(self):
-        body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
-        chat = self.path.split("?")[0].endswith("/chat/completions")
-        messages = body.get("messages" if chat else "input", [])
-        users = [m.get("content", "") for m in messages if isinstance(m, dict) and m.get("role") == "user"]
-        history = json.dumps(users)
-        triggers = re.findall(r"SA2_(?:SAY|SHELL|FAST|BUSY|FOLLOWUP|DRAFT)", history)
-        scenario = triggers[-1] if triggers else "bootstrap"
-        ids = re.findall(r"delivery_id=(d_sa2_[a-z]+)", history)
-        delivery = ids[-1] if ids else None
-        tools = []
-        for entry in body.get("tools", []):
-            if entry.get("type") == "namespace":
-                tools += [(nested.get("name", ""), entry["name"]) for nested in entry.get("tools", [])]
-            else: tools.append((entry.get("function", entry).get("name", ""), None))
-        names = [n for n, _ in tools]
-        def name(target):
-            found = next((n for n in names if n == target or n.endswith("__" + target) or n.endswith("_" + target)), None)
-            if found is None: raise RuntimeError(f"No native {target} tool: {names}")
-            return found
-        with Model.lock:
-            step = Model.steps.get(delivery, 0)
-            tool, args = None, {}
-            if delivery and step == 0:
-                tool, args = name("zeus_ack"), {"delivery_ids": [delivery]}
-            elif delivery and step == 1 and scenario in ["SA2_SAY", "SA2_FOLLOWUP"]:
-                tool, args = name("zeus_say"), {"text": scenario + " native bridge reply."}
-            elif delivery and step == 1:
-                tool = name("exec_command" if "exec_command" in names else "bash")
-                args = {"cmd": "printf SA2_SHELL_DONE"} if tool == "exec_command" else {"command": "printf SA2_SHELL_DONE", "description": "Print the isolated state fixture marker"}
-            Model.steps[delivery] = step + 1
-            Model.events.append({"t": time.monotonic() - Model.began, "scenario": scenario, "delivery": delivery, "step": step, "tool": tool,
-                "tool_results": [m for m in messages if isinstance(m, dict) and (m.get("type") == "function_call_output" or m.get("role") == "tool")]})
-        self.send_response(200); self.send_header("Content-Type", "text/event-stream"); self.end_headers()
-        def event(value):
-            self.wfile.write(("data: " + json.dumps(value) + "\n\n").encode()); self.wfile.flush()
-        pause = Model.pauses.get(scenario) if delivery and step >= 2 and not tool else None
-        text = "SA2_READY" if not delivery else scenario + " native turn complete."
-        try:
-            if chat:
-                chunk = {"id": "chat_fixture", "object": "chat.completion.chunk", "created": int(time.time()), "model": body.get("model", "fixture"),
-                    "choices": [{"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}]}
-                event(chunk)
-                if pause: pause.wait(timeout=45)
-                delta = {"tool_calls": [{"index": 0, "id": "call_" + uuid.uuid4().hex, "type": "function", "function": {"name": tool, "arguments": json.dumps(args)}}]} if tool else {"content": text}
-                chunk["choices"][0] = {"index": 0, "delta": delta, "finish_reason": None}; event(chunk)
-                chunk["choices"][0] = {"index": 0, "delta": {}, "finish_reason": "tool_calls" if tool else "stop"}; event(chunk)
-                self.wfile.write(b"data: [DONE]\n\n"); self.wfile.flush()
-            else:
-                item = {"id": "fc_" + uuid.uuid4().hex, "type": "function_call", "name": tool, "call_id": "call_" + uuid.uuid4().hex,
-                    "arguments": json.dumps(args), "status": "completed"} if tool else {
-                    "id": "msg_" + uuid.uuid4().hex, "type": "message", "role": "assistant", "status": "completed",
-                    "content": [{"type": "output_text", "text": text, "annotations": []}]}
-                namespace = next((ns for n, ns in tools if n == tool), None)
-                if namespace: item["namespace"] = namespace
-                response = {"id": "resp_" + uuid.uuid4().hex, "object": "response", "created_at": int(time.time()), "status": "completed", "model": "fixture",
-                    "output": [item], "error": None, "incomplete_details": None, "usage": {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2}}
-                event({"type": "response.created", "response": dict(response, status="in_progress", output=[])})
-                event({"type": "response.output_item.added", "output_index": 0, "item": dict(item, status="in_progress")})
-                if pause: pause.wait(timeout=45)
-                if not tool:
-                    event({"type": "response.content_part.added", "item_id": item["id"], "output_index": 0, "content_index": 0, "part": {"type": "output_text", "text": "", "annotations": []}})
-                    event({"type": "response.output_text.delta", "item_id": item["id"], "output_index": 0, "content_index": 0, "delta": text})
-                event({"type": "response.output_item.done", "output_index": 0, "item": item})
-                event({"type": "response.completed", "response": response})
-        except (BrokenPipeError, ConnectionResetError):
-            pass
+class Model(OpenAIModel):
+    tag="SA2"
 
 
 class Probe:
     def __init__(self, executable, agent):
         self.agent = agent; self.tmux = shutil.which("tmux"); self.cli = shutil.which(agent)
         assert self.tmux and self.cli
-        self.root = pathlib.Path(tempfile.mkdtemp(prefix="zsa2_", dir="/tmp")).resolve()
+        self.root = create_root("zsa2_")
         home = self.root / "home"; (self.root / "project").mkdir()
-        self.env = {"HOME": str(home), "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin", "USER": "fixture", "LOGNAME": "fixture", "LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8", "TERM": "xterm-256color",
-            "CODEX_HOME": str(home / ".codex"), "XDG_CONFIG_HOME": str(home / ".config"), "XDG_DATA_HOME": str(home / ".local/share"),
-            "XDG_CACHE_HOME": str(home / ".cache"), "XDG_STATE_HOME": str(home / ".local/state"), "TMUX_TMPDIR": str(home / "tmux"),
-            "OPENCODE_DISABLE_AUTOUPDATE": "true", "OPENCODE_DISABLE_EXTERNAL_PLUGINS": "true", "OPENCODE_DISABLE_MODELS_FETCH": "true", "OPENCODE_DISABLE_LSP_DOWNLOAD": "true"}
-        for key in ["HOME", "CODEX_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME", "XDG_STATE_HOME", "TMUX_TMPDIR"]:
-            pathlib.Path(self.env[key]).mkdir(parents=True, exist_ok=True)
+        self.env = isolated_environment(home)
         self.version = subprocess.check_output([self.cli, "--version"], env=self.env, text=True, timeout=10).strip()
-        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Model)
-        self.worker = threading.Thread(target=self.server.serve_forever, daemon=True); self.worker.start()
+        self.server, self.worker = start_model(Model)
         Model.steps = {}; Model.events = []; Model.began = time.monotonic()
         Model.pauses = {scenario: threading.Event() for scenario in ["SA2_SHELL", "SA2_BUSY", "SA2_DRAFT"]}
         self.began = Model.began; self.frames = {}; self.events = []; self.scenarios = []
@@ -203,10 +118,10 @@ class Probe:
         self.scenarios.append(result)
         return end
 
-    def run(self):
+    def run(self, quick=False):
         self.wait(lambda: (s if (s := self.state())["sessions"] > 0 and s["managed"].endswith(".idle)") else None), "Managed startup", timeout=70)
         self.snapshot("initial-idle"); self.event("managed ready")
-        for scenario in ["SA2_SAY", "SA2_SHELL", "SA2_FAST", "SA2_BUSY", "SA2_DRAFT"]:
+        for scenario in (["SA2_FAST"] if quick else ["SA2_SAY", "SA2_SHELL", "SA2_FAST", "SA2_BUSY", "SA2_DRAFT"]):
             self.call("send", text=scenario, id="d_sa2_" + scenario[4:].lower()); self.event("user message: " + scenario)
             self.wait(lambda: any(e["scenario"] == scenario and e["step"] >= 2 for e in Model.events), "Native tools never finished")
             if scenario in Model.pauses:
@@ -260,9 +175,7 @@ class Probe:
             self.call("stop")
             self.wait(lambda: self.state()["managed"] == "stopped", "Owned managed pane stop", timeout=8)
         except (RuntimeError, TimeoutError, BrokenPipeError): pass
-        self.host.stdin.close()
-        try: self.host.wait(timeout=5)
-        except subprocess.TimeoutExpired: self.host.kill(); self.host.wait()
+        stop_host(self.host)
         # Inspect only our namespace. Any remaining pane children belong to this fixture.
         owned = []
         try:
@@ -271,25 +184,25 @@ class Probe:
         for pid in owned:
             try: os.kill(pid, signal.SIGTERM)
             except ProcessLookupError: pass
-        subprocess.run([self.tmux, "-S", str(self.root / "tmux.sock"), "kill-server"], env=self.env, capture_output=True, timeout=10)
+        cleanup_root(self.root, remove=False)
         self.server.shutdown(); self.server.server_close(); self.worker.join(timeout=2); self.selector.close(); self.log.close()
-        shutil.rmtree(self.root)
+        cleanup_root(self.root)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__); parser.add_argument("--record", action="store_true")
-    parser.add_argument("--agent", choices=["all", "codex", "opencode"], default="all"); args = parser.parse_args()
+    parser.add_argument("--quick", action="store_true"); parser.add_argument("--agent", choices=["all", "codex", "opencode"], default="all"); args = parser.parse_args()
     executable = build_host(); failures = []
     for agent in ["codex", "opencode"] if args.agent == "all" else [args.agent]:
         probe = Probe(executable, agent)
         try:
-            try: proof = probe.run()
+            try: proof = probe.run(quick=args.quick)
             except Exception as error:
                 proof = probe.proof(); proof["error"] = str(error); failures.append(agent)
             if any(not s["within_5s"] for s in proof["scenarios"]): failures.append(agent)
             raw = json.dumps(proof, ensure_ascii=False, indent=2)
             (OUT / (agent + "-proof.json")).write_text(raw)
-            scrubbed = raw.replace(str(probe.root), "/FIXTURE").replace(str(probe.bridge.parent.parent.parent), "/BUNDLE/Zeus.app").replace(probe.cli, "/CLI/" + agent)
+            scrubbed=scrub_paths(raw, {str(probe.root):"/FIXTURE", str(probe.bridge.parent.parent.parent):"/BUNDLE/Zeus.app", probe.cli:"/CLI/"+agent})
             if args.record:
                 target = REPO / "TestFixtures/live/sa2"; target.mkdir(parents=True, exist_ok=True)
                 (target / (agent + "-probe.json")).write_text(scrubbed + "\n")

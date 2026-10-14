@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Connect-your-own probe: real CLIs, localhost models, private tmux and disposable HOME."""
 import argparse, http.server, json, os, pathlib, shlex, signal, socket, subprocess, threading, time, uuid
+import sys
+sys.dont_write_bytecode = True
+sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent/"Runtime"))
+from LiveSupport import register_root, isolated_environment, start_model, stream_reply, cleanup_root
 p = argparse.ArgumentParser()
 for name in ('root', 'agent', 'tmux', 'cli', 'bridge', 'bridge-socket'):
     p.add_argument('--' + name, required=True)
 a = p.parse_args()
-root = pathlib.Path(a.root)
+root = register_root(a.root)
 assert root.name.startswith('zcy1_') and root.parent.resolve() == pathlib.Path('/private/tmp')
 assert not root.is_symlink() and a.agent in ('claude', 'codex', 'opencode')
 home, project = root / 'home', root / 'project'
@@ -36,50 +40,12 @@ class Model(http.server.BaseHTTPRequestHandler):
             if use_tool: emitted = True
         text = 'CY1 ' + a.agent + ' received the composer message through Connect your own.'
         arguments = {'text': text}
-        self.send_response(200); self.send_header('Content-Type', 'text/event-stream'); self.end_headers()
-        def event(value, name=None):
-            self.wfile.write(((('event: ' + name + '\n') if name else '') + 'data: ' + json.dumps(value) + '\n\n').encode()); self.wfile.flush()
-        try:
-            if a.agent == 'claude':
-                msg = {'id':'msg_' + uuid.uuid4().hex, 'type':'message', 'role':'assistant', 'model':body.get('model','fixture'), 'content':[], 'stop_reason':None, 'stop_sequence':None, 'usage':{'input_tokens':1,'output_tokens':1}}
-                event({'type':'message_start','message':msg}, 'message_start')
-                if use_tool:
-                    block = {'type':'tool_use','id':'toolu_cy1','name':say,'input':{}}
-                    event({'type':'content_block_start','index':0,'content_block':block}, 'content_block_start')
-                    event({'type':'content_block_delta','index':0,'delta':{'type':'input_json_delta','partial_json':json.dumps(arguments)}}, 'content_block_delta')
-                else:
-                    event({'type':'content_block_start','index':0,'content_block':{'type':'text','text':''}}, 'content_block_start')
-                    event({'type':'content_block_delta','index':0,'delta':{'type':'text_delta','text':'CY1_READY'}}, 'content_block_delta')
-                event({'type':'content_block_stop','index':0}, 'content_block_stop')
-                event({'type':'message_delta','delta':{'stop_reason':'tool_use' if use_tool else 'end_turn','stop_sequence':None},'usage':{'output_tokens':1}}, 'message_delta')
-                event({'type':'message_stop'}, 'message_stop')
-            elif self.path.split('?')[0].endswith('/chat/completions'):
-                delta = {'tool_calls':[{'index':0,'id':'call_cy1','type':'function','function':{'name':say,'arguments':json.dumps(arguments)}}]} if use_tool else {'role':'assistant','content':'CY1_READY'}
-                chunk = {'id':'chat_cy1','object':'chat.completion.chunk','created':int(time.time()),'model':body.get('model','fixture'),'choices':[{'index':0,'delta':delta,'finish_reason':None}]}
-                event(chunk); chunk['choices'][0] = {'index':0,'delta':{},'finish_reason':'tool_calls' if use_tool else 'stop'}; event(chunk)
-                self.wfile.write(b'data: [DONE]\n\n'); self.wfile.flush()
-            else:
-                if use_tool:
-                    item = {'id':'fc_cy1','type':'function_call','name':say,'call_id':'call_cy1','arguments':json.dumps(arguments),'status':'completed'}
-                    if namespace: item['namespace'] = namespace
-                else:
-                    item = {'id':'msg_' + uuid.uuid4().hex,'type':'message','role':'assistant','status':'completed','content':[{'type':'output_text','text':'CY1_READY','annotations':[]}]}
-                response = {'id':'resp_' + uuid.uuid4().hex,'object':'response','created_at':int(time.time()),'status':'completed','model':'fixture','output':[item],'error':None,'incomplete_details':None,'usage':{'input_tokens':1,'output_tokens':1,'total_tokens':2}}
-                event({'type':'response.created','response':dict(response,status='in_progress',output=[])})
-                event({'type':'response.output_item.added','output_index':0,'item':dict(item,status='in_progress')})
-                if not use_tool:
-                    event({'type':'response.content_part.added','item_id':item['id'],'output_index':0,'content_index':0,'part':{'type':'output_text','text':'','annotations':[]}})
-                    event({'type':'response.output_text.delta','item_id':item['id'],'output_index':0,'content_index':0,'delta':'CY1_READY'})
-                event({'type':'response.output_item.done','output_index':0,'item':item}); event({'type':'response.completed','response':response})
-        except (BrokenPipeError, ConnectionResetError): pass
-server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Model)
+        stream_reply(self, 'anthropic' if a.agent=='claude' else 'chat' if self.path.split('?')[0].endswith('/chat/completions') else 'responses', body, say if use_tool else None, arguments, 'CY1_READY', namespace)
+
+server,worker = start_model(Model)
 base = 'http://127.0.0.1:' + str(server.server_port)
-threading.Thread(target=server.serve_forever, daemon=True).start()
-env = {'HOME':str(home), 'CLAUDE_CONFIG_DIR':str(home/'.claude'), 'CODEX_HOME':str(home/'.codex'),
-    'XDG_CONFIG_HOME':str(home/'.config'), 'XDG_DATA_HOME':str(home/'.local/share'), 'XDG_CACHE_HOME':str(home/'.cache'), 'XDG_STATE_HOME':str(home/'.local/state'),
-    'TMUX_TMPDIR':str(home/'tmux'), 'PATH':'/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin', 'LANG':'en_US.UTF-8', 'LC_ALL':'en_US.UTF-8',
-    'ANTHROPIC_BASE_URL':base, 'ANTHROPIC_API_KEY':'cy1-local-fixture', 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC':'1', 'CLAUDE_CODE_DISABLE_AUTO_MEMORY':'1', 'DISABLE_AUTOUPDATER':'1', 'ENABLE_TOOL_SEARCH':'false',
-    'OPENCODE_DISABLE_AUTOUPDATE':'true', 'OPENCODE_DISABLE_EXTERNAL_PLUGINS':'true', 'OPENCODE_DISABLE_MODELS_FETCH':'true', 'OPENCODE_DISABLE_LSP_DOWNLOAD':'true'}
+
+env = isolated_environment(home, {'ANTHROPIC_BASE_URL':base, 'ANTHROPIC_API_KEY':'cy1-local-fixture'})
 profile = {'hasCompletedOnboarding':True,'theme':'dark','hasAcknowledgedCostThreshold':True}
 for path in (home/'.claude.json', home/'.claude/.claude.json'): path.write_text(json.dumps(profile))
 (home/'.codex/config.toml').write_text('check_for_update_on_startup=false\nmodel="cy1"\nmodel_provider="cy1"\n[model_providers.cy1]\nname="CY1 localhost fixture"\nbase_url="'+base+'/v1"\nwire_api="responses"\nrequires_openai_auth=false\n[projects.'+json.dumps(str(project))+']\ntrust_level="trusted"\n')
@@ -111,5 +77,5 @@ stop = threading.Event()
 for sig in (signal.SIGTERM, signal.SIGINT): signal.signal(sig, lambda *_:stop.set())
 try: stop.wait()
 finally:
-    subprocess.run([a.tmux,'-S',tmux_socket,'kill-server'], env=env, capture_output=True, timeout=10)
+    cleanup_root(root,remove=False)
     server.shutdown(); server.server_close()

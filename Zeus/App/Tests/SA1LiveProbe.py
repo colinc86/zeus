@@ -20,12 +20,16 @@ import threading
 import time
 import uuid
 
+import sys, os
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "Runtime"))
+from LiveSupport import stream_reply, output_dir, create_root, isolated_environment, start_model, finish_host_build, host_package, scrub_paths, cleanup_root, stop_host
+
 REPO = pathlib.Path(__file__).resolve().parents[3]
-OUT = REPO / "build/sa1-live"
+OUT = output_dir("sa1-live")
 
 
 def build_host():
-    package = OUT / "host"
+    package = host_package(OUT, "sa1")
     source = package / "Sources/Host"
     source.mkdir(parents=True, exist_ok=True)
     inputs = [REPO / p for p in ["Zeus/App/Tests/SA1RuntimeHost.swift", "Zeus/Shared/AppSeams.swift",
@@ -37,10 +41,7 @@ def build_host():
     products = ",".join(f'.product(name: "{name}", package: "ZeusKit")' for name in ["ZeusProtocol", "ZeusLink", "ZeusSprites", "ZeusDesign"])
     (package / "Package.swift").write_text('// swift-tools-version: 6.2\nimport PackageDescription\n' +
         f'let package = Package(name: "SA1Host", platforms: [.macOS(.v26)], dependencies: [.package(path: {json.dumps(str(REPO / "Packages/ZeusKit"))})], targets: [.executableTarget(name: "Host", dependencies: [{products}], swiftSettings: [.define("SA1_PROBE_HOST")])])\n')
-    with (OUT / "host-build.log").open("w") as log:
-        subprocess.run(["xcrun", "swift", "build", "--package-path", str(package)], stdout=log, stderr=subprocess.STDOUT, check=True, timeout=180)
-    binary_dir = subprocess.check_output(["xcrun", "swift", "build", "--package-path", str(package), "--show-bin-path"], text=True, timeout=30).strip()
-    return pathlib.Path(binary_dir) / "Host"
+    return finish_host_build(OUT, package)
 
 
 class Control:
@@ -187,19 +188,12 @@ class Model(http.server.BaseHTTPRequestHandler):
                 name = None  # Background requests do not consume the fixture's scripted turn.
         if delay:
             time.sleep(delay)
-        self.send_response(200); self.send_header("Content-Type", "text/event-stream"); self.end_headers()
-        def event(value):
-            self.wfile.write(("event: " + value["type"] + "\ndata: " + json.dumps(value) + "\n\n").encode()); self.wfile.flush()
-        event({"type": "message_start", "message": {"id": "msg_" + uuid.uuid4().hex, "type": "message", "role": "assistant", "model": body.get("model"), "content": [], "stop_reason": None, "stop_sequence": None, "usage": {"input_tokens": 1, "output_tokens": 1}}})
-        content = {"type": "tool_use", "id": "tool_" + uuid.uuid4().hex, "name": name, "input": {}} if name else {"type": "text", "text": ""}
-        event({"type": "content_block_start", "index": 0, "content_block": content})
-        delta = {"type": "input_json_delta", "partial_json": json.dumps(arguments)} if name else {"type": "text_delta", "text": "SA1_DONE " + scenario}
-        event({"type": "content_block_delta", "index": 0, "delta": delta}); event({"type": "content_block_stop", "index": 0})
-        event({"type": "message_delta", "delta": {"stop_reason": "tool_use" if name else "end_turn", "stop_sequence": None}, "usage": {"output_tokens": 1}}); event({"type": "message_stop"})
+        stream_reply(self,"anthropic",body,name,arguments,"SA1_DONE "+scenario)
 
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--quick", action="store_true", help="Only fast-no-say; omit long TTL, permissions and own stale observation")
     parser.add_argument("--own-seconds", type=float, default=20)
     parser.add_argument("--record-fixtures", action="store_true")
     parser.add_argument("--report-only", action="store_true", help="Regenerate Markdown from existing scrubbed evidence")
@@ -212,19 +206,15 @@ def main():
     executable = build_host()
     tmux, claude = shutil.which("tmux"), shutil.which("claude")
     assert tmux and claude
-    root = pathlib.Path(tempfile.mkdtemp(prefix="zsa1_", dir="/tmp"))
+    root = create_root("zsa1_")
     home, project = root / "home", root / "project"
     profile = home / ".claude"
     profile.mkdir(parents=True); project.mkdir()
     (project / "read.txt").write_text("SA1 private read-only fixture.\n")
     socket = str(root / "tmux.sock")
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Model)
+    server, worker = start_model(Model)
     Model.project = project; Model.began = time.monotonic()
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    env = {"HOME": str(home), "CFFIXED_USER_HOME": str(home), "CLAUDE_CONFIG_DIR": str(profile),
-        "PATH": "/opt/homebrew/bin:/usr/bin:/bin", "LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8", "TERM": "xterm-256color",
-        "ANTHROPIC_API_KEY": "sa1-local-fixture", "ANTHROPIC_BASE_URL": f"http://127.0.0.1:{server.server_port}",
-        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1", "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1", "DISABLE_AUTOUPDATER": "1", "ENABLE_TOOL_SEARCH": "false"}
+    env = isolated_environment(home, {"ANTHROPIC_API_KEY":"sa1-local-fixture", "ANTHROPIC_BASE_URL":f"http://127.0.0.1:{server.server_port}"})
     onboarding = {"hasCompletedOnboarding": True, "theme": "dark", "hasAcknowledgedCostThreshold": True,
         "projects": {str(project): {"hasTrustDialogAccepted": True}, str(project.resolve()): {"hasTrustDialogAccepted": True}}}
     (home / ".claude.json").write_text(json.dumps(onboarding)); (profile / ".claude.json").write_text(json.dumps(onboarding))
@@ -237,12 +227,7 @@ def main():
         "private_socket": True, "disposable_home": True, "localhost_model": True, "scenarios": [], "events": []}
     def tm(*arguments):
         return subprocess.check_output([tmux, "-u", "-S", socket, "-f", "/dev/null", *arguments], env=env, text=True, timeout=10)
-    def scrub(value):
-        if isinstance(value, str):
-            return value.replace(str(root), "<fixture>").replace(str(root.resolve()), "<fixture>").replace(str(REPO), "<worktree>")
-        if isinstance(value, list): return [scrub(v) for v in value]
-        if isinstance(value, dict): return {k: scrub(v) for k, v in value.items()}
-        return value
+    def scrub(value): return scrub_paths(value,{str(root):"<fixture>", str(REPO):"<worktree>"})
     def track(pid):
         stamp = subprocess.run(["/bin/ps", "-p", str(pid), "-o", "lstart="], capture_output=True, text=True).stdout.strip()
         if not stamp: return
@@ -299,7 +284,7 @@ def main():
                 result["within_5s"] = ended - release_at <= 5
             proof["scenarios"].append(result); print(json.dumps(result), flush=True)
             eventually(lambda: control.state()["can_input"], "Managed input did not become ready")
-        for case in ["say", "happy", "work-no-say", "fast-no-say", "ask-option", "ask-text", "ask-skip", "closed-say", "ttl", "auto", "permission-ui", "permission-terminal", "quiet-ask"]:
+        for case in (["fast-no-say"] if args.quick else ["say", "happy", "work-no-say", "fast-no-say", "ask-option", "ask-text", "ask-skip", "closed-say", "ttl", "auto", "permission-ui", "permission-terminal", "quiet-ask"]):
             if case == "closed-say": control.call("panel", open=False)
             if case == "quiet-ask":
                 control.call("quiet", enabled=True)
@@ -341,23 +326,22 @@ def main():
                 release_at = time.monotonic()
                 control.call("quiet", enabled=False)
             settle(case, started, prompt_at=prompt_at, release_at=release_at)
-        # Same real CLI/bridge, detached from managed observation: advanced connection.
-        track(int(tm("display-message", "-p", "-t", target["pane"], "#{pane_pid}")))
-        control.call("own")
-        eventually(lambda: control.state()["sessions"] > 0, "Own bridge never reconnected")
-        with Model.lock: Model.scenario = "own-no-say"; Model.step = 0
-        control.call("send", text="SA1 scenario own-no-say")
-        eventually(lambda: "SA1_DONE own-no-say" in screen(), "Own turn never finished")
-        returned = time.monotonic(); before = control.state()
-        time.sleep(args.own_seconds)
-        after = control.state()
-        proof["own_session"] = {"observed_seconds_after_native_idle": round(time.monotonic() - returned, 3), "at_prompt": before, "after": after}
+        if not args.quick:
+            # Same real CLI/bridge, detached from managed observation: advanced connection.
+            track(int(tm("display-message", "-p", "-t", target["pane"], "#{pane_pid}")))
+            control.call("own")
+            eventually(lambda: control.state()["sessions"] > 0, "Own bridge never reconnected")
+            with Model.lock: Model.scenario = "own-no-say"; Model.step = 0
+            control.call("send", text="SA1 scenario own-no-say")
+            eventually(lambda: "SA1_DONE own-no-say" in screen(), "Own turn never finished")
+            returned = time.monotonic(); before = control.state()
+            time.sleep(args.own_seconds)
+            after = control.state()
+            proof["own_session"] = {"observed_seconds_after_native_idle": round(time.monotonic() - returned, 3), "at_prompt": before, "after": after}
     finally:
         if host:
-            host.stdin.close()
-            try: host.wait(timeout=5)
-            except subprocess.TimeoutExpired: host.kill(); host.wait()
-        subprocess.run([tmux, "-S", socket, "kill-server"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+            stop_host(host)
+        cleanup_root(root, remove=False)
         def helpers_gone():
             return all(subprocess.run(["/bin/ps", "-p", str(pid), "-o", "lstart="], capture_output=True, text=True).stdout.strip() != stamp for pid, stamp in tracked.items())
         eventually(helpers_gone, "Probe-owned CLI/helper still alive after private server cleanup", 10)
@@ -365,7 +349,7 @@ def main():
         server.shutdown(); server.server_close()
         proof["model_events"] = Model.events
         proof["timeline"] = [json.loads(line) for line in (root / "timeline.jsonl").read_text().splitlines()] if (root / "timeline.jsonl").exists() else []
-        shutil.rmtree(root, ignore_errors=True)
+        cleanup_root(root)
         assert not root.exists(), "Private scratch directory was not removed"
         proof["cleanup"]["scratch_gone"] = True
         proof["cleanup"]["private_socket_gone"] = not pathlib.Path(socket).exists()
