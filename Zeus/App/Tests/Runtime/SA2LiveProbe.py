@@ -305,6 +305,7 @@ def write_transcript():
     lines = ["# SA2 — managed Codex and OpenCode state accuracy", "",
         "Recorded 2026-10-14 with " + ", ".join(p["version"] for p in proofs) + ".",
         "Real installed CLIs, production managed launch/controller/runtime, real bundled zeus-mcp, CardStore, AvatarStatusModel and thread activity mapping. Private 120×40 tmux panes, disposable HOME/XDG/config, localhost deterministic SSE models; no human server, config or credentials.", "",
+        "Codex uses Ask when needed (`workspace-write/on-request`); OpenCode uses the explicitly selected Allow all policy for the scratch printf tool. Production Zeus-tool approval rules are unchanged. No permission dialog is answered by this probe.", "",
         "## Measured state transitions", "",
         "Each agent has its own parent monotonic clock. Prompt return requires the causal final model text, the CLI's native completed-turn summary below it, and no live interrupt control; it is not inferred from the runtime classifier. The host's real 3-second monitor is never manually refreshed. End deltas use the same parent clock; raw host timeline timestamps have their own startup origin. Measurements include sampling and IPC latency.", "",
         "| Agent | Trigger | Native prompt t | Activity released t | Δ after prompt | ≤5 s |",
