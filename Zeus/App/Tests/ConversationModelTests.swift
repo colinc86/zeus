@@ -125,7 +125,7 @@ struct ConversationModelTests {
         f.model.openPanel()
         #expect(f.model.isPanelOpen)
         #expect(f.model.unseenCount == 0)
-        #expect(f.status.state == .idle)
+        #expect(f.status.state == .waiting) // Reading the question doesn't answer it (TB1).
         #expect(CardStore(fileURL: f.url).unseenCount == 0)
         f.cards.add(f.card(text: "Arrived while reading"))
         #expect(f.model.unseenCount == 0)
@@ -139,13 +139,14 @@ struct ConversationModelTests {
         #expect(f.status.state == .alert)
     }
 
-    @Test func attentionOverridesClearOnOpenAndAnsweredQuestionStopsWaiting() {
+    @Test func unreadOverrideClearsOnOpenAndQuestionKeepsWaitingUntilAnswered() {
         let f = ConversationFixture(); defer { f.cleanup() }
         let question = f.card(.question, input: true); f.cards.add(question)
         f.status.noteNewCard(Card(kind: .question, body: "Question", mood: .waiting))
         f.status.setOverride(.alert, detail: nil, progress: nil, ttl: 60)
         f.model.openPanel()
-        #expect(f.status.state == .idle)
+        #expect(f.status.state == .waiting)
+        f.clock.advance(3); f.status.tick() // The waiting transient still has its normal deadline.
         f.status.setOverride(.working, detail: "Building", progress: 0.5, ttl: 60)
         #expect(f.status.state == .working)
         f.status.setOverride(.waiting, detail: nil, progress: nil, ttl: 60)

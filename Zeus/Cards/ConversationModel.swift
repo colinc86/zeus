@@ -100,7 +100,7 @@ final class ConversationModel {
             entries.append((ConversationEntry(id: id, timestamp: card.createdAt,
                                                content: card.kind == .userMessage ? .userMessage(card) : .agentCard(card),
                                                outcome: sendingIDs.contains(card.id) ? .sending : cards.outgoingStates[card.id]?.presentation), index, false))
-            if card.kind != .userMessage, let response = card.response {
+            if card.kind != .userMessage, let response = card.response, !response.skipped {
                 entries.append((ConversationEntry(id: Self.answerEntryID(card.id), timestamp: response.respondedAt,
                                                    content: .userAnswer(cardID: card.id, response: response),
                                                    outcome: .recordedReply), index, true))
@@ -142,19 +142,19 @@ final class ConversationModel {
     /// options-only question, so a typed "yes, do it" closes the question instead of leaving a "?" over Zeus forever.
     var replyTarget: Card? {
         let newest = newestTextQuestion ?? newestOpenQuestion
-        if let id = explicitReplyCardID, let newest, questionsAtReplySelection.contains(newest.id),
-           let selected = cards.card(id: id), selected.kind == .question, selected.status == .open, selected.input != nil {
+        if let id = explicitReplyCardID, newest.map({ questionsAtReplySelection.contains($0.id) }) ?? true,
+           let selected = cards.card(id: id), StatusStripState.isSkippable(selected) {
             return selected
         }
         guard let newest, !clearedReplyCardIDs.contains(newest.id) else { return nil }
         return newest
     }
 
-    /// Explicit Reply can select any open text question; a newly arriving question still wins by default.
+    /// An explicit question jump can select any open ordinary question; new questions still win by default.
     func rearmReplyTarget(cardID: String) {
-        guard let card = cards.card(id: cardID), card.kind == .question, card.status == .open, card.input != nil else { return }
+        guard let card = cards.card(id: cardID), StatusStripState.isSkippable(card) else { return }
         explicitReplyCardID = cardID
-        questionsAtReplySelection = Set(cards.cards.filter { $0.kind == .question && $0.status == .open && $0.input != nil }.map(\.id))
+        questionsAtReplySelection = Set(cards.cards.filter { $0.kind == .question && $0.status == .open }.map(\.id))
         clearedReplyCardIDs.remove(cardID)
     }
 

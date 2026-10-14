@@ -20,6 +20,9 @@ struct ConversationView: View {
     let openSettings: () -> Void
     let copySetup: () -> Void
     let resize: (CGFloat) -> Void
+    var managed: ManagedAssistantModel? = nil
+    var openTerminal: () async throws -> Void = {}
+    var newConversation: () -> Void = {}
     @FocusState private var composerFocused: Bool
     @FocusState private var focusedControl: ConversationControlTarget?
     @State private var pageCount = ConversationLayout.pageSize
@@ -34,6 +37,9 @@ struct ConversationView: View {
     @State private var appeared = false
     @State private var userHasScrolled = false
     @State private var scrollDriver = ConversationScrollDriver()
+    @State private var lastQuestionJump: String?
+    @State private var confirmingClear = false
+    @State private var terminalError: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
@@ -41,7 +47,9 @@ struct ConversationView: View {
     private var palette: ZeusPalette { settings.currentTheme.palette(for: colorScheme, contrast: colorSchemeContrast) }
 
     private var entries: [ConversationEntry] { Array(model.thread.suffix(pageCount)) }
-    private var threadHeight: CGFloat { ConversationLayout.threadHeight(content: contentHeight, composer: composerHeight, screen: panel.screenHeight) }
+    // Replace the old 2-point separator with a 24-point strip and its 1-point rule.
+    private var stripExtraHeight: CGFloat { 23 }
+    private var threadHeight: CGFloat { ConversationLayout.threadHeight(content: contentHeight, composer: composerHeight, screen: panel.screenHeight, strip: stripExtraHeight) }
     private var assistant: ConnectedSession? {
         if settings.managedSession?.enabled == true { return nil }
         if let key = settings.assistantSessionKey { return messaging.sessions.first { $0.sessionKey == key } }
@@ -74,7 +82,22 @@ struct ConversationView: View {
     private var replyTitle: String? {
         model.replyTarget.map { $0.title ?? String($0.body.prefix(40)) + ($0.body.count > 40 ? "…" : "") }
     }
-    private var totalHeight: CGFloat { threadHeight + composerHeight + 54 + (panel.tail == nil ? 0 : ZeusDialogTail.height) }
+    private var totalHeight: CGFloat { threadHeight + composerHeight + 54 + stripExtraHeight + (panel.tail == nil ? 0 : ZeusDialogTail.height) }
+    private var stripCards: StatusStripState.Cards {
+        .init(values: store.cards, seen: store.seenIDs, outgoing: store.outgoingStates,
+              pendingIDs: store.pendingHistoryIDs?() ?? [], canClear: !store.cards.isEmpty || !store.notices.isEmpty)
+    }
+    private var stripStatus: StatusStripState.Status {
+        .init(avatar: status.presentation, deliveryProblem: status.deliveryProblem != nil || messaging.deliveryIssue != nil,
+              quietUntil: settings.isQuiet(at: status.now) ? settings.nextQuietBoundary(after: status.now).map { $0.formatted(.dateTime.hour().minute()) } : nil)
+    }
+    private var stripManaged: StatusStripState.Managed {
+        let enabled = settings.managedSession?.enabled == true
+        let own = ConversationTerminalTarget.make(session: assistant, configuredPane: settings.tmuxTarget, configuredSocket: settings.tmuxTargetSocketPath)
+        return .init(enabled: enabled, status: managedController?.managedStatus ?? .off,
+                     hasTerminal: enabled ? managedController?.managedTmuxSessionName != nil : own != nil,
+                     canStartNew: managed?.canStart == true && managed?.switching != true)
+    }
 
     static func composerAssistantName(_ assistant: ConnectedSession?) -> String? {
         assistant.map { ZeusAgentName.short($0.agent) }
@@ -98,7 +121,10 @@ struct ConversationView: View {
         ScrollViewReader { proxy in
             VStack(spacing: 8) {
                 thread(proxy: proxy)
-                Rectangle().fill(palette.secondaryText.opacity(0.25)).frame(height: 2)
+                ZeusStatusStrip(StatusStripState.make(cards: stripCards, status: stripStatus, managed: stripManaged, activity: indicator),
+                    onJump: StatusStripState.jump(cards: stripCards, status: stripStatus, managed: stripManaged, activity: indicator) == nil ? nil : { jumpStatus(proxy) },
+                    onSkip: canSkipFromStrip ? { skipFromStrip() } : nil,
+                    onButton: stripButton)
                 VStack(spacing: 8) {
                     ZeusComposer(text: $model.draft, placeholder: Self.composerPlaceholder(managed: currentManagedConfiguration,
                         status: managedController?.managedStatus,
@@ -112,6 +138,7 @@ struct ConversationView: View {
                                      }
                                  })
                     if let hub = messaging as? AgentMessagingHub { AgentLinkStatusView(hub: hub) }
+                    if let terminalError { Text(terminalError).zeusFont(.caption).foregroundStyle(palette.destructive) }
                     if case .rejected(let reason) = model.result { Text(reason).zeusFont(.caption).foregroundStyle(palette.destructive) }
                     else if let error = store.persistenceError { Text(error).zeusFont(.caption).foregroundStyle(palette.destructive).textSelection(.enabled) }
                 }
@@ -133,6 +160,10 @@ struct ConversationView: View {
             .modifier(PixelAppearance(progress: appeared ? 1 : 0))
             .background { shortcuts(proxy: proxy) }
             .contextMenu { ClearConversationButton(cards: store) }
+            .alert("Clear the conversation?", isPresented: $confirmingClear) {
+                Button("Clear", role: .destructive) { _ = store.clearConversation() }
+                Button("Cancel", role: .cancel) {}
+            } message: { Text(ConversationHistoryCopy.confirmation) }
             .onChange(of: totalHeight, initial: true) { resize(totalHeight) }
             .onChange(of: composerHeight) { followLatest() }
             .onChange(of: composerFocused) { panel.composerFocused = composerFocused }
@@ -154,6 +185,9 @@ struct ConversationView: View {
                 }
             }
             .onChange(of: focusedControl) { _, target in
+                #if DEBUG || ZEUS_PERFORMANCE_PROBE
+                panel.focusedControlForDiagnostics = target
+                #endif
                 guard let target else { return }
                 // A person operating thread controls owns the viewport until they jump to latest.
                 setPinned(false)
@@ -172,6 +206,7 @@ struct ConversationView: View {
             }
             .onChange(of: panel.isVisible) {
                 if panel.isVisible {
+                    lastQuestionJump = nil
                     model.openPanel(viewportManaged: true)
                     pageCount = ConversationLayout.pageSize
                     userHasScrolled = false
@@ -224,13 +259,61 @@ struct ConversationView: View {
     private func openTarget(_ proxy: ScrollViewProxy) {
         guard let id = panel.scrollTargetCardID,
               let index = model.thread.firstIndex(where: { $0.sourceCardID == id }) else { latest(proxy); return }
-        if id == model.thread.last?.sourceCardID { latest(proxy); return }
+        if id == model.thread.last?.sourceCardID && !panel.focusScrollTarget { latest(proxy); return }
         setPinned(false)
         pageCount = max(ConversationLayout.pageSize, model.thread.count - index)
         Task { @MainActor in
             await Task.yield()
             guard panel.isVisible else { return }
             proxy.scrollTo("card:\(id)", anchor: .top)
+            if panel.focusScrollTarget, let card = store.card(id: id), card.status == .open {
+                if !card.id.hasPrefix(ZeusRuntime.managedCardPrefix) { model.rearmReplyTarget(cardID: id); lastQuestionJump = id }
+                if let target = StatusStripState.firstControl(card) {
+                    composerFocused = false
+                    await Task.yield()
+                    guard panel.isVisible, panel.scrollTargetCardID == id, store.card(id: id)?.status == .open else { return }
+                    proxy.scrollTo(target, anchor: .center)
+                    await Task.yield()
+                    focusedControl = target
+                } else { focusComposer() }
+            }
+        }
+    }
+    private var canSkipFromStrip: Bool {
+        StatusStripState.make(cards: stripCards, status: stripStatus, managed: stripManaged, activity: indicator).skipTitle != nil
+    }
+    private func skipFromStrip() {
+        guard canSkipFromStrip, let card = StatusStripState.questions(stripCards).first else { return }
+        setPinned(false)
+        if store.skip(id: card.id), !store.hasOpenQuestion || focusedControl?.entryID == "card:\(card.id)" { focusComposer() }
+    }
+    private func jumpStatus(_ proxy: ScrollViewProxy) {
+        guard var target = StatusStripState.jump(cards: stripCards, status: stripStatus, managed: stripManaged, activity: indicator) else { return }
+        if case .question = target, let id = StatusStripState.nextQuestion(cards: stripCards, after: lastQuestionJump) {
+            lastQuestionJump = id; target = .question(id)
+        }
+        switch target {
+        case .latest: latest(proxy)
+        case .terminal: performOpenTerminal()
+        default:
+            panel.scrollTargetCardID = target.cardID
+            switch target { case .question, .prompt: panel.focusScrollTarget = true; default: panel.focusScrollTarget = false }
+            openTarget(proxy)
+        }
+    }
+    private func stripButton(_ button: ZeusStatusStripModel.Button) {
+        switch button {
+        case .terminal: performOpenTerminal()
+        case .newConversation: newConversation()
+        case .clear: confirmingClear = true
+        case .settings: openSettings()
+        }
+    }
+    private func performOpenTerminal() {
+        terminalError = nil
+        Task {
+            do { try await openTerminal() }
+            catch { terminalError = "Couldn't open Terminal. \(error.localizedDescription)" }
         }
     }
     private func updateSeenVisibility() {
@@ -328,7 +411,7 @@ struct ConversationView: View {
             .background(ConversationScrollProbe(driver: scrollDriver))
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
                 // A capped thread doesn't resize when offscreen rows refine their estimates.
-                let nextHeight = ConversationLayout.threadHeight(content: $0, composer: composerHeight, screen: panel.screenHeight)
+                let nextHeight = ConversationLayout.threadHeight(content: $0, composer: composerHeight, screen: panel.screenHeight, strip: stripExtraHeight)
                 if abs(nextHeight - threadHeight) > 0.5 { contentHeight = $0 }
             }
         }
@@ -425,6 +508,7 @@ struct ConversationView: View {
             }
             Button("") { latest(proxy) }.keyboardShortcut(.downArrow, modifiers: .command).focusable(false)
             Button("", action: openSettings).keyboardShortcut(",", modifiers: .command).focusable(false)
+            ConversationStripKeys(jump: { jumpStatus(proxy) }, skip: canSkipFromStrip ? { skipFromStrip() } : nil)
         }.opacity(0).allowsHitTesting(false).accessibilityHidden(true)
     }
 }
@@ -504,6 +588,10 @@ private struct ConversationBubble: View, Equatable {
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel(ConversationLayout.accessibilityLabel(entry, sessions: sessions))
+            if let card, card.response?.skipped == true {
+                Text("Skipped").zeusFont(.caption).foregroundStyle(palette.secondaryText)
+                    .accessibilityElement(children: .ignore).accessibilityLabel("Skipped")
+            }
             if case .userAnswer(_, let response) = entry.content, response.device == .ios { Text("Answered on iPhone").zeusFont(.caption).foregroundStyle(palette.secondaryText) }
             if entry.outcome == .discarded {
                 Text("Discarded").zeusFont(.caption).foregroundStyle(palette.secondaryText)

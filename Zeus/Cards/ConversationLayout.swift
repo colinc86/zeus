@@ -8,6 +8,7 @@ final class ConversationPanelState {
     var isVisible = false
     var focusRequest = 0
     var scrollTargetCardID: String?
+    var focusScrollTarget = false
     var scrollRequest = 0
     var atBottom = true
     #if DEBUG || ZEUS_PERFORMANCE_PROBE
@@ -17,6 +18,7 @@ final class ConversationPanelState {
     @ObservationIgnored var newestMessageTopForDiagnostics: CGFloat?
     @ObservationIgnored var latestButtonVisibleForDiagnostics = false
     @ObservationIgnored var newestMessageFrameForDiagnostics: CGRect?
+    @ObservationIgnored var focusedControlForDiagnostics: ConversationControlTarget?
     #endif
     var composerFocused = false
     var keyboardScroll: ConversationScrollCommand?
@@ -101,8 +103,8 @@ enum ConversationLayout {
         return agent.map(ZeusAgentName.short) ?? "Zeus"
     }
 
-    static func threadHeight(content: CGFloat, composer: CGFloat, screen: CGFloat) -> CGFloat {
-        let maximum = min(ZeusTheme.Conversation.maxThreadHeight, screen * ZeusTheme.Conversation.maxHeightFraction - composer - 54 - ZeusDialogTail.height)
+    static func threadHeight(content: CGFloat, composer: CGFloat, screen: CGFloat, strip: CGFloat = 0) -> CGFloat {
+        let maximum = min(ZeusTheme.Conversation.maxThreadHeight, screen * ZeusTheme.Conversation.maxHeightFraction - composer - strip - 54 - ZeusDialogTail.height)
         return min(max(content, ZeusTheme.Conversation.minThreadHeight), max(0, maximum))
     }
     static func unseenBelow(entries: [ConversationEntry], visible: Set<String>, seen: Set<String>) -> Int {
