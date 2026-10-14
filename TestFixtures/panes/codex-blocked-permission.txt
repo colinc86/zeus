@@ -1,0 +1,41 @@
+%0|53222|0||160|39|codex
+  /model - choose what model and reasoning effort to use
+  /review - review any changes and find issues
+
+
+› M0_USER_codex Reply briefly.
+
+
+• M0_OK
+
+  Worked for 1s • 11:19 PM
+
+
+› M0_WORKING
+
+
+• M0_OK
+
+  Worked for 8s • 11:26 PM
+
+
+› M0_PERMISSION_CODEX
+
+
+• Running /bin/echo M0_PERMISSION
+
+
+  Would you like to run the following command?
+
+  Environment: local
+
+  Reason: M0 harmless permission fixture
+
+  $ /bin/echo M0_PERMISSION
+
+
+› 1. Yes, proceed (y)
+  2. Yes, and don't ask again for commands that start with `/bin/echo M0_PERMISSION` (p)
+  3. No, and tell Codex what to do differently (esc)
+
+  Press enter to confirm or esc to cancel

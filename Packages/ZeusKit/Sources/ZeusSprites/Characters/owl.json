@@ -1,0 +1,979 @@
+{
+  "format": 1,
+  "id": "owl",
+  "name": "Hoot",
+  "summary": "A wise little owl on a branch, all eyes and ear tufts.",
+  "size": [28, 28],
+  "preferredScale": 4,
+  "canvas": {
+    "size": [32, 46],
+    "origin": [2, 14],
+    "anchor": [16, 41]
+  },
+  "emote": {
+    "at": [14, 0]
+  },
+  "palette": {
+    "k": "#2a1a14",
+    "b": "#8a5a3c",
+    "B": "#6b4430",
+    "D": "#55351f",
+    "f": "#d9b98a",
+    "F": "#c29b6b",
+    "c": "#f0dcb4",
+    "v": "#c9a77a",
+    "y": "#ffd23f",
+    "Y": "#e0a020",
+    "e": "#1a100c",
+    "i": "#ffffff",
+    "o": "#f39a2b",
+    "O": "#c56f12",
+    "t": "#5a3d2a",
+    "T": "#42291b",
+    "l": "#7cbf4e",
+    "L": "#4f8a35",
+    "h": "#ffe9a0",
+    "p": "#ff9fb0"
+  },
+  "palettes": {
+    "glow": {"y": "#fff07a", "Y": "#ffcf3a"},
+    "night": {
+      "b": "#6e5a6a",
+      "B": "#55465a",
+      "D": "#44384a",
+      "f": "#b8a6a8",
+      "F": "#9e8c92",
+      "c": "#cfc4c4",
+      "v": "#a8999c",
+      "l": "#5f8f63",
+      "L": "#3f6a4a"
+    },
+    "rosy": {"f": "#f0b9a0"}
+  },
+  "layers": {
+    "branch": {
+      "x": 1,
+      "y": 25,
+      "rows": [
+        ".TTTTTTTTTTTTTTTTTTTTTTT.",
+        "TtttttttttttttttttttttttT",
+        "TTtTTtTTTtTTtTTTtTTtTTTTT",
+        ".TTTTTTTTTTTTTTTTTTTTTTT."
+      ]
+    },
+    "leaf": {
+      "x": 21,
+      "y": 22,
+      "rows": [
+        ".kk.",
+        "kllk",
+        "klLk",
+        "kLk.",
+        ".k.."
+      ]
+    },
+    "body": {
+      "x": 4,
+      "y": 3,
+      "rows": [
+        ".......kkkkkk.......",
+        ".....kkbbbbbbkk.....",
+        "....kbbbbbbbbbbk....",
+        "...kbbbbbbbbbbbbk...",
+        "..kbbbffffffffbbBk..",
+        ".kbbfffffffffffFBBk.",
+        ".kbffffffffffffFFBk.",
+        ".kfffffffffffffFFFk.",
+        "kbfffffffffffffFFFBk",
+        "kbfffffffffffffFFFBk",
+        "kbbffffffffffffFFBBk",
+        "kbbbffffccccfffFBBBk",
+        "kbbbbbcvccvccvbbBBBk",
+        "kbbbbbccccccccbbBBBk",
+        ".kbbbccccccccccbBBk.",
+        ".kbbbccvccvccvcbBBk.",
+        ".kbbbccccccccccbBBk.",
+        "..kbbccccccccccbBk..",
+        "...kbbcvccvccvbbk...",
+        "....kBccccccccBk....",
+        ".....kkBccccBkk.....",
+        ".......kkkkkk......."
+      ]
+    },
+    "tuftL": {
+      "x": 6,
+      "y": 1,
+      "rows": [
+        ".k...",
+        "kbk..",
+        "kbbk.",
+        "kbBbk",
+        ".kkk."
+      ]
+    },
+    "tuftR": {
+      "x": 19,
+      "y": 1,
+      "rows": [
+        "...k.",
+        "..kbk",
+        ".kbbk",
+        "kbBbk",
+        ".kkk."
+      ]
+    },
+    "wingL": {
+      "x": 3,
+      "y": 12,
+      "rows": [
+        "...k.",
+        "..kBk",
+        ".kBBk",
+        "kBBBk",
+        "kBBDk",
+        "kBBDk",
+        "kBDk.",
+        "kDk..",
+        ".k..."
+      ]
+    },
+    "wingR": {
+      "x": 20,
+      "y": 12,
+      "rows": [
+        ".k...",
+        "kBk..",
+        "kBBk.",
+        "kBBBk",
+        "kDBBk",
+        "kDBBk",
+        ".kDBk",
+        "..kDk",
+        "...k."
+      ]
+    },
+    "spreadL": {
+      "x": -2,
+      "y": 10,
+      "rows": [
+        ".......kk.",
+        ".....kkBBk",
+        "...kkBBBBk",
+        ".kkBBBBBDk",
+        "kBBBBBBDk.",
+        "kBBBBBDk..",
+        "kDBDBDk...",
+        "kDkDkDk...",
+        ".k.k.k...."
+      ]
+    },
+    "spreadR": {
+      "x": 19,
+      "y": 10,
+      "rows": [
+        ".kk.......",
+        "kBBkk.....",
+        "kBBBBkk...",
+        "kDBBBBBkk.",
+        ".kDBBBBBBk",
+        "..kDBBBBBk",
+        "...kDBDBDk",
+        "...kDkDkDk",
+        "....k.k.k."
+      ]
+    },
+    "feet": {
+      "x": 10,
+      "y": 24,
+      "rows": [
+        "o.o..o.o"
+      ]
+    },
+    "eyeL": {
+      "x": 7,
+      "y": 8,
+      "rows": [
+        "..kkk..",
+        ".kyyyk.",
+        "kyyyyyk",
+        "kyyyyyk",
+        "kyyyyyk",
+        ".kyyyk.",
+        "..kkk.."
+      ]
+    },
+    "lidL": {
+      "x": 8,
+      "y": 9,
+      "rows": [
+        ".BBB.",
+        "BBBBB",
+        "BBBBB",
+        "BBBBB",
+        ".kkk."
+      ]
+    },
+    "lidHalfL": {
+      "x": 8,
+      "y": 9,
+      "rows": [
+        ".BBB.",
+        "BBBBB",
+        "kkkkk"
+      ]
+    },
+    "happyL": {
+      "x": 8,
+      "y": 9,
+      "rows": [
+        ".fff.",
+        "ffkff",
+        "fkfkf",
+        "kfffk",
+        ".fff."
+      ]
+    },
+    "eyeR": {
+      "x": 15,
+      "y": 8,
+      "rows": [
+        "..kkk..",
+        ".kyyyk.",
+        "kyyyyyk",
+        "kyyyyyk",
+        "kyyyyyk",
+        ".kyyyk.",
+        "..kkk.."
+      ]
+    },
+    "lidR": {
+      "x": 16,
+      "y": 9,
+      "rows": [
+        ".BBB.",
+        "BBBBB",
+        "BBBBB",
+        "BBBBB",
+        ".kkk."
+      ]
+    },
+    "lidHalfR": {
+      "x": 16,
+      "y": 9,
+      "rows": [
+        ".BBB.",
+        "BBBBB",
+        "kkkkk"
+      ]
+    },
+    "happyR": {
+      "x": 16,
+      "y": 9,
+      "rows": [
+        ".fff.",
+        "ffkff",
+        "fkfkf",
+        "kfffk",
+        ".fff."
+      ]
+    },
+    "pupLC": {
+      "x": 10,
+      "y": 11,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "pupRC": {
+      "x": 18,
+      "y": 11,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "pupLL": {
+      "x": 9,
+      "y": 11,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "pupRL": {
+      "x": 17,
+      "y": 11,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "pupLR": {
+      "x": 11,
+      "y": 11,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "pupRR": {
+      "x": 19,
+      "y": 11,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "pupLU": {
+      "x": 10,
+      "y": 10,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "pupRU": {
+      "x": 18,
+      "y": 10,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "pupLUL": {
+      "x": 9,
+      "y": 10,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "pupRUL": {
+      "x": 17,
+      "y": 10,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "pupLUR": {
+      "x": 11,
+      "y": 10,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "pupRUR": {
+      "x": 19,
+      "y": 10,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "pupLD": {
+      "x": 10,
+      "y": 12,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "pupRD": {
+      "x": 18,
+      "y": 12,
+      "rows": [
+        "ie",
+        "ee"
+      ]
+    },
+    "beak": {
+      "x": 12,
+      "y": 13,
+      "rows": [
+        ".kk.",
+        "kook",
+        "koOk",
+        ".kOk",
+        "..k."
+      ]
+    },
+    "beakOpen": {
+      "x": 12,
+      "y": 13,
+      "rows": [
+        ".kk.",
+        "kook",
+        ".kk.",
+        "kOOk",
+        ".kk."
+      ]
+    },
+    "cheeks": {
+      "x": 7,
+      "y": 15,
+      "rows": [
+        "pp.........pp"
+      ]
+    }
+  },
+  "particles": {
+    "feathers": {
+      "colors": ["b", "B", "F"],
+      "area": [4, 10, 20, 8],
+      "velocity": [0, 3],
+      "spread": [6, 2],
+      "life": 1.2,
+      "count": 3,
+      "attached": false
+    },
+    "stars": {
+      "colors": ["h", "y", "p"],
+      "area": [3, 0, 22, 4],
+      "velocity": [0, -4],
+      "spread": [3, 1.5],
+      "life": 1.0,
+      "count": 4
+    },
+    "leafFall": {
+      "colors": ["l", "L"],
+      "area": [18, 24, 6, 2],
+      "velocity": [-1, 2],
+      "spread": [1, 0.5],
+      "life": 2.0,
+      "count": 1,
+      "attached": false
+    }
+  },
+  "animations": {
+    "idle": {
+      "fps": 2,
+      "motion": {"type": "bob", "amplitude": 1, "period": 3.8},
+      "frames": [
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            "wingR",
+            "eyeL",
+            "eyeR",
+            "pupLC",
+            "pupRC",
+            "beak"
+          ],
+          "hold": 6
+        },
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            "wingR",
+            "eyeL",
+            "eyeR",
+            "pupLL",
+            "pupRL",
+            "beak"
+          ],
+          "hold": 2
+        },
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            "wingR",
+            "eyeL",
+            "eyeR",
+            "pupLC",
+            "pupRC",
+            "beak"
+          ],
+          "hold": 4
+        },
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            "wingR",
+            "eyeL",
+            "eyeR",
+            "pupLR",
+            "pupRR",
+            "beak"
+          ],
+          "hold": 2
+        }
+      ],
+      "accents": [
+        {
+          "layers": ["lidL", "lidR"],
+          "every": [3, 6],
+          "duration": 0.2
+        },
+        {
+          "layers": ["lidHalfL"],
+          "every": [7, 12],
+          "duration": 0.6
+        }
+      ]
+    },
+    "talking": {
+      "fps": 6,
+      "frames": [
+        [
+          "branch",
+          "leaf",
+          "feet",
+          "body",
+          "tuftL",
+          "tuftR",
+          "wingL",
+          {"layer": "wingR", "dy": -1},
+          "eyeL",
+          "eyeR",
+          "pupLC",
+          "pupRC",
+          "beakOpen"
+        ],
+        [
+          "branch",
+          "leaf",
+          "feet",
+          "body",
+          "tuftL",
+          "tuftR",
+          "wingL",
+          {"layer": "wingR", "dy": -1},
+          "eyeL",
+          "eyeR",
+          "pupLC",
+          "pupRC",
+          "beak"
+        ],
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            {"layer": "wingR", "dy": -1},
+            "eyeL",
+            "eyeR",
+            "pupLC",
+            "pupRC",
+            "beakOpen"
+          ],
+          "hold": 2
+        },
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            {"layer": "wingR", "dy": -1},
+            "eyeL",
+            "eyeR",
+            "pupLC",
+            "pupRC",
+            "beak"
+          ],
+          "hold": 2
+        }
+      ],
+      "accents": [{"layers": ["lidL", "lidR"], "every": [3, 6], "duration": 0.2}]
+    },
+    "thinking": {
+      "fps": 3,
+      "motion": {"type": "sway", "amplitude": 1, "period": 4},
+      "frames": [
+        [
+          "branch",
+          "leaf",
+          "feet",
+          "body",
+          "tuftL",
+          "tuftR",
+          "wingL",
+          "wingR",
+          "eyeL",
+          "eyeR",
+          "pupLU",
+          "pupRU",
+          "beak"
+        ],
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            "wingR",
+            "eyeL",
+            "eyeR",
+            "pupLUR",
+            "pupRUR",
+            "beak"
+          ],
+          "hold": 2
+        },
+        [
+          "branch",
+          "leaf",
+          "feet",
+          "body",
+          "tuftL",
+          "tuftR",
+          "wingL",
+          "wingR",
+          "eyeL",
+          "eyeR",
+          "pupLR",
+          "pupRR",
+          "beak"
+        ],
+        [
+          "branch",
+          "leaf",
+          "feet",
+          "body",
+          "tuftL",
+          "tuftR",
+          "wingL",
+          "wingR",
+          "eyeL",
+          "eyeR",
+          "pupLD",
+          "pupRD",
+          "beak"
+        ],
+        [
+          "branch",
+          "leaf",
+          "feet",
+          "body",
+          "tuftL",
+          "tuftR",
+          "wingL",
+          "wingR",
+          "eyeL",
+          "eyeR",
+          "pupLL",
+          "pupRL",
+          "beak"
+        ],
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            "wingR",
+            "eyeL",
+            "eyeR",
+            "pupLUL",
+            "pupRUL",
+            "beak"
+          ],
+          "hold": 2
+        }
+      ],
+      "accents": [{"layers": ["lidL", "lidR"], "every": [3, 6], "duration": 0.2}]
+    },
+    "working": {
+      "fps": 4,
+      "palette": "glow",
+      "frames": [
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            "wingR",
+            "eyeL",
+            "eyeR",
+            "pupLD",
+            "pupRD",
+            "lidHalfL",
+            "lidHalfR",
+            "beak"
+          ],
+          "hold": 2
+        },
+        [
+          "branch",
+          "leaf",
+          "feet",
+          "body",
+          "tuftL",
+          "tuftR",
+          "wingL",
+          {"layer": "wingR", "dy": -1},
+          "eyeL",
+          "eyeR",
+          "pupLD",
+          "pupRD",
+          "lidHalfL",
+          "lidHalfR",
+          "beak"
+        ],
+        [
+          "branch",
+          "leaf",
+          "feet",
+          "body",
+          "tuftL",
+          "tuftR",
+          {"layer": "wingL", "dy": -1},
+          "wingR",
+          "eyeL",
+          "eyeR",
+          "pupLD",
+          "pupRD",
+          "lidHalfL",
+          "lidHalfR",
+          "beak"
+        ]
+      ],
+      "particles": ["leafFall"]
+    },
+    "alert": {
+      "fps": 6,
+      "palette": "glow",
+      "motion": {"type": "hop", "amplitude": 2, "period": 0.8},
+      "frames": [
+        [
+          "branch",
+          "leaf",
+          "feet",
+          "body",
+          "tuftL",
+          "tuftR",
+          "spreadL",
+          "spreadR",
+          "eyeL",
+          "eyeR",
+          "pupLC",
+          "pupRC",
+          "beakOpen"
+        ],
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "spreadL",
+            "spreadR",
+            "eyeL",
+            "eyeR",
+            "pupLC",
+            "pupRC",
+            "beakOpen"
+          ],
+          "dy": -1
+        }
+      ],
+      "particles": ["feathers"]
+    },
+    "waiting": {
+      "fps": 2,
+      "motion": {"type": "sway", "amplitude": 1, "period": 3},
+      "frames": [
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            "wingR",
+            "eyeL",
+            "eyeR",
+            "pupLC",
+            "pupRC",
+            "beak"
+          ],
+          "hold": 3
+        },
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            "wingR",
+            "eyeL",
+            "eyeR",
+            "pupLR",
+            "pupRR",
+            "beak"
+          ],
+          "hold": 2
+        },
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            "wingR",
+            "eyeL",
+            "eyeR",
+            "pupLC",
+            "pupRC",
+            "beak"
+          ],
+          "hold": 2
+        },
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            "wingR",
+            "eyeL",
+            "eyeR",
+            "pupLL",
+            "pupRL",
+            "beak"
+          ],
+          "hold": 2
+        }
+      ],
+      "accents": [{"layers": ["lidL", "lidR"], "every": [3, 6], "duration": 0.2}]
+    },
+    "happy": {
+      "fps": 5,
+      "palette": "rosy",
+      "motion": {"type": "hop", "amplitude": 1, "period": 0.7},
+      "frames": [
+        [
+          "branch",
+          "leaf",
+          "feet",
+          "body",
+          "tuftL",
+          "tuftR",
+          "spreadL",
+          "spreadR",
+          "happyL",
+          "happyR",
+          "beakOpen",
+          "cheeks"
+        ],
+        [
+          "branch",
+          "leaf",
+          "feet",
+          "body",
+          "tuftL",
+          "tuftR",
+          "wingL",
+          "wingR",
+          "happyL",
+          "happyR",
+          "beakOpen",
+          "cheeks"
+        ]
+      ],
+      "particles": ["stars"]
+    },
+    "sleeping": {
+      "fps": 1,
+      "palette": "night",
+      "frames": [
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            "wingR",
+            "eyeL",
+            "eyeR",
+            "lidL",
+            "lidR",
+            "beak"
+          ],
+          "hold": 3
+        },
+        {
+          "layers": [
+            "branch",
+            "leaf",
+            "feet",
+            "body",
+            "tuftL",
+            "tuftR",
+            "wingL",
+            "wingR",
+            "eyeL",
+            "eyeR",
+            "lidL",
+            "lidR",
+            "beak"
+          ],
+          "dy": 1,
+          "hold": 3
+        }
+      ],
+      "particles": ["leafFall"],
+      "particleFPS": 6
+    }
+  }
+}

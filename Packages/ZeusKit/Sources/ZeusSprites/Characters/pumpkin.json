@@ -1,0 +1,528 @@
+{
+  "format": 1,
+  "id": "pumpkin",
+  "name": "Jack",
+  "summary": "A jack-o'-lantern with a flickering candle grin and a shower of embers.",
+  "size": [24, 24],
+  "preferredScale": 5,
+  "canvas": {
+    "size": [28, 38],
+    "origin": [2, 12],
+    "anchor": [14, 34]
+  },
+  "emote": {
+    "at": [12, 2]
+  },
+  "palette": {
+    "k": "#2a1a1f",
+    "o": "#f08a24",
+    "O": "#c7601a",
+    "d": "#9c4515",
+    "h": "#ffb35c",
+    "g": "#6b8f3a",
+    "G": "#3f5a22",
+    "l": "#8cc63f",
+    "L": "#5a8f2a",
+    "f": "#ffe066",
+    "F": "#ffb020",
+    "r": "#7a2e0a",
+    "e": "#fff6c8"
+  },
+  "palettes": {
+    "flickA": {"f": "#fff3a6", "F": "#ffc94a"},
+    "flickB": {"f": "#ffd34d", "F": "#ff9a1a"},
+    "flare": {"f": "#ffffff", "F": "#fff07a", "o": "#ff9d3a", "h": "#ffc878"},
+    "dark": {"f": "#4a2316", "F": "#3a1a10", "o": "#c8701f", "O": "#a24f16", "d": "#7a3510", "h": "#de9448"}
+  },
+  "layers": {
+    "body": {
+      "x": 2,
+      "y": 7,
+      "rows": [
+        "....kkkkkkkkkkkk....",
+        "..kkohooOooOooookk..",
+        ".kohhooOooooOoooook.",
+        ".kohooOooooooOooook.",
+        "kohooOooooooooOooook",
+        "kooooOooooooooOooook",
+        "kooooOooooooooOooook",
+        "kooooOooooooooOooook",
+        "kooooOooooooooOooook",
+        "kOoooOooooooooOoooOk",
+        "kOOooOOooooooOOooOOk",
+        ".kOOoOOooooooOOoOOk.",
+        ".kdOOOdOOOOOOdOOOdk.",
+        "..kkddddddddddddkk..",
+        "....kkkkkkkkkkkk...."
+      ]
+    },
+    "stem": {
+      "x": 10,
+      "y": 3,
+      "rows": [
+        "..kk",
+        ".kgk",
+        "kgGk",
+        "kgGk",
+        "kgGk"
+      ]
+    },
+    "leafA": {
+      "x": 13,
+      "y": 3,
+      "rows": [
+        ".kkk.",
+        "kllLk",
+        "klLk.",
+        ".kk.."
+      ]
+    },
+    "leafB": {
+      "x": 13,
+      "y": 3,
+      "rows": [
+        "..kk.",
+        ".kllk",
+        "kllLk",
+        ".kkk."
+      ]
+    },
+    "vine": {
+      "x": 7,
+      "y": 4,
+      "rows": [
+        "GG.",
+        "G.G",
+        ".GG"
+      ]
+    },
+    "eyesSide": {
+      "x": 5,
+      "y": 10,
+      "rows": [
+        "...r.........r...",
+        "..rfr.......rfr..",
+        ".rfFfr.....rfFfr.",
+        "rfFFFfr...rfFFFfr",
+        ".rrrrr.....rrrrr."
+      ]
+    },
+    "eyes": {
+      "x": 4,
+      "y": 10,
+      "rows": [
+        "...r.........r...",
+        "..rfr.......rfr..",
+        ".rfFfr.....rfFfr.",
+        "rfFFFfr...rfFFFfr",
+        ".rrrrr.....rrrrr."
+      ]
+    },
+    "eyesHappy": {
+      "x": 4,
+      "y": 10,
+      "rows": [
+        "...r.........r...",
+        "..rfr.......rfr..",
+        ".rfrfr.....rfrfr.",
+        "rfr.rfr...rfr.rfr",
+        ".r...r.....r...r."
+      ]
+    },
+    "eyesShut": {
+      "x": 4,
+      "y": 10,
+      "rows": [
+        ".................",
+        ".................",
+        ".rrrrr.....rrrrr.",
+        "rfffffr...rfffffr",
+        ".rrrrr.....rrrrr."
+      ]
+    },
+    "eyesFocus": {
+      "x": 4,
+      "y": 10,
+      "rows": [
+        ".rrrrr.....rrrrr.",
+        "rfffffr...rfffffr",
+        ".rfFfr.....rfFfr.",
+        "..rfr.......rfr..",
+        "...r.........r..."
+      ]
+    },
+    "eyesWide": {
+      "x": 4,
+      "y": 10,
+      "rows": [
+        "..rrr.......rrr..",
+        ".rfffr.....rfffr.",
+        "rfFeFfr...rfFeFfr",
+        "rfFFFfr...rfFFFfr",
+        ".rrrrr.....rrrrr."
+      ]
+    },
+    "eyesUp": {
+      "x": 4,
+      "y": 10,
+      "rows": [
+        "...r.........r...",
+        "..rfr.......rfr..",
+        ".rfFfr.....rfFfr.",
+        "..rrr.......rrr..",
+        "................."
+      ]
+    },
+    "mouth": {
+      "x": 5,
+      "y": 14,
+      "rows": [
+        ".r..........r.",
+        "rfr.r....r.rfr",
+        "rffrfrrrrfrffr",
+        ".rffffffffffr.",
+        "..rffFFFFffr..",
+        "...rrrrrrrr..."
+      ]
+    },
+    "mouthOpen": {
+      "x": 5,
+      "y": 14,
+      "rows": [
+        ".r..........r.",
+        "rfrrrrrrrrrrfr",
+        "rffffffffffffr",
+        ".rffFFFFFFffr.",
+        "..rffffffffr..",
+        "...rrrrrrrr..."
+      ]
+    },
+    "mouthMid": {
+      "x": 5,
+      "y": 14,
+      "rows": [
+        "..............",
+        ".rr.r....r.rr.",
+        "rffrfrrrrfrffr",
+        ".rffFFFFFFffr.",
+        "..rrrrrrrrrr..",
+        ".............."
+      ]
+    },
+    "mouthFlat": {
+      "x": 5,
+      "y": 14,
+      "rows": [
+        "..............",
+        "...rrrrrrrr...",
+        "..rffffffffr..",
+        "...rfrrrrfr...",
+        "....r....r....",
+        ".............."
+      ]
+    },
+    "mouthO": {
+      "x": 5,
+      "y": 14,
+      "rows": [
+        ".....rrrr.....",
+        "....rffffr....",
+        "...rfFFFFfr...",
+        "...rfFFFFfr...",
+        "....rffffr....",
+        ".....rrrr....."
+      ]
+    },
+    "mouthGrin": {
+      "x": 5,
+      "y": 14,
+      "rows": [
+        ".rr........rr.",
+        "rffr.rr.r.rffr",
+        "rfffrffrfrfffr",
+        ".rffffffffffr.",
+        "..rfFFFFFFfr..",
+        "...rrrrrrrr..."
+      ]
+    },
+    "mouthSnore": {
+      "x": 5,
+      "y": 14,
+      "rows": [
+        "..............",
+        ".....rrrr.....",
+        "....rffffr....",
+        ".....rrrr.....",
+        "..............",
+        ".............."
+      ]
+    }
+  },
+  "particles": {
+    "embers": {
+      "colors": ["f", "F", "r"],
+      "area": [8, 4, 8, 3],
+      "velocity": [0, -6],
+      "spread": [3, 2],
+      "life": 1.0,
+      "count": 3
+    },
+    "embersHot": {
+      "colors": ["e", "f", "F", "r"],
+      "area": [6, 3, 12, 4],
+      "velocity": [0, -9],
+      "spread": [5, 3],
+      "life": 0.8,
+      "count": 7
+    },
+    "smoke": {
+      "colors": ["d", "r"],
+      "area": [9, 2, 6, 2],
+      "velocity": [1, -3],
+      "spread": [1, 1],
+      "life": 1.8,
+      "count": 2
+    }
+  },
+  "animations": {
+    "idle": {
+      "fps": 8,
+      "motion": {"type": "bob", "amplitude": 1, "period": 2.4},
+      "base": ["body", "stem", "vine", "eyes", "mouth"],
+      "frames": [
+        {
+          "layers": ["leafA"],
+          "palette": "flickA",
+          "hold": 1
+        },
+        {
+          "layers": ["leafA"],
+          "hold": 2
+        },
+        {
+          "layers": ["leafA"],
+          "palette": "flickB",
+          "hold": 1
+        },
+        {
+          "layers": ["leafA"],
+          "palette": "flickA",
+          "hold": 1
+        },
+        {
+          "layers": ["leafB"],
+          "hold": 1
+        },
+        {
+          "layers": ["leafB"],
+          "palette": "flickB",
+          "hold": 2
+        },
+        {
+          "layers": ["leafB"],
+          "hold": 1
+        }
+      ],
+      "particles": ["embers"],
+      "particleFPS": 6,
+      "accents": [
+        {
+          "layers": ["eyesSide"],
+          "every": [5, 9],
+          "duration": 1.0
+        },
+        {
+          "layers": ["eyesShut"],
+          "every": [3, 6],
+          "duration": 0.15
+        },
+        {
+          "palette": "flare",
+          "every": [2.5, 5],
+          "duration": 0.12,
+          "chance": 0.7
+        }
+      ]
+    },
+    "talking": {
+      "fps": 7,
+      "motion": {"type": "bob", "amplitude": 1, "period": 2.4},
+      "base": ["body", "stem", "vine", "eyes"],
+      "frames": [
+        {
+          "layers": ["leafA", "mouthOpen"],
+          "palette": "flickA"
+        },
+        ["leafA", "mouthMid"],
+        {
+          "layers": ["leafB", "mouth"],
+          "palette": "flickB"
+        },
+        {
+          "layers": ["leafB", "mouthOpen"],
+          "hold": 2
+        },
+        {
+          "layers": ["leafA", "mouthMid"],
+          "palette": "flickA"
+        },
+        {
+          "layers": ["leafA", "mouth"],
+          "hold": 2
+        }
+      ],
+      "particles": ["embers"],
+      "particleFPS": 6,
+      "accents": [{"layers": ["eyesShut"], "every": [3, 6], "duration": 0.15}]
+    },
+    "thinking": {
+      "fps": 6,
+      "motion": {"type": "sway", "amplitude": 1, "period": 3.6},
+      "base": ["body", "stem", "vine", "eyesUp", "mouthFlat"],
+      "frames": [
+        {
+          "layers": ["leafA"],
+          "palette": "flickA",
+          "hold": 1
+        },
+        {
+          "layers": ["leafA"],
+          "hold": 2
+        },
+        {
+          "layers": ["leafA"],
+          "palette": "flickB",
+          "hold": 1
+        },
+        {
+          "layers": ["leafA"],
+          "palette": "flickA",
+          "hold": 1
+        },
+        {
+          "layers": ["leafA"],
+          "hold": 1
+        },
+        {
+          "layers": ["leafA"],
+          "palette": "flickB",
+          "hold": 2
+        },
+        {
+          "layers": ["leafA"],
+          "hold": 1
+        }
+      ],
+      "particles": ["smoke"],
+      "particleFPS": 6
+    },
+    "working": {
+      "fps": 10,
+      "motion": {"type": "bob", "amplitude": 1, "period": 0.45},
+      "base": ["body", "stem", "vine", "eyesFocus", "mouthFlat"],
+      "frames": [
+        {
+          "layers": ["leafA"],
+          "palette": "flare"
+        },
+        {
+          "layers": ["leafA"],
+          "palette": "flickA"
+        },
+        ["leafB"],
+        {
+          "layers": ["leafB"],
+          "palette": "flickB"
+        },
+        {
+          "layers": ["leafA"],
+          "palette": "flickA"
+        },
+        {
+          "layers": ["leafB"],
+          "palette": "flare"
+        }
+      ],
+      "particles": ["embersHot"]
+    },
+    "alert": {
+      "fps": 8,
+      "motion": {"type": "hop", "amplitude": 3, "period": 0.6},
+      "base": ["body", "stem", "vine", "eyesWide", "mouthO"],
+      "frames": [
+        {
+          "layers": ["leafB"],
+          "palette": "flare"
+        },
+        {
+          "layers": ["leafA"],
+          "palette": "flickA"
+        },
+        ["leafB"],
+        {
+          "layers": ["leafA"],
+          "palette": "flickB"
+        }
+      ],
+      "particles": ["embersHot"]
+    },
+    "waiting": {
+      "fps": 6,
+      "motion": {"type": "sway", "amplitude": 1, "period": 2.8},
+      "base": ["body", "stem", "vine", "mouthFlat"],
+      "frames": [
+        {
+          "layers": ["leafA", "eyes"],
+          "palette": "flickA",
+          "hold": 4
+        },
+        {
+          "layers": ["leafB", "eyes"],
+          "hold": 4
+        },
+        {
+          "layers": ["leafA", "eyesSide"],
+          "palette": "flickB",
+          "hold": 4
+        },
+        {
+          "layers": ["leafB", "eyesSide"],
+          "hold": 4
+        }
+      ],
+      "particles": ["embers"],
+      "particleFPS": 6,
+      "accents": [{"layers": ["eyesShut"], "every": [3, 6], "duration": 0.15}]
+    },
+    "happy": {
+      "fps": 8,
+      "motion": {"type": "hop", "amplitude": 2, "period": 0.7},
+      "base": ["body", "stem", "vine", "eyesHappy", "mouthGrin"],
+      "frames": [
+        {
+          "layers": ["leafA"],
+          "palette": "flickA"
+        },
+        {
+          "layers": ["leafB"],
+          "palette": "flare"
+        },
+        ["leafA"],
+        {
+          "layers": ["leafB"],
+          "palette": "flickB"
+        }
+      ],
+      "particles": ["embersHot"]
+    },
+    "sleeping": {
+      "fps": 1,
+      "palette": "dark",
+      "motion": {"type": "float", "amplitude": 1, "period": 5},
+      "base": ["body", "stem", "vine", "eyesShut"],
+      "frames": [{"layers": ["leafA", "mouthSnore"], "hold": 2}, {"layers": ["leafB", "mouthFlat"], "hold": 2}],
+      "particles": ["smoke"],
+      "particleFPS": 6
+    }
+  }
+}

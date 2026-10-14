@@ -1,0 +1,40 @@
+%0|27345|0||5|34|opencode
+
+  ┃                                                                                                                     M0_OK
+  ┃  M0_USER_opencode Reply briefly.
+  ┃                                                                                                                     Context
+                                                                                                                        2 tokens
+     M0_OK                                                                                                              0% used
+                                                                                                                        $0.00 spent
+     ▣  Build · GPT-4.1 mini · 2.5s
+                                                                                                                        MCP
+                                                                                                                        • zeus Connected
+
+                                                                                                                        LSP
+                                                                                                                        LSPs are disabled
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  ┃
+  ┃
+  ┃                                                                                                                     /private/tmp/zm0_a8ung6ol/opencode/
+  ┃  Build · GPT-4.1 mini OpenAI                                                                                        project
+  ╹▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+   /private/tmp/zm0_a8ung6ol/opencode/project                                        2 (0%) · $0.00  ctrl+p commands    • OpenCode 1.18.31

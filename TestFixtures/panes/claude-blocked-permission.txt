@@ -1,0 +1,38 @@
+%0|52943|0||1|33|2.1.296
+
+ ▐▛███▛█   Claude Code v2.1.296
+▝▜██████▀  Haiku 4.5 · API Usage Billing
+ ▝▝   ▝▝   /private/tmp/zm0_a8ung6ol/claude/project
+
+
+❯ M0_USER_claude Reply briefly.
+
+⏺ M0_OK
+
+✻ Cogitated for 1s · done 11:21 PM
+
+❯ M0_WORKING
+
+⏺ M0_OK
+
+✻ Worked for 8s · done 11:23 PM
+
+❯ M0_PERMISSION_CLAUDE
+
+⏺ M0 harmless permission fixture
+  ⎿  $ /bin/echo M0_PERMISSION > m0-permission.txt
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Bash command
+ M0 harmless permission fixture
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ /bin/echo M0_PERMISSION > m0-permission.txt
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ Permission rule Bash requires confirmation for this command.
+ /permissions to update rules
+
+ Do you want to proceed?
+ ❯ 1. Yes
+   2. No
+
+ Esc to cancel · Tab to amend

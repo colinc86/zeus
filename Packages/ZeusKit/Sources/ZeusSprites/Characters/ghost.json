@@ -1,0 +1,470 @@
+{
+  "format": 1,
+  "id": "ghost",
+  "name": "Wisp",
+  "summary": "A friendly little ghost who drifts, fades and trails wisps.",
+  "size": [24, 24],
+  "preferredScale": 5,
+  "canvas": {
+    "size": [28, 40],
+    "origin": [2, 13],
+    "anchor": [14, 34]
+  },
+  "emote": {
+    "at": [12, 1]
+  },
+  "palette": {
+    "k": "#2b2440",
+    "w": "#f6f4ff",
+    "l": "#d6d2f0",
+    "L": "#b3acdc",
+    "h": "#ffffff",
+    "e": "#2b2440",
+    "i": "#ffffff",
+    "m": "#7a3d6b",
+    "p": "#f7b6d2",
+    "b": "#6f7fe0",
+    "B": "#4b55b8",
+    "y": "#fff6c8",
+    "c": "#bfe9ff"
+  },
+  "palettes": {
+    "fade": {"w": "#f6f4ff99", "l": "#d6d2f099", "L": "#b3acdc99", "h": "#ffffffaa", "k": "#2b2440aa"},
+    "faint": {"w": "#f6f4ffcc", "l": "#d6d2f0cc", "L": "#b3acdccc", "k": "#2b2440dd"},
+    "rosy": {"p": "#ff8fbd"},
+    "glow": {"w": "#fbfbff", "l": "#e3e6ff", "L": "#c4c8f4"},
+    "night": {"w": "#dcdcf2", "l": "#b9b6de", "L": "#9590c8", "h": "#ececff"}
+  },
+  "layers": {
+    "body": {
+      "x": 3,
+      "y": 2,
+      "rows": [
+        "......kkkkkk......",
+        "....kkwwwwwwkk....",
+        "...kwwwwwwwwwwk...",
+        "..kwwwwwwwwwwwwk..",
+        "..kwwwwwwwwwwwwk..",
+        ".kwwwwwwwwwwwwwwk.",
+        ".kwwwwwwwwwwwwwwk.",
+        ".kwwwwwwwwwwwwwwk.",
+        ".kwwwwwwwwwwwwwwk.",
+        ".klwwwwwwwwwwwwlk.",
+        ".klwwwwwwwwwwwwlk.",
+        "klwwwwwwwwwwwwwwlk",
+        "klwwwwwwwwwwwwwwlk",
+        "kllwwwwwwwwwwwwllk"
+      ]
+    },
+    "shine": {
+      "x": 7,
+      "y": 4,
+      "rows": [
+        "..hh",
+        ".hh.",
+        ".h.."
+      ]
+    },
+    "cheeks": {
+      "x": 5,
+      "y": 11,
+      "rows": [
+        "pp.........pp"
+      ]
+    },
+    "tailA": {
+      "x": 3,
+      "y": 16,
+      "rows": [
+        "kLLLwwwwwLwwwwlLLk",
+        "kLLkLwwwLkLwwwLkLk",
+        "kLk.kLwLk.kLwLk.k.",
+        ".k...kLk...kLk....",
+        "......k.....k....."
+      ]
+    },
+    "tailB": {
+      "x": 3,
+      "y": 16,
+      "rows": [
+        "kLLlwwwLwwwwwLlLLk",
+        ".kLlwwLkLwwwLkLLLk",
+        "..kLwLk.kLwLk.kLLk",
+        "...kLk...kLk...kLk",
+        "....k.....k.....k."
+      ]
+    },
+    "tailC": {
+      "x": 3,
+      "y": 16,
+      "rows": [
+        "kLLlwLwwwwwLwwlLLk",
+        "kLLlLkLwwwLkLwlLLk",
+        "kLLLk.kLwLk.kLlLk.",
+        ".kLk...kLk...kLk..",
+        "..k.....k.....k..."
+      ]
+    },
+    "eyesSide": {
+      "x": 9,
+      "y": 8,
+      "rows": [
+        "ie....ie",
+        "ee....ee",
+        "ee....ee"
+      ]
+    },
+    "eyesHappy": {
+      "x": 7,
+      "y": 8,
+      "rows": [
+        ".k.....k.",
+        "k.k...k.k"
+      ]
+    },
+    "eyesWide": {
+      "x": 7,
+      "y": 7,
+      "rows": [
+        ".kk....kk.",
+        "kiik..kiik",
+        "kiek..keik",
+        "kiik..kiik",
+        ".kk....kk."
+      ]
+    },
+    "nightcap": {
+      "x": 6,
+      "y": -3,
+      "rows": [
+        "...........kk.",
+        "..........kyyk",
+        "........kkkyyk",
+        "......kkBbbk..",
+        "....kkBbbbbk..",
+        "...kBbbbbbbk..",
+        "..kBbbbbbbBk..",
+        ".kyyyyyyyyyyk.",
+        ".kyyyyyyyyyyk.",
+        "..kkkkkkkkkk.."
+      ]
+    },
+    "eyes": {
+      "x": 8,
+      "y": 8,
+      "rows": [
+        "ie....ie",
+        "ee....ee",
+        "ee....ee"
+      ]
+    },
+    "eyesUp": {
+      "x": 8,
+      "y": 8,
+      "rows": [
+        "ie....ie",
+        "ee....ee",
+        "........"
+      ]
+    },
+    "eyesFocus": {
+      "x": 8,
+      "y": 8,
+      "rows": [
+        "kk....kk",
+        "ee....ee",
+        "ee....ee"
+      ]
+    },
+    "eyesBlink": {
+      "x": 8,
+      "y": 8,
+      "rows": [
+        "........",
+        "........",
+        "kk....kk"
+      ]
+    },
+    "mouth": {
+      "x": 10,
+      "y": 11,
+      "rows": [
+        "k..k",
+        ".kk.",
+        "...."
+      ]
+    },
+    "mouthOpen": {
+      "x": 10,
+      "y": 11,
+      "rows": [
+        ".kk.",
+        "kmmk",
+        ".kk."
+      ]
+    },
+    "mouthMid": {
+      "x": 10,
+      "y": 11,
+      "rows": [
+        "....",
+        "kmmk",
+        ".kk."
+      ]
+    },
+    "mouthFlat": {
+      "x": 10,
+      "y": 11,
+      "rows": [
+        "....",
+        ".kk.",
+        "...."
+      ]
+    },
+    "mouthO": {
+      "x": 10,
+      "y": 11,
+      "rows": [
+        ".kk.",
+        "kmmk",
+        "kmmk"
+      ]
+    },
+    "mouthGrin": {
+      "x": 10,
+      "y": 11,
+      "rows": [
+        "kkkk",
+        "kmmk",
+        ".kk."
+      ]
+    },
+    "mouthSnore": {
+      "x": 10,
+      "y": 11,
+      "rows": [
+        "....",
+        ".kk.",
+        ".kk."
+      ]
+    },
+    "armL": {
+      "x": 1,
+      "y": 12,
+      "rows": [
+        ".kk",
+        "kww",
+        "kLw",
+        ".kk"
+      ]
+    },
+    "armR": {
+      "x": 20,
+      "y": 12,
+      "rows": [
+        "kk.",
+        "wwk",
+        "wLk",
+        "kk."
+      ]
+    },
+    "armLUp": {
+      "x": 1,
+      "y": 6,
+      "rows": [
+        ".kk.",
+        "kwwk",
+        "kwLk",
+        ".kww",
+        "..kw"
+      ]
+    },
+    "armRUp": {
+      "x": 19,
+      "y": 6,
+      "rows": [
+        ".kk.",
+        "kwwk",
+        "kLwk",
+        "wwk.",
+        "wk.."
+      ]
+    }
+  },
+  "particles": {
+    "wisps": {
+      "colors": ["w", "l", "L"],
+      "area": [1, 8, 22, 12],
+      "velocity": [0, -5],
+      "spread": [1.5, 1.5],
+      "life": 1.6,
+      "count": 4,
+      "behind": true,
+      "attached": false
+    },
+    "wispsFast": {
+      "colors": ["h", "w", "l", "L"],
+      "area": [0, 6, 24, 14],
+      "velocity": [0, -9],
+      "spread": [2, 2],
+      "life": 1.0,
+      "count": 7,
+      "behind": true,
+      "attached": false
+    },
+    "sparkles": {
+      "colors": ["h", "y", "p"],
+      "area": [2, 0, 20, 6],
+      "velocity": [0, -4],
+      "spread": [3, 1.5],
+      "life": 0.9,
+      "count": 3
+    }
+  },
+  "animations": {
+    "idle": {
+      "fps": 4,
+      "motion": {"type": "float", "amplitude": 2, "period": 2.6},
+      "base": ["body", "shine", "cheeks", "eyes", "mouth"],
+      "frames": [["tailA", "armL", "armR"], ["tailB", "armL", "armR"], ["tailC", "armL", "armR"]],
+      "particles": ["wisps"],
+      "particleFPS": 6,
+      "accents": [
+        {
+          "layers": ["eyesSide"],
+          "every": [5, 9],
+          "duration": 1.1
+        },
+        {
+          "layers": ["eyesBlink"],
+          "every": [2.5, 5.5],
+          "duration": 0.15
+        }
+      ]
+    },
+    "talking": {
+      "fps": 6,
+      "motion": {"type": "float", "amplitude": 2, "period": 2.6},
+      "base": ["body", "shine", "cheeks", "eyes"],
+      "frames": [
+        ["tailA", "mouthOpen", "armL", "armR"],
+        ["tailB", "mouthMid", "armLUp", "armR"],
+        ["tailC", "mouth", "armLUp", "armR"],
+        ["tailA", "mouthOpen", "armL", "armR"],
+        ["tailB", "mouthOpen", "armL", "armRUp"],
+        ["tailC", "mouthMid", "armL", "armRUp"]
+      ],
+      "particles": ["wisps"],
+      "particleFPS": 6,
+      "accents": [{"layers": ["eyesBlink"], "every": [2.5, 5.5], "duration": 0.15}]
+    },
+    "thinking": {
+      "fps": 3,
+      "motion": {"type": "float", "amplitude": 1, "period": 3.6},
+      "base": ["body", "shine", "cheeks", "eyesUp", "mouthFlat", "armR"],
+      "frames": [["tailA", "armLUp"], ["tailB", "armLUp"], ["tailC", "armLUp"]],
+      "particles": ["wisps"],
+      "particleFPS": 6,
+      "accents": [{"layers": ["eyesBlink"], "every": [2.5, 5.5], "duration": 0.15}]
+    },
+    "working": {
+      "fps": 6,
+      "motion": {"type": "float", "amplitude": 1, "period": 1.4},
+      "base": ["body", "shine", "cheeks", "eyesFocus", "mouthFlat"],
+      "frames": [
+        {
+          "layers": ["tailA", "armLUp", "armR"],
+          "palette": "faint"
+        },
+        {
+          "layers": ["tailB", "armL", "armRUp"],
+          "palette": "fade"
+        },
+        {
+          "layers": ["tailC", "armLUp", "armR"],
+          "palette": "fade"
+        },
+        {
+          "layers": ["tailA", "armL", "armRUp"],
+          "palette": "faint"
+        }
+      ],
+      "particles": ["wispsFast"]
+    },
+    "alert": {
+      "fps": 8,
+      "motion": {"type": "shake", "amplitude": 1, "period": 0.07},
+      "base": ["body", "shine", "cheeks", "eyesWide", "mouthO", "armLUp", "armRUp"],
+      "frames": [{"layers": ["tailA"], "dy": -1}, {"layers": ["tailB"], "dy": -1}, ["tailC"], ["tailA"]],
+      "particles": ["wispsFast"],
+      "accents": [{"palette": "glow", "every": [0.8, 1.4], "duration": 0.12}]
+    },
+    "waiting": {
+      "fps": 3,
+      "motion": {"type": "sway", "amplitude": 1, "period": 3.2},
+      "base": ["body", "shine", "cheeks", "mouthFlat", "armL", "armR"],
+      "frames": [
+        ["tailA", "eyes"],
+        ["tailB", "eyes"],
+        {
+          "layers": ["tailC", "eyes"],
+          "hold": 2
+        },
+        ["tailA", "eyesSide"],
+        ["tailB", "eyesSide"],
+        {
+          "layers": ["tailC", "eyesSide"],
+          "hold": 2
+        }
+      ],
+      "particles": ["wisps"],
+      "particleFPS": 6,
+      "accents": [{"layers": ["eyesBlink"], "every": [2.5, 5.5], "duration": 0.15}]
+    },
+    "happy": {
+      "fps": 6,
+      "palette": "rosy",
+      "motion": {"type": "hop", "amplitude": 2, "period": 0.8},
+      "base": ["body", "shine", "cheeks", "eyesHappy", "mouthGrin"],
+      "frames": [
+        ["tailA", "armLUp", "armRUp"],
+        ["tailB", "armLUp", "armRUp"],
+        ["tailC", "armL", "armR"],
+        {
+          "layers": ["tailA", "armLUp", "armRUp"],
+          "flipX": true
+        },
+        {
+          "layers": ["tailB", "armL", "armR"],
+          "flipX": true
+        },
+        ["tailC", "armLUp", "armRUp"]
+      ],
+      "particles": ["sparkles", "wisps"]
+    },
+    "sleeping": {
+      "fps": 1.5,
+      "palette": "night",
+      "motion": {"type": "float", "amplitude": 1, "period": 4.5},
+      "base": ["body", "cheeks", "eyesBlink", "armL", "armR"],
+      "frames": [
+        {
+          "layers": ["tailA", "mouthSnore", {"layer": "nightcap", "flipX": true}],
+          "hold": 2
+        },
+        {
+          "layers": ["tailB", "mouthFlat", {"layer": "nightcap", "flipX": true}],
+          "dy": 1,
+          "hold": 2
+        },
+        {
+          "layers": ["tailC", "mouthSnore", {"layer": "nightcap", "flipX": true}],
+          "dy": 1,
+          "hold": 2
+        }
+      ],
+      "particles": ["wisps"],
+      "particleFPS": 6
+    }
+  }
+}

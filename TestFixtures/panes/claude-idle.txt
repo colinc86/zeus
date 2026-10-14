@@ -1,0 +1,41 @@
+%0|27243|0||2|37|2.1.296
+
+ ▐▛███▛█   Claude Code v2.1.296
+▝▜██████▀  Haiku 4.5 · API Usage Billing
+ ▝▝   ▝▝   /private/tmp/zm0_a8ung6ol/claude/project
+
+▎ --dangerously-load-development-channels ignored (server:zeus)
+▎ Channels are not currently available
+
+❯ M0_USER_claude Reply briefly.
+
+⏺ M0_OK
+
+✻ Cogitated for 1s · done 11:21 PM
+
+❯ M0_WORKING
+
+⏺ M0_OK
+
+✻ Worked for 8s · done 11:23 PM
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏸ manual mode on · ? for shortcuts · ← for agents

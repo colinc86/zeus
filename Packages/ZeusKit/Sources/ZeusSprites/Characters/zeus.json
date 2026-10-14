@@ -1,0 +1,606 @@
+{
+  "format": 1,
+  "id": "zeus",
+  "name": "Zeus",
+  "summary": "King of the gods, on his cloud, lightning bolt in hand.",
+  "size": [48, 46],
+  "preferredScale": 3,
+  "canvas": {
+    "size": [48, 56],
+    "origin": [0, 7],
+    "anchor": [24, 53]
+  },
+  "emote": {
+    "at": [22, 9],
+    "size": "large"
+  },
+  "palette": {
+    "k": "#2a2140",
+    "s": "#f6c9a4",
+    "S": "#dc9a7c",
+    "p": "#f4a3a0",
+    "w": "#fbfaf7",
+    "g": "#cdd1e6",
+    "G": "#9ea4c6",
+    "e": "#2a2140",
+    "i": "#ffffff",
+    "m": "#8e3b46",
+    "M": "#4e1a2a",
+    "t": "#f6f3ec",
+    "T": "#cbc6dd",
+    "b": "#5b8ee6",
+    "B": "#3d63b5",
+    "y": "#f6c544",
+    "Y": "#c4861c",
+    "l": "#86c95a",
+    "L": "#3f8a35",
+    "c": "#ffffff",
+    "C": "#dde7f6",
+    "D": "#a8badb",
+    "o": "#ffe14a",
+    "O": "#ff9e1a",
+    "h": "#fffbe6",
+    "x": "#8fe3ff"
+  },
+  "palettes": {
+    "glow": {"o": "#fff38a", "O": "#ffc83a", "h": "#ffffff"},
+    "storm": {"e": "#2f8fe8", "i": "#d8f6ff"},
+    "flash": {
+      "k": "#4a3f86",
+      "w": "#fffbe2",
+      "t": "#fffbe2",
+      "T": "#efe6b8",
+      "c": "#fffbe2",
+      "C": "#fff1b0",
+      "D": "#e8cf7a",
+      "g": "#f3eab8",
+      "o": "#ffffff",
+      "O": "#fff38a"
+    },
+    "night": {
+      "c": "#dfe5f5",
+      "C": "#b7c3e3",
+      "D": "#8796c2",
+      "o": "#d9c46e",
+      "O": "#b88a36",
+      "h": "#eadfb2",
+      "t": "#e9e8ee",
+      "w": "#eeeef6"
+    },
+    "rosy": {"p": "#ff8d94"},
+    "fade": {"o": "#ffe14a80", "O": "#ff9e1a80", "h": "#fffbe680"}
+  },
+  "layers": {
+    "torso": {
+      "x": 8,
+      "y": 24,
+      "rows": [
+        "....kkkkk..............kkkkk....",
+        "...kttttbbk...........kkssssk...",
+        "..ktttttbBtk.........ktkSssssk..",
+        "..kTttttkbBt........tttkkSsssk..",
+        "...kkkkktbBt........tttkkkkkk...",
+        "......kttbBt........ttTttk......",
+        "......ktttbBt......ttTtttk......",
+        "......kTtttbBt....tTttttTk......",
+        "......kTttttbBt..tTtttttTk......",
+        "......kTtttttbBttTttttttTk......",
+        "....kyyyyyyyyyyyyyyyyyyyyyyk....",
+        "....kYYYYYYYYYYYYYYYYYYYYYYk....",
+        "....kttTttTttTttttTttTttTttk....",
+        "....kttTttTttTttttTttTttTttk...."
+      ]
+    },
+    "cloud": {
+      "x": 5,
+      "y": 36,
+      "rows": [
+        ".............kkk......kkk.............",
+        "......kkk...kccck....kccck...kkk......",
+        ".....kcCck.kcccccckkcccccck.kcCck.....",
+        "....kcccccckcccccccccccccckcccccck....",
+        "...kcccccccccccCccccccCccccccccccck...",
+        "...kCccCcccccccCCccccCCcccccccCccCk...",
+        "...kCCcCCcccCcCCCcCCcCCCcCcccCCcCCk...",
+        "....kDCCDCCDCCDCCDCCDCCDCCDCCDCCDk....",
+        ".....kkDDkkkDDkkDDDDDDkkDDkkkDDkk.....",
+        ".......kk..kkk.kkkkkkkk.kkk..kk......."
+      ]
+    },
+    "head": {
+      "x": 8,
+      "y": 10,
+      "rows": [
+        "..........kkk.kkkk.kkk..........",
+        "........kkwwwkwwwwkwwwkk........",
+        ".......kwwwgwwwwwwwwgwwwk.......",
+        "....kk.kwwgwwlwggwlwwgwwk.kk....",
+        "...kLlkwlwLwlLwllwLlwLwlwklLk...",
+        "...klLkLlLlLlLlLLlLlLlLlLkLlk...",
+        "....kwwkLssssssssssssssLkwwk....",
+        "...kwwwgswwwwsssssswwwwsgwwwk...",
+        "...kwwgssssssssssssssssssgwwk...",
+        "....kwwgssssssssssssssssgwwk....",
+        "...kwwwgssssssssssssssssgwwwk...",
+        "...kwwwwgpsssssSSssssspgwwwwk...",
+        "....kwwwwwwwwwwwwwwwwwwwwwwk....",
+        "....kwwwwgggggwmmwgggggwwwwk....",
+        "....kwwgwwwwwwwwwwwwwwwwgwwk....",
+        ".....kwgwwwgwwwwwwwwgwwwgwk.....",
+        ".....kwwgwwwgwwggwwgwwwgwwk.....",
+        "......kwgwwwwgwwwwgwwwwgwk......",
+        ".......kwgwwwgwwwwgwwwgwk.......",
+        "........kwgkwwgwwgwwkgwk........",
+        ".........kk.kwgwwgwk.kk.........",
+        "............kkwggwkk............",
+        "..............kkkk.............."
+      ]
+    },
+    "armL": {
+      "x": 10,
+      "y": 27,
+      "rows": [
+        "kttT",
+        "kTtT",
+        "kssS",
+        "kssS",
+        "kssS",
+        "ksss",
+        "kSss",
+        ".kkk"
+      ]
+    },
+    "armR": {
+      "x": 34,
+      "y": 27,
+      "rows": [
+        "Sssk",
+        "Sssk",
+        "Sssk",
+        "Sssk",
+        "Sssk"
+      ]
+    },
+    "fistR": {
+      "x": 33,
+      "y": 32,
+      "rows": [
+        "ssssk",
+        "sssSk",
+        "kkkk."
+      ]
+    },
+    "bolt": {
+      "x": 32,
+      "y": 22,
+      "rows": [
+        "....kkkk",
+        "...khhok",
+        "...khook",
+        "..khook.",
+        "..khok..",
+        ".khoOk..",
+        ".khoookk",
+        "khooooOk",
+        "kkkkhoOk",
+        "...khoOk",
+        "...khok.",
+        "..khoOk.",
+        "..koOk..",
+        ".khOk...",
+        ".kOk....",
+        "kOk.....",
+        "kk......"
+      ]
+    },
+    "armRUp": {
+      "x": 33,
+      "y": 15,
+      "rows": [
+        "..kkkk.",
+        ".kssssk",
+        ".ksssSk",
+        ".kSssk.",
+        "..kssk.",
+        "..kssk.",
+        "..kSsk.",
+        ".kssk..",
+        ".kssk..",
+        ".kSsk..",
+        "kssk...",
+        "kSsk..."
+      ]
+    },
+    "boltUp": {
+      "x": 33,
+      "y": 5,
+      "rows": [
+        "....kkkk",
+        "...khhok",
+        "...khook",
+        "..khook.",
+        "..khok..",
+        ".khoOk..",
+        ".khoookk",
+        "khooooOk",
+        "kkkkhoOk",
+        "...khoOk",
+        "...khok.",
+        "..khoOk.",
+        "..koOk..",
+        ".khOk...",
+        ".kOk....",
+        "kOk.....",
+        "kk......"
+      ]
+    },
+    "armLChin": {
+      "x": 10,
+      "y": 25,
+      "rows": [
+        "........kkkk.",
+        ".......ksssSk",
+        "......kssssk.",
+        "kttT.kssSkk..",
+        "kTtTkssSk....",
+        "kssSssSk.....",
+        "kssssSk......",
+        "kSssk........",
+        ".kkk........."
+      ]
+    },
+    "armLWave": {
+      "x": 6,
+      "y": 19,
+      "rows": [
+        "kk.kk...",
+        "kskskk..",
+        "kssssk..",
+        "kssssk..",
+        ".kssk...",
+        ".kssk...",
+        ".kSsk...",
+        "..kssk..",
+        "..kSsTtk",
+        "...kTttk",
+        "....kkk."
+      ]
+    },
+    "armLWave2": {
+      "x": 6,
+      "y": 19,
+      "rows": [
+        ".kk.kk..",
+        ".kskskk.",
+        "kssssk..",
+        "kssssk..",
+        ".kssk...",
+        ".kssk...",
+        ".kSsk...",
+        "..kssk..",
+        "..kSsTtk",
+        "...kTttk",
+        "....kkk."
+      ]
+    },
+    "eyes": {
+      "x": 18,
+      "y": 18,
+      "rows": [
+        "ssssssssssss",
+        "siessssssies",
+        "seessssssees"
+      ]
+    },
+    "eyesBlink": {
+      "x": 18,
+      "y": 18,
+      "rows": [
+        "ssssssssssss",
+        "ssssssssssss",
+        "skksssssskks"
+      ]
+    },
+    "eyesSide": {
+      "x": 18,
+      "y": 18,
+      "rows": [
+        "ssssssssssss",
+        "ssiessssssie",
+        "sseessssssee"
+      ]
+    },
+    "eyesUp": {
+      "x": 18,
+      "y": 18,
+      "rows": [
+        "ssiessssssie",
+        "sseessssssee",
+        "ssssssssssss"
+      ]
+    },
+    "eyesFocus": {
+      "x": 18,
+      "y": 18,
+      "rows": [
+        "ssssssssssss",
+        "skksssssskks",
+        "siessssssies"
+      ]
+    },
+    "eyesHappy": {
+      "x": 18,
+      "y": 18,
+      "rows": [
+        "ssssssssssss",
+        "skssssssssks",
+        "kskssssssksk"
+      ]
+    },
+    "browsUp": {
+      "x": 17,
+      "y": 16,
+      "rows": [
+        "wwwwsssssswwww",
+        "ssssssssssssss"
+      ]
+    },
+    "mouth": {
+      "x": 21,
+      "y": 23,
+      "rows": [
+        "gwmmwg",
+        "wwwwww"
+      ]
+    },
+    "mouthOpen": {
+      "x": 21,
+      "y": 23,
+      "rows": [
+        "gkMMkg",
+        "wkmmkw"
+      ]
+    },
+    "mouthMid": {
+      "x": 21,
+      "y": 23,
+      "rows": [
+        "gwkkwg",
+        "wwmmww"
+      ]
+    },
+    "mouthSmile": {
+      "x": 21,
+      "y": 23,
+      "rows": [
+        "gmwwmg",
+        "wwmmww"
+      ]
+    },
+    "mouthGrin": {
+      "x": 21,
+      "y": 23,
+      "rows": [
+        "mkkkkm",
+        "wkmmkw"
+      ]
+    },
+    "mouthO": {
+      "x": 21,
+      "y": 23,
+      "rows": [
+        "gwkkwg",
+        "wkMMkw"
+      ]
+    },
+    "mouthSnore": {
+      "x": 21,
+      "y": 23,
+      "rows": [
+        "gwwwwg",
+        "wwkkww"
+      ]
+    }
+  },
+  "particles": {
+    "sparks": {
+      "colors": ["h", "o", "x"],
+      "area": [34, 21, 6, 4],
+      "velocity": [0, -5],
+      "spread": [6, 4],
+      "life": 0.6,
+      "count": 2
+    },
+    "sparksUp": {
+      "colors": ["h", "x", "o"],
+      "area": [35, 3, 6, 5],
+      "velocity": [0, -7],
+      "spread": [12, 6],
+      "life": 0.45,
+      "count": 6
+    },
+    "puffs": {
+      "colors": ["c", "C", "D"],
+      "area": [14, 39, 20, 4],
+      "velocity": [0, 0.5],
+      "spread": [7, 0.5],
+      "life": 2.2,
+      "count": 4,
+      "behind": true
+    },
+    "glints": {
+      "colors": ["h", "y", "Y"],
+      "area": [12, 6, 24, 8],
+      "velocity": [0, -5],
+      "spread": [3, 2],
+      "life": 1.1,
+      "count": 4
+    }
+  },
+  "animations": {
+    "idle": {
+      "fps": 2,
+      "motion": {"type": "float", "amplitude": 1, "period": 3.2},
+      "base": ["torso", "cloud", "head", "eyes", "mouth", "armL"],
+      "frames": [["armR", "bolt", "fistR"]],
+      "particles": ["puffs", "sparks"],
+      "particleFPS": 6,
+      "accents": [
+        {
+          "layers": ["eyesSide"],
+          "every": [6, 11],
+          "duration": 1.3
+        },
+        {
+          "layers": ["eyesBlink"],
+          "every": [2.4, 5.0],
+          "duration": 0.14
+        },
+        {
+          "palette": "glow",
+          "every": [2, 4],
+          "duration": 0.25
+        }
+      ]
+    },
+    "talking": {
+      "fps": 7,
+      "motion": {"type": "float", "amplitude": 1, "period": 3.2},
+      "base": ["torso", "cloud", "head", "eyes"],
+      "frames": [
+        ["mouthOpen", "armL"],
+        ["mouthMid", "armL"],
+        ["mouth", "armL"],
+        {
+          "layers": ["mouthOpen", "armL"],
+          "hold": 2
+        },
+        ["mouthMid", "armL"],
+        ["mouthOpen", "armLWave"],
+        ["mouthMid", "armLWave"],
+        ["mouth", "armLWave"],
+        {
+          "layers": ["mouthOpen", "armLWave"],
+          "hold": 2
+        },
+        ["mouth", "armLWave"],
+        ["mouthMid", "armL"],
+        {
+          "layers": ["mouth", "armL"],
+          "hold": 2
+        }
+      ],
+      "over": ["armR", "bolt", "fistR"],
+      "particles": ["puffs", "sparks"],
+      "particleFPS": 6,
+      "accents": [
+        {
+          "layers": ["browsUp"],
+          "every": [1.6, 3.2],
+          "duration": 0.6
+        },
+        {
+          "layers": ["eyesBlink"],
+          "every": [2.4, 5.0],
+          "duration": 0.14
+        }
+      ]
+    },
+    "thinking": {
+      "fps": 2,
+      "motion": {"type": "float", "amplitude": 1, "period": 4.2},
+      "base": ["torso", "cloud", "head", "mouth"],
+      "frames": [["eyesUp", "armLChin"], ["eyesUp", {"layer": "armLChin", "dy": 1}]],
+      "over": ["armR", "bolt", "fistR"],
+      "particles": ["puffs"],
+      "particleFPS": 6,
+      "accents": [{"layers": ["eyesBlink"], "every": [2.4, 5.0], "duration": 0.14}]
+    },
+    "working": {
+      "fps": 8,
+      "palette": "storm",
+      "motion": {"type": "bob", "amplitude": 1, "period": 0.5},
+      "base": ["torso", "cloud", "head", "eyesFocus", "mouth", "armL"],
+      "frames": [
+        ["boltUp", "armRUp"],
+        {
+          "layers": ["boltUp", "armRUp"],
+          "palette": "glow"
+        },
+        ["boltUp", "armRUp"],
+        {
+          "layers": ["boltUp", "armRUp"],
+          "palette": "glow",
+          "hold": 2
+        }
+      ],
+      "particles": ["puffs", "sparksUp"],
+      "accents": [{"palette": "flash", "every": [1.2, 2.6], "duration": 0.09, "chance": 0.8}]
+    },
+    "alert": {
+      "fps": 6,
+      "palette": "storm",
+      "motion": {"type": "hop", "amplitude": 2, "period": 0.8},
+      "base": ["torso", "cloud", "head", "eyes", "browsUp", "mouthO", "armL"],
+      "frames": [["boltUp", "armRUp"], {"layers": ["boltUp", "armRUp"], "palette": "glow"}],
+      "particles": ["sparksUp"],
+      "accents": [{"palette": "flash", "every": [0.9, 1.6], "duration": 0.1}]
+    },
+    "waiting": {
+      "fps": 4,
+      "motion": {"type": "sway", "amplitude": 1, "period": 3},
+      "base": ["torso", "cloud", "head", "browsUp", "mouth", "armL"],
+      "frames": [
+        ["eyes", {"layer": "armR", "dy": 1}, {"layer": "bolt", "dy": 1}, {"layer": "fistR", "dy": 1}],
+        ["eyes", "armR", "bolt", "fistR"],
+        ["eyes", {"layer": "armR", "dy": 1}, {"layer": "bolt", "dy": 1}, {"layer": "fistR", "dy": 1}],
+        {
+          "layers": ["eyes", "armR", "bolt", "fistR"],
+          "hold": 5
+        },
+        {
+          "layers": ["eyesSide", "armR", "bolt", "fistR"],
+          "hold": 4
+        }
+      ],
+      "particles": ["puffs"],
+      "particleFPS": 6,
+      "accents": [{"layers": ["eyesBlink"], "every": [2.4, 5.0], "duration": 0.14}]
+    },
+    "happy": {
+      "fps": 5,
+      "palette": "rosy",
+      "motion": {"type": "hop", "amplitude": 2, "period": 0.9},
+      "base": ["torso", "cloud", "head", "eyesHappy", "mouthGrin"],
+      "frames": [["armLWave", "armR", "bolt", "fistR"], ["armLWave2", "armR", "bolt", "fistR"]],
+      "particles": ["glints", "puffs"],
+      "accents": [{"palette": "glow", "every": [2, 4], "duration": 0.25}]
+    },
+    "sleeping": {
+      "fps": 1,
+      "palette": "night",
+      "motion": {"type": "float", "amplitude": 1, "period": 5},
+      "base": ["torso", "cloud"],
+      "frames": [
+        {
+          "layers": ["head", "eyesBlink", "mouth", "armL", "armR", "bolt", "fistR"],
+          "hold": 2
+        },
+        {
+          "layers": [
+            {"layer": "head", "dy": 1},
+            {"layer": "eyesBlink", "dy": 1},
+            {"layer": "mouthSnore", "dy": 1},
+            "armL",
+            "armR",
+            "bolt",
+            "fistR"
+          ],
+          "hold": 2
+        }
+      ],
+      "particles": ["puffs"],
+      "particleFPS": 6
+    }
+  }
+}

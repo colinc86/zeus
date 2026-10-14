@@ -1,0 +1,98 @@
+name: Zeus
+options:
+  minimumXcodeGenVersion: 2.45.0
+  deploymentTarget:
+    macOS: '26.0'
+packages:
+  ZeusKit:
+    path: Packages/ZeusKit
+settings:
+  base:
+    SWIFT_VERSION: '6.0'
+    SWIFT_STRICT_CONCURRENCY: complete
+    CODE_SIGN_IDENTITY: '-'
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ''
+  configs:
+    Release:
+      # scripts/release.sh supplies the exact identity and team from scripts/release.local.env.
+      CODE_SIGN_IDENTITY: 'Developer ID Application'
+      OTHER_CODE_SIGN_FLAGS: '--timestamp'
+targets:
+  Zeus:
+    type: application
+    platform: macOS
+    sources:
+      - path: Zeus
+        excludes: ['App/Tests']
+      - path: AgentHome/AGENTS.md
+        buildPhase: resources
+      - path: AgentHome/CLAUDE.md
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.colinc86.Zeus
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Zeus
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: NO
+        MARKETING_VERSION: 0.1.4
+        CURRENT_PROJECT_VERSION: 5
+      configs:
+        Release:
+          ENABLE_HARDENED_RUNTIME: YES
+          CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+          ARCHS: 'arm64 x86_64'
+          ONLY_ACTIVE_ARCH: NO
+    dependencies:
+      - package: ZeusKit
+        product: ZeusProtocol
+      - package: ZeusKit
+        product: ZeusLink
+      - package: ZeusKit
+        product: ZeusSprites
+      - package: ZeusKit
+        product: ZeusDesign
+    postBuildScripts:
+      - name: Build and embed zeus-mcp
+        basedOnDependencyAnalysis: false
+        script: |
+          set -euo pipefail
+          BRIDGE_BUILD_DIR="$SRCROOT/build/EmbeddedBridge/$CONFIGURATION"
+          BRIDGE_CONFIG="debug"
+          set --
+          if [ "$CONFIGURATION" = "Release" ]; then
+            BRIDGE_CONFIG="release"
+            BRIDGE_BUILD_DIR="$SRCROOT/build/release/EmbeddedBridge"
+            for BRIDGE_ARCH in $ARCHS; do set -- "$@" --arch "$BRIDGE_ARCH"; done
+          fi
+          /usr/bin/xcrun swift build --package-path "$SRCROOT/Packages/ZeusKit" --scratch-path "$BRIDGE_BUILD_DIR" --configuration "$BRIDGE_CONFIG" "$@" --product zeus-mcp
+          BRIDGE_BIN_DIR=$(/usr/bin/xcrun swift build --package-path "$SRCROOT/Packages/ZeusKit" --scratch-path "$BRIDGE_BUILD_DIR" --configuration "$BRIDGE_CONFIG" "$@" --show-bin-path)
+          /usr/bin/install -m 755 "$BRIDGE_BIN_DIR/zeus-mcp" "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/zeus-mcp"
+          if [ "${CODE_SIGNING_ALLOWED:-YES}" = "NO" ]; then
+            : # Unsigned compilation checks must not access signing identities.
+          elif [ "$CONFIGURATION" = "Release" ]; then
+            /usr/bin/codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --options runtime --timestamp "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/zeus-mcp"
+          else
+            /usr/bin/codesign --force --sign - "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/zeus-mcp"
+          fi
+  ZeusTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [Zeus/App/Tests]
+    dependencies:
+      - target: Zeus
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.colinc86.ZeusTests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  Zeus:
+    build:
+      targets:
+        Zeus: all
+        ZeusTests: [test]
+    test:
+      targets: [ZeusTests]

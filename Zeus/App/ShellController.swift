@@ -1,0 +1,803 @@
+import AppKit
+import Observation
+import SwiftUI
+import ZeusProtocol
+import ZeusDesign
+import ZeusSprites
+
+@MainActor
+private final class CompanionPanel: NSPanel {
+    var acceptsKeys = false
+    var onEscape: (() -> Void)?
+    override var canBecomeKey: Bool { acceptsKeys }
+    override var canBecomeMain: Bool { false }
+    override func cancelOperation(_ sender: Any?) { onEscape?() }
+}
+
+@MainActor
+@Observable
+final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
+    let cards: CardStore
+    let status: AvatarStatusModel
+    let settings: AppSettings
+    let cardPanelState = ConversationPanelState()
+    let messaging = AgentMessagingHub()
+    let visibility: AvatarVisibilityModel
+    let hotKey = GlobalHotKey()
+    let login = LoginItemModel()
+    let settingsNavigation = SettingsNavigation()
+    let peek: PeekModel
+    let peekPanelState = PeekPanelState()
+    let conversation: ConversationModel
+    let testMessage: ComposeModel
+    let managed: ManagedAssistantModel
+    private(set) var isVisible = false
+    /// The composition point can set this when ZeusRuntime.start() fails.
+    var runtimeError: String? { didSet { messaging.startupError = runtimeError } }
+    private let defaults: UserDefaults
+    private let avatar = CompanionPanel(contentRect: CGRect(x: 0, y: 0, width: 96, height: 112),
+                                         styleMask: [.borderless, .nonactivatingPanel],
+                                         backing: .buffered, defer: false)
+    private let card = CompanionPanel(contentRect: CGRect(x: 0, y: 0, width: 400, height: 500),
+                                       styleMask: [.borderless, .nonactivatingPanel],
+                                       backing: .buffered, defer: false)
+    private let peekPanel = CompanionPanel(contentRect: CGRect(x: 0, y: 0, width: 280, height: 160),
+                                           styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+    let artLayout = AvatarArtLayout()
+    let surfaceActivity = SurfaceActivity()
+    @ObservationIgnored private var displayAsleep = false
+    @ObservationIgnored private var systemAsleep = false
+    @ObservationIgnored private var sessionInactive = false
+    @ObservationIgnored private var screenLocked = false
+    @ObservationIgnored private var stopped = false
+    @ObservationIgnored private(set) var scheduledDeadline: Date?
+    private var suspended: Bool { displayAsleep || systemAsleep || sessionInactive || screenLocked }
+    @ObservationIgnored private var peekExitTask: Task<Void, Never>?
+    private let warning = NSPopover()
+    private var openingWarning = false
+    @ObservationIgnored private var closingTask: Task<Void, Never>?
+    @ObservationIgnored private var keyMonitor: Any?
+    private var settingsWindow: NSWindow?
+    private var previousApplication: NSRunningApplication?
+    private var renderedAnchorOffset = CGPoint.zero
+    @ObservationIgnored private var tickTask: Task<Void, Never>?
+
+    init(defaults: UserDefaults = .standard, cards: CardStore? = nil, settings: AppSettings? = nil) {
+        self.defaults = defaults
+        visibility = AvatarVisibilityModel(defaults: defaults)
+        let cards = cards ?? CardStore()
+        let settings = settings ?? AppSettings(defaults: defaults)
+        self.cards = cards
+        peek = PeekModel(store: cards)
+        self.settings = settings
+        managed = ManagedAssistantModel(settings: settings, controller: { [weak messaging] in messaging?.runtime as? any ManagedSessionControlling })
+        conversation = ConversationModel(cards: cards, messaging: messaging)
+        testMessage = ComposeModel(cards: cards, messaging: messaging)
+        status = AvatarStatusModel(cards: cards, quietHours: { [weak settings] in settings?.isQuiet(at: $0) ?? false },
+                                   assistantActivity: { [weak messaging] in messaging?.assistantActivity })
+        super.init()
+        cards.onHistoryCleared = { [weak self] in
+            guard let self else { return }
+            self.conversation.pruneClearedHistory()
+            self.peek.pruneRetainedHistory()
+            self.settings.pruneSessionLabels(keeping: Set(self.cards.cards.compactMap(\.sessionKey) + self.messaging.sessions.map(\.sessionKey)))
+        }
+        cards.onAdd = { [weak self] newCard in self?.receivedCard(newCard) }
+    }
+
+    var unreadCountText: String { "\(cards.unseenCount) unread \(cards.unseenCount == 1 ? "message" : "messages")" }
+
+    var menuStatus: String {
+        let usual = MenuPresentation.status(state: status.state, unread: cards.unseenCount, activity: messaging.assistantActivity, sessionLabel: messaging.assistantActivity.map { settings.sessionLabels.label($0.sessionKey) })
+        if managed.prioritizesMenuStatus { return managed.menuStatus(usual: usual, unread: cards.unseenCount) }
+        if cards.unseenCount > 0 { return usual }
+        return runtimeError ?? cards.persistenceError ?? status.deliveryProblem ?? managed.menuStatus(usual: usual, unread: cards.unseenCount)
+    }
+
+    /// Managed status and unread counts are independent; advanced mode keeps its ordinary count line.
+    var menuUnreadDetail: String? { cards.unseenCount > 0 && managed.prioritizesMenuStatus ? unreadCountText : nil }
+    /// Global storage/link failures remain visible alongside the managed status.
+    var menuIssueDetail: String? { managed.enabled ? runtimeError ?? cards.persistenceError : nil }
+    var menuAccessibilityLabel: String {
+        (["Zeus"] + (managed.prioritizesMenuStatus ? [menuStatus] : []) + (cards.unseenCount > 0 ? [unreadCountText] : [])).joined(separator: " · ")
+    }
+
+    func start() {
+        configure(avatar)
+        configure(card)
+        configure(peekPanel)
+        card.contentView = nil
+        peekPanel.title = "Zeus says"
+        peekPanel.contentView = PeekHostingView(rootView: PeekView(model: peek, panel: peekPanelState, settings: settings, activity: surfaceActivity,
+            open: { [weak self] in self?.expandPeek($0) }))
+        observePeekVisibility()
+        observePeekLayoutInputs()
+        avatar.title = "Zeus avatar"
+        card.title = "Zeus conversation"
+        card.acceptsKeys = true
+        card.delegate = self
+        card.onEscape = { [weak self] in
+            guard let self else { return }
+            if self.warning.isShown { self.warning.performClose(nil) } else { self.closeCard() }
+        }
+        let view = AvatarInteractionView(rootView: SpriteAvatarView(settings: settings, status: status, messaging: messaging, artLayout: artLayout, activity: surfaceActivity))
+        view.setAccessibilityElement(true)
+        view.setAccessibilityRole(.button)
+        view.contextMenu = { [weak self] in self?.makeContextMenu() ?? NSMenu() }
+        view.onWarning = { [weak self] in self?.toggleWarning() }
+        view.onShowDeliveryProblem = { [weak self] in self?.showDeliveryProblem() }
+        view.warningFrame = { [weak self, weak view] in
+            guard let self, let view else { return .zero }
+            return self.artLayout.rect.warningFrame(in: view.bounds, flipped: view.isFlipped)
+        }
+        view.hasWarning = { [weak self] in self?.messaging.deliveryIssue != nil }
+        view.onClick = { [weak self] in self?.toggleCard() }
+        view.onMove = { [weak self] point in self?.moveAvatar(to: point) }
+        view.onDragEnd = { [weak self] in self?.savePosition() }
+        avatar.contentView = view
+        warning.behavior = .transient
+        warning.delegate = self
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            let handled = MainActor.assumeIsolated {
+                guard let self, self.card.isKeyWindow, !self.warning.isShown else { return false }
+                return self.handleConversationKey(event)
+            }
+            return handled ? nil : event
+        }
+        NotificationCenter.default.addObserver(self, selector: #selector(screensChanged),
+                                               name: NSApplication.didChangeScreenParametersNotification, object: nil)
+        resizeAvatar()
+        if let x = defaults.object(forKey: "avatar.anchor.x") as? Double,
+           let y = defaults.object(forKey: "avatar.anchor.y") as? Double, x.isFinite, y.isFinite {
+            moveAnchor(to: CGPoint(x: x, y: y))
+        } else if let x = defaults.object(forKey: "avatar.x") as? Double,
+                  let y = defaults.object(forKey: "avatar.y") as? Double, x.isFinite, y.isFinite {
+            // Preserve A1's origin when migrating to anchor-based persistence.
+            moveAvatar(to: CGPoint(x: x, y: y))
+            savePosition()
+        } else { resetPosition() }
+        savePosition()
+        observeCharacterSettings()
+        syncVisibility()
+        hotKey.onPressed = { [weak self] in
+            guard let self else { return }
+            if ConversationLayout.hotKeyCloses(isVisible: self.cardPanelState.isVisible, isKey: self.card.isKeyWindow) { self.closeCard() }
+            else { self.showTalkPanel() }
+        }
+        hotKey.configure(settings.talkHotKey)
+        observeHotKeySettings()
+        observeAssistantSessionSelection()
+        let managedOnboarding = settings.consumeManagedOnboarding(hasHistory: !cards.cards.isEmpty, isHidden: visibility.isHidden)
+        let welcomeAdded = settings.managedSession?.enabled == true ? false : WelcomeCard.installIfNeeded(cards: cards, settings: settings)
+        if (managedOnboarding || welcomeAdded) && !visibility.isHidden { showTalkPanel() }
+        installLifecycleObservers()
+        refreshTimedState()
+        observeDeadlineInputs()
+        scheduleDeadline()
+        refreshSurfaceActivity()
+    }
+
+    func stop() {
+        stopped = true
+        tickTask?.cancel()
+        closingTask?.cancel()
+        peekExitTask?.cancel()
+        hotKey.stop()
+        if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+        keyMonitor = nil
+        NotificationCenter.default.removeObserver(self)
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
+        DistributedNotificationCenter.default().removeObserver(self)
+    }
+
+    var isConversationMounted: Bool { card.contentView is NSHostingView<ConversationView> }
+
+    /// Return false to leave ordinary keys, including Tab, in AppKit's native focus traversal.
+    func handleConversationKey(_ event: NSEvent) -> Bool {
+        let lines = (card.firstResponder as? NSTextView).map(ConversationScrollPolicy.caretLines) ?? (first: false, last: false)
+        let character = event.characters?.unicodeScalars.first?.value
+        let scrollKey: UInt16 = character == UInt32(NSPageUpFunctionKey) ? 116 : character == UInt32(NSPageDownFunctionKey) ? 121 : event.keyCode
+        guard let command = ConversationScrollPolicy.command(keyCode: scrollKey,
+            command: event.modifierFlags.contains(.command),
+            otherModifiers: !event.modifierFlags.intersection([.shift, .control, .option]).isEmpty,
+            composerFocused: cardPanelState.composerFocused, empty: conversation.draft.isEmpty,
+            firstLine: lines.first, lastLine: lines.last) else { return false }
+        cardPanelState.keyboardScroll = command
+        cardPanelState.keyboardScrollRequest += 1
+        return true
+    }
+
+    func mountConversation() {
+        guard !isConversationMounted else { return }
+        card.contentView = NSHostingView(rootView: ConversationView(settings: settings, store: cards, model: conversation,
+            messaging: messaging, status: status, panel: cardPanelState, activity: surfaceActivity,
+            openSettings: { [weak self] in self?.showSettings(tab: .agent) },
+            copySetup: { [weak self] in self?.copySetupCommands() },
+            resize: { [weak self] height in
+                guard let self, abs(self.cardPanelState.height - height) > 1 else { return }
+                self.cardPanelState.height = height; self.positionCard()
+            }))
+    }
+
+    func unmountConversation() {
+        card.contentView = nil
+        refreshSurfaceActivity()
+    }
+
+    /// A single sleep targets the earliest real lifecycle boundary, never an idle polling tick.
+    private func scheduleDeadline() {
+        tickTask?.cancel()
+        tickTask = nil
+        let now = Date()
+        scheduledDeadline = LifecycleDeadline.earliest(after: now, candidates: [
+            status.nextDeadline, visibility.hiddenUntil, peek.nextDeadline,
+            cards.cards.filter { $0.status == .open }.compactMap(\.expiresAt).min(),
+            settings.nextQuietBoundary(after: now)
+        ])
+        guard !stopped, let deadline = scheduledDeadline else { return }
+        tickTask = Task { @MainActor [weak self] in
+            do { try await Task.sleep(for: .seconds(max(0, deadline.timeIntervalSinceNow))) } catch { return }
+            guard let self, !Task.isCancelled else { return }
+            self.refreshTimedState()
+            self.scheduleDeadline()
+        }
+    }
+
+    private func refreshTimedState() {
+        cards.expire()
+        status.tick()
+        visibility.tick()
+        syncVisibility()
+        peek.tick(suppression: peekSuppression)
+    }
+
+    private func observeDeadlineInputs() {
+        guard !stopped else { return }
+        withObservationTracking {
+            _ = cards.cards
+            _ = cards.seenIDs
+            _ = cards.isConversationOpen
+            _ = status.nextDeadline
+            _ = messaging.assistantActivity
+            _ = visibility.hiddenUntil
+            _ = visibility.manuallyHidden
+            _ = peek.nextDeadline
+            _ = settings.quietHoursEnabled
+            _ = settings.quietStartHour
+            _ = settings.quietEndHour
+            _ = cardPanelState.isVisible
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, !self.stopped else { return }
+                self.refreshTimedState()
+                self.observeDeadlineInputs()
+                self.scheduleDeadline()
+            }
+        }
+    }
+
+    #if DEBUG || ZEUS_PERFORMANCE_PROBE
+    @ObservationIgnored private var ignoreOcclusionForPerformance = false
+    func enableUnoccludedPerformanceProbe() {
+        ignoreOcclusionForPerformance = true
+        refreshSurfaceActivity()
+    }
+    func setPerformanceAvatarPaused(_ paused: Bool) {
+        performanceAvatarPaused = paused
+        refreshSurfaceActivity()
+    }
+    @ObservationIgnored private var performanceAvatarPaused = false
+    func preparePassivePerformancePanel() {
+        // The isolated benchmark must survive the human switching apps, without taking keys.
+        card.acceptsKeys = false
+        if ProcessInfo.processInfo.environment["ZEUS_PERF_OPAQUE_PANEL"] == "1" {
+            let dark = card.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            card.backgroundColor = NSColor(ZeusPalette.for(dark ? .dark : .light,
+                contrast: NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast ? .increased : .standard).panel)
+            card.isOpaque = true
+            card.alphaValue = 1
+        }
+    }
+    func orderPerformanceSurfacesFront() {
+        // These isolated windows cannot become key; preserve the human's application focus.
+        avatar.orderFrontRegardless()
+        card.orderFrontRegardless()
+    }
+    func benchmarkScrollView() -> NSScrollView? {
+        func find(_ view: NSView) -> NSScrollView? {
+            if let scroll = view as? NSScrollView, scroll.bounds.height > 150 { return scroll }
+            return view.subviews.lazy.compactMap(find).first
+        }
+        return card.contentView.flatMap(find)
+    }
+    var performanceVisibility: String {
+        "avatarOrdered=\(avatar.isVisible) avatarOcclusion=\(avatar.occlusionState.rawValue) cardOrdered=\(card.isVisible) cardOcclusion=\(card.occlusionState.rawValue) suspended=\(suspended) ignoreOcclusion=\(ignoreOcclusionForPerformance)"
+    }
+    #endif
+
+    private func refreshSurfaceActivity() {
+        func visible(_ window: NSWindow?) -> Bool {
+            #if DEBUG || ZEUS_PERFORMANCE_PROBE
+            if ignoreOcclusionForPerformance { return window?.isVisible == true }
+            #endif
+            return window?.isVisible == true && window?.occlusionState.contains(.visible) == true
+        }
+        #if DEBUG || ZEUS_PERFORMANCE_PROBE
+        let avatarVisible = isVisible && visible(avatar) && !performanceAvatarPaused
+        #else
+        let avatarVisible = isVisible && visible(avatar)
+        #endif
+        surfaceActivity.update(suspended: suspended,
+            avatar: avatarVisible,
+            conversation: cardPanelState.isVisible && visible(card),
+            peek: peek.isVisible && visible(peekPanel), settings: visible(settingsWindow))
+    }
+
+    private func installLifecycleObservers() {
+        let center = NotificationCenter.default
+        for name in [NSWindow.didChangeOcclusionStateNotification, NSWindow.willCloseNotification,
+                     NSWindow.didMiniaturizeNotification, NSWindow.didDeminiaturizeNotification] {
+            center.addObserver(self, selector: #selector(surfaceChanged), name: name, object: nil)
+        }
+        for name in [NSNotification.Name.NSSystemClockDidChange, NSNotification.Name.NSSystemTimeZoneDidChange] {
+            center.addObserver(self, selector: #selector(timeChanged), name: name, object: nil)
+        }
+        let workspace = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.screensDidSleepNotification, NSWorkspace.screensDidWakeNotification,
+                     NSWorkspace.willSleepNotification, NSWorkspace.didWakeNotification,
+                     NSWorkspace.sessionDidResignActiveNotification, NSWorkspace.sessionDidBecomeActiveNotification] {
+            workspace.addObserver(self, selector: #selector(workspaceChanged), name: name, object: nil)
+        }
+        let distributed = DistributedNotificationCenter.default()
+        for name in ["com.apple.screenIsLocked", "com.apple.screenIsUnlocked"] {
+            distributed.addObserver(self, selector: #selector(lockChanged), name: .init(name), object: nil)
+        }
+    }
+
+    @objc private func surfaceChanged(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow,
+              window === avatar || window === card || window === peekPanel || window === settingsWindow else { return }
+        // willClose arrives before AppKit finishes ordering the retained Settings window out.
+        Task { @MainActor [weak self] in self?.refreshSurfaceActivity() }
+    }
+
+    @objc private func timeChanged(_ notification: Notification) {
+        refreshTimedState()
+        scheduleDeadline()
+    }
+
+    @objc private func workspaceChanged(_ notification: Notification) {
+        switch notification.name {
+        case NSWorkspace.screensDidSleepNotification: displayAsleep = true
+        case NSWorkspace.screensDidWakeNotification: displayAsleep = false
+        case NSWorkspace.willSleepNotification: systemAsleep = true
+        case NSWorkspace.didWakeNotification: systemAsleep = false
+        case NSWorkspace.sessionDidResignActiveNotification: sessionInactive = true
+        case NSWorkspace.sessionDidBecomeActiveNotification: sessionInactive = false
+        default: break
+        }
+        refreshTimedState()
+        refreshSurfaceActivity()
+        scheduleDeadline()
+    }
+
+    @objc private func lockChanged(_ notification: Notification) {
+        screenLocked = notification.name.rawValue == "com.apple.screenIsLocked"
+        refreshTimedState()
+        refreshSurfaceActivity()
+        scheduleDeadline()
+    }
+
+    private func configure(_ panel: NSPanel) {
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+        panel.hidesOnDeactivate = false
+        panel.isReleasedWhenClosed = false
+        panel.isMovableByWindowBackground = false
+        panel.becomesKeyOnlyIfNeeded = true
+    }
+
+    func toggleVisibility() {
+        if visibility.isHidden { visibility.show() } else { visibility.hide() }
+        syncVisibility()
+    }
+
+    func hide(for duration: AvatarVisibilityModel.Duration) { visibility.hide(for: duration); syncVisibility() }
+
+    private func syncVisibility() {
+        if visibility.isHidden {
+            hidePeekImmediately()
+            if isVisible { closeCard(); avatar.orderOut(nil); isVisible = false }
+        } else if !isVisible { avatar.orderFrontRegardless(); isVisible = true }
+        refreshSurfaceActivity()
+    }
+
+    private func showAvatar() { visibility.show(); syncVisibility() }
+
+    private func observeHotKeySettings() {
+        withObservationTracking { _ = settings.talkHotKey } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.hotKey.configure(self.settings.talkHotKey)
+                self.observeHotKeySettings()
+            }
+        }
+    }
+
+    private func toggleCard() {
+        if cardPanelState.isVisible { closeCard() } else { showTalkPanel() }
+    }
+
+    /// Shared by menu, hotkey and avatar entry points, before mounting any native fields.
+    func prepareTalkComposition() {
+        if managed.enabled { conversation.beginPlainMessage() }
+    }
+
+    func showTalkPanel() {
+        prepareTalkComposition()
+        if peek.isVisible { expandPeek(.message); return }
+        openConversation(at: nil)
+    }
+
+    private func openConversation(at cardID: String?) {
+        hidePeekImmediately()
+        peek.panelOpened()
+        cardPanelState.scrollTargetCardID = cardID
+        cardPanelState.scrollRequest += 1
+        closingTask?.cancel()
+        showInteractionPanel()
+        cardPanelState.focusRequest += 1
+    }
+
+    /// Keyboard/menu recovery entry point, also used by the avatar's named accessibility action.
+    func showDeliveryProblem() {
+        guard messaging.deliveryIssue != nil else { return }
+        showAvatar()
+        if !warning.isShown { toggleWarning() }
+        warning.contentViewController?.view.window?.makeKey()
+    }
+
+    private func toggleWarning() {
+        guard messaging.deliveryIssue != nil, let view = avatar.contentView else { return }
+        if warning.isShown { warning.performClose(nil); return }
+        managed.refreshAvailability()
+        warning.contentViewController = NSHostingController(rootView: DeliveryWarningView(messaging: messaging, settings: settings, managed: managed,
+            close: { [weak self] in self?.warning.performClose(nil) }, openSettings: { [weak self] in self?.showSettings(tab: .agent) }))
+        openingWarning = true
+        defer { openingWarning = false }
+        warning.show(relativeTo: artLayout.rect.warningFrame(in: view.bounds, flipped: view.isFlipped), of: view, preferredEdge: .maxY)
+    }
+
+    private func showInteractionPanel() {
+        showAvatar()
+        if !card.isVisible { previousApplication = NSWorkspace.shared.frontmostApplication }
+        mountConversation()
+        positionCard()
+        cardPanelState.isVisible = true
+        conversation.openPanel(viewportManaged: true)
+        card.makeKeyAndOrderFront(nil)
+        refreshSurfaceActivity()
+    }
+
+    private func closeCard(restoreFocus: Bool = true) {
+        cardPanelState.isVisible = false
+        warning.performClose(nil)
+        conversation.closePanel()
+        refreshSurfaceActivity()
+        guard card.isVisible else { unmountConversation(); return }
+        let wasKey = card.isKeyWindow
+        closingTask?.cancel()
+        closingTask = Task { @MainActor [weak self] in
+            do { try await Task.sleep(for: .milliseconds(80)) } catch { return }
+            guard let self, !self.cardPanelState.isVisible else { return }
+            self.card.orderOut(nil)
+            self.unmountConversation()
+        }
+        if restoreFocus && wasKey, let previousApplication,
+           previousApplication.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+           NSWorkspace.shared.frontmostApplication?.processIdentifier == ProcessInfo.processInfo.processIdentifier {
+            previousApplication.activate()
+        }
+        previousApplication = nil
+    }
+
+    func windowDidResignKey(_ notification: Notification) {
+        guard (notification.object as? NSWindow) === card, !warning.isShown, !openingWarning else { return }
+        closeCard(restoreFocus: false)
+    }
+
+    func popoverDidClose(_ notification: Notification) {
+        if cardPanelState.isVisible { card.makeKeyAndOrderFront(nil); cardPanelState.focusRequest += 1 }
+    }
+
+    private var screenRects: [CGRect] { NSScreen.screens.map(\.visibleFrame) }
+    private var screenAnchor: CGPoint {
+        CGPoint(x: avatar.frame.minX + renderedAnchorOffset.x, y: avatar.frame.minY + renderedAnchorOffset.y)
+    }
+
+    private func moveAvatar(to origin: CGPoint) {
+        let proposed = CGRect(origin: origin, size: avatar.frame.size)
+        guard let screen = PanelPlacement.screen(for: proposed, in: screenRects) else { return }
+        avatar.setFrame(PanelPlacement.clamp(proposed, to: screen), display: true)
+        positionCard()
+        positionPeek()
+    }
+
+    private func moveAnchor(to point: CGPoint) {
+        moveAvatar(to: CGPoint(x: point.x - renderedAnchorOffset.x, y: point.y - renderedAnchorOffset.y))
+    }
+
+    private func resizeAvatar() {
+        let previousAnchor = screenAnchor
+        if let character = settings.currentCharacter {
+            artLayout.rect = AvatarArtRect(canvas: character.canvasSize, pixels: SpriteLayout.artBounds(character: character), scale: settings.pixelScale)
+            renderedAnchorOffset = SpriteLayout.offset(canvas: character.canvasSize, anchor: character.anchor, scale: settings.pixelScale)
+            avatar.setFrame(SpriteLayout.frame(at: previousAnchor, canvas: character.canvasSize,
+                                               anchor: character.anchor, scale: settings.pixelScale), display: true)
+        }
+        moveAvatar(to: avatar.frame.origin)
+    }
+
+    private func observeCharacterSettings() {
+        withObservationTracking {
+            _ = settings.currentCharacterID
+            _ = settings.avatarSize
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.resizeAvatar()
+                self.savePosition()
+                self.observeCharacterSettings()
+            }
+        }
+    }
+
+    /// Observe live keys even while Settings is closed; preview data never invalidates saved routing.
+    func observeAssistantSessionSelection() {
+        withObservationTracking {
+            _ = messaging.runtime
+            _ = messaging.previewEnabled
+            _ = messaging.sessions
+            _ = settings.assistantSessionKey
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, !self.stopped else { return }
+                self.observeAssistantSessionSelection()
+            }
+        }
+        settings.updateSessionLabels(messaging.sessions)
+        if messaging.runtime != nil, !messaging.previewEnabled {
+            settings.reconcileAssistantSession(with: messaging.sessions)
+        }
+    }
+
+    private func positionCard() {
+        guard let screen = PanelPlacement.screen(for: avatar.frame, in: screenRects) else { return }
+        cardPanelState.screenHeight = screen.height
+        let height = cardPanelState.height
+        let placement = DialogPlacement.place(art: screenArtRect, anchor: screenAnchor,
+                                               size: CGSize(width: ZeusTheme.Conversation.panelWidth, height: height), screen: screen)
+        cardPanelState.tail = placement.tail
+        card.setFrame(placement.frame, display: true)
+    }
+
+    private var peekSuppression: PeekModel.Suppression {
+        .init(panelOpen: cardPanelState.isVisible, hidden: visibility.isHidden || suspended,
+              quiet: settings.isQuiet(at: Date()), focused: FocusStatus.isFocused)
+    }
+
+    private func receivedCard(_ newCard: Card) {
+        if messaging.previewEnabled { messaging.previewActivity = .none }
+        let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        if peek.receive(newCard, suppression: peekSuppression, reduceMotion: reduceMotion, typewriter: settings.typewriterEnabled) {
+            status.notePeek(newCard, reduceMotion: reduceMotion, typewriter: peek.types)
+            peekExitTask?.cancel()
+            positionPeek()
+            peekPanel.orderFrontRegardless()
+            refreshSurfaceActivity()
+            NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested,
+                userInfo: [.announcement: newCard.title ?? String(newCard.body.split(separator: ".").first ?? ""),
+                           .priority: NSAccessibilityPriorityLevel.medium.rawValue])
+        } else {
+            conversation.noteArrival(newCard, visible: cardPanelState.isVisible && cardPanelState.atBottom,
+                                     animate: settings.typewriterEnabled && !reduceMotion)
+            if !peek.isVisible { status.noteNewCard(newCard) }
+        }
+    }
+
+    private func expandPeek(_ action: PeekModel.OpenAction) {
+        guard let expansion = peek.expand(action) else { return }
+        if expansion.reply { conversation.rearmReplyTarget(cardID: expansion.cardID) }
+        openConversation(at: expansion.cardID)
+    }
+
+    private func hidePeekImmediately() {
+        if let id = peek.card?.id { status.stopPeekSpeech(cardID: id) }
+        peek.close()
+        peekExitTask?.cancel()
+        peekPanel.orderOut(nil)
+        refreshSurfaceActivity()
+    }
+
+    private func observePeekVisibility() {
+        withObservationTracking { _ = peek.isVisible } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if self.peek.isVisible {
+                    self.peekExitTask?.cancel()
+                    self.positionPeek()
+                    self.peekPanel.orderFrontRegardless()
+                    self.refreshSurfaceActivity()
+                } else {
+                    if let id = self.peek.card?.id { self.status.stopPeekSpeech(cardID: id) }
+                    self.peekExitTask = Task { @MainActor [weak self] in
+                        do { try await Task.sleep(for: .seconds(ZeusPeekTiming.exitDuration)) } catch { return }
+                        guard let self, !self.peek.isVisible else { return }
+                        self.peekPanel.orderOut(nil)
+                        self.refreshSurfaceActivity()
+                    }
+                }
+                self.observePeekVisibility()
+            }
+        }
+    }
+
+    private func observePeekLayoutInputs() {
+        withObservationTracking {
+            _ = peek.card
+            _ = peek.moreCount
+            _ = peek.answerError
+            _ = peek.answeredOptionID
+            _ = settings.fontChoice
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.positionPeek()
+                self.observePeekLayoutInputs()
+            }
+        }
+    }
+
+    private func positionPeek() {
+        guard let message = peek.card,
+              let screen = PanelPlacement.screen(for: avatar.frame, in: screenRects) else { return }
+        let layout = PeekLayout.measure(card: message, font: settings.fontChoice, moreCount: peek.moreCount,
+                                        error: peek.answerError, answeredOptionID: peek.answeredOptionID,
+                                        available: screen.insetBy(dx: 8, dy: 8).size)
+        let placement = PeekPlacement.place(art: screenArtRect, anchorX: screenAnchor.x, contentSize: layout.contentSize, screen: screen)
+        if peekPanelState.layout != layout { peekPanelState.layout = layout }
+        if peekPanelState.tail != placement.tail { peekPanelState.tail = placement.tail }
+        peekPanel.setFrame(placement.frame, display: true)
+    }
+
+    private var screenArtRect: CGRect { artLayout.rect.screenRect(canvasOrigin: avatar.frame.origin) }
+
+    private func savePosition() {
+        defaults.set(screenAnchor.x, forKey: "avatar.anchor.x")
+        defaults.set(screenAnchor.y, forKey: "avatar.anchor.y")
+    }
+
+    func resetPosition() {
+        guard let screen = NSScreen.main?.visibleFrame ?? screenRects.first else { return }
+        moveAnchor(to: CGPoint(x: screen.maxX - 160, y: screen.minY + 90))
+        savePosition()
+    }
+
+    @objc private func screensChanged(_ notification: Notification) {
+        moveAvatar(to: avatar.frame.origin)
+        savePosition()
+    }
+
+    func injectDemo(_ kind: DemoCardKind) {
+        cards.add(kind.make())
+        // Incoming bubbles never steal focus or reopen a panel the user closed.
+    }
+
+    /// Menu recovery must bring its confirmation into view instead of silently arming Settings.
+    func performManagedAction(_ action: ZeusManagedPresentation.Action, onConfirmation: (() -> Void)? = nil) {
+        managed.perform(action)
+        guard managed.confirmation == .newConversation else { return }
+        if let onConfirmation { onConfirmation() } else { showSettings(tab: .agent) }
+    }
+
+    func showSettings(tab: SettingsTab? = nil) {
+        login.refresh()
+        if let tab { settingsNavigation.tab = tab }
+        closeCard()
+        if settingsWindow == nil {
+            let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 620, height: 620),
+                                  styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+            window.title = "Zeus Settings"
+            window.isReleasedWhenClosed = false
+            window.contentView = NSHostingView(rootView: SettingsView(settings: settings, managed: managed, cards: cards, status: status,
+                                                                      messaging: messaging, preview: messaging, testMessage: testMessage,
+                                                                      injectDemo: { [weak self] in self?.injectDemo($0) },
+                                                                      resetPosition: { [weak self] in self?.resetPosition() },
+                                                                      navigation: settingsNavigation, login: login, hotKey: hotKey, activity: surfaceActivity))
+            window.center()
+            settingsWindow = window
+        }
+        NSApplication.shared.activate()
+        settingsWindow?.makeKeyAndOrderFront(nil)
+        refreshSurfaceActivity()
+    }
+
+    func copySetupCommands() {
+        guard let url = SetupCommands.embeddedBridgeURL else { runtimeError = "The bundled zeus-mcp executable is missing."; return }
+        var text = SetupCommands.configuration(for: settings.backend, bridgePath: url.path)
+        if settings.backend == .claude { text += "\n\n" + SetupCommands.claudeLaunch }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+
+    func makeContextMenu() -> NSMenu {
+        let menu = NSMenu()
+        func add(_ title: String, _ action: Selector) {
+            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+            item.target = self
+            menu.addItem(item)
+        }
+        add("Talk to Zeus…", #selector(contextTalk))
+        add("Settings…", #selector(contextSettings))
+        menu.items[0].keyEquivalent = settings.talkHotKey.enabled && settings.talkHotKey.isValid ? settings.talkHotKey.key.lowercased() : ""
+        var modifiers: NSEvent.ModifierFlags = []
+        if settings.talkHotKey.command { modifiers.insert(.command) }
+        if settings.talkHotKey.option { modifiers.insert(.option) }
+        if settings.talkHotKey.control { modifiers.insert(.control) }
+        if settings.talkHotKey.shift { modifiers.insert(.shift) }
+        menu.items[0].keyEquivalentModifierMask = modifiers
+        menu.items[1].keyEquivalent = ","
+        menu.items[1].keyEquivalentModifierMask = .command
+        if messaging.deliveryIssue != nil { add("Delivery problem…", #selector(contextDeliveryProblem)) }
+        menu.addItem(.separator())
+        let characterItem = NSMenuItem(title: "Character", action: nil, keyEquivalent: "")
+        let characters = NSMenu()
+        var addedUserSeparator = false
+        for character in settings.availableCharacters {
+            if !addedUserSeparator, !CharacterLibrary.bundledOrder.contains(character.id) {
+                if !characters.items.isEmpty { characters.addItem(.separator()) }
+                addedUserSeparator = true
+            }
+            let item = NSMenuItem(title: character.name, action: #selector(contextSelectCharacter(_:)), keyEquivalent: "")
+            item.target = self; item.representedObject = character.id
+            item.state = character.id == settings.currentCharacterID ? .on : .off
+            characters.addItem(item)
+        }
+        characterItem.submenu = characters
+        menu.addItem(characterItem)
+        let sizeItem = NSMenuItem(title: "Size", action: nil, keyEquivalent: "")
+        let sizes = NSMenu()
+        for size in AvatarSize.allCases {
+            let item = NSMenuItem(title: size.rawValue.capitalized, action: #selector(contextSelectSize(_:)), keyEquivalent: "")
+            item.target = self; item.representedObject = size.rawValue
+            item.state = size == settings.avatarSize ? .on : .off
+            sizes.addItem(item)
+        }
+        sizeItem.submenu = sizes
+        menu.addItem(sizeItem)
+        menu.addItem(.separator())
+        add(MenuPresentation.hideForHour, #selector(contextHideHour))
+        add(MenuPresentation.hideUntilTomorrow, #selector(contextHideTomorrow))
+        add("About Zeus", #selector(contextAbout))
+        menu.addItem(.separator())
+        add("Quit Zeus", #selector(contextQuit))
+        return menu
+    }
+    @objc private func contextTalk() { showTalkPanel() }
+    @objc private func contextSelectCharacter(_ sender: NSMenuItem) {
+        if let id = sender.representedObject as? String { settings.currentCharacterID = id }
+    }
+    @objc private func contextSelectSize(_ sender: NSMenuItem) {
+        if let value = sender.representedObject as? String, let size = AvatarSize(rawValue: value) { settings.avatarSize = size }
+    }
+    @objc private func contextDeliveryProblem() { showDeliveryProblem() }
+    @objc private func contextSettings() { showSettings() }
+    @objc private func contextHideHour() { hide(for: .hour) }
+    @objc private func contextHideTomorrow() { hide(for: .tomorrow) }
+    @objc private func contextAbout() { showSettings(tab: .about) }
+    @objc private func contextQuit() { NSApplication.shared.terminate(nil) }
+
+}

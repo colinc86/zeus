@@ -1,0 +1,40 @@
+%0|53253|0||116|38|opencode
+
+  ┃                                                                                                                     M0_OK
+  ┃  M0_WORKING
+  ┃                                                                                                                     Context
+                                                                                                                        2 tokens
+     M0_OK                                                                                                              0% used
+                                                                                                                        $0.00 spent
+     ▣  Build · GPT-4.1 mini · 8.1s
+                                                                                                                        MCP
+  ┃                                                                                                                     • zeus Connected
+  ┃  M0_PERMISSION_REQUEST
+  ┃                                                                                                                     LSP
+                                                                                                                        LSPs are disabled
+     ⚙ invalid [tool=shell_command, error=Model tried to call unavailable tool 'shell_command'. Available tools:
+       bash, edit, glob, grep, invalid, question, read, skill, task, todowrite, webfetch, write, zeus_zeus_ack,
+       zeus_zeus_ask, zeus_zeus_dismiss, zeus_zeus_get_responses, zeus_zeus_list_characters, zeus_zeus_present,
+       zeus_zeus_say, zeus_zeus_set_character, zeus_zeus_set_status, zeus_zeus_update_card.]
+
+     M0_OK
+
+     ▣  Build · GPT-4.1 mini · 2.4s
+
+  ┃
+  ┃  M0_PERMISSION_FIXED
+  ┃
+
+     $ /bin/echo M0_PERMISSION
+
+     ▣  Build · GPT-4.1 mini
+
+  ┃
+  ┃  △ Permission required
+  ┃    # Shell command
+  ┃
+  ┃  $ /bin/echo M0_PERMISSION
+  ┃                                                                                                                     /private/tmp/zm0_a8ung6ol/opencode/
+  ┃                                                                                                                     project
+  ┃   Allow once   Allow always   Reject                               ctrl+f fullscreen  ⇆ select  enter confirm
+  ┃                                                                                                                     • OpenCode 1.18.31

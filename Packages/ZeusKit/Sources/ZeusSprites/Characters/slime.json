@@ -1,0 +1,497 @@
+{
+  "format": 1,
+  "id": "slime",
+  "name": "Gloop",
+  "summary": "A bouncy slime that squashes, stretches and blows bubbles.",
+  "size": [26, 26],
+  "preferredScale": 5,
+  "canvas": {
+    "size": [30, 40],
+    "origin": [2, 13],
+    "anchor": [15, 38]
+  },
+  "emote": {
+    "at": [13, 5]
+  },
+  "palette": {
+    "k": "#1f4a2a",
+    "g": "#7fe08a",
+    "G": "#4fb866",
+    "D": "#3a9452",
+    "h": "#e6ffe9",
+    "H": "#b8f5c0",
+    "e": "#163a20",
+    "i": "#ffffff",
+    "m": "#2a5a35",
+    "p": "#ff9fb0",
+    "w": "#fffdf2bb",
+    "W": "#d9d4c0bb",
+    "l": "#8a8577bb"
+  },
+  "palettes": {
+    "rosy": {"p": "#ff7f9a"},
+    "night": {"g": "#5fb89a", "G": "#3f9180", "D": "#2f7268", "h": "#c8eee0", "H": "#94d8c4"},
+    "glow": {"g": "#a6f5ae", "G": "#74d88a", "h": "#ffffff"}
+  },
+  "layers": {
+    "blob": {
+      "x": 2,
+      "y": 9,
+      "rows": [
+        "......................",
+        ".......kkkkkkkk.......",
+        ".....kkggggggGGkk.....",
+        "....kggggggggggGGk....",
+        "....khhHgggggggGGk....",
+        "...kghHgggggggggGGk...",
+        "..kggHgggggggggggGGk..",
+        "..kggggggggggggggGGk..",
+        ".kggggggggggggggggGGk.",
+        ".kggggggggggggggggGGk.",
+        "kggggggggggggggggggGGk",
+        "kggggggggggggggggGGGGk",
+        "kggggggggggggggggGGGGk",
+        "kGGGGGGGGGGGGGGGGGGGGk",
+        "kDDDDDDDDDDDDDDDDDDDDk",
+        ".kkkkkkkkkkkkkkkkkkkk."
+      ]
+    },
+    "squash": {
+      "x": 0,
+      "y": 12,
+      "rows": [
+        "..........................",
+        "........kkkkkkkkkk........",
+        "......kkggggggggGGkk......",
+        ".....khhHgggggggggGGk.....",
+        "...kkghHgggggggggggGGkk...",
+        "..kgggHggggggggggggggGGk..",
+        "..kggggggggggggggggggGGk..",
+        ".kggggggggggggggggggggGGk.",
+        "kggggggggggggggggggggGGGGk",
+        "kggggggggggggggggggggGGGGk",
+        "kGGGGGGGGGGGGGGGGGGGGGGGGk",
+        "kDDDDDDDDDDDDDDDDDDDDDDDDk",
+        ".kkkkkkkkkkkkkkkkkkkkkkkk."
+      ]
+    },
+    "stretch": {
+      "x": 4,
+      "y": 6,
+      "rows": [
+        ".........k.........",
+        ".......kkGkk.......",
+        ".....kkgggGGkk.....",
+        "....kgggggggGGk....",
+        "....khHgggggGGk....",
+        "...khHgggggggGGk...",
+        "..kgHgggggggggGGk..",
+        "..kgggggggggggGGk..",
+        "..kgggggggggggGGk..",
+        ".kgggggggggggggGGk.",
+        ".kgggggggggggggGGk.",
+        "kgggggggggggggggGGk",
+        "kgggggggggggggggGGk",
+        "kgggggggggggggggGGk",
+        "kgggggggggggggGGGGk",
+        "kgggggggggggggGGGGk",
+        "kGGGGGGGGGGGGGGGGGk",
+        "kDDDDDDDDDDDDDDDDDk",
+        ".kkkkkkkkkkkkkkkkk."
+      ]
+    },
+    "flat": {
+      "x": 0,
+      "y": 14,
+      "rows": [
+        "..........................",
+        ".......kkkkkkkkkkkk.......",
+        ".....kkhHggggggggGGkk.....",
+        "....kghHgggggggggggGGk....",
+        "...kggHgggggggggggggGGk...",
+        "..kggggggggggggggggggGGk..",
+        ".kggggggggggggggggggGGGGk.",
+        "kggggggggggggggggggggGGGGk",
+        "kGGGGGGGGGGGGGGGGGGGGGGGGk",
+        "kDDDDDDDDDDDDDDDDDDDDDDDDk",
+        ".kkkkkkkkkkkkkkkkkkkkkkkk."
+      ]
+    },
+    "eyes": {
+      "x": 9,
+      "y": 15,
+      "rows": [
+        "ie....ie",
+        "ee....ee",
+        "ee....ee"
+      ]
+    },
+    "eyesUp": {
+      "x": 9,
+      "y": 15,
+      "rows": [
+        "ie....ie",
+        "ee....ee",
+        "........"
+      ]
+    },
+    "eyesBlink": {
+      "x": 9,
+      "y": 15,
+      "rows": [
+        "........",
+        "........",
+        "kk....kk"
+      ]
+    },
+    "eyesSide": {
+      "x": 9,
+      "y": 15,
+      "rows": [
+        ".ie....ie",
+        ".ee....ee",
+        ".ee....ee"
+      ]
+    },
+    "eyesHappy": {
+      "x": 9,
+      "y": 15,
+      "rows": [
+        ".k....k.",
+        "k.k..k.k",
+        "........"
+      ]
+    },
+    "eyesWide": {
+      "x": 8,
+      "y": 14,
+      "rows": [
+        ".kk....kk.",
+        "kiik..kiik",
+        "kiek..keik",
+        ".kk....kk."
+      ]
+    },
+    "eyesFocus": {
+      "x": 9,
+      "y": 15,
+      "rows": [
+        "kkk..kkk",
+        ".ee..ee.",
+        ".ee..ee."
+      ]
+    },
+    "mouth": {
+      "x": 11,
+      "y": 18,
+      "rows": [
+        "k..k",
+        ".kk."
+      ]
+    },
+    "mouthOpen": {
+      "x": 11,
+      "y": 18,
+      "rows": [
+        ".kk.",
+        "kmmk",
+        ".kk."
+      ]
+    },
+    "mouthMid": {
+      "x": 11,
+      "y": 18,
+      "rows": [
+        "....",
+        "kmmk",
+        ".kk."
+      ]
+    },
+    "mouthFlat": {
+      "x": 11,
+      "y": 18,
+      "rows": [
+        "....",
+        ".kk."
+      ]
+    },
+    "mouthO": {
+      "x": 11,
+      "y": 18,
+      "rows": [
+        ".kk.",
+        "kmmk",
+        "kmmk",
+        ".kk."
+      ]
+    },
+    "mouthGrin": {
+      "x": 11,
+      "y": 18,
+      "rows": [
+        "kkkk",
+        "kmmk",
+        ".kk."
+      ]
+    },
+    "mouthSmall": {
+      "x": 11,
+      "y": 18,
+      "rows": [
+        "....",
+        ".kk.",
+        ".kk."
+      ]
+    },
+    "cheeks": {
+      "x": 7,
+      "y": 18,
+      "rows": [
+        "pp........pp"
+      ]
+    },
+    "doc": {
+      "x": 15,
+      "y": 17,
+      "rows": [
+        ".lll.",
+        "lwwWl",
+        "lwlWl",
+        "lwwWl",
+        "lWWWl",
+        ".lll."
+      ]
+    }
+  },
+  "particles": {
+    "bubbles": {
+      "colors": ["H", "h", "g"],
+      "area": [7, 16, 12, 6],
+      "velocity": [0, -3],
+      "spread": [1, 1],
+      "life": 1.6,
+      "count": 3
+    },
+    "bubblesFast": {
+      "colors": ["h", "H", "g"],
+      "area": [6, 14, 14, 8],
+      "velocity": [0, -6],
+      "spread": [2, 2],
+      "life": 0.9,
+      "count": 6
+    },
+    "drips": {
+      "colors": ["G", "D"],
+      "area": [5, 22, 16, 1],
+      "velocity": [0, 2],
+      "spread": [0.5, 0.5],
+      "life": 0.6,
+      "count": 1
+    },
+    "sparkles": {
+      "colors": ["h", "p", "w"],
+      "area": [3, 4, 20, 6],
+      "velocity": [0, -4],
+      "spread": [3, 1.5],
+      "life": 0.9,
+      "count": 3
+    }
+  },
+  "animations": {
+    "idle": {
+      "fps": 4,
+      "frames": [
+        {
+          "layers": ["blob", "cheeks", "eyes", "mouth"],
+          "hold": 3
+        },
+        ["squash", {"layer": "cheeks", "dy": 2}, {"layer": "eyes", "dy": 2}, {"layer": "mouth", "dy": 2}],
+        {
+          "layers": ["blob", "cheeks", "eyes", "mouth"],
+          "hold": 3
+        },
+        ["stretch", {"layer": "cheeks", "dy": -2}, {"layer": "eyes", "dy": -2}, {"layer": "mouth", "dy": -2}],
+        {
+          "layers": ["blob", "cheeks", "eyes", "mouth"],
+          "hold": 2
+        }
+      ],
+      "particles": ["bubbles"],
+      "particleFPS": 6,
+      "accents": [
+        {
+          "layers": ["eyesSide"],
+          "every": [5, 9],
+          "duration": 1.0
+        },
+        {
+          "layers": ["eyesBlink"],
+          "every": [2.8, 5.5],
+          "duration": 0.15
+        }
+      ]
+    },
+    "talking": {
+      "fps": 7,
+      "frames": [
+        ["blob", "cheeks", "eyes", "mouthOpen"],
+        ["squash", {"layer": "cheeks", "dy": 2}, {"layer": "eyes", "dy": 2}, {"layer": "mouthMid", "dy": 2}],
+        ["blob", "cheeks", "eyes", "mouthSmall"],
+        ["stretch", {"layer": "cheeks", "dy": -2}, {"layer": "eyes", "dy": -2}, {"layer": "mouthOpen", "dy": -2}],
+        ["blob", "cheeks", "eyes", "mouthMid"],
+        {
+          "layers": ["blob", "cheeks", "eyes", "mouthSmall"],
+          "hold": 2
+        }
+      ],
+      "particles": ["bubbles"],
+      "particleFPS": 6,
+      "accents": [{"layers": ["eyesBlink"], "every": [2.8, 5.5], "duration": 0.15}]
+    },
+    "thinking": {
+      "fps": 3,
+      "motion": {"type": "sway", "amplitude": 1, "period": 3.4},
+      "frames": [
+        {
+          "layers": ["blob", "cheeks", "eyesUp", "mouthFlat"],
+          "hold": 2
+        },
+        ["stretch", {"layer": "cheeks", "dy": -2}, {"layer": "eyesUp", "dy": -2}, {"layer": "mouthFlat", "dy": -2}]
+      ],
+      "particles": ["bubbles"],
+      "particleFPS": 6,
+      "accents": [{"layers": ["eyesBlink"], "every": [2.8, 5.5], "duration": 0.15}]
+    },
+    "working": {
+      "fps": 6,
+      "palette": "glow",
+      "frames": [
+        ["blob", {"layer": "doc", "dy": 0}, "cheeks", "eyesFocus", "mouthFlat"],
+        [
+          "squash",
+          {"layer": "doc", "dy": 1, "dx": -1},
+          {"layer": "cheeks", "dy": 2},
+          {"layer": "eyesFocus", "dy": 2},
+          {"layer": "mouthFlat", "dy": 2}
+        ],
+        ["blob", {"layer": "doc", "dy": 1, "dx": -2}, "cheeks", "eyesFocus", "mouthFlat"],
+        [
+          "stretch",
+          {"layer": "doc", "dy": 0, "dx": -3},
+          {"layer": "cheeks", "dy": -2},
+          {"layer": "eyesFocus", "dy": -2},
+          {"layer": "mouthFlat", "dy": -2}
+        ],
+        ["blob", {"layer": "doc", "dy": -1, "dx": -2}, "cheeks", "eyesFocus", "mouthFlat"],
+        [
+          "squash",
+          {"layer": "doc", "dy": 0, "dx": -1},
+          {"layer": "cheeks", "dy": 2},
+          {"layer": "eyesFocus", "dy": 2},
+          {"layer": "mouthFlat", "dy": 2}
+        ]
+      ],
+      "particles": ["bubblesFast"]
+    },
+    "alert": {
+      "fps": 10,
+      "frames": [
+        {
+          "layers": ["squash", {"layer": "cheeks", "dy": 2}, {"layer": "eyesWide", "dy": 2}, {"layer": "mouthO", "dy": 2}],
+          "hold": 2
+        },
+        {
+          "layers": ["stretch", {"layer": "cheeks", "dy": -2}, {"layer": "eyesWide", "dy": -2}, {"layer": "mouthO", "dy": -2}],
+          "dy": -3
+        },
+        {
+          "layers": ["stretch", {"layer": "cheeks", "dy": -2}, {"layer": "eyesWide", "dy": -2}, {"layer": "mouthO", "dy": -2}],
+          "dy": -5
+        },
+        {
+          "layers": ["blob", "cheeks", "eyesWide", "mouthO"],
+          "dy": -6,
+          "hold": 2
+        },
+        {
+          "layers": ["stretch", {"layer": "cheeks", "dy": -2}, {"layer": "eyesWide", "dy": -2}, {"layer": "mouthO", "dy": -2}],
+          "dy": -4
+        },
+        {
+          "layers": ["stretch", {"layer": "cheeks", "dy": -2}, {"layer": "eyesWide", "dy": -2}, {"layer": "mouthO", "dy": -2}],
+          "dy": -1
+        },
+        ["flat", {"layer": "cheeks", "dy": 3}, {"layer": "eyesWide", "dy": 3}, {"layer": "mouthO", "dy": 3}],
+        ["squash", {"layer": "cheeks", "dy": 2}, {"layer": "eyesWide", "dy": 2}, {"layer": "mouthO", "dy": 2}]
+      ],
+      "particles": ["bubblesFast", "drips"]
+    },
+    "waiting": {
+      "fps": 3,
+      "frames": [
+        {
+          "layers": ["blob", "cheeks", "eyes", "mouthFlat"],
+          "hold": 3
+        },
+        ["squash", {"layer": "cheeks", "dy": 2}, {"layer": "eyes", "dy": 2}, {"layer": "mouthFlat", "dy": 2}],
+        {
+          "layers": ["blob", "cheeks", "eyesSide", "mouthFlat"],
+          "hold": 3
+        },
+        ["squash", {"layer": "cheeks", "dy": 2}, {"layer": "eyesSide", "dy": 2}, {"layer": "mouthFlat", "dy": 2}]
+      ],
+      "particles": ["bubbles"],
+      "particleFPS": 6,
+      "accents": [{"layers": ["eyesBlink"], "every": [2.8, 5.5], "duration": 0.15}]
+    },
+    "happy": {
+      "fps": 9,
+      "palette": "rosy",
+      "frames": [
+        ["squash", {"layer": "cheeks", "dy": 2}, {"layer": "eyesHappy", "dy": 2}, {"layer": "mouthGrin", "dy": 2}],
+        {
+          "layers": [
+            "stretch",
+            {"layer": "cheeks", "dy": -2},
+            {"layer": "eyesHappy", "dy": -2},
+            {"layer": "mouthGrin", "dy": -2}
+          ],
+          "dy": -3
+        },
+        {
+          "layers": ["blob", "cheeks", "eyesHappy", "mouthGrin"],
+          "dy": -4
+        },
+        {
+          "layers": [
+            "stretch",
+            {"layer": "cheeks", "dy": -2},
+            {"layer": "eyesHappy", "dy": -2},
+            {"layer": "mouthGrin", "dy": -2}
+          ],
+          "dy": -2
+        },
+        ["squash", {"layer": "cheeks", "dy": 2}, {"layer": "eyesHappy", "dy": 2}, {"layer": "mouthGrin", "dy": 2}],
+        {
+          "layers": ["blob", "cheeks", "eyesHappy", "mouthGrin"],
+          "hold": 2
+        }
+      ],
+      "particles": ["sparkles", "bubbles"]
+    },
+    "sleeping": {
+      "fps": 1,
+      "palette": "night",
+      "frames": [
+        {
+          "layers": ["flat", {"layer": "cheeks", "dy": 3}, {"layer": "eyesBlink", "dy": 3}, {"layer": "mouthFlat", "dy": 3}],
+          "hold": 2
+        },
+        {
+          "layers": ["squash", {"layer": "cheeks", "dy": 2}, {"layer": "eyesBlink", "dy": 2}, {"layer": "mouthFlat", "dy": 2}],
+          "hold": 2
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,814 @@
+{
+  "format": 1,
+  "id": "robot",
+  "name": "Gizmo",
+  "summary": "A tidy little robot whose screen face shows what it's up to.",
+  "size": [30, 30],
+  "preferredScale": 4,
+  "canvas": {
+    "size": [32, 43],
+    "origin": [1, 11],
+    "anchor": [16, 41]
+  },
+  "emote": {
+    "at": [16, 1]
+  },
+  "palette": {
+    "k": "#1d2230",
+    "m": "#a9c1cf",
+    "M": "#7a93a6",
+    "n": "#566b7d",
+    "h": "#e3f1f7",
+    "s": "#14202b",
+    "g": "#6ff2c8",
+    "G": "#2f8f78",
+    "a": "#8f3a44",
+    "y": "#ffd23f",
+    "c": "#5ad1ff",
+    "t": "#3a4352",
+    "T": "#262c38"
+  },
+  "palettes": {
+    "bulb": {"a": "#ff5a5a"},
+    "bulbG": {"a": "#7dff9a"},
+    "red": {"g": "#ff6b6b", "G": "#a83a46", "a": "#ff5a5a"},
+    "pink": {"g": "#ff9bd2", "G": "#a3517f"},
+    "off": {"g": "#27463f", "G": "#1f3530", "c": "#2b5466", "y": "#6b5a24", "m": "#93a8b5", "h": "#c8d6dc"},
+    "busy": {"c": "#ffd23f", "y": "#5ad1ff"}
+  },
+  "layers": {
+    "bulb": {
+      "x": 13,
+      "y": 0,
+      "rows": [
+        ".kk.",
+        "kaak",
+        "kaak",
+        ".kk."
+      ]
+    },
+    "stem": {
+      "x": 14,
+      "y": 4,
+      "rows": [
+        "nn"
+      ]
+    },
+    "head": {
+      "x": 5,
+      "y": 5,
+      "rows": [
+        "..kkkkkkkkkkkkkkkk..",
+        ".khhhhhhhhhhhhhhhhk.",
+        "khmmmmmmmmmmmmmmmmhk",
+        "khmkkkkkkkkkkkkkkmhk",
+        "khmksssssssssssskmhk",
+        "kmmksssssssssssskmmk",
+        "kmmksssssssssssskmmk",
+        "kmmksssssssssssskmmk",
+        "kmmksssssssssssskmmk",
+        "kmmksssssssssssskmmk",
+        "kmmksssssssssssskmmk",
+        "kmmksssssssssssskmmk",
+        "kmMkkkkkkkkkkkkkkMmk",
+        "kMMMMMMMMMMMMMMMMMMk",
+        ".kMMMMMMMMMMMMMMMMk.",
+        "..kkkkkkkkkkkkkkkk.."
+      ]
+    },
+    "earL": {
+      "x": 3,
+      "y": 11,
+      "rows": [
+        "kk",
+        "nk",
+        "nk",
+        "kk"
+      ]
+    },
+    "earR": {
+      "x": 25,
+      "y": 11,
+      "rows": [
+        "kk",
+        "kn",
+        "kn",
+        "kk"
+      ]
+    },
+    "body": {
+      "x": 9,
+      "y": 21,
+      "rows": [
+        "kkkkkkkkkkkk",
+        "kmmmmmmmmmmk",
+        "kmnccyyccnmk",
+        "kmmmmmmmmmmk",
+        "kMMMMMMMMMMk"
+      ]
+    },
+    "treadA": {
+      "x": 8,
+      "y": 26,
+      "rows": [
+        ".kkkkkkkkkkkk.",
+        "ktTtTtTtTtTtTk",
+        "kTtTtTtTtTtTtk",
+        ".kkkkkkkkkkkk."
+      ]
+    },
+    "treadB": {
+      "x": 8,
+      "y": 26,
+      "rows": [
+        ".kkkkkkkkkkkk.",
+        "kTtTtTtTtTtTtk",
+        "ktTtTtTtTtTtTk",
+        ".kkkkkkkkkkkk."
+      ]
+    },
+    "armL": {
+      "x": 6,
+      "y": 21,
+      "rows": [
+        "kk.",
+        "kmk",
+        "knk",
+        "kmk",
+        "k.k"
+      ]
+    },
+    "armR": {
+      "x": 21,
+      "y": 21,
+      "rows": [
+        ".kk",
+        "kmk",
+        "knk",
+        "kmk",
+        "k.k"
+      ]
+    },
+    "armLUp": {
+      "x": 0,
+      "y": 11,
+      "rows": [
+        "k...k.....",
+        "kn.nk.....",
+        "kmmmk.....",
+        ".kmk......",
+        ".kmk......",
+        ".knk......",
+        ".kmk......",
+        ".kmkk.....",
+        "..kmmkk...",
+        "...kknmkk.",
+        "......kkmk"
+      ]
+    },
+    "armRUp": {
+      "x": 20,
+      "y": 11,
+      "rows": [
+        ".....k...k",
+        ".....kn.nk",
+        ".....kmmmk",
+        "......kmk.",
+        "......kmk.",
+        "......knk.",
+        "......kmk.",
+        ".....kkmk.",
+        "...kkmmk..",
+        ".kkmnkk...",
+        "kmkk......"
+      ]
+    },
+    "scrEyes": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "ssggssssggss",
+        "ssggssssggss",
+        "ssssssssssss",
+        "sssgssssgsss",
+        "ssssggggssss",
+        "ssssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrBlink": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "ssssssssssss",
+        "ssggssssggss",
+        "ssssssssssss",
+        "sssgssssgsss",
+        "ssssggggssss",
+        "ssssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrSide": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "sssggssssggs",
+        "sssggssssggs",
+        "ssssssssssss",
+        "ssssssssssss",
+        "ssssggggssss",
+        "ssssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrSideL": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "sggssssggsss",
+        "sggssssggsss",
+        "ssssssssssss",
+        "ssssssssssss",
+        "ssssggggssss",
+        "ssssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrTalkA": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "ssggssssggss",
+        "ssggssssggss",
+        "ssssssssssss",
+        "sssgsgsgsgss",
+        "sssgsgsgsgss",
+        "ssssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrTalkB": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "ssggssssggss",
+        "ssggssssggss",
+        "ssssssssssss",
+        "ssssssssssss",
+        "ssgsgsgsgsgs",
+        "ssssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrTalkC": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "ssggssssggss",
+        "ssggssssggss",
+        "ssssssssssss",
+        "sssssgsgssss",
+        "sssgsgsgsgss",
+        "ssssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrHappy": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "sssgssssgsss",
+        "ssgsgssgsgss",
+        "ssssssssssss",
+        "ssgssssssgss",
+        "sssggggggsss",
+        "ssssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrWide": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssggssssggss",
+        "sgssgssgssgs",
+        "sgssgssgssgs",
+        "ssggssssggss",
+        "ssssssssssss",
+        "sssssggsssss",
+        "sssssggsssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrFocus": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "ssggssssggss",
+        "ssGGssssGGss",
+        "ssssssssssss",
+        "ssssssssssss",
+        "sssggggggsss",
+        "ssssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrSleep": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "ssssssssssss",
+        "ssGGssssGGss",
+        "ssssssssssss",
+        "ssssssssssss",
+        "sssssGGsssss",
+        "ssssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrLoad0": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "ssssssssssss",
+        "ssssssssssss",
+        "sggssGGssGGs",
+        "sggssGGssGGs",
+        "ssssssssssss",
+        "ssssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrLoad1": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "ssssssssssss",
+        "ssssssssssss",
+        "sGGssggssGGs",
+        "sGGssggssGGs",
+        "ssssssssssss",
+        "ssssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrLoad2": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "ssssssssssss",
+        "ssssssssssss",
+        "sGGssGGssggs",
+        "sGGssGGssggs",
+        "ssssssssssss",
+        "ssssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrCode0": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ggggsGGGssss",
+        "sggsggggsGGs",
+        "sggsGGssssss",
+        "ssgggsGGGGss",
+        "ssgsGGsggsss",
+        "sggsssssssss",
+        "ssssssssssss",
+        "ggggsGGsssss"
+      ]
+    },
+    "scrCode1": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "sggsggggsGGs",
+        "sggsGGssssss",
+        "ssgggsGGGGss",
+        "ssgsGGsggsss",
+        "sggsssssssss",
+        "ssssssssssss",
+        "ggggsGGsssss",
+        "sgggsggggsGs"
+      ]
+    },
+    "scrCode2": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "sggsGGssssss",
+        "ssgggsGGGGss",
+        "ssgsGGsggsss",
+        "sggsssssssss",
+        "ssssssssssss",
+        "ggggsGGsssss",
+        "sgggsggggsGs",
+        "sggsGGGsssss"
+      ]
+    },
+    "scrCode3": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssgggsGGGGss",
+        "ssgsGGsggsss",
+        "sggsssssssss",
+        "ssssssssssss",
+        "ggggsGGsssss",
+        "sgggsggggsGs",
+        "sggsGGGsssss",
+        "ssggggsGGsss"
+      ]
+    },
+    "scrCode4": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssgsGGsggsss",
+        "sggsssssssss",
+        "ssssssssssss",
+        "ggggsGGsssss",
+        "sgggsggggsGs",
+        "sggsGGGsssss",
+        "ssggggsGGsss",
+        "sgssssssssss"
+      ]
+    },
+    "scrCode5": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "sggsssssssss",
+        "ssssssssssss",
+        "ggggsGGsssss",
+        "sgggsggggsGs",
+        "sggsGGGsssss",
+        "ssggggsGGsss",
+        "sgssssssssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrCode6": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "ggggsGGsssss",
+        "sgggsggggsGs",
+        "sggsGGGsssss",
+        "ssggggsGGsss",
+        "sgssssssssss",
+        "ssssssssssss",
+        "gggsGGGGsggs"
+      ]
+    },
+    "scrCode7": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ggggsGGsssss",
+        "sgggsggggsGs",
+        "sggsGGGsssss",
+        "ssggggsGGsss",
+        "sgssssssssss",
+        "ssssssssssss",
+        "gggsGGGGsggs",
+        "sggsgggsssss"
+      ]
+    },
+    "scrCode8": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "sgggsggggsGs",
+        "sggsGGGsssss",
+        "ssggggsGGsss",
+        "sgssssssssss",
+        "ssssssssssss",
+        "gggsGGGGsggs",
+        "sggsgggsssss",
+        "ssssssssssss"
+      ]
+    },
+    "scrCode9": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "sggsGGGsssss",
+        "ssggggsGGsss",
+        "sgssssssssss",
+        "ssssssssssss",
+        "gggsGGGGsggs",
+        "sggsgggsssss",
+        "ssssssssssss",
+        "ggggsGGGssss"
+      ]
+    },
+    "scrCode10": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssggggsGGsss",
+        "sgssssssssss",
+        "ssssssssssss",
+        "gggsGGGGsggs",
+        "sggsgggsssss",
+        "ssssssssssss",
+        "ggggsGGGssss",
+        "sggsggggsGGs"
+      ]
+    },
+    "scrCode11": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "sgssssssssss",
+        "ssssssssssss",
+        "gggsGGGGsggs",
+        "sggsgggsssss",
+        "ssssssssssss",
+        "ggggsGGGssss",
+        "sggsggggsGGs",
+        "sggsGGssssss"
+      ]
+    },
+    "scrCode12": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "gggsGGGGsggs",
+        "sggsgggsssss",
+        "ssssssssssss",
+        "ggggsGGGssss",
+        "sggsggggsGGs",
+        "sggsGGssssss",
+        "ssgggsGGGGss"
+      ]
+    },
+    "scrCode13": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "gggsGGGGsggs",
+        "sggsgggsssss",
+        "ssssssssssss",
+        "ggggsGGGssss",
+        "sggsggggsGGs",
+        "sggsGGssssss",
+        "ssgggsGGGGss",
+        "ssgsGGsggsss"
+      ]
+    },
+    "scrCode14": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "sggsgggsssss",
+        "ssssssssssss",
+        "ggggsGGGssss",
+        "sggsggggsGGs",
+        "sggsGGssssss",
+        "ssgggsGGGGss",
+        "ssgsGGsggsss",
+        "sggsssssssss"
+      ]
+    },
+    "scrCode15": {
+      "x": 9,
+      "y": 9,
+      "rows": [
+        "ssssssssssss",
+        "ggggsGGGssss",
+        "sggsggggsGGs",
+        "sggsGGssssss",
+        "ssgggsGGGGss",
+        "ssgsGGsggsss",
+        "sggsssssssss",
+        "ssssssssssss"
+      ]
+    }
+  },
+  "particles": {
+    "bits": {
+      "colors": ["g", "G"],
+      "area": [9, 2, 12, 3],
+      "velocity": [0, -6],
+      "spread": [3, 1],
+      "life": 0.9,
+      "count": 4
+    },
+    "sparkle": {
+      "colors": ["h", "y", "c"],
+      "area": [6, 0, 18, 6],
+      "velocity": [0, -4],
+      "spread": [3, 1.5],
+      "life": 0.9,
+      "count": 3
+    },
+    "exhaust": {
+      "colors": ["m", "M", "n"],
+      "area": [7, 27, 16, 2],
+      "velocity": [0, -1],
+      "spread": [5, 0.5],
+      "life": 1.2,
+      "count": 3,
+      "behind": true,
+      "attached": false
+    }
+  },
+  "animations": {
+    "idle": {
+      "fps": 2,
+      "motion": {"type": "bob", "amplitude": 1, "period": 2.2},
+      "base": ["stem", "bulb", "earL", "earR", "head", "body", "armL", "armR", "scrEyes"],
+      "frames": [["treadA"], ["treadA"], ["treadB"], ["treadA"]],
+      "accents": [
+        {
+          "layers": ["scrSide"],
+          "every": [5, 9],
+          "duration": 1.2
+        },
+        {
+          "layers": ["scrBlink"],
+          "every": [2.8, 5.5],
+          "duration": 0.16
+        },
+        {
+          "palette": "bulb",
+          "every": [1.0, 1.6],
+          "duration": 0.35
+        }
+      ]
+    },
+    "talking": {
+      "fps": 8,
+      "motion": {"type": "bob", "amplitude": 1, "period": 2.2},
+      "base": ["stem", "bulb", "earL", "earR", "head", "body", "treadA", "armR"],
+      "frames": [
+        ["scrTalkA", "armL"],
+        ["scrTalkB", "armL"],
+        ["scrTalkC", "armLUp"],
+        ["scrTalkB", "armLUp"],
+        ["scrTalkA", "armLUp"],
+        ["scrTalkC", "armL"],
+        {
+          "layers": ["scrEyes", "armL"],
+          "hold": 2
+        }
+      ],
+      "accents": [{"palette": "bulb", "every": [1.0, 1.6], "duration": 0.35}]
+    },
+    "thinking": {
+      "fps": 4,
+      "palette": "bulbG",
+      "motion": {"type": "bob", "amplitude": 1, "period": 3},
+      "base": ["stem", "bulb", "earL", "earR", "head", "body", "treadA", "armL", "armR"],
+      "frames": [["scrLoad0"], ["scrLoad1"], ["scrLoad2"]],
+      "particles": ["bits"],
+      "particleFPS": 6
+    },
+    "working": {
+      "fps": 6,
+      "palette": "busy",
+      "motion": {"type": "shake", "amplitude": 1, "period": 0.12},
+      "base": ["stem", "bulb", "earL", "earR", "head", "body"],
+      "frames": [
+        {
+          "layers": ["scrCode0", "treadB", {"layer": "armL", "dy": 0}, {"layer": "armR", "dy": -1}],
+          "palette": "bulb"
+        },
+        ["scrCode1", "treadA", {"layer": "armL", "dy": -1}, {"layer": "armR", "dy": 0}],
+        ["scrCode2", "treadB", {"layer": "armL", "dy": 0}, {"layer": "armR", "dy": -1}],
+        ["scrCode3", "treadA", {"layer": "armL", "dy": -1}, {"layer": "armR", "dy": 0}],
+        {
+          "layers": ["scrCode4", "treadB", {"layer": "armL", "dy": 0}, {"layer": "armR", "dy": -1}],
+          "palette": "bulb"
+        },
+        ["scrCode5", "treadA", {"layer": "armL", "dy": -1}, {"layer": "armR", "dy": 0}],
+        ["scrCode6", "treadB", {"layer": "armL", "dy": 0}, {"layer": "armR", "dy": -1}],
+        ["scrCode7", "treadA", {"layer": "armL", "dy": -1}, {"layer": "armR", "dy": 0}],
+        {
+          "layers": ["scrCode8", "treadB", {"layer": "armL", "dy": 0}, {"layer": "armR", "dy": -1}],
+          "palette": "bulb"
+        },
+        ["scrCode9", "treadA", {"layer": "armL", "dy": -1}, {"layer": "armR", "dy": 0}],
+        ["scrCode10", "treadB", {"layer": "armL", "dy": 0}, {"layer": "armR", "dy": -1}],
+        ["scrCode11", "treadA", {"layer": "armL", "dy": -1}, {"layer": "armR", "dy": 0}],
+        {
+          "layers": ["scrCode12", "treadB", {"layer": "armL", "dy": 0}, {"layer": "armR", "dy": -1}],
+          "palette": "bulb"
+        },
+        ["scrCode13", "treadA", {"layer": "armL", "dy": -1}, {"layer": "armR", "dy": 0}],
+        ["scrCode14", "treadB", {"layer": "armL", "dy": 0}, {"layer": "armR", "dy": -1}],
+        ["scrCode15", "treadA", {"layer": "armL", "dy": -1}, {"layer": "armR", "dy": 0}]
+      ],
+      "particles": ["bits", "exhaust"]
+    },
+    "alert": {
+      "fps": 6,
+      "palette": "red",
+      "motion": {"type": "hop", "amplitude": 2, "period": 0.6},
+      "base": ["stem", "bulb", "earL", "earR", "head", "body", "scrWide", "armLUp", "armRUp"],
+      "frames": [
+        ["treadA"],
+        {
+          "layers": ["treadB"],
+          "palette": "bulbG"
+        },
+        ["treadA"],
+        {
+          "layers": ["treadB"],
+          "palette": "bulbG"
+        }
+      ]
+    },
+    "waiting": {
+      "fps": 3,
+      "motion": {"type": "sway", "amplitude": 1, "period": 3},
+      "base": ["stem", "bulb", "earL", "earR", "head", "body", "armL", "armR"],
+      "frames": [
+        {
+          "layers": ["treadA", "scrEyes"],
+          "hold": 2
+        },
+        {
+          "layers": ["treadA", "scrSide"],
+          "hold": 3
+        },
+        ["treadB", "scrEyes"],
+        {
+          "layers": ["treadA", "scrSideL"],
+          "hold": 3
+        }
+      ],
+      "accents": [
+        {
+          "layers": ["scrBlink"],
+          "every": [2.8, 5.5],
+          "duration": 0.16
+        },
+        {
+          "palette": "bulb",
+          "every": [1.0, 1.6],
+          "duration": 0.35
+        }
+      ]
+    },
+    "happy": {
+      "fps": 6,
+      "palette": "pink",
+      "motion": {"type": "hop", "amplitude": 2, "period": 0.7},
+      "base": ["stem", "bulb", "earL", "earR", "head", "body", "scrHappy"],
+      "frames": [
+        {
+          "layers": ["treadA", "armLUp", "armRUp"],
+          "palette": "bulb"
+        },
+        ["treadB", "armL", "armRUp"],
+        {
+          "layers": ["treadA", "armLUp", "armRUp"],
+          "palette": "bulbG"
+        },
+        ["treadB", "armLUp", "armR"]
+      ],
+      "particles": ["sparkle"]
+    },
+    "sleeping": {
+      "fps": 1,
+      "palette": "off",
+      "motion": {"type": "none"},
+      "base": ["stem", "bulb", "body", "treadA", "armL", "armR"],
+      "frames": [
+        {
+          "layers": ["earL", "earR", "head", "scrSleep"],
+          "hold": 3
+        },
+        {
+          "layers": [
+            {"layer": "earL", "dy": 1},
+            {"layer": "earR", "dy": 1},
+            {"layer": "head", "dy": 1},
+            {"layer": "scrSleep", "dy": 1}
+          ],
+          "hold": 3
+        }
+      ]
+    }
+  }
+}

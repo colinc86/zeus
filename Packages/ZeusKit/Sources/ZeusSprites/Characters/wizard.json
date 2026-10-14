@@ -1,0 +1,512 @@
+{
+  "format": 1,
+  "id": "wizard",
+  "name": "Merlo",
+  "summary": "A bespectacled young wizard with a crackling crystal staff.",
+  "size": [30, 34],
+  "preferredScale": 4,
+  "canvas": {
+    "size": [34, 52],
+    "origin": [2, 15],
+    "anchor": [17, 48]
+  },
+  "emote": {
+    "at": [11, 4]
+  },
+  "palette": {
+    "k": "#1c1530",
+    "u": "#6a4fc4",
+    "U": "#4b3596",
+    "D": "#372670",
+    "y": "#f6c544",
+    "Y": "#c4861c",
+    "s": "#f6c9a4",
+    "S": "#dc9a7c",
+    "a": "#9a6a4a",
+    "e": "#1c1530",
+    "i": "#ffffff",
+    "m": "#8e3b46",
+    "p": "#f4a3a0",
+    "q": "#bfe6ff",
+    "t": "#8a5a3c",
+    "T": "#5e3c27",
+    "c": "#7fe6ff",
+    "C": "#3fb0e0",
+    "h": "#ffffff",
+    "x": "#ff9ff2"
+  },
+  "palettes": {
+    "pulse": {"c": "#c8f6ff", "C": "#7fe6ff"},
+    "flare": {"c": "#ffffff", "C": "#c8f6ff", "q": "#e8f8ff"},
+    "rosy": {"p": "#ff8d94", "c": "#ffb0f0", "C": "#e070d0"},
+    "night": {"u": "#55449a", "U": "#3e3080", "D": "#2e2460", "c": "#2f6a88", "C": "#24506a", "q": "#8aa8c0"}
+  },
+  "layers": {
+    "body": {
+      "x": -1,
+      "y": -1,
+      "rows": [
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "...........kkkkkkkkkk...........",
+        "..........kassssssssak..........",
+        "..........kassssssssak..........",
+        "..........kassssssssak..........",
+        "...........kssssssssk...........",
+        "............kssssssk............",
+        "..........kkkkkkkkkkkk..........",
+        ".........kuuuuyyuyyuUUk.........",
+        ".........kuuuuuuuuuuUUk.........",
+        "........kuuuuuuuuuuuuUUk........",
+        "........kuuuuuuuuuuuuyUk........",
+        ".......kuuuuyuuuuuuuuuUUk.......",
+        ".......kuuuuuuuuuuuuuuUUk.......",
+        "......kuuuuuuuuuuuuuuuuUUk......",
+        "......kuuuuuuuuuuuuyuuuUUk......",
+        ".....kuuuuuuuuuuuuuuuuuuUUk.....",
+        ".....kuuuuuuuuyuuuuuuuuuUUk.....",
+        "....kuuuuuyuuuuuuuuuuuuuuUUk....",
+        "....kuuuuuuuuuuuuuuuuuuuuUUk....",
+        "...kUUUUUUUUUUUUUUUUUUUUUUUUk...",
+        "....kkkkkkkkkkkkkkkkkkkkkkkk....",
+        "................................",
+        "................................"
+      ]
+    },
+    "hat": {
+      "x": 5,
+      "y": 0,
+      "rows": [
+        "................kk..",
+        "...............kuuk.",
+        "..............kuuUk.",
+        ".............kuuuUk.",
+        "............kuuuuk..",
+        "...........kuuuuUk..",
+        "..........kuuuuuUk..",
+        ".........kuuuuuuUk..",
+        "........kuuuuuuuUk..",
+        "........kyyyyyyyyk..",
+        "...kkkkkkuuuuuuuUkk.",
+        "..kuuuuuuuuuuuuuuuUk",
+        "...kUUUUUUUUUUUUUUk.",
+        "....kkkkkkkkkkkkkk.."
+      ]
+    },
+    "staff": {
+      "x": -1,
+      "y": -1,
+      "rows": [
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        ".....kk.........................",
+        "....kcck........................",
+        "...kcccCk.......................",
+        "...kcccCk.......................",
+        "....kCCk........................",
+        ".....ktk........................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        "......kk........................",
+        "................................"
+      ]
+    },
+    "staffUp": {
+      "x": -1,
+      "y": -1,
+      "rows": [
+        ".....kk.........................",
+        "....kcck........................",
+        "...kcccCk.......................",
+        "...kcccCk.......................",
+        "....kCCk........................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        ".....ktTk.......................",
+        "......kk........................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................",
+        "................................"
+      ]
+    },
+    "handL": {
+      "x": 5,
+      "y": 20,
+      "rows": [
+        ".kkk.",
+        "kuuuk",
+        "kussk",
+        ".kkk."
+      ]
+    },
+    "handLUp": {
+      "x": 4,
+      "y": 13,
+      "rows": [
+        ".kkk.",
+        "kuusk",
+        "kuusk",
+        ".kkk."
+      ]
+    },
+    "armR": {
+      "x": 22,
+      "y": 21,
+      "rows": [
+        ".kk.",
+        "kUuk",
+        "kuuk",
+        "kssk",
+        ".kk."
+      ]
+    },
+    "armRUp": {
+      "x": 20,
+      "y": 16,
+      "rows": [
+        ".kk.",
+        "kssk",
+        "kuuk",
+        "kUuk",
+        "kuuk",
+        ".kk."
+      ]
+    },
+    "eyes": {
+      "x": 10,
+      "y": 14,
+      "rows": [
+        ".ie....ie."
+      ]
+    },
+    "glasses": {
+      "x": 10,
+      "y": 13,
+      "rows": [
+        "yyyy..yyyy",
+        "y..yyyy..y",
+        "yyyy..yyyy"
+      ]
+    },
+    "eyesBlink": {
+      "x": 10,
+      "y": 14,
+      "rows": [
+        ".kk....kk."
+      ]
+    },
+    "eyesSide": {
+      "x": 10,
+      "y": 14,
+      "rows": [
+        "..ie....ie"
+      ]
+    },
+    "eyesUp": {
+      "x": 10,
+      "y": 14,
+      "rows": [
+        ".ee....ee."
+      ]
+    },
+    "eyesHappy": {
+      "x": 10,
+      "y": 14,
+      "rows": [
+        ".kk....kk."
+      ]
+    },
+    "eyesWide": {
+      "x": 10,
+      "y": 14,
+      "rows": [
+        ".ee....ee."
+      ]
+    },
+    "lens": {
+      "x": 11,
+      "y": 14,
+      "rows": [
+        "qq....qq"
+      ]
+    },
+    "mouth": {
+      "x": 14,
+      "y": 16,
+      "rows": [
+        "kk"
+      ]
+    },
+    "mouthOpen": {
+      "x": 14,
+      "y": 16,
+      "rows": [
+        "kk",
+        "mm"
+      ]
+    },
+    "mouthO": {
+      "x": 14,
+      "y": 16,
+      "rows": [
+        "mm",
+        "mm"
+      ]
+    },
+    "mouthGrin": {
+      "x": 13,
+      "y": 16,
+      "rows": [
+        "kkkk",
+        ".mm."
+      ]
+    },
+    "mouthHmm": {
+      "x": 14,
+      "y": 16,
+      "rows": [
+        ".k",
+        "k."
+      ]
+    },
+    "cheeks": {
+      "x": 10,
+      "y": 16,
+      "rows": [
+        "p........p"
+      ]
+    }
+  },
+  "particles": {
+    "sparkle": {
+      "colors": ["h", "c", "x"],
+      "area": [2, 4, 6, 4],
+      "velocity": [0, -4],
+      "spread": [4, 3],
+      "life": 0.8,
+      "count": 3
+    },
+    "sparkleUp": {
+      "colors": ["h", "c", "x", "y"],
+      "area": [1, -1, 8, 6],
+      "velocity": [0, -5],
+      "spread": [7, 5],
+      "life": 0.7,
+      "count": 7
+    },
+    "stars": {
+      "colors": ["y", "h", "x"],
+      "area": [4, 0, 22, 6],
+      "velocity": [0, -4],
+      "spread": [4, 2],
+      "life": 1.0,
+      "count": 4
+    }
+  },
+  "animations": {
+    "idle": {
+      "fps": 3,
+      "motion": {"type": "float", "amplitude": 1, "period": 3},
+      "frames": [
+        ["staff", "body", "cheeks", "eyes", "glasses", "mouth", "hat", "handL", "armR"],
+        {
+          "layers": ["staff", "body", "cheeks", "eyes", "glasses", "mouth", "hat", "handL", "armR"],
+          "palette": "pulse"
+        },
+        {
+          "layers": ["staff", "body", "cheeks", "eyes", "glasses", "mouth", "hat", "handL", "armR"],
+          "palette": "flare"
+        },
+        {
+          "layers": ["staff", "body", "cheeks", "eyes", "glasses", "mouth", "hat", "handL", "armR"],
+          "palette": "pulse"
+        }
+      ],
+      "particles": ["sparkle"],
+      "particleFPS": 6,
+      "accents": [
+        {
+          "layers": ["eyesSide"],
+          "every": [5, 9],
+          "duration": 1.0
+        },
+        {
+          "layers": ["eyesBlink"],
+          "every": [3, 6],
+          "duration": 0.15
+        }
+      ]
+    },
+    "talking": {
+      "fps": 6,
+      "motion": {"type": "float", "amplitude": 1, "period": 3},
+      "frames": [
+        ["staff", "body", "cheeks", "eyes", "glasses", "mouthOpen", "hat", "handL", "armRUp"],
+        ["staff", "body", "cheeks", "eyes", "glasses", "mouth", "hat", "handL", "armRUp"],
+        {
+          "layers": ["staff", "body", "cheeks", "eyes", "glasses", "mouthOpen", "hat", "handL", "armRUp"],
+          "dy": -1
+        },
+        {
+          "layers": ["staff", "body", "cheeks", "eyes", "glasses", "mouth", "hat", "handL", "armRUp"],
+          "dy": -1
+        },
+        {
+          "layers": ["staff", "body", "cheeks", "eyes", "glasses", "mouthOpen", "hat", "handL", "armRUp"],
+          "palette": "pulse"
+        },
+        {
+          "layers": ["staff", "body", "cheeks", "eyes", "glasses", "mouth", "hat", "handL", "armRUp"],
+          "hold": 2
+        }
+      ],
+      "particles": ["sparkle"],
+      "particleFPS": 6,
+      "accents": [{"layers": ["eyesBlink"], "every": [3, 6], "duration": 0.15}]
+    },
+    "thinking": {
+      "fps": 2,
+      "motion": {"type": "sway", "amplitude": 1, "period": 4},
+      "frames": [
+        ["staff", "body", "cheeks", "eyesUp", "glasses", "mouthHmm", "hat", "handL", "armRUp"],
+        {
+          "layers": ["staff", "body", "cheeks", "eyesUp", "glasses", "mouthHmm", "hat", "handL", "armRUp"],
+          "palette": "pulse"
+        }
+      ],
+      "particles": ["sparkle"],
+      "particleFPS": 6
+    },
+    "working": {
+      "fps": 6,
+      "motion": {"type": "bob", "amplitude": 1, "period": 0.6},
+      "frames": [
+        {
+          "layers": ["staffUp", "body", "cheeks", "eyesWide", "glasses", "mouthO", "hat", "handLUp", "armRUp"],
+          "palette": "pulse"
+        },
+        {
+          "layers": ["staffUp", "body", "cheeks", "eyesWide", "glasses", "mouthO", "hat", "handLUp", "armRUp"],
+          "palette": "flare"
+        },
+        ["staffUp", "body", "cheeks", "eyesWide", "glasses", "mouthO", "hat", "handLUp", "armRUp"],
+        {
+          "layers": ["staffUp", "body", "cheeks", "eyesWide", "glasses", "mouthO", "hat", "handLUp", "armRUp"],
+          "palette": "flare"
+        }
+      ],
+      "particles": ["sparkleUp"]
+    },
+    "alert": {
+      "fps": 8,
+      "motion": {"type": "hop", "amplitude": 2, "period": 0.8},
+      "frames": [
+        {
+          "layers": ["staffUp", "body", "cheeks", "eyesWide", "glasses", "mouthO", "hat", "handLUp", "armRUp"],
+          "palette": "flare"
+        },
+        ["staffUp", "body", "cheeks", "eyesWide", "glasses", "mouthO", "hat", "handLUp", "armRUp"]
+      ],
+      "particles": ["sparkleUp"]
+    },
+    "waiting": {
+      "fps": 3,
+      "motion": {"type": "sway", "amplitude": 1, "period": 3},
+      "frames": [
+        {
+          "layers": ["staff", "body", "cheeks", "eyes", "glasses", "mouth", "hat", "handL", "armR"],
+          "hold": 3
+        },
+        {
+          "layers": ["staff", "body", "cheeks", "eyesSide", "glasses", "mouth", "hat", "handL", "armR"],
+          "hold": 3,
+          "palette": "pulse"
+        }
+      ],
+      "accents": [{"layers": ["eyesBlink"], "every": [3, 6], "duration": 0.15}]
+    },
+    "happy": {
+      "fps": 6,
+      "palette": "rosy",
+      "motion": {"type": "hop", "amplitude": 2, "period": 0.7},
+      "frames": [
+        ["staffUp", "body", "cheeks", "eyesHappy", "glasses", "mouthGrin", "hat", "handLUp", "armRUp"],
+        ["staffUp", "body", "cheeks", "eyesHappy", "glasses", "mouthGrin", "hat", "handLUp", "armR"]
+      ],
+      "particles": ["stars", "sparkleUp"]
+    },
+    "sleeping": {
+      "fps": 1,
+      "palette": "night",
+      "frames": [
+        {
+          "layers": ["staff", "body", "eyesBlink", "glasses", "mouth", {"layer": "hat", "dy": 2}, "handL", "armR"],
+          "hold": 2
+        },
+        {
+          "layers": ["staff", "body", "eyesBlink", "glasses", "mouthO", {"layer": "hat", "dy": 3}, "handL", "armR"],
+          "hold": 2
+        }
+      ]
+    }
+  }
+}

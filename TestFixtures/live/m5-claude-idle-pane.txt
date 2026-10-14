@@ -1,0 +1,41 @@
+
+ ▐▛███▛█   Claude Code v2.1.296
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   ~/Zeus Assistant · /rc
+
+▎ Channels (experimental) messages from server:zeus inject directly in this session · restart without
+▎ --dangerously-load-development-channels to stop
+▎ server:zeus · no MCP server configured with that name
+
+❯ Call zeus_say with a short greeting, then wait for the user. Zeus managed conversation:
+  F6A49D9F-0E1A-4407-B6D3-A226000EC206 (internal marker; do not include it in your greeting).
+
+  Called zeus
+
+⏺ I posted a "Ready when you are" greeting through Zeus and I'm waiting for your message.
+
+  Three connections failed when the session started: clark, even-steps and gloss. If you need any of them, they'll have
+  to be reconnected first.
+
+✻ Baked for 6s · done 8:26 AM
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ✦ Opus 5.5  ·  ⧗ 1m ⟨api 9s · ✎ 57s⟩ [08:26]  ·  ⚡96% ↺ 54.3k ↑ 2.3k · saved 127.9k  ·  ✦ v2.1.296 new
+  ○ 6% [▌░░░░░░░░┊] 60k/1M · 940k free  ·  $0.27 ($14.83/hr · 51.3k/min) · ↓ 56.6k ↑ 76
+  ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  ○ 5h [▏░░░░░░░░░] 2% →3%  ·  ○ 7d  [█░░░░░░░░░] 10% →25%  ·                █
+  ◑ 2h [█████▉░░░░] 3h      ·  ◑ 68h [████░░░░░░] 100h      ·                █▅ ▴7.2k
+  ─────────────────────────────────────────────────────────────────────────────────────
+  ⏸ manual mode on · ← for agents
+2,31,120,40

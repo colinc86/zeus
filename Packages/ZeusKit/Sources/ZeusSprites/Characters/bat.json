@@ -1,0 +1,504 @@
+{
+  "format": 1,
+  "id": "bat",
+  "name": "Nyx",
+  "summary": "A little bat on tireless wings who naps hanging upside down.",
+  "size": [32, 26],
+  "preferredScale": 4,
+  "canvas": {
+    "size": [42, 42],
+    "origin": [5, 14],
+    "anchor": [21, 38]
+  },
+  "emote": {
+    "at": [16, 3]
+  },
+  "palette": {
+    "k": "#160f22",
+    "b": "#5a4a7a",
+    "B": "#43375e",
+    "c": "#7d6ba6",
+    "m": "#5a4884",
+    "M": "#7461a3",
+    "n": "#3a2d5a",
+    "p": "#e88aa8",
+    "e": "#160f22",
+    "i": "#ffffff",
+    "w": "#ffffff",
+    "r": "#ff6b8a",
+    "t": "#5a3d2a",
+    "T": "#42291b",
+    "y": "#ffe08a",
+    "h": "#ff9fbf"
+  },
+  "palettes": {
+    "glow": {"e": "#ff3b6b", "i": "#ffd0dc"},
+    "rosy": {"p": "#ff7fa0"},
+    "night": {"b": "#54477a", "B": "#43395f", "c": "#6f61a0", "m": "#4a3c70", "M": "#5e4f8a"}
+  },
+  "layers": {
+    "body": {
+      "x": 10,
+      "y": 8,
+      "rows": [
+        "...kkkkkk...",
+        "..kbbbbbbk..",
+        ".kbbbbbbbbk.",
+        "kbbbbbbbbbBk",
+        "kbbbbbbbbbBk",
+        "kbbbbbbbbbBk",
+        "kbbbccccbbBk",
+        "kbbccccccBBk",
+        ".kbccccccBk.",
+        "..kBccccBk..",
+        "...kBBBBk...",
+        "....kkkk...."
+      ]
+    },
+    "ears": {
+      "x": 11,
+      "y": 5,
+      "rows": [
+        ".k......k.",
+        "kbk....kbk",
+        "kbbk..kbbk",
+        "kbpbkkbpbk",
+        "kbpbbbbpbk",
+        ".kkkkkkkk."
+      ]
+    },
+    "feet": {
+      "x": 13,
+      "y": 20,
+      "rows": [
+        "k....k",
+        "k....k"
+      ]
+    },
+    "wingLUp": {
+      "x": -2,
+      "y": 4,
+      "rows": [
+        "...............",
+        "..k............",
+        ".knkkk.........",
+        "..kMnnkkk......",
+        "...kkkkMnkk....",
+        "......kMnnnkk..",
+        ".......knMMnnk.",
+        ".......knMmmmnk",
+        "........knmmmmk",
+        ".........kkkmmk",
+        "............kmk",
+        "............kmk",
+        ".............k.",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "..............."
+      ]
+    },
+    "wingRUp": {
+      "x": 21,
+      "y": 4,
+      "rows": [
+        "...............",
+        "............k..",
+        ".........kkknk.",
+        "......kkknnMk..",
+        "....kknMkkkk...",
+        "..kknnnMk......",
+        ".knnMMnk.......",
+        "knmmmMnk.......",
+        "kmmmmnk........",
+        "kmmkkk.........",
+        "kmk............",
+        "kmk............",
+        ".k.............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "..............."
+      ]
+    },
+    "wingLMid": {
+      "x": -2,
+      "y": 4,
+      "rows": [
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        ".....kkkkkkkkk.",
+        "...kknnnnnnnnnk",
+        "..kMnkkMnMMMMMk",
+        "...kk..knmmmmmk",
+        "........knkkmmk",
+        ".........k..kmk",
+        ".............k.",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "..............."
+      ]
+    },
+    "wingRMid": {
+      "x": 21,
+      "y": 4,
+      "rows": [
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        ".kkkkkkkkk.....",
+        "knnnnnnnnnkk...",
+        "kMMMMMnMkknMk..",
+        "kmmmmmnk..kk...",
+        "kmmkknk........",
+        "kmk..k.........",
+        ".k.............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "..............."
+      ]
+    },
+    "wingLDown": {
+      "x": -2,
+      "y": 4,
+      "rows": [
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        ".............k.",
+        "............knk",
+        "..........kkMMk",
+        ".........knMMMk",
+        ".......kkMMMMMk",
+        "...kk.knnMMMMMk",
+        "..knnk.knmkkMMk",
+        "...kk...kk..kmk",
+        ".............k.",
+        "...............",
+        "...............",
+        "..............."
+      ]
+    },
+    "wingRDown": {
+      "x": 21,
+      "y": 4,
+      "rows": [
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        ".k.............",
+        "knk............",
+        "kMMkk..........",
+        "kMMMnk.........",
+        "kMMMMMkk.......",
+        "kMMMMMnnk.kk...",
+        "kMMkkmnk.knnk..",
+        "kmk..kk...kk...",
+        ".k.............",
+        "...............",
+        "...............",
+        "..............."
+      ]
+    },
+    "eyes": {
+      "x": 13,
+      "y": 11,
+      "rows": [
+        "ie..ie",
+        "ee..ee"
+      ]
+    },
+    "eyesBlink": {
+      "x": 13,
+      "y": 11,
+      "rows": [
+        "bb..bb",
+        "kk..kk"
+      ]
+    },
+    "eyesSide": {
+      "x": 13,
+      "y": 11,
+      "rows": [
+        ".ie..ie",
+        ".ee..ee"
+      ]
+    },
+    "eyesHappy": {
+      "x": 13,
+      "y": 11,
+      "rows": [
+        ".k...k.",
+        "k.k.k.k"
+      ]
+    },
+    "eyesWide": {
+      "x": 12,
+      "y": 10,
+      "rows": [
+        "kkk..kkk",
+        "kie..kie",
+        "kee..kee",
+        "kkk..kkk"
+      ]
+    },
+    "eyesUp": {
+      "x": 13,
+      "y": 11,
+      "rows": [
+        "ee..ee",
+        "bb..bb"
+      ]
+    },
+    "eyesFocus": {
+      "x": 13,
+      "y": 11,
+      "rows": [
+        "kk..kk",
+        "ee..ee"
+      ]
+    },
+    "mouth": {
+      "x": 14,
+      "y": 14,
+      "rows": [
+        "k..k",
+        ".kw."
+      ]
+    },
+    "mouthOpen": {
+      "x": 14,
+      "y": 14,
+      "rows": [
+        ".kk.",
+        "krrk",
+        ".kw."
+      ]
+    },
+    "mouthO": {
+      "x": 14,
+      "y": 14,
+      "rows": [
+        ".kk.",
+        "krrk",
+        ".kk."
+      ]
+    },
+    "mouthGrin": {
+      "x": 14,
+      "y": 14,
+      "rows": [
+        "kkkk",
+        "kppk",
+        ".kw."
+      ]
+    },
+    "mouthFlat": {
+      "x": 14,
+      "y": 14,
+      "rows": [
+        "....",
+        "kkw."
+      ]
+    },
+    "hanging": {
+      "x": 8,
+      "y": 4,
+      "rows": [
+        "................",
+        "................",
+        "................",
+        "....kkkkkkkk....",
+        "...kMkmmmmkMk...",
+        "..kMmmmmmmmmMk..",
+        ".kMmmmmmmmmmmMk.",
+        ".kMmmmMMMMmmmMk.",
+        ".kMmmMkkkkMmmMk.",
+        ".kMmMkcccckMmMk.",
+        ".kMMkbckkcbkMMk.",
+        "..kkbbbbbbbbkk..",
+        "..kbbkkbbkkbBk..",
+        "..kbbbbbbbbbBk..",
+        "...kbbbbbbbbk...",
+        "...kkbbbbbbkk...",
+        "...kbkkkkkkbk...",
+        "...kbbk..kbbk...",
+        "...kbk....kbk...",
+        "....k......k...."
+      ]
+    },
+    "branch": {
+      "x": 2,
+      "y": 1,
+      "rows": [
+        ".TTTTTTTTTTTTTTTTTTTTTTTT.",
+        "TttttttttttttttttttttttttT",
+        "TTtTTTtTTtTTTtTTtTTTtTTtTT",
+        ".TTTTTTTTTTTTTTTTTTTTTTTT."
+      ]
+    }
+  },
+  "particles": {
+    "stars": {
+      "colors": ["y", "h", "w"],
+      "area": [2, 0, 26, 4],
+      "velocity": [0, -4],
+      "spread": [4, 1.5],
+      "life": 1.0,
+      "count": 4
+    },
+    "dust": {
+      "colors": ["c", "M"],
+      "area": [4, 18, 22, 3],
+      "velocity": [0, 3],
+      "spread": [4, 1],
+      "life": 0.8,
+      "count": 3,
+      "attached": false
+    }
+  },
+  "animations": {
+    "idle": {
+      "fps": 6,
+      "motion": {"type": "float", "amplitude": 2, "period": 1.6},
+      "frames": [
+        ["wingLUp", "wingRUp", "ears", "body", "feet", "eyes", "mouth"],
+        ["wingLMid", "wingRMid", "ears", "body", "feet", "eyes", "mouth"],
+        ["wingLDown", "wingRDown", "ears", "body", "feet", "eyes", "mouth"],
+        ["wingLMid", "wingRMid", "ears", "body", "feet", "eyes", "mouth"]
+      ],
+      "accents": [
+        {
+          "layers": ["eyesSide"],
+          "every": [5, 9],
+          "duration": 1.0
+        },
+        {
+          "layers": ["eyesBlink"],
+          "every": [3, 6],
+          "duration": 0.15
+        }
+      ]
+    },
+    "talking": {
+      "fps": 8,
+      "motion": {"type": "float", "amplitude": 2, "period": 1.6},
+      "frames": [
+        ["wingLUp", "wingRUp", "ears", "body", "feet", "eyes", "mouthOpen"],
+        ["wingLMid", "wingRMid", "ears", "body", "feet", "eyes", "mouth"],
+        ["wingLDown", "wingRDown", "ears", "body", "feet", "eyes", "mouthOpen"],
+        ["wingLMid", "wingRMid", "ears", "body", "feet", "eyes", "mouth"]
+      ],
+      "accents": [{"layers": ["eyesBlink"], "every": [3, 6], "duration": 0.15}]
+    },
+    "thinking": {
+      "fps": 3,
+      "motion": {"type": "float", "amplitude": 1, "period": 2.6},
+      "frames": [
+        {
+          "layers": ["wingLMid", "wingRMid", "ears", "body", "feet", "eyesUp", "mouthFlat"],
+          "hold": 2
+        },
+        ["wingLDown", "wingRDown", "ears", "body", "feet", "eyesUp", "mouthFlat"]
+      ],
+      "accents": [{"layers": ["eyesBlink"], "every": [3, 6], "duration": 0.15}]
+    },
+    "working": {
+      "fps": 12,
+      "palette": "glow",
+      "motion": {"type": "float", "amplitude": 1, "period": 0.5},
+      "frames": [
+        ["wingLUp", "wingRUp", "ears", "body", "feet", "eyesFocus", "mouthFlat"],
+        ["wingLMid", "wingRMid", "ears", "body", "feet", "eyesFocus", "mouthFlat"],
+        ["wingLDown", "wingRDown", "ears", "body", "feet", "eyesFocus", "mouthFlat"],
+        ["wingLMid", "wingRMid", "ears", "body", "feet", "eyesFocus", "mouthFlat"]
+      ],
+      "particles": ["dust"]
+    },
+    "alert": {
+      "fps": 10,
+      "palette": "glow",
+      "motion": {"type": "shake", "amplitude": 1, "period": 0.08},
+      "frames": [
+        {
+          "layers": ["wingLUp", "wingRUp", "ears", "body", "feet", "eyesWide", "mouthO"],
+          "dy": -2
+        },
+        {
+          "layers": ["wingLUp", "wingRUp", "ears", "body", "feet", "eyesWide", "mouthO"],
+          "dy": -3
+        },
+        {
+          "layers": ["wingLMid", "wingRMid", "ears", "body", "feet", "eyesWide", "mouthO"],
+          "dy": -1
+        }
+      ],
+      "particles": ["dust"]
+    },
+    "waiting": {
+      "fps": 5,
+      "motion": {"type": "float", "amplitude": 1, "period": 2},
+      "frames": [
+        {
+          "layers": ["wingLMid", "wingRMid", "ears", "body", "feet", "eyes", "mouthFlat"],
+          "hold": 4
+        },
+        ["wingLDown", "wingRDown", "ears", "body", "feet", "eyes", "mouthFlat"],
+        ["wingLUp", "wingRUp", "ears", "body", "feet", "eyesSide", "mouthFlat"],
+        {
+          "layers": ["wingLMid", "wingRMid", "ears", "body", "feet", "eyesSide", "mouthFlat"],
+          "hold": 4
+        },
+        ["wingLDown", "wingRDown", "ears", "body", "feet", "eyesSide", "mouthFlat"],
+        ["wingLUp", "wingRUp", "ears", "body", "feet", "eyes", "mouthFlat"]
+      ],
+      "accents": [{"layers": ["eyesBlink"], "every": [3, 6], "duration": 0.15}]
+    },
+    "happy": {
+      "fps": 10,
+      "palette": "rosy",
+      "motion": {"type": "hop", "amplitude": 2, "period": 0.6},
+      "frames": [
+        ["wingLUp", "wingRUp", "ears", "body", "feet", "eyesHappy", "mouthGrin"],
+        ["wingLMid", "wingRMid", "ears", "body", "feet", "eyesHappy", "mouthGrin"],
+        ["wingLDown", "wingRDown", "ears", "body", "feet", "eyesHappy", "mouthGrin"],
+        ["wingLMid", "wingRMid", "ears", "body", "feet", "eyesHappy", "mouthGrin"]
+      ],
+      "particles": ["stars"]
+    },
+    "sleeping": {
+      "fps": 1,
+      "palette": "night",
+      "motion": {"type": "sway", "amplitude": 1, "period": 4},
+      "frames": [
+        {
+          "layers": ["branch", "hanging"],
+          "hold": 2
+        },
+        {
+          "layers": ["branch", {"layer": "hanging", "dy": 1}],
+          "hold": 2
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,40 @@
+%0|65527|0||54|13|opencode
+
+  ┃                                                                                                                     New session - 2026-10-13T04:35:42.
+  ┃  M0_USER_opencode-login Reply briefly.                                                                              004Z
+  ┃
+                                                                                                                        Context
+  ┃                                                                                                                     0 tokens
+  ┃  OpenAI API key is missing. Pass it using the 'apiKey' parameter or the OPENAI_API_KEY environment variable.        0% used
+  ┃                                                                                                                     $0.00 spent
+
+     ▣  Build · GPT-4.1 mini                                                                                            MCP
+                                                                                                                        • zeus Connected
+                                                      Connect a provider                               esc
+                                                                                                                        LSP
+                                                      Search                                                            LSPs are disabled
+
+                                                      Popular
+                                                    ✓ OpenAI (ChatGPT Plus/Pro or API key)
+
+                                                      Providers
+                                                      Other Custom provider
+
+
+
+
+
+
+
+
+
+
+
+
+
+  ┃
+  ┃
+  ┃                                                                                                                     /private/tmp/zm0_a8ung6ol/opencode-
+  ┃  Build · GPT-4.1 mini OpenAI                                                                                        login/project
+  ╹▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+   /private/tmp/zm0_a8ung6ol/opencode-login/project                                      tab agents  ctrl+p commands    • OpenCode 1.18.31

@@ -1,0 +1,12 @@
+{
+  "window_origin": [200, 120],
+  "window_size": [660, 452],
+  "content_size": [660, 420],
+  "title_bar_height": 32,
+  "icon_size": 128,
+  "text_size": 12,
+  "icon_locations": {"Zeus.app": [166, 200], "Applications": [494, 200]},
+  "background_1x": "background.png",
+  "background_2x": "background@2x.png",
+  "volume_icon": "ZeusVolume.icns"
+}
