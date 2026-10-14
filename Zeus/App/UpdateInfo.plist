@@ -5,7 +5,7 @@
     <key>SUFeedURL</key>
     <string>https://raw.githubusercontent.com/colinc86/zeus/main/appcast.xml</string>
     <key>SUPublicEDKey</key>
-    <string>ZEUS_SPARKLE_PUBLIC_ED_KEY_REPLACE_BEFORE_RELEASE</string>
+    <string>QD4xKuqug9ouzphnBFBolly4TCzMd3d+vlcghqSb4Do=</string>
     <key>SUEnableAutomaticChecks</key>
     <true/>
     <key>SUScheduledCheckInterval</key>
