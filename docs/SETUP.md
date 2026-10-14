@@ -6,7 +6,7 @@ Zeus is a small animated character on your desktop that acts as the face of your
 
 1. Open the Zeus disk image and drag **Zeus** into **Applications**.
 2. Open Zeus. It lives in the **menu bar** (⚡) and has no Dock icon. The character appears on your desktop:
-   - **Click** it to open the conversation;
+   - **Click** it to open the conversation (drag the panel's edge to make it wider);
    - **drag** it anywhere (it remembers where you put it);
    - **right-click** it for quick controls: Talk to Zeus, Settings, Character, Size, Hide.
 3. Open **Settings → Assistant** from the menu bar (⚡ → **Settings…**, or ⌘,).
@@ -46,11 +46,55 @@ In **Settings → Assistant**, choose **Zeus runs it**. Zeus starts the agent in
 - **Claude Code messages use its Terminal pane.** Zeus's tools are allowed for this launch only, while the permission mode you chose still governs other work. The managed launch skips the development-channel flag: Claude Code 2.1.296 cannot register a channel from the launch-only MCP configuration. Your global and project configuration stays intact.
 - **Start a New Conversation** gives the assistant a fresh start with your current instructions.
 
+### Let your assistant control Zeus
+
+Ask your assistant to change Zeus and it can: switch the character or theme, make a new one from your description, move Zeus, change its size, hide it for a while (1 minute to 12 hours, or until tomorrow) and change the appearance settings. Each change adds one line to the conversation with a single button, **Undo** (or **Show now** after a hide), for example *Added Pixel Cat · Undo*. Undoing a new character or theme switches back but keeps the file.
+
+It never changes its own authority. It can't answer, dismiss or pick an option in any prompt; change its permission mode, instructions, agent, folder or run mode; start, stop or restart itself; clear the conversation; turn on launch at login, Learn from me or automatic update checks; or touch your agent's configuration. It also can't turn quiet hours off while a question is waiting for you.
+
+It can check for updates and, when you ask, install one. Zeus says *"Updating to 0.1.9 — back in a few seconds"* first, and your assistant keeps running through the relaunch.
+
+**Settings → General** has two switches, both on by default:
+- **Let my assistant control Zeus**: off, and every change is refused.
+- **Let my assistant install updates**: off, and it can still check, but not install.
+
+The assistant learns the rules from the `AGENTS.md` in its folder (new folders get it from **Create one for me**) and from Zeus itself when it connects. The template says:
+- Change Zeus's character, theme, size or appearance only when I ask, or to use something you just made at my request.
+- Prefer moving Zeus near the active window over exact coordinates, and don't move it while I'm typing to it.
+- Never hide Zeus indefinitely.
+- Install an update only when I ask or have told you to keep Zeus current.
+
+A folder made before 0.1.8 doesn't have that section; copy it from a new one if you like. Zeus enforces the rules either way.
+
+### Learn from me
+
+**Settings → Privacy → Learn from me** is off until you turn it on. The first time, Zeus explains what it records:
+
+> Zeus records how you use this Mac so your assistant can pick better moments to help. Each morning it sends a short summary of the day before.
+>
+> **Zeus records:** which app is in front, and when it changes · apps opening and quitting · locking, sleeping and waking your Mac · times with no input for 5 minutes or more · how many displays are connected.
+>
+> **Zeus never records:** what you type, copy or paste · window titles, web addresses and file names · screenshots, audio or your location.
+>
+> Apps on your private list count only as private time, with no name.
+>
+> Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac.
+
+Choose **Turn On** or **Not Now**. Then, in the same pane:
+- **What Zeus has recorded** lists today's events in plain words, newest first.
+- **Notes to your assistant:** besides the morning summary, up to four notes a day: first activity of the day, back from a break of 2 hours or more, a later start than usual, and the day winding down. Untick any you don't want.
+- **Private apps** starts with common password managers, Keychain Access, Passwords and System Settings. **Add App…** adds another.
+- **Keep activity for** 7, 14, 30, 60 or 90 days (30 by default). Summaries are kept for a year.
+- **Pause for Today** stops recording until midnight. **Delete Everything…** removes all activity and summaries, after asking.
+
+Each summary or note also adds a quiet line to the conversation, such as *Sent your daily summary · View*. **View** shows the exact text your assistant got.
+
 ## 3. Pick a character
 
 **Settings → Character**:
 - Pick one of 12 characters: Zeus, Wisp, Jack, Gizmo, Sprout, Merlo, Midnight, Bones, Gloop, Nyx, Hoot or Spore.
 - **Size** (Small, Medium or Large) sets how big it draws.
+- **Fade Zeus when idle** makes the character see-through (10–90 %) after a while without use (5 seconds to 10 minutes). It comes back when you point at it, click it, or something new arrives. It still takes clicks while faded.
 - **Reset Avatar Position** brings it back if it's ever off screen.
 
 Your assistant can also change the costume when you ask it to.
@@ -157,6 +201,23 @@ When you answer a question or type a message, Zeus saves it before sending anyth
 - The agent confirms each message it has handled. The instructions in `AGENTS.md` teach it to.
 - Without a confirmation, Zeus sends the message again after 3, 6, 12 and 24 minutes. The agent ignores repeats it has already handled.
 - A message for a session that's away waits, and goes out when it's back.
+
+### The status strip
+
+A line between the conversation and the message field says why Zeus looks the way it does, and takes you there in one click (or ⌘J):
+
+| Zeus shows | The strip says | Click it to |
+|---|---|---|
+| "?" | **? Waiting for your answer · Go to question**, or **? 2 questions · Go to oldest** | jump to the question, ready to answer; again for the next one |
+| "!" | **! 3 unread · Show** | jump to the first message you haven't seen |
+| "!" (Zeus runs it) | **! Waiting for you in Terminal · Open** | open Terminal |
+| working | what it's doing, e.g. *Claude is working on tests* | jump to the bottom |
+| red "!" | **Message not delivered · Show** | jump to the message |
+| asleep | **Quiet until 8:00** | |
+
+**Skip** (⌘⇧J) closes the oldest open question without an answer and tells your assistant you skipped it, so it moves on instead of asking again. The agent's own Terminal prompts can't be skipped.
+
+On the right: **Open in Terminal** (when there's a terminal to open), **Start New Conversation…** (Zeus runs it), **Clear Conversation…** and **Assistant Settings…**. Clicking Zeus while it shows "?" or "!" opens the conversation at that question or message.
 
 **When something's stuck**, the character shows a red "!" and the menu says *"Couldn't reach your assistant. Zeus will keep trying."* Choose **Delivery problem…** to see what's waiting and to **Retry Now** or **Discard**. Nothing is thrown away until you discard it.
 

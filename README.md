@@ -28,6 +28,7 @@ Your assistant works in a terminal you're not watching. Zeus sits on your deskto
 - **Asks, and you answer in one click.** When your assistant needs a decision, a speech bubble pops up next to Zeus. Click an answer, or type one.
 - **Hands you finished work.** Files, folders and links, ready to open.
 - **Sends your replies back.** Type to Zeus and your message goes straight to your assistant.
+- **Tells you what's waiting.** A strip above the message field says why Zeus shows "?" or "!" and takes you there in one click. **Skip** a question you'd rather not answer. Its four buttons open Terminal, start a new conversation, clear the conversation and open Settings.
 - **Knows when to be quiet.** Set quiet hours and Zeus won't bother you.
 
 <br clear="right">
@@ -65,10 +66,40 @@ Already run your assistant yourself? Choose **Connect your own** and Zeus joins 
 
 Twelve cute characters to choose from, or build your own (see [Make your own character](docs/SETUP.md#make-your-own-character) and [the sprite format](docs/design/SPRITE_FORMAT.md)).
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readme/themes-dark.png">
+    <img src="docs/readme/themes-light.png" width="792" alt="The same conversation in the Olympus and Phosphor themes: “Make me a cat character.”, the line “Added Pixel Cat · Undo”, then “Here's Pixel Cat. Want a different coat color?”">
+  </picture>
+</p>
+
+Seven themes color the conversation and Zeus's speech bubble: Classic, Midnight, Parchment, Olympus, Phosphor, Pocket and Sorbet (Settings › Appearance). Themes and characters are plain JSON files: press **Open Example** to see how one is made, or **Import Theme…** and **Import Character…** to add one someone sent you.
+
+**Fade Zeus when idle** makes the character see-through until you need it. Drag the conversation panel's edge to make it wider.
+
+## Your assistant can control Zeus
+
+Ask, and your assistant can change anything you could change by clicking: the character or theme (including ones it makes for you), Zeus's size and place on screen, hiding Zeus for a while, and the appearance settings. It never changes its own authority: it can't answer its own prompts, change its permissions, instructions or folder, start or stop itself, clear the conversation or turn on Learn from me.
+
+Every change shows up as one line in the conversation with an **Undo**:
+
+> **You:** Make me a cat character.<br>
+> Added Pixel Cat · **Undo**
+
+It can also check for updates and install one when you ask. Two switches in Settings › General turn this off: **Let my assistant control Zeus** and **Let my assistant install updates**.
+
+## Learn from me
+
+Off until you turn it on in Settings › Privacy. Zeus then notes which app is in front, apps opening and quitting, when you lock, sleep or step away, and how many displays you use. It never records what you type, copy or read, window titles, web addresses or file names. Time in apps on your private list (password managers, to start) counts only as private time.
+
+Each morning your assistant gets a short summary of the day before, and up to four short notes a day, such as when you're back from a break, so it can pick better moments to help. Settings › Privacy shows exactly what was recorded today, pauses it for the day and deletes everything.
+
+Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac.
+
 ## How it works
 
 - `zeus-mcp` is an MCP server your assistant connects to. Its tools (`zeus_say`, `zeus_ask`, `zeus_present`, `zeus_set_status`, …) drive the character and the conversation panel.
-- Your replies go back into the assistant's terminal session through tmux. Each one is acknowledged, so a message is never lost or delivered twice.
+- Your replies go back to the session that asked: through its Terminal pane in tmux, Claude Code's channel or OpenCode's local server. Each one is acknowledged, so a message is never lost or delivered twice.
 - Everything stays on your Mac. Zeus never calls model APIs, never edits your agent's settings and never accepts prompts on your behalf. If you turn on Settings › Privacy › Learn from me, Zeus sends short summaries of when and in what apps you work to your assistant, which passes them to its model provider like any message; the raw activity never leaves your Mac.
 
 The interfaces are documented in [docs/CONTRACT.md](docs/CONTRACT.md).
