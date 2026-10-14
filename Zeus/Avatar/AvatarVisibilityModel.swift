@@ -5,7 +5,7 @@ import Observation
 @MainActor
 @Observable
 final class AvatarVisibilityModel {
-    enum Duration { case hour, tomorrow }
+    enum Duration { case hour, tomorrow, minutes(Int) }
     private(set) var hiddenUntil: Date?
     private(set) var manuallyHidden: Bool
     @ObservationIgnored private(set) var now: Date
@@ -33,6 +33,7 @@ final class AvatarVisibilityModel {
         manuallyHidden = false
         switch duration {
         case .hour: hiddenUntil = now.addingTimeInterval(3600)
+        case .minutes(let minutes): hiddenUntil = now.addingTimeInterval(TimeInterval(min(720, max(1, minutes))) * 60)
         case .tomorrow:
             let local = calendar()
             hiddenUntil = local.date(byAdding: .day, value: 1, to: local.startOfDay(for: now))

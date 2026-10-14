@@ -395,7 +395,7 @@ struct ConversationView: View {
             if labeledEntries.contains(entry.id), let key = sources[entry.sourceCardID]?.sessionKey {
                 ZeusSessionLabel(settings.sessionLabels.label(key), colorIndex: ZeusSessionLabel.colorIndex(for: key))
             }
-            if case .notice(let notice) = entry.content {
+            if let notice = entry.threadNotice {
                 ConversationNoticeLine(notice: notice, maxWidth: ConversationWidth.bubble(panelWidth: panel.width, user: false),
                                        hasAction: store.hasNoticeAction(id: notice.id), perform: { store.performNoticeAction(id: notice.id) })
                     .background(GeometryReader { geometry in

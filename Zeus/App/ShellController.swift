@@ -26,6 +26,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     let hotKey = GlobalHotKey()
     let login = LoginItemModel()
     let updater = UpdaterService()
+    @ObservationIgnored lazy var appControl = AppControlModel(settings: settings, visibility: visibility, updater: updater, surface: self)
     let settingsNavigation = SettingsNavigation()
     let peek: PeekModel
     let peekPanelState = PeekPanelState()
@@ -984,4 +985,15 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     @objc private func contextAbout() { showSettings(tab: .about) }
     @objc private func contextQuit() { NSApplication.shared.terminate(nil) }
 
+}
+
+extension ShellController: AppControlSurface {
+    var controlAvatarFrame: CGRect { avatar.frame }
+    var controlScreens: [AppControlScreen] {
+        NSScreen.screens.map { AppControlScreen(frame: $0.frame, visibleFrame: $0.visibleFrame, scale: $0.backingScaleFactor, isMain: $0 == NSScreen.main) }
+    }
+    var controlComposerFocused: Bool { cardPanelState.composerFocused }
+    var controlPanelOpen: Bool { cardPanelState.isVisible }
+    func controlMoveAvatar(to origin: CGPoint) { moveAvatar(to: origin); savePosition() }
+    func controlRefreshVisibility() { syncVisibility(); scheduleDeadline() }
 }
