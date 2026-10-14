@@ -21,6 +21,13 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored var activityOrder = 0
     @ObservationIgnored var activityTimer: Task<Void, Never>?
     @ObservationIgnored let quietHours: (Date) -> Bool
+    @ObservationIgnored let appControl: any AppControlling
+    @ObservationIgnored let learnings: any LearningsProviding
+    @ObservationIgnored var checkedUpdateVersions: [String: Set<String>] = [:]
+    @ObservationIgnored var pendingUpdateErrors: [String: String] = [:]
+    @ObservationIgnored var installingSessions: Set<String> = []
+    @ObservationIgnored var activeToolCalls: [String: Int] = [:]
+    @ObservationIgnored var appQuestionIDs: Set<String> = []
     @ObservationIgnored var disconnectedAt: [String: Date] = [:]
     @ObservationIgnored var sendTokens: [String: UUID] = [:]
     @ObservationIgnored var knownIssueIDs: Set<String> = []
@@ -86,8 +93,11 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
          ledgerURL: URL = ZeusPaths.deliveries, connectors: [any DeliveryConnector] = [ChannelDeliveryConnector(), TmuxConnector(), OpenCodeConnector()],
          quietHours: @escaping (Date) -> Bool = { _ in false },
          targetIsDead: @escaping (String) -> Bool = AgentSessionLiveness.isDead,
-         managedController: ManagedSessionController? = nil) {
+         managedController: ManagedSessionController? = nil,
+         appControl: (any AppControlling)? = nil, learnings: (any LearningsProviding)? = nil) {
         self.cards = cards; self.status = status; self.characters = characters; self.routing = routing
+        self.appControl = appControl ?? UnavailableAppControl()
+        self.learnings = learnings ?? EmptyLearnings()
         self.managedController = managedController ?? ManagedSessionController(configuration: { routing.managedSession },
             stateURL: ledgerURL.deletingLastPathComponent().appendingPathComponent("managed-session.json"),
             bridge: Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/zeus-mcp"), bridgeSocket: socketPath, clock: clock)
@@ -123,6 +133,9 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         for card in recoveredBlocks.dropLast() { resolveManagedCard(card.id) }
         loaded.onChange = { [weak self] records in self?.publishUserMessageDeliveries(records) }
         ledger = loaded; responseJournal = journal; server = listener; running = true; generation = UUID()
+        appQuestionIDs = Set(((cards as? any CardPersistenceReporting)?.persistedCards ?? [])
+            .filter { $0.kind == .question && $0.status == .open }.map(\.id))
+        learnings.onNewLearning = { [weak self] learning in self?.notifyLearning(learning) }
         publishUserMessageDeliveries(loaded.records)
         handledResponses.formUnion(loaded.records.compactMap { $0.delivery.cardID })
         (cards as? any LocalCardActionHandling)?.localActionHandler = { [weak self] card, response in
@@ -156,6 +169,8 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         // when the next process decides whether the 60-second grace period elapsed.
         for session in sessions { disconnectedAt[session.sessionKey] = clock.now }
         running = false
+        learnings.onNewLearning = nil
+        checkedUpdateVersions.removeAll(); pendingUpdateErrors.removeAll(); installingSessions.removeAll(); activeToolCalls.removeAll()
         managedController.shutdown()
         managedDraftAlertCardID = nil; managedDraftWaiting = false; managedDraftCancellation = nil; managedDraftEpisode = nil
         (status as? any ManagedBlockingPresenting)?.setManagedBlock(nil)
@@ -235,6 +250,10 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
 
     func bridge(_ session: BridgeSession, finishedTool name: String, result: ToolResult, written: Bool) {
         guard running else { return }
+        if name == "zeus_get_learnings", written, !result.isError,
+           case .array(let items) = result.structured?["learnings"], case .string(let id) = items.last?["id"] {
+            learnings.markLearningsRead(through: id)
+        }
         if name == "zeus_get_responses", written, case .array(let items) = result.structured?["items"] {
             let ids = Set(items.compactMap { item -> String? in
                 if case .string(let id) = item["delivery_id"] { return id }; return nil

@@ -5,6 +5,16 @@ extension ZeusRuntime {
     /// Shared tool boundary for wire dispatch and in-memory seam tests.
     func callTool(_ name: String, arguments: JSONValue, sessionKey: String, deferResultCommit: Bool = false) async -> ToolResult {
         guard running else { return toolError("Zeus runtime isn't running.") }
+        if let error = pendingUpdateErrors.removeValue(forKey: sessionKey) { return toolError(error) }
+        activeToolCalls[sessionKey, default: 0] += 1
+        let token = generation
+        defer {
+            if generation == token {
+                let remaining = max(0, (activeToolCalls[sessionKey] ?? 1) - 1)
+                if remaining == 0 { activeToolCalls.removeValue(forKey: sessionKey) }
+                else { activeToolCalls[sessionKey] = remaining }
+            }
+        }
         defer { retainRuntimeHistory() }
         if ZeusMCP.tools.contains(where: { $0.name == name }) { noteAgentActivity(sessionKey: sessionKey) }
         do {
@@ -22,6 +32,9 @@ extension ZeusRuntime {
             let unexpected = Set(args.values.keys).subtracting(properties.keys).sorted()
             guard unexpected.isEmpty else {
                 throw ToolArgumentError("Unexpected arguments for \(name): \(unexpected.joined(separator: ", ")). Allowed: \(properties.keys.sorted().joined(separator: ", ")).")
+            }
+            if Self.appToolNames.contains(name) {
+                return try await callAppTool(name, args: args, sessionKey: sessionKey, deferResultCommit: deferResultCommit)
             }
             switch name {
             case "zeus_say":
@@ -47,6 +60,7 @@ extension ZeusRuntime {
                 return result(["card_id": .string(card.id)])
             case "zeus_update_card":
                 let id = try args.requiredString("card_id")
+                try validateAgentCard(id, sessionKey: sessionKey)
                 let title = try args.string("title"), text = try args.string("text"), append = try args.string("append_text")
                 let progress = try args.progress()
                 let updated = cards.update(id: id) { card in
@@ -61,6 +75,7 @@ extension ZeusRuntime {
                                "progress": card.progress.map(JSONValue.number) ?? .null, "status": .string(card.status.rawValue)])
             case "zeus_dismiss":
                 let id = try args.requiredString("card_id")
+                try validateAgentCard(id, sessionKey: sessionKey)
                 let exists = cards.card(id: id) != nil
                 if exists { cards.dismiss(id: id); finishWaiter(id: id, result: pendingResult(id)) }
                 try checkCardPersistence()
@@ -104,15 +119,10 @@ extension ZeusRuntime {
                     ["id": .string(character.id), "name": .string(character.name), "description": .string(character.summary)]
                 }
                 return result(["current": .string(characters.currentCharacterID), "characters": .array(available)])
-            case "zeus_set_character":
-                let id = try args.requiredString("id")
-                guard characters.availableCharacters.contains(where: { $0.id == id }) else { throw ToolArgumentError("Unknown character: \(id)") }
-                let previous = characters.currentCharacterID
-                characters.currentCharacterID = id
-                return result(["ok": true, "previous": .string(previous), "current": .string(characters.currentCharacterID)])
             default: throw ToolArgumentError("Unknown tool: \(name)")
             }
-        } catch { return toolError(error.localizedDescription) }
+        } catch let error as AppControlError { return toolError(error.agentMessage) }
+        catch { return toolError(error.localizedDescription) }
     }
 
     private func ask(_ args: ToolArguments, sessionKey: String, deferResultCommit: Bool) async throws -> ToolResult {
@@ -126,6 +136,7 @@ extension ZeusRuntime {
                         priority: try args.enumeration("priority", as: Card.Priority.self) ?? .normal,
                         sessionKey: sessionKey, createdAt: now, updatedAt: now)
         endAssistantActivity(sessionKey: sessionKey)
+        appQuestionIDs.insert(card.id)
         try responseJournal?.prepare(card.id)
         guard wait > 0, !Task.isCancelled else { try addCard(card); return pendingResult(card.id) }
         let deadline = now.addingTimeInterval(wait)
@@ -149,6 +160,14 @@ extension ZeusRuntime {
     }
     func checkCardPersistence() throws {
         if let message = (cards as? any CardPersistenceReporting)?.persistenceError { throw ToolArgumentError(message) }
+    }
+    private func validateAgentCard(_ id: String, sessionKey: String) throws {
+        guard let card = cards.card(id: id) else { return }
+        guard !id.hasPrefix(Self.managedCardPrefix) else { throw ToolArgumentError("Agent tools cannot change or dismiss native prompts or local Terminal notices.") }
+        // A rerouted answer grants its receiving session access to that card,
+        // even though history preserves the original creator (CONTRACT §4).
+        let handedOff = (ledger?.records ?? []).contains { $0.delivery.cardID == id && $0.delivery.sessionKey == sessionKey }
+        guard card.sessionKey == sessionKey || handedOff else { throw ToolArgumentError("Agent tools cannot read or change another session's card.") }
     }
     private func addCard(_ card: Card) throws {
         if !card.options.isEmpty || card.input != nil { try responseJournal?.prepare(card.id) }

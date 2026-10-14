@@ -238,6 +238,22 @@ private actor MemoryOutput: MCPOutput {
     } catch { try? await fixture.finish(); throw error }
 }
 
+@Test @MainActor func learningNotificationContainsOnlyTheDigestOrMoment() async throws {
+    let fixture = try Fixture()
+    do {
+        try await fixture.initialize()
+        try await eventually { fixture.delegate.sessions.count == 1 }
+        let session = try #require(fixture.delegate.sessions.first)
+        try await session.notifyLearning(.init(id: "l_today", kind: .digest, text: "A focused morning.\nBack after lunch."))
+        try await eventually { await fixture.output.frames.contains { $0["method"] == "notifications/zeus/learning" } }
+        let notification = try #require(await fixture.output.frames.first { $0["method"] == "notifications/zeus/learning" })
+        #expect(notification == ["jsonrpc": "2.0", "method": "notifications/zeus/learning", "params": [
+            "id": "l_today", "kind": "digest", "text": "A focused morning.\nBack after lunch."
+        ]])
+        try await fixture.finish()
+    } catch { try? await fixture.finish(); throw error }
+}
+
 @Test @MainActor func disconnectedToolCallBypassesAnOutstandingBackoff() async throws {
     let fixture = try Fixture()
     do {

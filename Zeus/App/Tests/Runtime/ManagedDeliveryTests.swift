@@ -24,13 +24,13 @@ struct ManagedDeliveryFixture {
     let routing = FakeRouting()
     let tmux = ManagedRecordingConnector()
     let runtime: ZeusRuntime
-    init(agent: AgentKind = .claude, tmuxConnector: (any DeliveryConnector)? = nil) throws {
+    init(agent: AgentKind = .claude, tmuxConnector: (any DeliveryConnector)? = nil, appControl: (any AppControlling)? = nil) throws {
         let f = try ManagedFixture(agent: agent); managed = f
         cards = FakeCards(clock: f.clock)
         routing.deliveryMethod = .polling; routing.tmuxTarget = "%wrong"
         runtime = .init(cards: cards, status: status, characters: FakeCharacters(), routing: routing, clock: f.clock,
             socketPath: f.folder.appendingPathComponent("runtime.sock").path, ledgerURL: f.folder.appendingPathComponent("deliveries.json"),
-            connectors: [ChannelDeliveryConnector(), tmuxConnector ?? tmux], targetIsDead: { _ in false }, managedController: f.controller)
+            connectors: [ChannelDeliveryConnector(), tmuxConnector ?? tmux], targetIsDead: { _ in false }, managedController: f.controller, appControl: appControl)
     }
     func start() async throws {
         try runtime.start(); try await managed.settle()

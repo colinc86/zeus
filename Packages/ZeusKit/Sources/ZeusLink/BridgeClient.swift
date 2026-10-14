@@ -9,7 +9,7 @@ import ZeusProtocol
 /// initial start failure lets tools/call report ZeusMCP.appNotRunningText. Call start
 /// again on a subsequent tool request to retry that initial failure. Once welcomed,
 /// socket reconnects are automatic and reuse the supplied per-process bridgeID.
-/// onPush callbacks run serially in wire order; keep them short and do not wait for
+/// onPush/onLearning callbacks run serially in wire order; keep them short and do not wait for
 /// another tool result inside them. Explicitly reportPushWritten after writing stdout.
 public final class BridgeClient: Sendable {
     private let state: ClientState
@@ -20,8 +20,9 @@ public final class BridgeClient: Sendable {
     /// onPush must write the notification to stdout before calling reportPushWritten; receipt is never automatic.
     public func start(hello: BridgeHello,
                       onPush: @escaping @Sendable (AgentPush) async -> Void,
+                      onLearning: @escaping @Sendable (BridgeLearning) async -> Void = { _ in },
                       onDisconnect: @escaping @Sendable () async -> Void = {}) async throws -> BridgeWelcome {
-        try await state.start(hello: hello, onPush: onPush, onDisconnect: onDisconnect)
+        try await state.start(hello: hello, onPush: onPush, onDisconnect: onDisconnect, onLearning: onLearning)
     }
     /// Latest welcome, or nil while disconnected/reconnecting.
     public var welcome: BridgeWelcome? { get async { await state.welcome } }
@@ -53,6 +54,7 @@ private actor ClientState {
     var welcome: BridgeWelcome?
     var onPush: (@Sendable (AgentPush) async -> Void)?
     var onDisconnect: (@Sendable () async -> Void)?
+    var onLearning: (@Sendable (BridgeLearning) async -> Void)?
     var channel: SocketChannel?
     var reader: Task<Void, Never>?
     var reconnect: Task<Void, Never>?
@@ -68,9 +70,11 @@ private actor ClientState {
 
     init(socketPath: String) { self.socketPath = socketPath }
     func start(hello: BridgeHello, onPush: @escaping @Sendable (AgentPush) async -> Void,
-               onDisconnect: @escaping @Sendable () async -> Void) async throws -> BridgeWelcome {
+               onDisconnect: @escaping @Sendable () async -> Void,
+               onLearning: @escaping @Sendable (BridgeLearning) async -> Void) async throws -> BridgeWelcome {
         guard self.hello == nil else { throw BridgeLinkError.protocolViolation("Client already started") }
         self.hello = hello; self.onPush = onPush; self.onDisconnect = onDisconnect
+        self.onLearning = onLearning
         let token = generation
         superseded = false
         do { return try await connectOnce(token: token) }
@@ -138,6 +142,7 @@ private actor ClientState {
                 switch message {
                 case .toolResult(let result): finish(result.callID, result: result, error: nil)
                 case .push(let push): await onPush?(push)
+                case .learning(let learning): await onLearning?(learning)
                 case .error(let error): throw BridgeLinkError.protocolViolation(error.message)
                 case .superseded(let notice):
                     guard notice.sessionKey == hello?.sessionKey else { throw BridgeLinkError.protocolViolation("Invalid superseded sessionKey") }
@@ -214,7 +219,7 @@ private actor ClientState {
         channel?.close(); channel = nil
         failAll(BridgeLinkError.stopped)
         let callback = onDisconnect
-        onPush = nil; onDisconnect = nil
+        onPush = nil; onDisconnect = nil; onLearning = nil
         if wasConnected { await callback?() }
     }
 }

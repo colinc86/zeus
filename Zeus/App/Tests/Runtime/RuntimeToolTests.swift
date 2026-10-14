@@ -6,7 +6,7 @@ import ZeusProtocol
 @MainActor
 struct RuntimeToolTests {
     @Test func messagesContentUpdatesDismissalStatusAndCharacters() async throws {
-        let f = try RuntimeFixture(); defer { f.stop() }
+        let f = try RuntimeFixture(appControl: FakeAppControl()); defer { f.stop() }
         let say = await f.call("zeus_say", ["text": "Hello", "title": "Update", "mood": "happy", "priority": "high", "ttl_seconds": 30,
                                          "attachments": [["kind": "file", "label": "Draft", "target": "~/draft.key"]]])
         #expect(!say.isError && say.structured?["card_id"] != nil)

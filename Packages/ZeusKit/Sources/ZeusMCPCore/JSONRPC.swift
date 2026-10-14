@@ -36,6 +36,10 @@ internal enum JSONRPC {
         return ["jsonrpc": "2.0", "method": "notifications/claude/channel",
                 "params": ["content": .string(push.content), "meta": .object(meta)]]
     }
+    static func learning(_ learning: BridgeLearning) -> JSONValue {
+        ["jsonrpc": "2.0", "method": "notifications/zeus/learning",
+         "params": ["id": .string(learning.id), "kind": .string(learning.kind.rawValue), "text": .string(learning.text)]]
+    }
 }
 
 /// Incremental stdin framing. Oversized lines are discarded through their newline,

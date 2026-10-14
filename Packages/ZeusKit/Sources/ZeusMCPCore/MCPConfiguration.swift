@@ -52,7 +52,7 @@ public struct MCPConfiguration: Sendable {
 
     internal func hello(client: BridgeHello.Client) -> BridgeHello {
         .init(bridgeID: bridgeID, agent: agent, pid: pid, ppid: ppid, cwd: cwd, client: client,
-              capabilities: .init(channel: agent == .claude, toolResultWritten: true), tmuxPane: tmuxPane, parentStartTime: parentStartTime, tmuxSocketPath: tmuxSocketPath)
+              capabilities: .init(channel: agent == .claude, toolResultWritten: true, learningNotifications: agent == .claude), tmuxPane: tmuxPane, parentStartTime: parentStartTime, tmuxSocketPath: tmuxSocketPath)
     }
 }
 
