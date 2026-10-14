@@ -449,7 +449,7 @@ One line between the thread and the composer, always visible. It says why Zeus s
 ├────────────────────────────────────────────────────────────────┤  1 px, palette.divider
 ```
 
-- **Height** 24 pt, **no rule above**, a **1-px rule below** in `palette.divider` (secondary text at 25 %). The strip replaces the 2-px rule that sat between the thread and the composer.
+- **Height** 24 pt, **no rule above**, a **1-px rule below** in `palette.divider` (the theme's `divider`, by default secondary text at 75 %, at least 3:1 on the panel; D18). The strip replaces the 2-px rule that sat between the thread and the composer.
 - **Type:** `.caption` in the pixel font, one line.
 - **Colors** come from the palette only, so every bundled theme works:
   - glyph and links: `title`

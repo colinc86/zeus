@@ -157,6 +157,9 @@ extension ZeusThemeDefinition {
             return base
         }
         var palette = base
+        // A theme's link and divider default from its own accent and secondary text, never the base palette's (D18).
+        palette.linkColor = nil
+        palette.dividerColor = nil
         for key in fields.keys.sorted() where !key.hasPrefix("_") {
             let value = fields[key]
             if key == "sessionColors" {
@@ -185,7 +188,7 @@ extension ZeusPalette {
     public static let colorKeys = ["outline", "frame", "panel", "text", "secondaryText", "title", "accent", "onAccent",
                                    "secondaryFill", "onSecondary", "destructive", "onDestructive", "field", "fieldBorder",
                                    "track", "fill", "badge", "onBadge", "shadow", "agentBubble", "userBubble", "onUserBubble",
-                                   "focusRing", "positive"]
+                                   "focusRing", "positive", "link", "divider"]
 
     mutating func setColor(_ key: String, _ color: Color) {
         switch key {
@@ -213,6 +216,8 @@ extension ZeusPalette {
         case "onUserBubble": onUserBubble = color
         case "focusRing": focusRing = color
         case "positive": positive = color
+        case "link": linkColor = color
+        case "divider": dividerColor = color
         default: break
         }
     }
@@ -401,6 +406,9 @@ public enum ZeusThemeExample {
         "onUserBubble": "#F2F8FA",
         "focusRing": "#FFB86B",
         "positive": "#7FE0A0",
+        "_help_link": "Links in messages, underlined. Optional: leave it out to use \"accent\". Set it when your accent is too pale to read as text.",
+        "link": "#FFB86B",
+        "_help_divider": "Optional hairline rules, such as the line under the status strip. Leave it out for secondaryText at 75%.",
         "_help_sessionColors": "The dots that tell your assistant's sessions apart: exactly 4 colors.",
         "sessionColors": ["#6FD3C1", "#FFB86B", "#B9A2FF", "#FF9FC2"]
       }

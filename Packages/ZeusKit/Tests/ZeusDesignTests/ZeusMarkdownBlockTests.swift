@@ -21,7 +21,7 @@ struct ZeusMarkdownBlockTests {
         let links = text.runs.compactMap { run in run.link.map { ($0.absoluteString, String(text[run.range].characters), run) } }
         #expect(links.map(\.0) == ["https://example.com/docs", "https://github.com/x/y/pull/1", "file:///tmp/report.pdf"])
         #expect(links.map(\.1) == ["https://example.com/docs", "the PR", "file:///tmp/report.pdf"])
-        #expect(links.allSatisfy { $0.2.foregroundColor == ZeusPalette.light.accent && $0.2.underlineStyle == .single })
+        #expect(links.allSatisfy { $0.2.foregroundColor == ZeusPalette.light.link && $0.2.underlineStyle == .single })
         #expect(String(text.characters).hasSuffix("report.pdf."))   // the sentence's full stop stays outside the link
         // Addresses inside code stay plain, in inline and block markdown alike.
         #expect(Self.render("Run `curl https://example.com` now").runs.allSatisfy { $0.link == nil })

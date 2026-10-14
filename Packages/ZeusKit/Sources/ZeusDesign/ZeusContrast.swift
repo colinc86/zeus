@@ -92,7 +92,47 @@ public enum ZeusContrast {
             Pair(name: "app: answered peek option", fg: c(p.onAccent), bg: c(p.accent), minimum: 4.5),
             Pair(name: "app: PeekContent close at rest", fg: c(p.secondaryText), bg: panel, minimum: 3),
         ]
+        list += newSurfacePairs(p, dark: dark, highContrast: highContrast)
         return list
+    }
+
+    /// The 0.1.8 surfaces (D18): message links, the status strip, quiet thread lines and Settings text, each by name.
+    public static func newSurfacePairs(_ p: ZeusPalette, dark: Bool, highContrast: Bool) -> [Pair] {
+        let c = rgb
+        let text = highContrast ? 7.0 : 4.5
+        let desktop = dark ? RGB(r: 0.18, g: 0.2, b: 0.25) : RGB(r: 0.79, g: 0.83, b: 0.88)
+        let panel = over(c(p.panel), 0.97, desktop)
+        let user = p.userBubbleText
+        // Settings draws palette text on the system window background of the theme's own appearance.
+        let window = dark ? settingsWindowDark : settingsWindowLight
+        return [
+            Pair(name: "link on agent bubble", fg: c(p.link), bg: c(p.agentBubble), minimum: text),
+            Pair(name: "link in a dismissed bubble (panel)", fg: c(p.link), bg: panel, minimum: text),
+            Pair(name: "link on user bubble", fg: c(user.link), bg: c(p.userBubble), minimum: text),
+            Pair(name: "bold run on user bubble", fg: c(user.title), bg: c(p.userBubble), minimum: text),
+            Pair(name: "strip: sentence (text) on panel", fg: c(p.text), bg: panel, minimum: text),
+            Pair(name: "strip: ?/! glyph and link words (title) on panel", fg: c(p.title), bg: panel, minimum: text),
+            Pair(name: "strip: Idle / Quiet until (secondary) on panel", fg: c(p.secondaryText), bg: panel, minimum: text),
+            Pair(name: "strip: icon at rest (secondary) on panel", fg: c(p.secondaryText), bg: panel, minimum: 3),
+            Pair(name: "strip: icon on hover or focus (title) on panel", fg: c(p.title), bg: panel, minimum: 3),
+            Pair(name: "strip: divider rule on panel", fg: composite(p.divider, over: panel), bg: panel, minimum: 3),
+            Pair(name: "quiet line: summary (secondary) on panel", fg: c(p.secondaryText), bg: panel, minimum: text),
+            Pair(name: "quiet line: Undo / View (title) on panel", fg: c(p.title), bg: panel, minimum: text),
+            Pair(name: "quiet line: Skipped (secondary) on panel", fg: c(p.secondaryText), bg: panel, minimum: text),
+            Pair(name: "Settings: body and slider values (text) on window", fg: c(p.text), bg: window, minimum: text),
+            Pair(name: "Settings: captions (secondary) on window", fg: c(p.secondaryText), bg: window, minimum: text),
+            Pair(name: "Settings: section titles (title) on window", fg: c(p.title), bg: window, minimum: text),
+            Pair(name: "Settings: errors (destructive) on window", fg: c(p.destructive), bg: window, minimum: text),
+        ]
+    }
+
+    /// macOS's window background, light and dark, behind Settings.
+    public static let settingsWindowLight = RGB(r: 0.925, g: 0.925, b: 0.925)
+    public static let settingsWindowDark = RGB(r: 0.196, g: 0.196, b: 0.196)
+
+    /// A color with its own opacity, composited over `bottom`.
+    public static func composite(_ color: Color, over bottom: RGB) -> RGB {
+        over(rgb(color), Double(color.resolve(in: EnvironmentValues()).opacity), bottom)
     }
 
     /// The pairs that miss their minimum.

@@ -49,7 +49,7 @@ public enum ZeusMarkdown {
     }
 
     /// Bare `http(s)://`, `file://` and `mailto:` addresses become links (agents rarely write markdown links), and every
-    /// link run is shown as one: accent color and underlined. Addresses inside code spans stay plain text.
+    /// link run is shown as one: the palette's `link` color and underlined. Addresses inside code spans stay plain text.
     static func linkify(_ text: inout AttributedString, palette: ZeusPalette) {
         var additions: [(Range<AttributedString.Index>, URL)] = []
         for run in text.runs where run.link == nil && run.inlinePresentationIntent?.contains(.code) != true && run[DecorationAttribute.self] == nil {
@@ -71,7 +71,7 @@ public enum ZeusMarkdown {
         }
         for (range, url) in additions { text[range].link = url }
         for run in text.runs where run.link != nil {
-            text[run.range].foregroundColor = palette.accent
+            text[run.range].foregroundColor = palette.link
             text[run.range].underlineStyle = .single
         }
     }
