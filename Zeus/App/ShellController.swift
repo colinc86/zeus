@@ -816,21 +816,30 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         if let tab { settingsNavigation.tab = tab }
         closeCard()
         if settingsWindow == nil {
-            let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 620, height: 620),
-                                  styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+            let window = NSWindow(contentRect: CGRect(origin: .zero, size: SettingsWindowSize.minimum),
+                                  styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
             window.title = "Zeus Settings"
             window.isReleasedWhenClosed = false
-            window.contentView = NSHostingView(rootView: SettingsView(settings: settings, managed: managed, cards: cards, status: status,
+            let host = NSHostingView(rootView: SettingsView(settings: settings, managed: managed, cards: cards, status: status,
                                                                       messaging: messaging, preview: messaging, testMessage: testMessage,
                                                                       injectDemo: { [weak self] in self?.injectDemo($0) },
                                                                       resetPosition: { [weak self] in self?.resetPosition() },
                                                                       navigation: settingsNavigation, login: login, hotKey: hotKey, activity: surfaceActivity, updater: updater))
+            host.sizingOptions = []
+            window.contentView = host
+            SettingsWindowSize.restore(window, from: defaults, screen: NSScreen.main)
             window.center()
             settingsWindow = window
+            window.delegate = self
         }
         NSApplication.shared.activate()
         settingsWindow?.makeKeyAndOrderFront(nil)
         refreshSurfaceActivity()
+    }
+
+    func windowDidResize(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow, window === settingsWindow else { return }
+        SettingsWindowSize.save(window.contentRect(forFrameRect: window.frame).size, to: defaults)
     }
 
     func copySetupCommands() {

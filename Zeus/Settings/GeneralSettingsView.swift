@@ -9,11 +9,14 @@ struct GeneralSettingsView: View {
     var updater: any AppUpdating = UpdaterService()
     /// Previews a pop-up sound when it's chosen or turned on.
     var preview: (PopupSound) -> Void = { SystemPopupSoundPlayer.shared.play($0) }
+    var focusRequest: GeneralSettingsSection? = nil
     @Environment(\.scenePhase) private var scenePhase
+    @AccessibilityFocusState(for: .voiceOver) private var focusedSection: GeneralSettingsSection?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            UpdateSettingsView(updater: updater)
+            UpdateSettingsView(updater: updater).id(GeneralSettingsSection.updates)
+                .accessibilityFocused($focusedSection, equals: .updates)
             SettingsDivider()
             Toggle("Launch Zeus at login", isOn: Binding(get: { login.enabled }, set: { value in Task { await login.setEnabled(value) } }))
                 .accessibilityLabel("Launch Zeus at login")
@@ -24,7 +27,8 @@ struct GeneralSettingsView: View {
             }
             if let error = login.error { Text(error).settingsError() }
             SettingsDivider()
-            Text("Talk shortcut").settingsTitle()
+            Text("Talk shortcut").settingsTitle().id(GeneralSettingsSection.shortcut)
+                .accessibilityFocused($focusedSection, equals: .shortcut)
             Toggle("Enable global shortcut", isOn: $settings.talkHotKey.enabled)
                 .accessibilityLabel("Enable global shortcut")
             HStack {
@@ -42,7 +46,8 @@ struct GeneralSettingsView: View {
             if let error = hotKey.error { Text(error).settingsError() }
             Button("Reset Shortcut") { settings.talkHotKey = TalkHotKey() }.accessibilityLabel("Reset Shortcut")
             SettingsDivider()
-            Text("Sounds").settingsTitle()
+            Text("Sounds").settingsTitle().id(GeneralSettingsSection.sounds)
+                .accessibilityFocused($focusedSection, equals: .sounds)
             Toggle("Play a sound when Zeus pops up", isOn: Binding(get: { settings.popupSoundEnabled }, set: { on in
                 settings.popupSoundEnabled = on
                 if on { preview(settings.popupSound) }
@@ -64,7 +69,8 @@ struct GeneralSettingsView: View {
             Text("Click a message that's typing to show it all at once. Reduce Motion turns both off, and the sound stays quiet during quiet hours.").settingsCaption()
             if let cards {
                 SettingsDivider()
-                Text("Conversation history").settingsTitle()
+                Text("Conversation history").settingsTitle().id(GeneralSettingsSection.history)
+                    .accessibilityFocused($focusedSection, equals: .history)
                 Text(Self.historyCaption(count: cards.cards.count)).settingsCaption()
                 ClearConversationButton(cards: cards)
                 if let error = cards.persistenceError {
@@ -75,11 +81,50 @@ struct GeneralSettingsView: View {
         }
             .onAppear { login.refresh() }
             .onChange(of: scenePhase) { if scenePhase == .active { login.refresh() } }
+            .onChange(of: focusRequest) { focusedSection = focusRequest }
     }
 
     static let soundCaption = "Plays at your Mac's alert volume, set in System Settings → Sound. Zeus stays quiet while it's hidden, during quiet hours and while the conversation is open."
 
     static func historyCaption(count: Int) -> String {
         "\(count) \(count == 1 ? "message" : "messages") saved on this Mac. \(ConversationHistoryCopy.preservation)"
+    }
+}
+
+enum GeneralSettingsSection: String, CaseIterable {
+    case updates = "Updates", sounds = "Sounds", shortcut = "Shortcut", history = "History"
+}
+
+/// Stays above the scroll view so every General section is discoverable at the minimum size.
+struct GeneralSettingsJumpRow: View {
+    let jump: (GeneralSettingsSection) -> Void
+    @Environment(\.zeusPalette) private var palette
+    @FocusState private var focused: GeneralSettingsSection?
+
+    var body: some View {
+        HStack(spacing: ZeusTheme.Spacing.s) {
+            ForEach(GeneralSettingsSection.allCases, id: \.self) { section in
+                if section != .updates {
+                    Text("·").foregroundStyle(palette.secondaryText).accessibilityHidden(true)
+                }
+                Button { jump(section) } label: {
+                    Text(section.rawValue).frame(minHeight: 22).contentShape(Rectangle())
+                }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(palette.accent)
+                    .focusable()
+                    .focusEffectDisabled()
+                    .focused($focused, equals: section)
+                    .overlay(alignment: .bottom) {
+                        Rectangle().fill(palette.focusRing).frame(height: ZeusTheme.pixel)
+                            .opacity(focused == section ? 1 : 0).allowsHitTesting(false)
+                    }
+                    .accessibilityLabel("Jump to \(section.rawValue)")
+                    .help(section.rawValue)
+            }
+        }
+        .zeusFont(.caption)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("General sections")
     }
 }

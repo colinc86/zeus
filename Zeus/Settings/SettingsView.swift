@@ -33,6 +33,7 @@ struct SettingsView: View {
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
     /// This root's own colors come from the theme directly: the environment it sets applies to its children.
     private var palette: ZeusPalette { settings.currentTheme.palette(for: colorScheme, contrast: colorSchemeContrast) }
+    @State private var generalJump: GeneralSettingsSection?
 
     // T1: the selected theme reaches every view below through \.zeusTheme (and so \.zeusPalette).
     var body: some View { rootBody.environment(\.zeusTheme, settings.currentTheme) }
@@ -42,19 +43,29 @@ struct SettingsView: View {
             SettingsTabBar(navigation: navigation)
             Rectangle().fill(palette.fieldBorder).frame(height: ZeusTheme.pixel)
             ScrollViewReader { proxy in
-                ScrollView {
-                    content.frame(maxWidth: .infinity, alignment: .leading)
-                        // One type system (D2-3): Zeus buttons, checkboxes, fields and body text unless a pane says otherwise.
-                        .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
-                        .toggleStyle(ZeusCheckboxStyle())
-                        .textFieldStyle(ZeusTextFieldStyle())
-                        .settingsBody()
+                VStack(alignment: .leading, spacing: 16) {
+                    if navigation.tab == .general {
+                        GeneralSettingsJumpRow {
+                            proxy.scrollTo($0, anchor: .top)
+                            generalJump = $0
+                        }
+                    }
+                    ScrollView {
+                        content.frame(maxWidth: .infinity, alignment: .leading)
+                            // One type system (D2-3): Zeus buttons, checkboxes, fields and body text unless a pane says otherwise.
+                            .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
+                            .toggleStyle(ZeusCheckboxStyle())
+                            .textFieldStyle(ZeusTextFieldStyle())
+                            .settingsBody()
+                    }
                 }
                 .onChange(of: managed.confirmation, initial: true) { revealManagedConfirmation(proxy) }
                 .onChange(of: navigation.tab) { revealManagedConfirmation(proxy) }
             }
         }
-        .padding(24).frame(width: 572, height: 572)
+        .padding(24)
+        .frame(minWidth: SettingsWindowSize.minimum.width, maxWidth: .infinity,
+               minHeight: SettingsWindowSize.minimum.height, maxHeight: .infinity, alignment: .topLeading)
         .environment(\.zeusAnimationsActive, activity.settings)
         .environment(\.zeusFontChoice, .system)
         // UI scripting can query Settings without activating VoiceOver first.
@@ -73,7 +84,8 @@ struct SettingsView: View {
     @ViewBuilder private var content: some View {
         switch navigation.tab {
         case .general:
-            GeneralSettingsView(settings: settings, login: login, hotKey: hotKey, cards: cards, updater: updater)
+            GeneralSettingsView(settings: settings, login: login, hotKey: hotKey, cards: cards, updater: updater,
+                                focusRequest: generalJump)
         case .appearance:
             AppearanceSettingsView(settings: settings)
         case .agent:
