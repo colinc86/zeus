@@ -19,7 +19,7 @@ struct CharacterSettingsView: View {
             SettingsSegments(label: "Size", options: AvatarSize.allCases.map { ($0, $0.rawValue.capitalized) }, selection: $settings.avatarSize)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                 ForEach(settings.availableCharacters) { character in
-                    Button { settings.currentCharacterID = character.id } label: {
+                    KeyboardButton { settings.currentCharacterID = character.id } label: {
                         // The Zeus field frame; the chosen character gets the gold focus frame.
                         ZeusFieldChrome(isFocused: settings.currentCharacterID == character.id) {
                             VStack(spacing: 8) {
@@ -40,7 +40,7 @@ struct CharacterSettingsView: View {
                 if line.isError { Text(line.text).settingsError() } else { Text(line.text).settingsCaption() }
             }
             SettingsDivider()
-            Button("Reset Avatar Position", action: resetPosition).accessibilityLabel("Reset Avatar Position")
+            KeyboardButton("Reset Avatar Position", action: resetPosition).accessibilityLabel("Reset Avatar Position")
             Toggle("Fade Zeus when idle", isOn: $settings.fadeZeusWhenIdle).settingsBody()
             if settings.fadeZeusWhenIdle {
                 HStack {

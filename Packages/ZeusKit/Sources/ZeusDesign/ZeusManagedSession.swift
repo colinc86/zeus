@@ -374,6 +374,8 @@ public struct ZeusChoiceList<ID: Hashable & Sendable>: View {
     public var choices: [ZeusChoice<ID>]
     @Binding public var selection: ID?
     @Environment(\.zeusPalette) private var palette
+    @Environment(\.isEnabled) private var enabled
+    @FocusState private var focused: ID?
 
     public init(_ choices: [ZeusChoice<ID>], selection: Binding<ID?>) {
         self.choices = choices
@@ -385,6 +387,13 @@ public struct ZeusChoiceList<ID: Hashable & Sendable>: View {
             ForEach(choices) { choice in
                 Button { selection = choice.id } label: { row(choice) }
                     .buttonStyle(.plain)
+                    .focusable(false)
+                    .focusable(enabled && choice.isEnabled, interactions: .edit)
+                    .focusEffectDisabled().focused($focused, equals: choice.id)
+                    .onKeyPress(keys: [.space]) { press in
+                        guard enabled && choice.isEnabled, press.modifiers.intersection([.command, .option, .control]).isEmpty else { return .ignored }
+                        selection = choice.id; return .handled
+                    }
                     .disabled(!choice.isEnabled)
                     .accessibilityLabel(choice.accessibilityLabel)
                     .accessibilityAddTraits(selection == choice.id ? [.isSelected] : [])
@@ -426,6 +435,7 @@ public struct ZeusChoiceList<ID: Hashable & Sendable>: View {
             }
         }
         .contentShape(Rectangle())
+        .overlay(Rectangle().strokeBorder(focused == choice.id ? palette.focusRing : .clear, lineWidth: ZeusTheme.pixel))
     }
 }
 
@@ -440,6 +450,8 @@ public struct ZeusCheckboxStyle: ToggleStyle {
     private struct Checkbox: View {
         let configuration: ToggleStyleConfiguration
         @Environment(\.zeusPalette) private var palette
+        @Environment(\.isEnabled) private var enabled
+        @FocusState private var focused: Bool
 
         var body: some View {
             let px = ZeusTheme.pixel
@@ -451,11 +463,20 @@ public struct ZeusCheckboxStyle: ToggleStyle {
                         if configuration.isOn { ZeusGlyph(.check).foregroundStyle(palette.onAccent) }
                     }
                     .frame(width: px * 9, height: px * 9)
+                    .overlay(Rectangle().strokeBorder(focused ? palette.focusRing : .clear, lineWidth: ZeusTheme.pixel))
                     configuration.label.zeusFont(.body).foregroundStyle(palette.text)
                 }
                 .contentShape(Rectangle())
+                .frame(minHeight: 22)
             }
             .buttonStyle(.plain)
+            .focusable(false)
+            .focusable(enabled, interactions: .edit)
+            .focusEffectDisabled().focused($focused)
+            .onKeyPress(keys: [.space]) { press in
+                guard enabled, press.modifiers.intersection([.command, .option, .control]).isEmpty else { return .ignored }
+                configuration.isOn.toggle(); return .handled
+            }
             .accessibilityRepresentation { Toggle(isOn: configuration.$isOn) { configuration.label } }
         }
     }

@@ -1,0 +1,43 @@
+AXGroup
+AXHeading | Learn from me
+AXCheckBox | Let Zeus learn when and in what I work | 0
+AXStaticText | Zeus notes which app is in front, app launches and quits, when you lock, sleep or step away, and how many displays you use. Never what you type, copy, read or open.
+AXStaticText | Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac.
+AXHeading | What Zeus has recorded
+AXStaticText | Nothing yet today.
+AXHeading | Notes to your assistant
+AXStaticText | Each morning Zeus sends a short summary of the day before. It can also send up to four notes a day:
+AXCheckBox | First activity of the day | 1
+AXCheckBox | Back from a break of 2 hours or more | 1
+AXCheckBox | A later start than usual | 1
+AXCheckBox | Day winding down (no input for 20 min after 17:00) | 1
+AXHeading | Private apps
+AXStaticText | Time in these apps is recorded as private: how long, never which app.
+AXStaticText | 1Password
+AXButton | Remove 1Password
+AXStaticText | Bitwarden
+AXButton | Remove Bitwarden
+AXStaticText | KeePassXC
+AXButton | Remove KeePassXC
+AXStaticText | Strongbox
+AXButton | Remove Strongbox
+AXStaticText | Enpass
+AXButton | Remove Enpass
+AXStaticText | Dashlane
+AXButton | Remove Dashlane
+AXStaticText | Keychain Access
+AXButton | Remove Keychain Access
+AXStaticText | Passwords
+AXButton | Remove Passwords
+AXStaticText | System Settings
+AXButton | Remove System Settings
+AXButton | Add App…
+AXGroup | Keep activity for
+AXStaticText | Keep activity for
+AXButton | 7 days
+AXButton | 14 days
+AXButton | 30 days
+AXButton | 60 days
+AXButton | 90 days
+AXStaticText | Summaries are kept for a year. Older activity is deleted every night.
+AXButton | Delete Everything…

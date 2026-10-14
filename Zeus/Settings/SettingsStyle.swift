@@ -44,7 +44,7 @@ struct SettingsSegments<Value: Hashable>: View {
         HStack(spacing: ZeusTheme.Spacing.s) {
             Text(label).settingsBody()
             ForEach(options, id: \.value) { option in
-                Button(option.title) { selection = option.value }
+                KeyboardButton(option.title) { selection = option.value }
                     .buttonStyle(ZeusButtonStyle(selection == option.value ? .primary : .secondary, size: .small))
                     .accessibilityLabel(option.title)
                     .accessibilityAddTraits(selection == option.value ? [.isSelected] : [])

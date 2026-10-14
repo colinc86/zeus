@@ -1,0 +1,19 @@
+AXGroup
+AXHeading | Theme
+AXStaticText | Colors for the conversation, Zeus's speech bubble and Settings. Characters keep their own colors.
+AXOpaqueProviderGroup
+AXButton | Classic. Follows your Mac
+AXButton | Midnight. Always dark
+AXButton | Parchment. Always light
+AXButton | Olympus. Follows your Mac
+AXButton | Phosphor. Always dark
+AXButton | Pocket. Always light
+AXButton | Sorbet. Always light
+AXButton | Import Theme…
+AXButton | Open Example
+AXButton | Open Themes Folder
+AXStaticText | Your own themes are JSON files in the Themes folder. Open Example to see how one is made; Zeus picks up changes as soon as you save.
+AXGroup | Conversation font
+AXStaticText | Conversation font
+AXButton | Pixel
+AXButton | SF Mono

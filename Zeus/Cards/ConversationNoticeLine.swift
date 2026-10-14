@@ -10,6 +10,7 @@ struct ConversationNoticeLine: View {
     /// The store still holds this line's in-memory action.
     let hasAction: Bool
     let perform: () -> Void
+    var announce: @MainActor (String) -> Void = AccessibilityFeedback.announce
     @State private var showsDetail = false
     @FocusState private var actionFocused: Bool
     @Environment(\.zeusPalette) private var palette
@@ -29,8 +30,14 @@ struct ConversationNoticeLine: View {
                             .frame(minHeight: 22).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .focusable(false)
                     .focusable().focusEffectDisabled().focused($actionFocused)
-                    .accessibilityLabel(title)
+                    .onKeyPress(keys: [.space, .return]) { press in
+                        guard press.modifiers.intersection([.command, .option, .control]).isEmpty else { return .ignored }
+                        act(); return .handled
+                    }
+                    .accessibilityLabel("\(title): \(notice.summary)")
+                    .accessibilityValue(notice.detail == nil ? "" : showsDetail ? "Expanded" : "Collapsed")
                 case .done(let title):
                     Text("·").foregroundStyle(palette.secondaryText).accessibilityHidden(true)
                     Text(title).foregroundStyle(palette.secondaryText)
@@ -54,6 +61,9 @@ struct ConversationNoticeLine: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(notice.summary)
+        .onChange(of: notice.resolvedTitle) { old, done in
+            if old != done, let done { announce("\(notice.summary). \(done).") }
+        }
     }
 
     private enum Trailing { case button(String), done(String) }

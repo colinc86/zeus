@@ -120,7 +120,7 @@ struct SettingsView: View {
                 }
                 SettingsDivider()
                 Text("Demo cards").zeusFont(.title)
-                ForEach(DemoCardKind.allCases) { kind in Button(kind.rawValue) { injectDemo(kind) }.accessibilityLabel(kind.rawValue) }
+                ForEach(DemoCardKind.allCases) { kind in KeyboardButton(kind.rawValue) { injectDemo(kind) }.accessibilityLabel(kind.rawValue) }
                 Text("Replies are recorded in card history. Delivery starts when the runtime is connected.")
                     .settingsCaption()
                 if let last = cards.history.first(where: { $0.response != nil }) {
@@ -130,12 +130,12 @@ struct SettingsView: View {
                 Text("Avatar state").settingsHeading()
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 110))]) {
                     ForEach(AvatarState.allCases, id: \.self) { state in
-                        Button(state.rawValue.capitalized) { status.setOverride(state, detail: "Debug preview", progress: state == .working ? 0.45 : nil, ttl: 600) }.accessibilityLabel(state.rawValue.capitalized)
+                        KeyboardButton(state.rawValue.capitalized) { status.setOverride(state, detail: "Debug preview", progress: state == .working ? 0.45 : nil, ttl: 600) }.accessibilityLabel(state.rawValue.capitalized)
                     }
                 }
-                Button("Automatic state") { status.clearOverride() }.accessibilityLabel("Automatic state")
+                KeyboardButton("Automatic state") { status.clearOverride() }.accessibilityLabel("Automatic state")
                 Text("New cards take priority for 2.5 seconds.").settingsCaption()
-                Button(preview.previewDeliveryIssue == nil ? "Show preview delivery warning" : "Clear preview delivery warning") {
+                KeyboardButton(preview.previewDeliveryIssue == nil ? "Show preview delivery warning" : "Clear preview delivery warning") {
                     preview.previewDeliveryIssue = preview.previewDeliveryIssue == nil
                         ? DeliveryIssue(title: "Couldn't reach your assistant", detail: "2 replies couldn't reach Preview Claude (Zeus). They'll be sent automatically when it reconnects.", pendingCount: 2, since: Date().addingTimeInterval(-180)) : nil
                 }.accessibilityLabel(preview.previewDeliveryIssue == nil ? "Show preview delivery warning" : "Clear preview delivery warning").disabled(!preview.previewEnabled)
@@ -162,7 +162,7 @@ struct SettingsTabBar: View {
     private func tabs(equalWidths: Bool) -> some View {
         HStack(spacing: ZeusTheme.Spacing.s) {
             ForEach(SettingsTab.allCases, id: \.self) { tab in
-                Button { navigation.tab = tab } label: {
+                KeyboardButton { navigation.tab = tab } label: {
                     if equalWidths { Text(tab.rawValue).frame(maxWidth: .infinity) }
                     else { Text(tab.rawValue).lineLimit(1).fixedSize().frame(maxWidth: .infinity) }
                 }

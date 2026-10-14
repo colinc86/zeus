@@ -1,0 +1,35 @@
+AXGroup
+AXHeading | Characters
+AXGroup | Size
+AXStaticText | Size
+AXButton | Small
+AXButton | Medium
+AXButton | Large
+AXOpaqueProviderGroup
+AXButton | Zeus. King of the gods, on his cloud, lightning bolt in hand. | King of the gods, on his cloud, lightning bolt in hand.
+AXButton | Wisp. A friendly little ghost who drifts, fades and trails wisps. | A friendly little ghost who drifts, fades and trails wisps.
+AXButton | Jack. A jack-o'-lantern with a flickering candle grin and a shower of embers. | A jack-o'-lantern with a flickering candle grin and a shower of embers.
+AXButton | Gizmo. A tidy little robot whose screen face shows what it's up to. | A tidy little robot whose screen face shows what it's up to.
+AXButton | Sprout. A plucky green-capped hero with a gleaming sword. | A plucky green-capped hero with a gleaming sword.
+AXButton | Merlo. A bespectacled young wizard with a crackling crystal staff. | A bespectacled young wizard with a crackling crystal staff.
+AXButton | Midnight. A black cat with glowing green eyes and an opinionated tail. | A black cat with glowing green eyes and an opinionated tail.
+AXButton | Bones. A cheerful skeleton with glowing eyes and a chattering jaw. | A cheerful skeleton with glowing eyes and a chattering jaw.
+AXButton | Gloop. A bouncy slime that squashes, stretches and blows bubbles. | A bouncy slime that squashes, stretches and blows bubbles.
+AXButton | Nyx. A little bat on tireless wings who naps hanging upside down. | A little bat on tireless wings who naps hanging upside down.
+AXButton | Hoot. A wise little owl on a branch, all eyes and ear tufts. | A wise little owl on a branch, all eyes and ear tufts.
+AXButton | Spore. A springy toadstool with a bouncing cap and a trail of glowing spores. | A springy toadstool with a bouncing cap and a trail of glowing spores.
+AXButton | Import Character…
+AXButton | Open Example
+AXButton | Open Characters Folder
+AXStaticText | Your own characters are JSON files in the Characters folder. Open Example to see how one is made; Zeus picks up changes as soon as you save.
+AXButton | Reset Avatar Position
+AXCheckBox | Fade Zeus when idle | 1
+AXStaticText | Idle opacity
+AXSlider | Idle opacity | 0.3 | 30 percent
+AXValueIndicator
+AXStaticText | 30%
+AXStaticText | Fade after
+AXSlider | Idle fade delay | 30 | 30 seconds
+AXValueIndicator
+AXStaticText | 30 s
+AXStaticText | Point at Zeus to bring it back. Clicks still work while faded. A new message, a question or the assistant starting work brings Zeus back; an open conversation keeps it visible.

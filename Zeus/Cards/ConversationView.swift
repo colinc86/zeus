@@ -23,6 +23,7 @@ struct ConversationView: View {
     var managed: ManagedAssistantModel? = nil
     var openTerminal: () async throws -> Void = {}
     var newConversation: () -> Void = {}
+    var resetWidth: () -> Void = {}
     @FocusState private var composerFocused: Bool
     @FocusState private var focusedControl: ConversationControlTarget?
     @State private var pageCount = ConversationLayout.pageSize
@@ -159,7 +160,11 @@ struct ConversationView: View {
             })
             .modifier(PixelAppearance(progress: appeared ? 1 : 0))
             .background { shortcuts(proxy: proxy) }
-            .contextMenu { ClearConversationButton(cards: store) }
+            .background { ConversationResizeColor(color: NSColor(palette.focusRing)).frame(width: 0, height: 0).accessibilityHidden(true) }
+            .contextMenu {
+                Button("Reset width", action: resetWidth).accessibilityLabel("Reset conversation width")
+                ClearConversationButton(cards: store)
+            }
             .alert("Clear the conversation?", isPresented: $confirmingClear) {
                 Button("Clear", role: .destructive) { _ = store.clearConversation() }
                 Button("Cancel", role: .cancel) {}

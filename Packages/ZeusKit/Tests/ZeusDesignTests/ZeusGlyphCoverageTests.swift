@@ -18,13 +18,28 @@ struct ZeusGlyphCoverageTests {
             for (number, line) in lines.enumerated() {
                 let code = line.trimmingCharacters(in: .whitespaces)
                 if code.hasPrefix("//") { continue }
-                for match in line.matches(of: /"((?:[^"\\]|\\.)*)"/) {
-                    let gaps = ZeusFonts.pixelFontMissingGlyphs(in: String(match.output.1))
+                for literal in pixelFontLiterals(in: line) {
+                    let gaps = ZeusFonts.pixelFontMissingGlyphs(in: literal)
                     if !gaps.isEmpty { found.append((file.lastPathComponent, number + 1, gaps)) }
                 }
             }
         }
         return found
+    }
+
+    /// Native string tooltips use the system font. Only omit that argument, not other text on the same line.
+    static func pixelFontLiterals(in line: String) -> [String] {
+        line.matches(of: /"((?:[^"\\]|\\.)*)"/).compactMap { match in
+            let prefix = line[..<match.range.lowerBound].trimmingCharacters(in: .whitespaces)
+            return prefix.hasSuffix(".help(") ? nil : String(match.output.1)
+        }
+    }
+
+    @Test func nativeTooltipsDoNotExemptRenderedTextOnTheSameLine() {
+        #expect(Self.pixelFontLiterals(in: #".help("Skip (⇧⌘J)")"#).isEmpty)
+        #expect(Self.pixelFontLiterals(in: #"Text("✓").help("⇧")"#) == ["✓"])
+        #expect(Self.pixelFontLiterals(in: #".help("⇧").overlay { Text("✓") }"#) == ["✓"])
+        #expect(Self.pixelFontLiterals(in: #"Text("⇧")"#) == ["⇧"])
     }
 
     @Test func glyphsCoverEverySymbolTheyReplace() {

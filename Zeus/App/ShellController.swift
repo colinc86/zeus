@@ -257,8 +257,10 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
                 self.cardPanelState.height = height; self.positionCard()
             }, managed: managed,
             openTerminal: { [weak self] in try await self?.openConversationTerminal() },
-            newConversation: { [weak self] in self?.performManagedAction(.newConversation) }))
+            newConversation: { [weak self] in self?.performManagedAction(.newConversation) },
+            resetWidth: { [weak self] in self?.resetConversationWidth() }))
         host.resizeHandle.onResize = { [weak self] width, edge in self?.resizeConversation(to: width, edge: edge) }
+        host.resizeHandle.onReset = { [weak self] in self?.resetConversationWidth() }
         card.contentView = host
     }
 
@@ -760,6 +762,12 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         if resizeFixedX == nil { resizeFixedX = edge == .left ? card.frame.maxX : card.frame.minX }
         if let host = card.contentView as? ConversationHostingView { host.resizeEdge = edge; host.resizeHandle.edge = edge }
         settings.conversationWidth = ConversationWidth.clamp(width, screenWidth: screen.width)
+        positionCard()
+    }
+
+    func resetConversationWidth() {
+        resizeFixedX = nil
+        settings.conversationWidth = ConversationWidth.minimum
         positionCard()
     }
 

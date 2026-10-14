@@ -13,14 +13,21 @@ struct PrivacySettingsView: View {
     @State private var choosingApp = false
     @FocusState private var cancelFocused: Bool
     @Environment(\.zeusPalette) private var palette
+    @State private var appSelectionResult: String?
+    /// A fixture can complete the picker without opening any native panel or reading installed apps.
+    var pickApp: (@MainActor (@escaping @MainActor (URL?) -> Void) -> Void)?
+    var announce: @MainActor (String) -> Void = AccessibilityFeedback.announce
 
     /// Verbatim from CONTRACT §13.
     static let caveat = "Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac."
     static let scope = "Zeus notes which app is in front, app launches and quits, when you lock, sleep or step away, and how many displays you use. Never what you type, copy, read or open."
 
-    init(learn: LearnFromMe) {
+    init(learn: LearnFromMe, pickApp: (@MainActor (@escaping @MainActor (URL?) -> Void) -> Void)? = nil,
+         announce: @escaping @MainActor (String) -> Void = AccessibilityFeedback.announce) {
         self.learn = learn
         settings = learn.settings
+        self.pickApp = pickApp
+        self.announce = announce
     }
 
     var body: some View {
@@ -55,19 +62,21 @@ struct PrivacySettingsView: View {
                     HStack(spacing: ZeusTheme.Spacing.s) {
                         Text(app.name).settingsBody().lineLimit(1)
                         Spacer(minLength: 0)
-                        Button("Remove") { settings.excludedApps.removeAll { $0 == app } }
+                        KeyboardButton("Remove") { settings.excludedApps.removeAll { $0 == app } }
                             .accessibilityLabel("Remove \(app.name)")
                     }
                 }
             }
-            Button("Add App…", action: chooseApp).accessibilityLabel("Add App…")
+            KeyboardButton("Add App…", action: chooseApp).accessibilityLabel("Add App…")
+                .disabled(choosingApp)
+            if let appSelectionResult { Text(appSelectionResult).settingsCaption() }
 
             SettingsDivider()
             SettingsSegments(label: "Keep activity for", options: LearnSettings.retentionChoices.map { ($0, "\($0) days") },
                              selection: $settings.retentionDays)
             Text("Summaries are kept for a year. Older activity is deleted every night.").settingsCaption()
             if confirmingDelete { deleteConfirmation } else {
-                Button("Delete Everything…") { confirmingDelete = true }
+                KeyboardButton("Delete Everything…") { confirmingDelete = true }
                     .buttonStyle(ZeusButtonStyle(.destructive, size: .small))
                     .accessibilityLabel("Delete Everything…")
             }
@@ -83,10 +92,10 @@ struct PrivacySettingsView: View {
         HStack(spacing: ZeusTheme.Spacing.s) {
             if learn.isPausedNow {
                 Text("Paused until tomorrow.").settingsBody()
-                Button("Resume") { learn.resume() }.accessibilityLabel("Resume")
+                KeyboardButton("Resume") { learn.resume() }.accessibilityLabel("Resume")
             } else {
                 Text("Recording.").settingsBody()
-                Button("Pause for Today") { learn.pauseForToday() }.accessibilityLabel("Pause for Today")
+                KeyboardButton("Pause for Today") { learn.pauseForToday() }.accessibilityLabel("Pause for Today")
             }
         }
     }
@@ -96,10 +105,10 @@ struct PrivacySettingsView: View {
             Text("Delete all recorded activity and every summary? This can't be undone.")
                 .zeusFont(.caption).foregroundStyle(palette.text).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: ZeusTheme.Spacing.s) {
-                Button("Delete") { learn.deleteEverything(); confirmingDelete = false }
-                    .buttonStyle(ZeusButtonStyle(.destructive, size: .small)).accessibilityLabel("Delete").focusable()
-                Button("Cancel") { confirmingDelete = false }
-                    .accessibilityLabel("Cancel").focusable().focused($cancelFocused)
+                KeyboardButton("Delete") { learn.deleteEverything(); confirmingDelete = false }
+                    .buttonStyle(ZeusButtonStyle(.destructive, size: .small)).accessibilityLabel("Delete")
+                KeyboardButton("Cancel", focus: $cancelFocused) { confirmingDelete = false }
+                    .accessibilityLabel("Cancel")
                     .keyboardShortcut(.cancelAction)
             }
         }
@@ -114,6 +123,7 @@ struct PrivacySettingsView: View {
     private func chooseApp() {
         guard !choosingApp else { return }
         choosingApp = true
+        if let pickApp { pickApp(appChosen); return }
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.application]
         panel.allowsMultipleSelection = false
@@ -122,13 +132,27 @@ struct PrivacySettingsView: View {
         panel.message = "Choose an app to keep private."
         panel.begin { response in
             MainActor.assumeIsolated {
-                choosingApp = false
-                guard response == .OK, let url = panel.url, let app = Self.excludedApp(at: url) else { return }
-                if !settings.excludedApps.contains(where: { $0.bundleIDs.contains(app.id) || $0.name == app.name }) {
-                    settings.excludedApps.append(app)
-                }
+                appChosen(response == .OK ? panel.url : nil)
             }
         }
+    }
+
+    private func appChosen(_ url: URL?) {
+        choosingApp = false
+        guard let url else { return }
+        let result = Self.addPrivateApp(at: url, to: settings)
+        appSelectionResult = result
+        announce(result)
+    }
+
+    /// Returns the same visible and spoken result, including choosing an already-private app.
+    static func addPrivateApp(at url: URL, to settings: LearnSettings) -> String {
+        guard let app = excludedApp(at: url) else { return "Couldn't add this app to your private list." }
+        if settings.excludedApps.contains(where: { $0.bundleIDs.contains(app.id) || $0.name == app.name }) {
+            return "\(app.name) is already on your private list."
+        }
+        settings.excludedApps.append(app)
+        return "Added \(app.name) to your private list."
     }
 
     /// The app at `url` as a private-list entry, named as Finder shows it.
@@ -180,6 +204,7 @@ struct LearnIntroSheet: View {
     let turnOn: () -> Void
     let notNow: () -> Void
     @Environment(\.zeusPalette) private var palette
+    @FocusState private var notNowFocused: Bool
 
     static let records = ["Which app is in front, and when it changes", "Apps opening and quitting",
                           "Locking, sleeping and waking your Mac", "Times with no input for 5 minutes or more",
@@ -198,14 +223,15 @@ struct LearnIntroSheet: View {
             Text(PrivacySettingsView.caveat).settingsCaption()
             HStack(spacing: ZeusTheme.Spacing.s) {
                 Spacer()
-                Button("Not Now", action: notNow).keyboardShortcut(.cancelAction).accessibilityLabel("Not Now")
-                Button("Turn On", action: turnOn).buttonStyle(ZeusButtonStyle(.primary, size: .small)).accessibilityLabel("Turn On")
+                KeyboardButton("Not Now", focus: $notNowFocused, action: notNow).keyboardShortcut(.cancelAction).accessibilityLabel("Not Now")
+                KeyboardButton("Turn On", action: turnOn).buttonStyle(ZeusButtonStyle(.primary, size: .small)).accessibilityLabel("Turn On")
             }
         }
         .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
         .padding(24)
         .frame(width: 440)
         .environment(\.zeusFontChoice, .system)
+        .onAppear { notNowFocused = true }
     }
 
     private func list(_ title: String, _ items: [String]) -> some View {
