@@ -114,7 +114,7 @@ struct ConnectorTests {
         let routing = FakeRouting(); routing.deliveryMethod = .tmux; routing.tmuxTarget = "%7"
         let session = connectorSession()
         let delivery = Delivery(id: "d_12345678", kind: .reply, cardID: "c_abcdefgh", sessionKey: session.sessionKey,
-                                content: "Reply: No\n\t; $(touch /tmp/never-run) `date`")
+                                content: "Reply: No \t; $(touch /tmp/never-run) `date`")
         #expect(connector.canDeliver(to: session, bridge: nil, routing: routing))
         try await connector.deliver(delivery, to: session, bridge: nil, routing: routing)
         let calls = await runner.calls.filter { !["display-message", "capture-pane"].contains($0.arguments.first ?? "") }

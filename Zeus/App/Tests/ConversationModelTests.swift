@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import ZeusDesign
 import ZeusProtocol
 @testable import Zeus
 
@@ -41,6 +42,21 @@ private final class ConversationFixture {
 
 @MainActor
 struct ConversationModelTests {
+    @Test func multilineOutgoingBubbleRetainsLeadingAndBlankLinesAcrossReloadAndClearsComposer() async throws {
+        let f = ConversationFixture(); defer { f.cleanup() }
+        f.model.draft = "\r\n  first\r\n\r\nlong wrapped line\r\nlast\t \r\n"
+        let expected = "\n  first\n\nlong wrapped line\nlast"
+        await f.model.send()
+        #expect(f.messaging.calls == [expected])
+        #expect(f.model.draft.isEmpty)
+        #expect(f.model.thread.count == 1)
+        #expect(f.model.thread.first?.body == expected)
+        let saved = try #require(CardStore(fileURL: f.url).cards.first { $0.kind == .userMessage })
+        #expect(saved.body == expected)
+        let rendered = ZeusMarkdown.attributed(saved.body, choice: .pixel, palette: .light)
+        #expect(String(rendered.characters) == expected, "The bubble's markdown path keeps the line breaks too")
+    }
+
     @Test func threadChronologyIncludesOldAnswersAndOutgoingMessagesOnce() async {
         let f = ConversationFixture(); defer { f.cleanup() }
         let first = f.card(text: "First"); f.cards.add(first)
@@ -147,7 +163,7 @@ struct ConversationModelTests {
         f.clock.advance(1); f.cards.add(f.card(text: "And an attachment"))
         var replies = 0
         f.cards.responseHandler = { card, response in
-            #expect(card.id == question.id); #expect(response.text == "One reply\nwith a newline"); replies += 1
+            #expect(card.id == question.id); #expect(response.text == " One reply\nwith a newline"); replies += 1
         }
         f.model.draft = " One reply\nwith a newline "
         let result = await f.model.send()
