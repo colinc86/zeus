@@ -1,0 +1,7 @@
+{
+  "screen": "\n  \u001b[38;5;75m>_ \u001b[1m\u001b[39mOpenAI Codex\u001b[0;2m (v0.162.1)\u001b[0m\n     \u001b[2m/FIXTURE/project\u001b[0m\n\n\u001b[2m  To get started, describe a task or try one of these commands:\u001b[0m\n\n  /init\u001b[2m - create an AGENTS.md file with instructions for Codex\u001b[0m\n  /status\u001b[2m - show current session configuration\u001b[0m\n  /permissions\u001b[2m - choose what Codex is allowed to do\u001b[0m\n  /model\u001b[2m - choose what model and reasoning effort to use\u001b[0m\n  /review\u001b[2m - review any changes and find issues\u001b[0m\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\u001b[1m›\u001b[0m PC1 unsent draft.\n\n  \u001b[38;5;223mpc1 default\u001b[39m · \u001b[38;5;151m/FIXTURE/project\u001b[39m\n\n",
+  "inputMetadata": "19|36|120|0|1|",
+  "agent": "codex",
+  "version": "codex-cli 0.162.1",
+  "provenance": "Real native idle composer with deliberately pasted unsent text; Enter not sent."
+}
