@@ -21,7 +21,7 @@ import threading
 import time
 import uuid
 
-from LiveSupport import OpenAIModel, output_dir, create_root, isolated_environment, start_model, finish_host_build, host_package, scrub_paths, cleanup_root
+from LiveSupport import OpenAIModel, output_dir, create_root, isolated_environment, start_model, finish_host_build, host_package, scrub_paths, cleanup_root, stop_host
 
 REPO = pathlib.Path(__file__).resolve().parents[4]
 OUT = output_dir("sa3-live")
@@ -212,9 +212,7 @@ class Probe:
         ClaudeCompletion.pauseRelease.set()
         try:self.pane.close()
         finally:
-            self.host.stdin.close()
-            try:self.host.wait(timeout=5)
-            except subprocess.TimeoutExpired:self.host.kill();self.host.wait()
+            stop_host(self.host)
             self.control.selector.close();self.log.close()
 
 def main():

@@ -22,7 +22,7 @@ import uuid
 
 import sys, os
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "Runtime"))
-from LiveSupport import stream_reply, output_dir, create_root, isolated_environment, start_model, finish_host_build, host_package, scrub_paths, cleanup_root
+from LiveSupport import stream_reply, output_dir, create_root, isolated_environment, start_model, finish_host_build, host_package, scrub_paths, cleanup_root, stop_host
 
 REPO = pathlib.Path(__file__).resolve().parents[3]
 OUT = output_dir("sa1-live")
@@ -340,9 +340,7 @@ def main():
             proof["own_session"] = {"observed_seconds_after_native_idle": round(time.monotonic() - returned, 3), "at_prompt": before, "after": after}
     finally:
         if host:
-            host.stdin.close()
-            try: host.wait(timeout=5)
-            except subprocess.TimeoutExpired: host.kill(); host.wait()
+            stop_host(host)
         cleanup_root(root, remove=False)
         def helpers_gone():
             return all(subprocess.run(["/bin/ps", "-p", str(pid), "-o", "lstart="], capture_output=True, text=True).stdout.strip() != stamp for pid, stamp in tracked.items())

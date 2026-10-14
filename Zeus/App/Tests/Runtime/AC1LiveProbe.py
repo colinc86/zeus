@@ -6,7 +6,7 @@ LV1: add --scenario lv1 (or lv1-learnings / lv1-skipped) for live summary/Skip c
 Writes under build/ and its own /tmp scratch; --record-fixtures also writes scrubbed
 LV1 evidence in TestFixtures/live/. Never reads the user's agent configs/credentials.
 """
-from LiveSupport import Model, HostControl, eventually, output_dir, create_root, isolated_environment, start_model, finish_host_build, host_package, scrub_paths, cleanup_root
+from LiveSupport import Model, HostControl, eventually, output_dir, create_root, isolated_environment, start_model, finish_host_build, host_package, scrub_paths, cleanup_root, stop_host
 import argparse
 import http.server
 import json
@@ -87,9 +87,7 @@ def ac1_main():
     finally:
         cleanup_root(root, remove=False)
         if host:
-            host.stdin.close()
-            try: host.wait(timeout=5)
-            except subprocess.TimeoutExpired: host.kill(); host.wait()
+            stop_host(host)
         server.shutdown(); server.server_close(); thread.join(timeout=2)
         cleanup_root(root)
 
@@ -326,9 +324,7 @@ def lv1_case(executable, case):
         if (root / "agent.pid").exists():
             eventually(lambda: (root / "exit").exists(), "Probe agent failed to exit after private tmux shutdown", timeout=6)
         if host:
-            host.stdin.close()
-            try: host.wait(timeout=5)
-            except subprocess.TimeoutExpired: host.kill(); host.wait()
+            stop_host(host)
         if server:
             server.shutdown(); server.server_close()
         Model.action = None

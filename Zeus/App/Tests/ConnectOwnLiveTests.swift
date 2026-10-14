@@ -167,13 +167,7 @@ private struct CY1ScopedRunner: ProcessRunning {
             for file in ["launch.json", "registration.json"] where FileManager.default.fileExists(atPath: root.appendingPathComponent(file).path) {
                 try Data(scrub(try String(contentsOf: root.appendingPathComponent(file), encoding: .utf8)).utf8).write(to: evidence.appendingPathComponent(agent.rawValue + "-" + file))
             }
-            if ProcessInfo.processInfo.environment["ZEUS_CY1_RECORD_FIXTURES"] == "1", ProcessInfo.processInfo.environment["ZEUS_CY1_EVIDENCE_DIR"] != nil {
-                let fixtures = worktree.appendingPathComponent("TestFixtures/live/cy1")
-                try FileManager.default.createDirectory(at: fixtures, withIntermediateDirectories: true)
-                for file in try FileManager.default.contentsOfDirectory(at: evidence, includingPropertiesForKeys: nil) where file.lastPathComponent.hasPrefix(agent.rawValue) {
-                    try Data(contentsOf: file).write(to: fixtures.appendingPathComponent(file.lastPathComponent))
-                }
-            }
+
         }
     }
 }

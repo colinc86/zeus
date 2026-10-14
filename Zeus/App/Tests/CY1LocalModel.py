@@ -2,6 +2,7 @@
 """Connect-your-own probe: real CLIs, localhost models, private tmux and disposable HOME."""
 import argparse, http.server, json, os, pathlib, shlex, signal, socket, subprocess, threading, time, uuid
 import sys
+sys.dont_write_bytecode = True
 sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent/"Runtime"))
 from LiveSupport import register_root, isolated_environment, start_model, stream_reply, cleanup_root
 p = argparse.ArgumentParser()

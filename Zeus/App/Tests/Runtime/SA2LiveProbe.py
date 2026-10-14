@@ -19,7 +19,7 @@ import threading
 import time
 import uuid
 
-from LiveSupport import OpenAIModel, output_dir, create_root, isolated_environment, start_model, finish_host_build, host_package, scrub_paths, cleanup_root
+from LiveSupport import OpenAIModel, output_dir, create_root, isolated_environment, start_model, finish_host_build, host_package, scrub_paths, cleanup_root, stop_host
 
 REPO = pathlib.Path(__file__).resolve().parents[4]
 OUT = output_dir("sa2-live")
@@ -175,9 +175,7 @@ class Probe:
             self.call("stop")
             self.wait(lambda: self.state()["managed"] == "stopped", "Owned managed pane stop", timeout=8)
         except (RuntimeError, TimeoutError, BrokenPipeError): pass
-        self.host.stdin.close()
-        try: self.host.wait(timeout=5)
-        except subprocess.TimeoutExpired: self.host.kill(); self.host.wait()
+        stop_host(self.host)
         # Inspect only our namespace. Any remaining pane children belong to this fixture.
         owned = []
         try:

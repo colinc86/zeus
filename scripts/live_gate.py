@@ -147,7 +147,7 @@ def main(argv=None):
             output=run/probe/agent;output.mkdir(parents=True)
             registry=output/'namespaces.private';env=dict(base,ZEUS_LIVE_OUTPUT=str(output),ZEUS_LIVE_REGISTRY=str(registry))
             if probe=='cy1':
-                for key,value in {'ZEUS_CY1_LIVE':'1','ZEUS_CY1_AGENTS':agent,'ZEUS_CY1_EVIDENCE_DIR':str(output),'ZEUS_CY1_RECORD_FIXTURES':'1' if args.record else '0',
+                for key,value in {'ZEUS_CY1_LIVE':'1','ZEUS_CY1_AGENTS':agent,'ZEUS_CY1_EVIDENCE_DIR':str(output),'ZEUS_CY1_RECORD_FIXTURES':'0',
                                   'ZEUS_LIVE_REGISTRY':str(registry),'ZEUS_LIVE_OUTPUT':str(output)}.items():
                     env[key]=value;env['TEST_RUNNER_'+key]=value
             if probe=='e2e':env['TEST_RUNNER_ZEUS_TEST_TMUX']='1';env['ZEUS_TEST_TMUX']='1'
@@ -165,6 +165,10 @@ def main(argv=None):
                 except Exception as error:
                     result='FAIL';(output/'cleanup-error.txt').write_text(str(error))
                 scrub_evidence(output,registry)
+            if result=='PASS' and args.record and probe=='cy1':
+                target=ROOT/'TestFixtures/live/cy1';target.mkdir(parents=True,exist_ok=True)
+                for file in output.glob(agent+'*.'+'*'):
+                    if file.suffix in ('.json','.ansi'):shutil.copyfile(file,target/file.name)
             row=dict(probe=probe,agent=agent,result=result,seconds=round(time.monotonic()-start,2),evidence=str(output.relative_to(ROOT)))
             rows.append(row);failed|=result!='PASS'
             (output/'gate.json').write_text(json.dumps(dict(row,exit_code=code),indent=2)+'\n')

@@ -28,7 +28,7 @@ def create_root(prefix):
 
 def isolated_environment(home, extra=None):
     home=pathlib.Path(home)
-    env={"HOME":str(home),"CFFIXED_USER_HOME":str(home),"PATH":"/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin", "TERM":"xterm-256color","LANG":"en_US.UTF-8","LC_ALL":"en_US.UTF-8","USER":"fixture","LOGNAME":"fixture",
+    env={"HOME":str(home),"CFFIXED_USER_HOME":str(home),"PYTHONDONTWRITEBYTECODE":"1","PATH":"/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin", "TERM":"xterm-256color","LANG":"en_US.UTF-8","LC_ALL":"en_US.UTF-8","USER":"fixture","LOGNAME":"fixture",
         "CLAUDE_CONFIG_DIR":str(home/".claude"),"CODEX_HOME":str(home/".codex"),"XDG_CONFIG_HOME":str(home/".config"),"XDG_DATA_HOME":str(home/".local/share"),"XDG_CACHE_HOME":str(home/".cache"),"XDG_STATE_HOME":str(home/".local/state"),"TMUX_TMPDIR":str(home/"tmux"),
         "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC":"1","CLAUDE_CODE_DISABLE_AUTO_MEMORY":"1","DISABLE_AUTOUPDATER":"1","ENABLE_TOOL_SEARCH":"false",
         "OPENCODE_DISABLE_AUTOUPDATE":"true","OPENCODE_DISABLE_EXTERNAL_PLUGINS":"true","OPENCODE_DISABLE_MODELS_FETCH":"true","OPENCODE_DISABLE_LSP_DOWNLOAD":"true"}
@@ -39,6 +39,13 @@ def isolated_environment(home, extra=None):
         if key in os.environ:env[key]=os.environ[key]
     env.update(extra or {})
     return env
+
+
+def stop_host(process):
+    """Close private host stdin, allow normal runtime shutdown, then bound escalation."""
+    if process.stdin and not process.stdin.closed:process.stdin.close()
+    try:process.wait(timeout=5)
+    except subprocess.TimeoutExpired:process.kill();process.wait(timeout=5)
 
 def start_model(handler):
     server=http.server.ThreadingHTTPServer(("127.0.0.1",0),handler)
@@ -215,15 +222,15 @@ class Pane:
         for d in ['.claude','.codex','.config','.cache','.local/share','.local/state','tmux']:(self.home/d).mkdir(parents=True)
         self.socket=str(self.root/'tmux.sock');self.tmux=shutil.which('tmux');self.cli=shutil.which(agent)
         assert self.tmux and self.cli
+        self.env=isolated_environment(self.home)
         self.native_updater=native_updater
         if native_updater:
-            version=subprocess.check_output([self.cli,'--version'],text=True,timeout=10).split()[0]
+            version=subprocess.check_output([self.cli,'--version'],env=self.env,text=True,timeout=10).split()[0]
             binary=self.home/'.local/share/claude/versions'/version;binary.parent.mkdir(parents=True)
             shutil.copy2(pathlib.Path(self.cli).resolve(),binary)
             launch=self.home/'.local/bin/claude';launch.parent.mkdir(parents=True);launch.symlink_to(binary)
             assert launch.resolve().is_relative_to(self.home)
             self.cli=str(launch)
-        self.env=isolated_environment(self.home)
         self.server=None;self.worker=None;self.captures=[]
         if native_updater:
             self.env.pop('DISABLE_AUTOUPDATER');self.env.pop('CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC')
