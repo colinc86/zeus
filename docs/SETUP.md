@@ -63,8 +63,9 @@ The assistant learns the rules from the `AGENTS.md` in its folder (new folders g
 - Prefer moving Zeus near the active window over exact coordinates, and don't move it while I'm typing to it.
 - Never hide Zeus indefinitely.
 - Install an update only when I ask or have told you to keep Zeus current.
+- Expect an Undo line for every change, and never undo one yourself.
 
-A folder made before 0.1.8 doesn't have that section; copy it from a new one if you like. Zeus enforces the rules either way.
+The 0.1.8 template also covers ending a turn (one short message when it did what you asked, nothing for routine upkeep), questions you skip (never asked again) and clickable links. A folder made before 0.1.8 doesn't have those sections; copy them from a new one if you like. Zeus enforces the control rules either way.
 
 ### Learn from me
 
@@ -88,6 +89,8 @@ Choose **Turn On** or **Not Now**. Then, in the same pane:
 - **Pause for Today** stops recording until midnight. **Delete Everything…** removes all activity and summaries, after asking.
 
 Each summary or note also adds a quiet line to the conversation, such as *Sent your daily summary · View*. **View** shows the exact text your assistant got.
+
+The template tells your assistant to use learnings for timing and tone only: when to speak and what to have ready. It never comments on your habits, never quotes the numbers back unless you ask, and never puts them in messages to other people.
 
 ## 3. Pick a character
 
