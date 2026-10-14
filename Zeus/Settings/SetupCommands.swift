@@ -17,6 +17,9 @@ enum SetupCommands {
     }
 
     static let claudeLaunch = "claude --dangerously-load-development-channels server:zeus"
+    // Codex filters the MCP child's environment even without its daemon. Pass
+    // the current namespace at launch, never bake a pane into saved MCP settings.
+    static let codexLaunch = "tmux new-session -s codex codex --no-daemon -c 'mcp_servers.zeus.env_vars=[\"TMUX\",\"TMUX_PANE\"]'"
 
     struct Step: Identifiable {
         let title: String
@@ -32,7 +35,7 @@ enum SetupCommands {
         }
         let launch: String = switch backend {
         case .claude: claudeLaunch
-        case .codex: "tmux new-session -s codex codex"
+        case .codex: codexLaunch
         case .opencode: "opencode --port 4096 --hostname 127.0.0.1"
         }
         let routing: String = switch backend {

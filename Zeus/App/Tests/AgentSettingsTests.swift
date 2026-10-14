@@ -89,4 +89,10 @@ struct AgentSettingsTests {
         #expect(zeus["command"] as? [String] == [path, "--agent", "opencode"])
         #expect(zeus["type"] as? String == "local")
     }
+    @Test func ownCodexLaunchPassesOnlyTheCurrentTerminalNamespaceWithoutSavingPaneValues() {
+        #expect(SetupCommands.codexLaunch == "tmux new-session -s codex codex --no-daemon -c 'mcp_servers.zeus.env_vars=[\"TMUX\",\"TMUX_PANE\"]'")
+        #expect(SetupCommands.steps(for: .codex)[1].command == SetupCommands.codexLaunch)
+        let registration = SetupCommands.configuration(for: .codex, bridgePath: "/Applications/Zeus.app/Contents/MacOS/zeus-mcp")
+        #expect(!registration.contains("TMUX") && !registration.contains("env_vars") && !registration.contains("%"))
+    }
 }
