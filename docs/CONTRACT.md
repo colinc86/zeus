@@ -425,6 +425,7 @@ Zeus can launch and keep alive **one** assistant session of its own. Connecting 
 
    Platform implements it in the runtime; appdev renders it in Settings, the menu and first run. The menu bar shows a status line for every state (MANAGED.md §4), and an alert icon for blocked and failed.
 8. **Requirements.** tmux and the chosen agent CLI must be installed; Settings detects both, with a one-line install hint when missing. The agent must already be logged in; a login screen is just a blocked state (item 5).
+9. **Agent updates** (UP1, 2026-10-14). When the agent's own TUI shows an installed update waiting for a restart (Claude: "Update installed · Restart to update" in the composer chrome), `ManagedSessionController` publishes `managedAgentUpdatePending` after two consecutive samples and clears it after one sample without it or after a restart. Zeus posts one quiet thread notice per conversation nonce, "<Agent> has an update · Restart assistant", never a peek or badge, never while a question is pending. The action requests a safe-moment restart through the settings-apply path (item 7): it waits until the assistant is idle with nothing in flight, then restarts the same conversation with the agent's resume so context is kept; unrestricted modes keep their confirmation. The request carries a UUID so a completed restart is reported once and honestly; dismissal survives history clearing. Settings › Assistant shows the same state with one Restart button. Nothing restarts without a click.
 
 ---
 
