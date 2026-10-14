@@ -31,6 +31,7 @@ extension ZeusRuntime {
             }
             context.managedInputAllowed = { [weak self] in self?.managedController.canAcceptInput == true && self?.managedController.sessionKey == key }
         }
+        if managed, context.deliveryMethod == .tmux, let delivery, let record = ledger?.record(id: delivery.id), heldByManagedDraft(record) { return nil }
         guard let connector = connectors.first(where: {
             if recoveringPaste, !($0 is TmuxConnector) { return false }
             if nativePinned, !($0 is OpenCodeConnector) { return false }
@@ -191,6 +192,7 @@ extension ZeusRuntime {
         recoverResponses()
         retargetDeadUserMessages()
         bindWaitingUserMessages()
+        refreshManagedDraftAlert()
         refreshQueueReasons()
         updateDisconnectedTargets()
         rerouteEarlierReplies()
@@ -254,6 +256,7 @@ extension ZeusRuntime {
         retryTimer?.cancel(); retryTimer = nil
         guard running else { return }
         var dates: [Date] = []
+        if let deadline = managedDraftDeadline { dates.append(deadline) }
         if !(responseJournal?.intents ?? []).isEmpty && storageProblem != nil { dates.append(clock.now.addingTimeInterval(3)) }
         if !unsaved.isEmpty { dates.append(clock.now.addingTimeInterval(3)) }
         for record in ledger?.records ?? [] where record.isPending {
@@ -445,6 +448,7 @@ extension ZeusRuntime {
             unsaved.removeAll(); storageProblem = nil
             for id in ids { sendTokens.removeValue(forKey: id); sends.removeValue(forKey: id)?.cancel() }
             discardAssistantActivities(deliveryIDs: ids)
+            refreshManagedDraftAlert()
             refreshProblem(); scheduleRetry()
         } catch { storageProblem = "Couldn't discard saved deliveries: \(error.localizedDescription)" }
     }

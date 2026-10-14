@@ -23,6 +23,7 @@ extension ZeusRuntime {
     }
     /// A queue caption describes the current gate, not a past connection failure.
     func managedQueueReason(_ record: DeliveryRecord) -> String? {
+        if heldByManagedDraft(record) { return "Your assistant's Terminal has unsent text. Zeus sends this once it's clear." }
         guard belongsToManagedAssistant(record) else { return nil }
         let agent = managedAgentName
         switch managedStatus {

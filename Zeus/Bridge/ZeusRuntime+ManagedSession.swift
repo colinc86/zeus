@@ -115,6 +115,9 @@ extension ZeusRuntime {
             } else {
                 status.setOverride(.alert, detail: managedPrompt?.options.isEmpty == false ? "Waiting for your answer" : "Waiting for you in Terminal", progress: nil, ttl: 10)
             }
+        } else if managedDraftAlertCardID != nil, let detail = managedDraftStatusDetail {
+            if let presentation = status as? any ManagedBlockingPresenting { presentation.setManagedBlock(detail) }
+            else { status.setOverride(.alert, detail: detail, progress: nil, ttl: 10) }
         } else if let end = managedBlockEnd {
             if let id = managedBlockedCardID, resolveManagedCard(id, end: end) { managedBlockedCardID = nil }
             if let presentation = status as? any ManagedBlockingPresenting { presentation.setManagedBlock(nil) }
@@ -139,6 +142,7 @@ extension ZeusRuntime {
     /// Consumed before persistence by M4 stores. Legacy stores are restored synchronously;
     /// no response intent or delivery is ever created for this option.
     func handleManagedAction(_ card: Card, response: CardResponse) -> Bool {
+        if handleManagedDraftAction(card, response: response) { return true }
         guard card.id.hasPrefix(Self.managedCardPrefix) else { return false }
         if card.id == managedBlockedCardID {
             if card.status == .answered { cards.update(id: card.id) { $0.response = nil; $0.status = .open } }

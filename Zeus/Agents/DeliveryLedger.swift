@@ -17,7 +17,7 @@ struct DeliveryRecord: Codable, Sendable, Equatable {
     /// A completed paste recovery gets the ordinary 3-minute ack grace, even
     /// when old verification failures had already exhausted the attempt budget.
     var tmuxPasteRecoveredAt: Date?
-    /// Durable user-message tombstone; never fabricate ackedAt on discard.
+    /// Durable delivery tombstone; never fabricate ackedAt on discard.
     var discardedAt: Date?
     enum QueueReasonSource: String, Codable, Sendable { case managedGate, nativeRoute }
     /// UI caption ownership is private ledger state, never agent delivery/pin metadata.
