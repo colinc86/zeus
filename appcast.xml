@@ -6,6 +6,31 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.1.7</title>
+      <pubDate>Wed, 14 Oct 2026 13:29:56 GMT</pubDate>
+      <sparkle:version>8</sparkle:version>
+      <sparkle:shortVersionString>0.1.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Themes.</strong> Settings › Appearance has seven themes for the conversation, speech bubble and Settings (Classic, Midnight, Parchment, Olympus, Phosphor, Pocket, Sorbet). Import your own as a JSON file; Open Example shows how.</li>
+<li><strong>Import a character.</strong> Settings › Character gets Import Character…, Open Example and Open Characters Folder. New or edited character files load without restarting Zeus, and a bad file says exactly what's wrong.</li>
+<li><strong>Ghost mode.</strong> Settings › Character › "Fade Zeus when idle": pick an opacity and a delay. Zeus comes back when you point at it, press the shortcut, or something arrives.</li>
+<li><strong>Resizable conversation.</strong> Drag the panel's edge to make it wider; Zeus remembers the width.</li>
+<li><strong>Settings changes apply to the running assistant.</strong> Changing the permission mode or instructions restarts the assistant in the same conversation at a safe moment. Changing the agent or folder asks before switching.</li>
+<li><strong>Settings window</strong> is resizable and General has a jump row to its sections.</li>
+<li><strong>Unsent text in Terminal.</strong> If your own typed text is sitting in the assistant's terminal, Zeus now tells you why messages are waiting, with Open in Terminal and Cancel queued messages. Zeus never clears or sends your draft.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.1.7/Zeus-0.1.7.zip" type="application/octet-stream" sparkle:edSignature="1/kY2v8G1gNxXuYXdUWhtUIq2bsVnZ1NvwoDB2KP5T2IQ35wTvSlPI9W/w+Au0vFb1TL/P/9Fy+qTdjla6wXDg==" length="7916493"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.1.6</title>
       <pubDate>Wed, 14 Oct 2026 03:14:11 GMT</pubDate>
       <sparkle:version>7</sparkle:version>
