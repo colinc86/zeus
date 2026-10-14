@@ -18,6 +18,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     var managedAppliedConfiguration: ManagedSessionConfig? { record?.appliedConfiguration }
     var managedCanResumeSettings: Bool { record?.conversation?.didLaunch == true && record?.conversation?.nativeID != nil }
     private(set) var managedAgentUpdatePending = false
+    private(set) var managedAgentUpdateLastRestartID: UUID?
     var managedAgentUpdateConversationID: String? { record?.conversation?.nonce }
     @ObservationIgnored private var updateSamples = 0
     private func resetAgentUpdate() {
@@ -643,6 +644,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
                 record?.launchPending = false; record?.pendingWasFresh = false
             }
             record?.restarts = []; try save(); try await start(using: config)
+            if request.kind == .agentUpdate, attached, enabled, activation == token { managedAgentUpdateLastRestartID = request.id }
             if managedSettingsApplication?.id == request.id { managedSettingsApplication = nil }
             onChange?()
         } catch {

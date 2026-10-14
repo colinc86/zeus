@@ -12,6 +12,8 @@ import Observation
     private var noticeID: String?
     private var awaitingRestart = false
     private var confirmationWasOpen = false
+    private var restartIDAtRequest: UUID?
+    private var noticeSummary: String?
 
     init(managed: ManagedAssistantModel, cards: CardStore, clock: @escaping () -> Date = Date.init) {
         self.managed = managed; self.cards = cards; self.clock = clock
@@ -25,28 +27,32 @@ import Observation
         if conversation != conversationID {
             deactivateNotice()
             conversationID = conversation; noticeID = nil; wasPending = false; awaitingRestart = false
+            noticeSummary = "\(managed.agentName) has an update"
         }
         guard let conversation else { return }
         if pending && !wasPending {
             // Re-adopting the same conversation after a Zeus relaunch reuses its active notice.
             noticeID = cards.notices.last {
-                $0.kind == .agentUpdate && $0.id.hasPrefix("agent-update:\(conversation):") && $0.resolvedTitle != "No longer pending"
+                $0.kind == .agentUpdate && $0.id.hasPrefix("agent-update:\(conversation):") && $0.isAgentUpdateCurrent == true
             }?.id
         }
         if !pending && wasPending && !managed.agentUpdateRestartPending { deactivateNotice() }
         wasPending = pending
         if managed.agentUpdateRestartPending {
-            awaitingRestart = true
+            if !awaitingRestart { restartIDAtRequest = managed.agentUpdateRestartID }
+            awaitingRestart = true; confirmationWasOpen = false
             updateCurrent(summary: managed.agentUpdateWaitingText, resolved: nil, actionable: false)
             return
         }
         if awaitingRestart {
             awaitingRestart = false
             if let error = managed.agentUpdateRestartError {
-                updateCurrent(summary: "Couldn't restart \(managed.agentName). \(error)", resolved: nil, actionable: pending)
+                var detail = error.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+                if !detail.hasSuffix(".") && !detail.hasSuffix("!") && !detail.hasSuffix("?") { detail += "." }
+                updateCurrent(summary: "Couldn't restart \(managed.agentName). \(detail)", resolved: nil, actionable: pending)
                 return
             } else if !pending {
-                deactivateNotice(); return
+                deactivateNotice(restarted: managed.agentUpdateRestartID != nil && managed.agentUpdateRestartID != restartIDAtRequest); return
             }
         }
         let confirming: Bool
@@ -61,7 +67,7 @@ import Observation
         }
         if noticeID == nil {
             let notice = ThreadNotice(id: "agent-update:\(conversation):\(UUID().uuidString)", kind: .agentUpdate,
-                createdAt: clock(), summary: "\(managed.agentName) has an update", actionTitle: "Restart assistant")
+                createdAt: clock(), summary: "\(managed.agentName) has an update", actionTitle: "Restart assistant", isAgentUpdateCurrent: true)
             if cards.recordNotice(notice) { noticeID = notice.id }
         }
         guard let noticeID, let notice = cards.notices.first(where: { $0.id == noticeID }), notice.resolvedTitle != "Later" else { return }
@@ -73,17 +79,17 @@ import Observation
     }
 
     private var isBlocked: Bool { if case .blocked = managed.status { true } else { false } }
-    private func updateCurrent(summary: String, resolved: String?, actionable: Bool) {
+    private func updateCurrent(summary: String, resolved: String?, actionable: Bool, active: Bool? = nil) {
         guard let noticeID, let old = cards.notices.first(where: { $0.id == noticeID }) else { return }
-        var next = old; next.summary = summary; next.resolvedTitle = resolved
+        var next = old; if let active { next.isAgentUpdateCurrent = active }; next.summary = summary; next.resolvedTitle = resolved
         next.actionTitle = actionable ? "Restart assistant" : nil
         guard next == old || cards.updateNotice(id: noticeID, { $0 = next }) else { return }
         if actionable { cards.setNoticeAction(id: noticeID, action: { [weak self] in self?.restart() }) }
         else { cards.setNoticeAction(id: noticeID, action: nil) }
     }
-    private func deactivateNotice() {
+    private func deactivateNotice(restarted: Bool = false) {
         guard let noticeID, let notice = cards.notices.first(where: { $0.id == noticeID }) else { return }
-        updateCurrent(summary: notice.summary, resolved: "No longer pending", actionable: false)
+        updateCurrent(summary: noticeSummary ?? notice.summary, resolved: restarted ? "Restarted" : nil, actionable: false, active: false)
     }
     private func restart() {
         guard !cards.hasOpenQuestion, !isBlocked else { reconcile(); return }
@@ -94,7 +100,7 @@ import Observation
     private func observe() {
         withObservationTracking {
             _ = managed.agentUpdatePending; _ = managed.agentUpdater?.managedAgentUpdateConversationID
-            _ = managed.agentUpdateRestartPending; _ = managed.agentUpdateRestartError
+            _ = managed.agentUpdateRestartPending; _ = managed.agentUpdateRestartError; _ = managed.agentUpdateRestartID
             _ = managed.agentUpdateCanRestart; _ = managed.status; _ = managed.confirmation
             _ = cards.hasOpenQuestion; _ = cards.threadRevision
         } onChange: { [weak self] in

@@ -39,11 +39,13 @@ extension ZeusRuntime: ManagedSettingsApplying {
 @MainActor protocol ManagedAgentUpdating: AnyObject {
     var managedAgentUpdatePending: Bool { get }
     var managedAgentUpdateConversationID: String? { get }
+    var managedAgentUpdateLastRestartID: UUID? { get }
     func restartManagedAgentForUpdate()
 }
 
 extension ZeusRuntime: ManagedAgentUpdating {
     var managedAgentUpdatePending: Bool { managedController.managedAgentUpdatePending }
     var managedAgentUpdateConversationID: String? { managedController.managedAgentUpdateConversationID }
+    var managedAgentUpdateLastRestartID: UUID? { managedController.managedAgentUpdateLastRestartID }
     func restartManagedAgentForUpdate() { managedController.restartManagedAgentForUpdate() }
 }

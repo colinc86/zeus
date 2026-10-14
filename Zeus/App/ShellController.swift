@@ -96,6 +96,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         status = AvatarStatusModel(cards: cards, quietHours: { [weak settings] in settings?.isQuiet(at: $0) ?? false },
                                    assistantActivity: { [weak messaging] in messaging?.assistantActivity })
         super.init()
+        managed.hasPendingQuestion = { [weak cards] in cards?.hasOpenQuestion == true }
         managedUpdates = ManagedAgentUpdateModel(managed: managed, cards: cards)
         managedUpdates?.onConfirmation = { [weak self] in self?.showSettings(tab: .agent) }
         cards.onHistoryCleared = { [weak self] in
@@ -910,7 +911,10 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     /// Menu recovery must bring its confirmation into view instead of silently arming Settings.
     func performManagedAction(_ action: ZeusManagedPresentation.Action, onConfirmation: (() -> Void)? = nil) {
         managed.perform(action)
-        guard managed.confirmation == .newConversation else { return }
+        switch managed.confirmation {
+        case .newConversation?, .restartForUpdate?: break
+        default: return
+        }
         if let onConfirmation { onConfirmation() } else { showSettings(tab: .agent) }
     }
 

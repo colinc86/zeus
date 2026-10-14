@@ -16,6 +16,7 @@ import ZeusProtocol
     var managedSettingsApplicationError: String?
     var managedCanResumeSettings = true
     var managedAgentUpdatePending = false
+    var managedAgentUpdateLastRestartID: UUID?
     var managedAgentUpdateConversationID: String? = "fixture-conversation"
     var requests = 0
     var unsafeRestarts = 0
@@ -49,12 +50,12 @@ import ZeusProtocol
     let cards: CardStore
     let managed: ManagedAssistantModel
     let updates: ManagedAgentUpdateModel
-    init(unrestricted: Bool = false) throws {
+    init(unrestricted: Bool = false, displayFolder: String? = nil) throws {
         root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-up1-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defaults = try #require(UserDefaults(suiteName: suite))
         settings = AppSettings(defaults: defaults, userDirectory: nil)
-        var config = AppSettings.newManagedSession(); config.folder = root.path
+        var config = AppSettings.newManagedSession(); config.folder = displayFolder ?? root.path
         if unrestricted { config.permissionModeID = "full" }
         settings.managedSession = config; settings.managedLaunchedConfig = config
         controller.managedAppliedConfiguration = config
@@ -62,6 +63,8 @@ import ZeusProtocol
         managed = ManagedAssistantModel(settings: settings, controller: { controller })
         managed.refreshAvailability()
         cards = CardStore(fileURL: root.appendingPathComponent("cards.json"))
+        let cards = cards
+        managed.hasPendingQuestion = { [weak cards] in cards?.hasOpenQuestion == true }
         updates = ManagedAgentUpdateModel(managed: managed, cards: cards)
     }
     func cleanup() { defaults.removePersistentDomain(forName: suite); try? FileManager.default.removeItem(at: root) }
@@ -89,7 +92,8 @@ import ZeusProtocol
         let now = Date()
         f.cards.add(.init(id: "q_up1", kind: .question, body: "Choose", createdAt: now, updatedAt: now))
         f.pending()
-        #expect(f.cards.notices.isEmpty)
+        #expect(f.cards.notices.isEmpty && !f.managed.agentUpdateCanRestart)
+        f.managed.requestAgentUpdateRestart(); #expect(f.controller.requests == 0)
         f.cards.update(id: "q_up1") { $0.status = .answered }; f.updates.reconcile()
         let id = try #require(f.cards.notices.first?.id)
         f.cards.add(.init(id: "q_up2", kind: .question, body: "Choose again", createdAt: now, updatedAt: now))
@@ -143,18 +147,44 @@ import ZeusProtocol
         f.controller.managedAgentUpdatePending = true; updates.reconcile()
         #expect(restored.notices.count == 2)
     }
-    @Test func settingsAndNoticeRenderWithAccessibleRestartAction() async throws {
+    @Test func disappearingFooterNeverClaimsUpToDateButSuccessfulRestartHasReceipt() throws {
         let f = try UpdateUIFixture(); defer { f.cleanup() }
         f.pending()
-        let messaging = AgentMessagingHub()
+        f.controller.managedAgentUpdatePending = false; f.updates.reconcile()
+        #expect(f.cards.notices.first?.resolvedTitle == nil)
+        #expect(f.cards.notices.first?.actionTitle == nil && f.cards.notices.first?.isAgentUpdateCurrent == false)
+        f.pending(); let id = try #require(f.cards.notices.last?.id)
+        f.cards.performNoticeAction(id: id); f.updates.reconcile()
+        f.controller.managedAgentUpdatePending = false
+        f.controller.managedAgentUpdateLastRestartID = f.controller.managedSettingsApplication?.id
+        f.controller.managedSettingsApplication = nil
+        f.updates.reconcile()
+        #expect(f.cards.notices.last?.summary == "Claude Code has an update")
+        #expect(f.cards.notices.last?.resolvedTitle == "Restarted")
+    }
+    @Test func existingSettingsRestartIsPrimaryAndUsesSafeUpdateAction() throws {
+        let f = try UpdateUIFixture(); defer { f.cleanup() }
+        f.pending()
+        #expect(f.managed.presentation().actions.first == .restart)
+        #expect(f.managed.note == "Claude Code has an update. Restart to use it; the conversation is kept.")
+        f.managed.perform(.restart)
+        #expect(f.controller.requests == 1 && f.controller.unsafeRestarts == 0)
+        #expect(f.managed.disabledActions.contains(.restart))
+    }
+    @Test func settingsAndNoticeRenderWithAccessibleRestartAction() async throws {
+        let f = try UpdateUIFixture(displayFolder: "/FIXTURE/project"); defer { f.cleanup() }
+        f.pending()
+        let messaging = AgentMessagingHub(); messaging.previewEnabled = true
         let host = NSHostingView(rootView: AssistantSettingsView(settings: f.settings, managed: f.managed, messaging: messaging,
-            testMessage: ComposeModel(cards: f.cards, messaging: messaging)).padding(16).frame(width: 560).environment(\.accessibilityEnabled, true).environment(\.zeusFontChoice, .system))
+            testMessage: ComposeModel(cards: f.cards, messaging: messaging)).padding(16).frame(width: 560).background(ZeusPalette.light.panel).environment(\.accessibilityEnabled, true).environment(\.zeusFontChoice, .system))
         let window = NSPanel(contentRect: CGRect(x: -20000, y: -20000, width: 560, height: 1800), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = host
         defer { window.contentView = nil; window.close() }
         for _ in 0..<5 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
-        let labels = updateAXLabels(host)
-        #expect(labels.contains("Restart assistant to use the update"))
+        let nodes = updateAXNodes(host)
+        let labels = nodes.compactMap { ($0 as AnyObject).accessibilityLabel?() }
+        #expect(labels.contains("Restart"))
+        #expect(f.managed.presentation().actions.first == .restart)
         host.frame = CGRect(x: 0, y: 0, width: 560, height: 1800)
         host.layoutSubtreeIfNeeded()
         let image = try #require(host.bitmapImageRepForCachingDisplay(in: host.bounds))
@@ -163,17 +193,20 @@ import ZeusProtocol
         if let destination = ProcessInfo.processInfo.environment["ZEUS_UP1_RENDER"] ?? ProcessInfo.processInfo.environment["TEST_RUNNER_ZEUS_UP1_RENDER"] {
             try #require(image.representation(using: .png, properties: [:])).write(to: URL(fileURLWithPath: destination))
         }
+        let restart = try #require(nodes.first { ($0 as AnyObject).accessibilityLabel?() == "Restart" })
+        #expect((restart as AnyObject).accessibilityPerformPress?() == true)
+        try await Task.sleep(for: .milliseconds(50)); f.updates.reconcile()
+        #expect(f.controller.requests == 1 && f.controller.unsafeRestarts == 0)
+        #expect(f.cards.notices.first?.summary == "Restarting when Claude Code is idle…")
     }
 }
 
-@MainActor private func updateAXLabels(_ root: NSObject) -> [String] {
+@MainActor private func updateAXNodes(_ root: NSObject) -> [NSObject] {
     var seen: Set<ObjectIdentifier> = []
-    func visit(_ node: NSObject) -> [String] {
+    func visit(_ node: NSObject) -> [NSObject] {
         guard seen.insert(ObjectIdentifier(node)).inserted else { return [] }
-        let label = NSSelectorFromString("accessibilityLabel")
         let children = NSSelectorFromString("accessibilityChildren")
-        var result: [String] = []
-        if node.responds(to: label), let value = node.perform(label)?.takeUnretainedValue() as? String { result.append(value) }
+        var result = [node]
         if node.responds(to: children), let nodes = node.perform(children)?.takeUnretainedValue() as? [NSObject] { result += nodes.flatMap(visit) }
         return result
     }
