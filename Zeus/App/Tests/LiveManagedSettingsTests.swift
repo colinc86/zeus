@@ -94,6 +94,42 @@ import ZeusProtocol
 }
 
 @Suite(.serialized) @MainActor struct LiveManagedSettingsTests {
+    @Test func escapeKeepsTheManagedAgentRunningButSelectsConnectYourOwn() async throws {
+        let f = try LiveManagedFixture(); defer { f.cleanup() }
+        f.model.update { $0.folder = "/fixture" }
+        f.settings.managedLaunchedConfig = f.model.config
+        f.controller.managedStatus = .running(.idle)
+        f.controller.managedTmuxSessionName = "zeus"
+        f.controller.managedAttachCommand = "tmux attach -t zeus"
+        f.model.chooseManaged(false)
+        let host = f.host(AssistantSettingsView(settings: f.settings, managed: f.model, messaging: f.hub,
+            testMessage: ComposeModel(cards: f.cards, messaging: f.hub)).background(ZeusPalette.for(.light).panel))
+        try await f.settle(host)
+        let labels = liveAXNodes(host).map(liveAXDescription)
+        #expect(labels.contains { $0.contains("Stop the Zeus-run agent?") })
+        #expect(labels.contains { $0.contains("Keep Running") })
+        if ProcessInfo.processInfo.environment["ZEUS_CY1_RENDER"] == "1" {
+            let image = try #require(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+            host.cacheDisplay(in: host.bounds, to: image)
+            let png = try #require(image.representation(using: .png, properties: [:]))
+            var root = URL(fileURLWithPath: #filePath)
+            for _ in 0..<4 { root.deleteLastPathComponent() }
+            let evidence = root.appendingPathComponent("TestFixtures/live/cy1")
+            try FileManager.default.createDirectory(at: evidence, withIntermediateDirectories: true)
+            try png.write(to: evidence.appendingPathComponent("mode-confirmation.png"))
+        }
+        let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0,
+            windowNumber: host.window?.windowNumber ?? 0, context: nil, characters: "\u{1b}",
+            charactersIgnoringModifiers: "\u{1b}", isARepeat: false, keyCode: 53))
+        #expect(host.window?.performKeyEquivalent(with: event) == true)
+        try await f.settle(host)
+        #expect(!f.model.enabled && f.model.confirmation == nil && f.controller.managedStatus == .running(.idle))
+        #expect(f.model.retainedSessionNotice == "Your Zeus-run agent is still running in tmux (tmux attach -t zeus)")
+        #expect(liveAXNodes(host).contains { liveAXDescription($0).contains("Your Zeus-run agent is still running") })
+        f.controller.managedStatus = .stopped; try await f.settle(host)
+        #expect(f.model.retainedSessionNotice == nil)
+    }
+
     @Test func switchConfirmationOffersLaterAndEscapeKeepsTheRunningConversation() async throws {
         let f = try LiveManagedFixture(); defer { f.cleanup() }
         f.model.update { $0.folder = "/fixture" }
