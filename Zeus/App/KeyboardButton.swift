@@ -17,8 +17,8 @@ struct KeyboardButton<Label: View>: View {
             .focusable(enabled, interactions: .edit)
             .focusEffectDisabled().focused(focus ?? $focused)
             .overlay {
-                PixelRoundedRectangle(steps: 1).stroke((focus?.wrappedValue ?? focused) ? palette.focusRing : .clear, lineWidth: 1)
-                    .padding(1).allowsHitTesting(false)
+                PixelRoundedRectangle(steps: 1).stroke((focus?.wrappedValue ?? focused) ? palette.focusRing : .clear, lineWidth: ZeusTheme.pixel)
+                    .padding(ZeusTheme.pixel / 2).allowsHitTesting(false)
             }
             .onKeyPress(keys: [.space, .return]) { press in
                 guard enabled, press.modifiers.intersection([.command, .option, .control]).isEmpty else { return .ignored }

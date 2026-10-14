@@ -402,17 +402,18 @@ import ZeusProtocol
         #expect(f.learn.settings.enabled)
     }
 
-    @Test func focusRingAndNamesRemainAvailableInEveryBundledTheme() async throws {
+    @Test(arguments: [ColorScheme.light, .dark])
+    func focusRingAndNamesRemainAvailableInEveryBundledTheme(scheme: ColorScheme) async throws {
         let f = try A12Fixture(); defer { f.cleanup() }
         for theme in f.settings.availableThemes {
             let host = try await f.mount(LearnIntroSheet(turnOn: {}, notNow: {})
-                .background(theme.palette(for: .light).panel)
-                .environment(\.zeusTheme, theme).environment(\.colorScheme, .light), height: 700,
-                referenceColor: theme.palette(for: .light).focusRing)
+                .background(theme.palette(for: scheme).panel)
+                .environment(\.zeusTheme, theme).environment(\.colorScheme, scheme), height: 700,
+                referenceColor: theme.palette(for: scheme).focusRing)
             _ = try f.button("Not Now", in: host); _ = try f.button("Turn On", in: host)
             #expect(try f.rendersFocusRing("Not Now", in: host), "\(theme.id)")
             if host.window?.isKeyWindow == true { #expect(f.focusedLabel(host) == "Not Now", "\(theme.id)") }
-            try f.evidence(host, name: "focus-\(theme.id)")
+            try f.evidence(host, name: "focus-\(theme.id)-\(scheme == .light ? "light" : "dark")")
             #expect(f.tabLabels(host).count == 2, "\(theme.id)")
         }
     }

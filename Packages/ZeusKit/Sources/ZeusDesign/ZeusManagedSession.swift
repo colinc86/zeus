@@ -435,7 +435,7 @@ public struct ZeusChoiceList<ID: Hashable & Sendable>: View {
             }
         }
         .contentShape(Rectangle())
-        .overlay(Rectangle().strokeBorder(focused == choice.id ? palette.focusRing : .clear, lineWidth: 1))
+        .overlay(Rectangle().strokeBorder(focused == choice.id ? palette.focusRing : .clear, lineWidth: ZeusTheme.pixel))
     }
 }
 
@@ -463,7 +463,7 @@ public struct ZeusCheckboxStyle: ToggleStyle {
                         if configuration.isOn { ZeusGlyph(.check).foregroundStyle(palette.onAccent) }
                     }
                     .frame(width: px * 9, height: px * 9)
-                    .overlay(Rectangle().strokeBorder(focused ? palette.focusRing : .clear, lineWidth: 1))
+                    .overlay(Rectangle().strokeBorder(focused ? palette.focusRing : .clear, lineWidth: ZeusTheme.pixel))
                     configuration.label.zeusFont(.body).foregroundStyle(palette.text)
                 }
                 .contentShape(Rectangle())

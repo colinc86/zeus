@@ -34,7 +34,7 @@ final class ConversationResizeHandle: NSView {
     var onResize: ((CGFloat, ConversationWidth.Edge) -> Void)?
     var onEnd: (() -> Void)?
     var onReset: (() -> Void)?
-    var focusColor: NSColor = .keyboardFocusIndicatorColor { didSet { if oldValue != focusColor { needsDisplay = true } } }
+    var focusColor = NSColor(ZeusPalette.light.focusRing) { didSet { if oldValue != focusColor { needsDisplay = true } } }
     private var startX: CGFloat = 0
     private var startWidth: CGFloat = 0
     private var startEdge: ConversationWidth.Edge = .left
@@ -44,7 +44,8 @@ final class ConversationResizeHandle: NSView {
     override func draw(_ dirtyRect: NSRect) {
         guard window?.firstResponder === self else { return }
         focusColor.setFill()
-        NSRect(x: edge == .left ? 1 : bounds.width - 2, y: 0, width: 1, height: bounds.height).fill()
+        let pixel = ZeusTheme.pixel
+        NSRect(x: edge == .left ? 0 : bounds.width - pixel, y: 0, width: pixel, height: bounds.height).fill()
     }
     override func resetCursorRects() { addCursorRect(bounds, cursor: .resizeLeftRight) }
     func beginDrag(at x: CGFloat, width: CGFloat) { startX = x; startWidth = width; startEdge = edge }

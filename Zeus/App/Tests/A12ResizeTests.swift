@@ -36,11 +36,14 @@ import ZeusDesign
         window.appearance = NSAppearance(named: .aqua)
         window.isReleasedWhenClosed = false; window.contentView = host; window.orderFront(nil)
         defer { window.orderOut(nil); window.contentView = nil; window.close(); defaults.removePersistentDomain(forName: suite); try? FileManager.default.removeItem(at: root) }
-        for theme in settings.availableThemes {
-            #expect(settings.setTheme(id: theme.id))
-            for _ in 0..<8 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
-            #expect(host.resizeHandle.focusColor == NSColor(theme.palette(for: .light).focusRing), "\(theme.id)")
-            #expect(model.draft == "Retain the caret and draft while the theme changes.")
+        for scheme in [ColorScheme.light, .dark] {
+            window.appearance = NSAppearance(named: scheme == .light ? .aqua : .darkAqua)
+            for theme in settings.availableThemes {
+                #expect(settings.setTheme(id: theme.id))
+                for _ in 0..<8 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
+                #expect(host.resizeHandle.focusColor == NSColor(theme.palette(for: scheme).focusRing), "\(theme.id), \(scheme)")
+                #expect(model.draft == "Retain the caret and draft while the theme changes.")
+            }
         }
         host.resizeHandle.onResize = { width, _ in
             settings.conversationWidth = width
