@@ -351,7 +351,13 @@ Zeus is a **conversation**, not a stack of cards to clear.
    | Page Up / Page Down (fn↑ / fn↓) | Scroll the thread a page, always |
    | ⌘↑ / ⌘↓ | Jump to the oldest / latest message |
 
-5. **Right-click on Zeus.** A context menu with: Talk to Zeus, Settings…, Character ▸, Size ▸, Hide for 1 hour, Hide until tomorrow, Quit.
+5. **One menu** (MB1, 2026-10-14). The menu bar icon and a right-click on Zeus show the same menu (`ZeusMenuModel`, built by `ShellController.menuModel`), top to bottom:
+   1. status: the strip's sentence when a question or unread is waiting (choosing it opens the panel at that message), else the avatar status; the managed actions or the Assistant session picker; unread, issue and "Hidden until" lines;
+   2. Talk to Zeus… · Hide/Show Zeus · Hide for 1 Hour · Hide Until Tomorrow · Delivery problem… (only when there is one);
+   3. Character ▸ · Size ▸ · Theme ▸;
+   4. Settings… · Check for Updates… · About Zeus;
+   5. Quit Zeus.
+   The menu bar icon can be turned off (Settings › General › Show menu bar icon, default on). There is always an entry point: turning the icon off while Zeus is hidden shows Zeus first; reopening the app shows Zeus, clears a timed hide and opens the conversation (or Settings); the Talk shortcut works either way.
 6. **Delivery warning (amends §5 and §8).**
    - If a reply's target session has been disconnected for more than 60 s, the reply is **rerouted to the assistant session**, with the prefix `(Answer to a question from an earlier session)`.
    - The avatar warning shows **only** when a delivery reaches `failed`, or when items have been pending for more than 2 minutes with no reachable session at all.
