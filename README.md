@@ -1,13 +1,12 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/readme/hero-dark.gif">
-    <img src="docs/readme/hero-light.gif" width="880" alt="Zeus, a pixel-art god on a cloud, thinks, works, then asks “Ship it?” in a speech bubble with Publish and Not yet buttons. Publish is clicked and Zeus cheers.">
+    <img src="docs/readme/hero-light.gif" width="880" alt="Zeus, a pixel-art god on a cloud, asks “Your Q3 review is Thursday at 10. Want me to start the slides?” Start them is clicked, he works through a progress bar, then says “First draft ready.”">
   </picture>
 </p>
 
 <p align="center">
-  <b>A small pixel character on your Mac's desktop that is the face of your AI assistant.</b><br>
-  Claude Code, Codex or OpenCode does the thinking. Zeus is how it talks to you.
+  Compatible with Claude Code, Codex or OpenCode.
 </p>
 
 <p align="center">
@@ -27,9 +26,9 @@ Your assistant works in a terminal you're not watching. Zeus sits on your deskto
 
 - **Shows what it's doing.** Zeus thinks, works and cheers along with your assistant, with a progress bar when there is one.
 - **Asks, and you answer in one click.** When your assistant needs a decision, a speech bubble pops up next to Zeus. Click an answer, or type one.
-- **Hands you finished work.** Files, folders and links arrive with **Open** and **Show in Finder**.
-- **Sends your replies back.** Click Zeus or press ⌥⌘Z, type, and your message goes straight into the running session.
-- **Knows when to be quiet.** Hide it for an hour or until tomorrow, or set quiet hours.
+- **Hands you finished work.** Files, folders and links, ready to open.
+- **Sends your replies back.** Type to Zeus and your message goes straight to your assistant.
+- **Knows when to be quiet.** Set quiet hours and Zeus won't bother you.
 
 <br clear="right">
 
@@ -47,9 +46,7 @@ Your assistant works in a terminal you're not watching. Zeus sits on your deskto
   <img src="docs/readme/settings-light.png" align="left" width="380" alt="Settings › Assistant with “Zeus runs it” selected: Claude Code is running in the Assistant folder, with the tmux attach command, Open in Terminal, Restart and Stop.">
 </picture>
 
-Open **Settings › Assistant**, choose **Zeus runs it**, pick an agent and a folder, and press **Start**.
-
-Zeus starts the assistant in its own tmux session, keeps it running, and picks up the same conversation next time. Peek in whenever you like with **Open in Terminal**, or copy the `tmux attach` command.
+Zeus starts the assistant in its own tmux session, keeps it running, and picks up the same conversation on each launch. Peek in whenever you like with **Open in Terminal**, or copy the `tmux attach` command.
 
 You pick its permission mode. When it asks for permission, you answer right in the chat. Zeus never answers for you.
 
@@ -57,7 +54,7 @@ Already run your assistant yourself? Choose **Connect your own** and Zeus joins 
 
 <br clear="left">
 
-## Pick a character
+## Customize your assistant
 
 <p align="center">
   <picture>
@@ -66,7 +63,7 @@ Already run your assistant yourself? Choose **Connect your own** and Zeus joins 
   </picture>
 </p>
 
-Twelve characters come built in. Or make your own: a character is one JSON file, with no code. See [the sprite format](docs/design/SPRITE_FORMAT.md).
+Twelve cute characters to choose from, or build your own (see [the sprite format](docs/design/SPRITE_FORMAT.md)).
 
 ## How it works
 

@@ -655,16 +655,17 @@ private struct ReadmeChip: View {
 
     static let session = ConnectedSession(id: UUID(), sessionKey: "claude:/Users/alex/Assistant", agent: .claude, cwd: "/Users/alex/Assistant",
                                           clientName: "Claude Code", supportsChannel: true, tmuxPane: nil, connectedAt: t0)
-    static let shipIt = Card(id: "c_ship", kind: .question, title: "Ship it?", body: "Version 1.4 is built and all 412 tests pass. Publish the release now?",
-                             options: [CardOption(id: "y", label: "Publish", style: .primary), CardOption(id: "n", label: "Not yet")])
+    static let startSlides = Card(id: "c_slides", kind: .question, body: "Your Q3 review is Thursday at 10. Want me to start the slides?",
+                                  options: [CardOption(id: "s", label: "Start them", style: .primary), CardOption(id: "n", label: "Not yet")])
+    static let draftReady = Card(id: "c_draft", kind: .message, body: "First draft ready.")
 }
 
-/// The hero: the wordmark, and Zeus going about a task: think, work, ask, get a one-click answer, celebrate.
+/// The hero: the wordmark, and Zeus offering to start a task before a meeting: ask, a one-click answer, work, done.
 private struct ReadmeHero: View {
     let time: Double
     @Environment(\.zeusPalette) private var palette
     static let size = CGSize(width: 880, height: 320)
-    static let seconds = 13.0
+    static let seconds = 12.0
 
     var body: some View {
         let zeus = Readme.character("zeus")
@@ -673,7 +674,7 @@ private struct ReadmeHero: View {
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: ZeusTheme.Spacing.l) {
                     Text("Zeus").font(.custom(ZeusFonts.pixelFamily, size: 66)).foregroundStyle(palette.title)
-                    Text("A pixel friend on your desktop.\nThe face of your AI assistant.")
+                    Text("Your agent. Your assistant.\nYour way.")
                         .font(.custom(ZeusFonts.pixelFamily, size: 16.5)).foregroundStyle(palette.text).lineSpacing(6)
                         .fixedSize()
                     HStack(spacing: ZeusTheme.Spacing.s) {
@@ -686,7 +687,8 @@ private struct ReadmeHero: View {
             HStack(alignment: .bottom, spacing: 0) {
                 Spacer(minLength: 0)
                 // The sprite canvas has empty columns at its sides, so the tail can tuck in.
-                if let bubble { bubble.padding(.bottom, 60).padding(.trailing, -20) }
+                // Every bubble hangs from the same top edge, so the tail always points at Zeus's face.
+                bubble.frame(height: 158, alignment: .top).padding(.trailing, -20)
                 ReadmeSprite(character: zeus, state: state, time: time - since, scale: 4)
             }
             .padding(.trailing, 16).padding(.bottom, 12)
@@ -694,29 +696,47 @@ private struct ReadmeHero: View {
         }
     }
 
-    /// The state at `time` and when it started.
+    /// The state at `time` and when it started. Starts and ends idle with no bubble, so the loop is seamless.
     var phase: (AvatarState, Double) {
         switch time {
-        case ..<1.5: (.idle, 0)
-        case ..<3.5: (.thinking, 1.5)
-        case ..<5.5: (.working, 3.5)
-        case ..<6.2: (.alert, 5.5)
-        case ..<8.2: (.talking, 6.2)
-        case ..<10.6: (.idle, 8.2)
-        default: (.happy, 10.6)
+        case ..<1.2: (.idle, 0)
+        case ..<1.8: (.alert, 1.2)
+        case ..<3.8: (.talking, 1.8)
+        case ..<6.0: (.idle, 3.8)
+        case ..<9.0: (.working, 6.0)
+        case ..<11.4: (.happy, 9.0)
+        default: (.idle, 11.4)
         }
     }
 
-    @ViewBuilder var bubble: (some View)? {
-        if time >= 6.2, time < 10.6 {
-            let card = Readme.shipIt
-            let answered: String? = time >= 9.4 ? "y" : nil
-            let layout = PeekLayout.measure(card: card, font: .pixel, moreCount: 0, error: nil, answeredOptionID: answered,
-                                            available: CGSize(width: 1400, height: 800))
-            PeekContent(card: card, layout: layout, moreCount: 0, error: nil, answeredOptionID: answered,
-                        tail: ZeusDialogTail(edge: .trailing, offset: 34), reveal: .fraction(min(1, (time - 6.2) / 1.6)))
-                .environment(\.zeusAnimationsActive, false)
+    @ViewBuilder var bubble: some View {
+        switch time {
+        case 1.8..<6.0:
+            // The question types out, waits, then "Start them" is clicked.
+            let card = Readme.startSlides
+            let answered: String? = time >= 5.0 ? "s" : nil
+            peek(card, answered: answered, reveal: min(1, (time - 1.8) / 1.6))
+        case 6.0..<9.0:
+            VStack(alignment: .leading, spacing: ZeusTheme.Spacing.s) {
+                Text("Drafting the slides").zeusFont(.button).foregroundStyle(palette.title)
+                ZeusProgressRow(value: min(1, (time - 6.0) / 2.6))
+            }
+            .frame(width: 220)
+            .zeusDialog(tail: ZeusDialogTail(edge: .trailing, offset: 34))
+            .environment(\.zeusAnimationsActive, false)
+        case 9.0..<11.4:
+            peek(Readme.draftReady, answered: nil, reveal: min(1, (time - 9.0) / 0.6))
+        default:
+            EmptyView()
         }
+    }
+
+    private func peek(_ card: Card, answered: String?, reveal: Double) -> some View {
+        let layout = PeekLayout.measure(card: card, font: .pixel, moreCount: 0, error: nil, answeredOptionID: answered,
+                                        available: CGSize(width: 1400, height: 800))
+        return PeekContent(card: card, layout: layout, moreCount: 0, error: nil, answeredOptionID: answered,
+                           tail: ZeusDialogTail(edge: .trailing, offset: 34), reveal: .fraction(reveal))
+            .environment(\.zeusAnimationsActive, false)
     }
 }
 
