@@ -64,6 +64,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     @ObservationIgnored private var tickTask: Task<Void, Never>?
     @ObservationIgnored private var popupSoundGate = PopupSoundGate()
     @ObservationIgnored private let popupSound: any PopupSoundPlaying
+    @ObservationIgnored private(set) var ghost = AvatarGhostState()
+    @ObservationIgnored private var avatarHovered = false
+    @ObservationIgnored private var resizeFixedX: CGFloat?
 
     init(defaults: UserDefaults = .standard, cards: CardStore? = nil, settings: AppSettings? = nil,
          popupSound: any PopupSoundPlaying = SystemPopupSoundPlayer.shared) {
@@ -109,6 +112,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     func start() {
         configure(avatar)
+        // Ghost mode changes only alpha; it never makes Zeus click-through.
+        avatar.ignoresMouseEvents = false
         configure(card)
         configure(peekPanel)
         card.contentView = nil
@@ -139,6 +144,12 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         view.onClick = { [weak self] in self?.toggleCard() }
         view.onMove = { [weak self] point in self?.moveAvatar(to: point) }
         view.onDragEnd = { [weak self] in self?.savePosition() }
+        view.onInteraction = { [weak self] in self?.noteGhostInteraction() }
+        view.onHover = { [weak self] hovered in
+            guard let self, self.avatarHovered != hovered else { return }
+            self.avatarHovered = hovered
+            self.noteGhostInteraction()
+        }
         avatar.contentView = view
         warning.behavior = .transient
         warning.delegate = self
@@ -178,6 +189,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         installLifecycleObservers()
         refreshTimedState()
         observeDeadlineInputs()
+        observeGhostInputs()
+        observeConversationWidth()
+        refreshGhost()
         scheduleDeadline()
         refreshSurfaceActivity()
     }
@@ -214,7 +228,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     func mountConversation() {
         guard !isConversationMounted else { return }
-        card.contentView = NSHostingView(rootView: ConversationView(settings: settings, store: cards, model: conversation,
+        let host = ConversationHostingView(rootView: ConversationView(settings: settings, store: cards, model: conversation,
             messaging: messaging, status: status, panel: cardPanelState, activity: surfaceActivity,
             openSettings: { [weak self] in self?.showSettings(tab: .agent) },
             copySetup: { [weak self] in self?.copySetupCommands() },
@@ -222,9 +236,12 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
                 guard let self, abs(self.cardPanelState.height - height) > 1 else { return }
                 self.cardPanelState.height = height; self.positionCard()
             }))
+        host.resizeHandle.onResize = { [weak self] width, edge in self?.resizeConversation(to: width, edge: edge) }
+        card.contentView = host
     }
 
     func unmountConversation() {
+        resizeFixedX = nil
         card.contentView = nil
         refreshSurfaceActivity()
     }
@@ -237,7 +254,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         scheduledDeadline = LifecycleDeadline.earliest(after: now, candidates: [
             status.nextDeadline, visibility.hiddenUntil, peek.nextDeadline,
             cards.cards.filter { $0.status == .open }.compactMap(\.expiresAt).min(),
-            settings.nextQuietBoundary(after: now)
+            settings.nextQuietBoundary(after: now), ghost.nextDeadline
         ])
         guard !stopped, let deadline = scheduledDeadline else { return }
         tickTask = Task { @MainActor [weak self] in
@@ -254,6 +271,43 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         visibility.tick()
         syncVisibility()
         peek.tick(suppression: peekSuppression)
+        refreshGhost()
+    }
+
+    /// One-shot deadline scheduling, with no polling while faded or inhibited.
+    private func refreshGhost(interaction: Bool = false) {
+        let managedStatus = (messaging.runtime as? any ManagedSessionControlling)?.managedStatus
+        let managedAttention: Bool
+        switch managedStatus { case .starting?, .blocked?, .running(.working)?: managedAttention = true; default: managedAttention = false }
+        ghost.update(at: Date(), configuration: .init(enabled: settings.fadeZeusWhenIdle, opacity: settings.idleOpacity, delay: settings.idleFadeDelay),
+            inputs: .init(visible: isVisible && !visibility.isHidden && !suspended, panelOpen: cardPanelState.isVisible,
+                peekVisible: peek.isVisible || peekPanel.isVisible, hovered: avatarHovered,
+                questionWaiting: cards.hasOpenQuestion || managedAttention,
+                assistantBusy: messaging.assistantActivity != nil || status.activity != nil), interaction: interaction)
+        guard avatar.alphaValue != ghost.alpha else { return }
+        let duration = AvatarGhostState.animationDuration(reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion || !isVisible || suspended)
+        guard duration > 0 else { avatar.alphaValue = ghost.alpha; return }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = duration
+            avatar.animator().alphaValue = ghost.alpha
+        }
+    }
+    func noteGhostInteraction() { refreshGhost(interaction: true); scheduleDeadline() }
+
+    private func observeGhostInputs() {
+        guard !stopped else { return }
+        withObservationTracking {
+            _ = settings.fadeZeusWhenIdle; _ = settings.idleOpacity; _ = settings.idleFadeDelay
+            _ = cardPanelState.isVisible; _ = peek.isVisible
+            _ = messaging.assistantActivity; _ = status.activity
+            _ = (messaging.runtime as? any ManagedSessionControlling)?.managedStatus
+            _ = cards.hasOpenQuestion
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, !self.stopped else { return }
+                self.refreshGhost(); self.scheduleDeadline(); self.observeGhostInputs()
+            }
+        }
     }
 
     private func observeDeadlineInputs() {
@@ -336,6 +390,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             avatar: avatarVisible,
             conversation: cardPanelState.isVisible && visible(card),
             peek: peek.isVisible && visible(peekPanel), settings: visible(settingsWindow))
+        refreshGhost()
+        scheduleDeadline()
     }
 
     private func installLifecycleObservers() {
@@ -415,8 +471,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     private func syncVisibility() {
         if visibility.isHidden {
             hidePeekImmediately()
-            if isVisible { closeCard(); avatar.orderOut(nil); isVisible = false }
+            if isVisible { closeCard(); avatar.orderOut(nil); isVisible = false; avatarHovered = false }
         } else if !isVisible { avatar.orderFrontRegardless(); isVisible = true }
+        refreshGhost()
         refreshSurfaceActivity()
     }
 
@@ -442,6 +499,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     }
 
     func showTalkPanel() {
+        noteGhostInteraction()
         prepareTalkComposition()
         if peek.isVisible { expandPeek(.message); return }
         openConversation(at: nil)
@@ -482,12 +540,14 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         mountConversation()
         positionCard()
         cardPanelState.isVisible = true
+        noteGhostInteraction()
         conversation.openPanel(viewportManaged: true)
         card.makeKeyAndOrderFront(nil)
         refreshSurfaceActivity()
     }
 
     private func closeCard(restoreFocus: Bool = true) {
+        resizeFixedX = nil
         cardPanelState.isVisible = false
         warning.performClose(nil)
         conversation.closePanel()
@@ -524,6 +584,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     }
 
     private func moveAvatar(to origin: CGPoint) {
+        resizeFixedX = nil
         let proposed = CGRect(origin: origin, size: avatar.frame.size)
         guard let screen = PanelPlacement.screen(for: proposed, in: screenRects) else { return }
         avatar.setFrame(PanelPlacement.clamp(proposed, to: screen), display: true)
@@ -583,10 +644,38 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         guard let screen = PanelPlacement.screen(for: avatar.frame, in: screenRects) else { return }
         cardPanelState.screenHeight = screen.height
         let height = cardPanelState.height
-        let placement = DialogPlacement.place(art: screenArtRect, anchor: screenAnchor,
-                                               size: CGSize(width: ZeusTheme.Conversation.panelWidth, height: height), screen: screen)
+        let width = ConversationWidth.clamp(settings.conversationWidth, screenWidth: screen.width)
+        if width >= ConversationWidth.minimum && settings.conversationWidth != width { settings.conversationWidth = width }
+        var placement = DialogPlacement.place(art: screenArtRect, anchor: screenAnchor,
+                                               size: CGSize(width: width, height: height), screen: screen)
+        if let fixed = resizeFixedX, let host = card.contentView as? ConversationHostingView {
+            placement.frame.origin.x = ConversationWidth.origin(fixedX: fixed, width: width, edge: host.resizeHandle.edge, screen: screen)
+            placement.tail.offset = min(max(((screenAnchor.x - placement.frame.minX) / 2).rounded() * 2, 16), width - 16)
+        }
+        cardPanelState.width = placement.frame.width
         cardPanelState.tail = placement.tail
         card.setFrame(placement.frame, display: true)
+        if let host = card.contentView as? ConversationHostingView, resizeFixedX == nil {
+            host.resizeEdge = ConversationWidth.edge(avatarX: screenAnchor.x, panel: placement.frame, screen: screen)
+        }
+    }
+
+    func resizeConversation(to width: CGFloat, edge: ConversationWidth.Edge) {
+        guard let screen = PanelPlacement.screen(for: avatar.frame, in: screenRects) else { return }
+        if resizeFixedX == nil { resizeFixedX = edge == .left ? card.frame.maxX : card.frame.minX }
+        if let host = card.contentView as? ConversationHostingView { host.resizeEdge = edge; host.resizeHandle.edge = edge }
+        settings.conversationWidth = ConversationWidth.clamp(width, screenWidth: screen.width)
+        positionCard()
+    }
+
+    private func observeConversationWidth() {
+        guard !stopped else { return }
+        withObservationTracking { _ = settings.conversationWidth } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, !self.stopped else { return }
+                self.positionCard(); self.observeConversationWidth()
+            }
+        }
     }
 
     private var peekSuppression: PeekModel.Suppression {
@@ -595,6 +684,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     }
 
     private func receivedCard(_ newCard: Card) {
+        noteGhostInteraction()
         if messaging.previewEnabled { messaging.previewActivity = .none }
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         let wasShowing = peek.isVisible
@@ -701,6 +791,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     }
 
     @objc private func screensChanged(_ notification: Notification) {
+        resizeFixedX = nil
         moveAvatar(to: avatar.frame.origin)
         savePosition()
     }

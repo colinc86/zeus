@@ -115,7 +115,7 @@ struct ConversationView: View {
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { composerHeight = $0 }
             }
             .zeusDialog(tail: panel.tail)
-            .frame(width: ZeusTheme.Conversation.panelWidth)
+            .frame(width: panel.width)
             .padding(.bottom, 4)
             .environment(\.zeusAnimationsActive, activity.conversation)
             .environment(\.zeusFontChoice, settings.fontChoice)
@@ -390,7 +390,7 @@ struct ConversationView: View {
                 ZeusSessionLabel(settings.sessionLabels.label(key), colorIndex: ZeusSessionLabel.colorIndex(for: key))
             }
             ConversationVisibleBubble(bubble: ConversationBubble(entry: entry, answerCaption: ConversationLayout.answerCaption(entry, after: previous, sources: sources), showTime: !grouped, shortcuts: entry.sourceCardID == shortcutID,
-                               model: model, settings: settings, isVisible: panel.isVisible,
+                               model: model, settings: settings, isVisible: panel.isVisible, maxWidth: ConversationWidth.bubble(panelWidth: panel.width, user: entry.isUser),
                                openSettings: openSettings, copySetup: copySetup, sessions: messaging.sessions, focus: $focusedControl,
                                onReply: { id in model.rearmReplyTarget(cardID: id); panel.focusRequest += 1 }), visibility: visibility)
                 .background(GeometryReader { geometry in
@@ -421,6 +421,7 @@ private struct ConversationBubble: View, Equatable {
     let model: ConversationModel
     let settings: AppSettings
     var isVisible: Bool
+    let maxWidth: CGFloat
     let openSettings: () -> Void
     let copySetup: () -> Void
     let sessions: [ConnectedSession]
@@ -429,6 +430,7 @@ private struct ConversationBubble: View, Equatable {
     nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.entry == rhs.entry && lhs.answerCaption == rhs.answerCaption && lhs.showTime == rhs.showTime
             && lhs.shortcuts == rhs.shortcuts && lhs.isVisible == rhs.isVisible
+            && lhs.maxWidth == rhs.maxWidth
             && lhs.model === rhs.model && lhs.settings === rhs.settings && lhs.sessions == rhs.sessions
     }
     @State private var attachmentError: String?
@@ -441,7 +443,7 @@ private struct ConversationBubble: View, Equatable {
                 HStack(spacing: 4) { ZeusGlyph(.reply); Text(answerCaption) }
                     .zeusFont(.caption).foregroundStyle(palette.secondaryText)
             }
-            ZeusBubble(entry.isUser ? .user : .agent, muted: entry.isMuted, highPriority: card?.priority == .high) {
+            ZeusBubble(entry.isUser ? .user : .agent, muted: entry.isMuted, highPriority: card?.priority == .high, maxWidth: maxWidth) {
                 if let card {
                     if card.title != nil || card.kind == .progress {
                         ZeusBubbleHeader(title: card.title ?? String(card.body.split(separator: "\n").first ?? ""),
@@ -510,7 +512,7 @@ private struct ConversationBubble: View, Equatable {
                         }
                     }
                 }.zeusFont(.caption).multilineTextAlignment(.trailing)
-                    .frame(maxWidth: ZeusTheme.Conversation.userBubbleMaxWidth, alignment: .trailing)
+                    .frame(maxWidth: maxWidth, alignment: .trailing)
             }
         }.frame(maxWidth: .infinity, alignment: entry.isUser ? .trailing : .leading)
     }

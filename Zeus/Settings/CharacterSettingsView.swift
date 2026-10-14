@@ -26,6 +26,27 @@ struct CharacterSettingsView: View {
                 }
             }
             Button("Reset Avatar Position", action: resetPosition).accessibilityLabel("Reset Avatar Position")
+            Toggle("Fade Zeus when idle", isOn: $settings.fadeZeusWhenIdle).settingsBody()
+            if settings.fadeZeusWhenIdle {
+                HStack {
+                    Text("Idle opacity").settingsBody()
+                    Slider(value: $settings.idleOpacity, in: 0.1...0.9, step: 0.01)
+                        .tint(palette.focusRing)
+                        .accessibilityLabel("Idle opacity")
+                        .accessibilityValue("\(Int((settings.idleOpacity * 100).rounded())) percent")
+                    Text("\(Int((settings.idleOpacity * 100).rounded()))%").settingsBody().monospacedDigit()
+                }
+                HStack {
+                    Text("Fade after").settingsBody()
+                    Slider(value: $settings.idleFadeDelay, in: 5...600, step: 5)
+                        .tint(palette.focusRing)
+                        .accessibilityLabel("Idle fade delay")
+                        .accessibilityValue("\(Int(settings.idleFadeDelay)) seconds")
+                    Text(settings.idleFadeDelay < 60 ? "\(Int(settings.idleFadeDelay)) s" : "\(Int(settings.idleFadeDelay / 60)) min \(Int(settings.idleFadeDelay.truncatingRemainder(dividingBy: 60))) s")
+                        .settingsBody().monospacedDigit()
+                }
+                Text("Point at Zeus to bring it back. Clicks still work while faded. Questions, work and open conversations keep Zeus visible.").settingsCaption()
+            }
             ForEach(settings.characterIssues, id: \.self) { Text($0).settingsError() }
         }
     }

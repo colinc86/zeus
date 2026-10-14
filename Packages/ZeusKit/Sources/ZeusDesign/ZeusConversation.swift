@@ -20,16 +20,19 @@ public struct ZeusBubble<Content: View>: View {
     public var speaker: ZeusSpeaker
     public var isMuted: Bool
     public var isHighPriority: Bool
+    public var maxWidth: CGFloat?
     let content: Content
     @Environment(\.zeusPalette) private var palette
 
     /// - Parameters:
     ///   - muted: the card was dismissed or expired. It stays readable but recedes, and its controls should be removed.
     ///   - highPriority: a gold frame in place of the light one (agent bubbles only).
-    public init(_ speaker: ZeusSpeaker, muted: Bool = false, highPriority: Bool = false, @ViewBuilder content: () -> Content) {
+    ///   - maxWidth: an optional outer bubble limit for a resizable panel. Nil retains the speaker's theme limit.
+    public init(_ speaker: ZeusSpeaker, muted: Bool = false, highPriority: Bool = false, maxWidth: CGFloat? = nil, @ViewBuilder content: () -> Content) {
         self.speaker = speaker
         self.isMuted = muted
         self.isHighPriority = highPriority
+        self.maxWidth = maxWidth
         self.content = content()
     }
 
@@ -53,7 +56,8 @@ public struct ZeusBubble<Content: View>: View {
                     PixelFrame(outline: palette.outline, frame: nil, fill: palette.userBubble)
                 }
             }
-            .frame(maxWidth: agent ? ZeusTheme.Conversation.agentBubbleMaxWidth : ZeusTheme.Conversation.userBubbleMaxWidth,
+            .frame(maxWidth: maxWidth.flatMap { $0.isFinite && $0 > 0 ? max(1, $0.rounded()) : nil }
+                ?? (agent ? ZeusTheme.Conversation.agentBubbleMaxWidth : ZeusTheme.Conversation.userBubbleMaxWidth),
                    alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: agent ? .leading : .trailing)

@@ -50,6 +50,25 @@ final class AppSettings: CharacterControlling, AgentRoutingSettings, OpenCodeSes
     let characterIssues: [String]
     private var selectedCharacterID: String
     var avatarSize: AvatarSize { didSet { defaults.set(avatarSize.rawValue, forKey: "avatar.size") } }
+    var fadeZeusWhenIdle: Bool { didSet { defaults.set(fadeZeusWhenIdle, forKey: "avatar.ghost.enabled") } }
+    private var ghostOpacity: Double
+    private var ghostDelay: TimeInterval
+    private var savedConversationWidth: Double
+    var idleOpacity: Double {
+        get { ghostOpacity }
+        set { ghostOpacity = AvatarGhostState.Configuration.opacity(newValue); defaults.set(ghostOpacity, forKey: "avatar.ghost.opacity") }
+    }
+    var idleFadeDelay: TimeInterval {
+        get { ghostDelay }
+        set { ghostDelay = AvatarGhostState.Configuration.delay(newValue); defaults.set(ghostDelay, forKey: "avatar.ghost.delay") }
+    }
+    var conversationWidth: Double {
+        get { savedConversationWidth }
+        set {
+            savedConversationWidth = newValue.isFinite ? max(Double(ConversationWidth.minimum), newValue.rounded()) : Double(ConversationWidth.minimum)
+            defaults.set(savedConversationWidth, forKey: "conversation.width")
+        }
+    }
     var assistantSessionKey: String? {
         didSet {
             defaults.set(assistantSessionKey, forKey: "agent.assistantSessionKey")
@@ -155,6 +174,11 @@ final class AppSettings: CharacterControlling, AgentRoutingSettings, OpenCodeSes
         selectedCharacterID = library.characters.first { $0.id == saved }?.id
             ?? library.character(id: "zeus")?.id ?? library.characters.first?.id ?? "zeus"
         avatarSize = AvatarSize(rawValue: defaults.string(forKey: "avatar.size") ?? "") ?? .medium
+        fadeZeusWhenIdle = defaults.bool(forKey: "avatar.ghost.enabled")
+        ghostOpacity = AvatarGhostState.Configuration.opacity((defaults.object(forKey: "avatar.ghost.opacity") as? Double) ?? 0.3)
+        ghostDelay = AvatarGhostState.Configuration.delay((defaults.object(forKey: "avatar.ghost.delay") as? Double) ?? 30)
+        let width = (defaults.object(forKey: "conversation.width") as? Double) ?? Double(ConversationWidth.minimum)
+        savedConversationWidth = width.isFinite ? max(Double(ConversationWidth.minimum), width.rounded()) : Double(ConversationWidth.minimum)
         assistantSessionKey = defaults.string(forKey: "agent.assistantSessionKey")
         let backend = AssistantBackend(rawValue: defaults.string(forKey: "agent.backend") ?? "") ?? .claude
         self.backend = backend

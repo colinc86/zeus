@@ -74,19 +74,36 @@ final class AvatarInteractionView: NSHostingView<SpriteAvatarView> {
     var contextMenu: (() -> NSMenu)?
     var onMove: ((CGPoint) -> Void)?
     var onDragEnd: (() -> Void)?
+    var onInteraction: (() -> Void)?
+    var onHover: ((Bool) -> Void)?
+    private var hoverArea: NSTrackingArea?
     private var startMouse = CGPoint.zero
     private var startOrigin = CGPoint.zero
     private var dragged = false
 
     override func hitTest(_ point: NSPoint) -> NSView? { bounds.contains(point) ? self : nil }
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let hoverArea { removeTrackingArea(hoverArea) }
+        let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self)
+        addTrackingArea(area); hoverArea = area
+        if let window {
+            let point = convert(window.mouseLocationOutsideOfEventStream, from: nil)
+            onHover?(window.isVisible && bounds.contains(point))
+        }
+    }
+    override func mouseEntered(with event: NSEvent) { onHover?(true) }
+    override func mouseExited(with event: NSEvent) { onHover?(false) }
 
     override func mouseDown(with event: NSEvent) {
+        onInteraction?()
         startMouse = NSEvent.mouseLocation
         startOrigin = window?.frame.origin ?? .zero
         dragged = false
     }
 
     override func mouseDragged(with event: NSEvent) {
+        onInteraction?()
         let current = NSEvent.mouseLocation
         let dx = current.x - startMouse.x, dy = current.y - startMouse.y
         if !dragged && hypot(dx, dy) < 3 { return }
@@ -95,6 +112,7 @@ final class AvatarInteractionView: NSHostingView<SpriteAvatarView> {
     }
 
     override func rightMouseDown(with event: NSEvent) {
+        onInteraction?()
         if let menu = contextMenu?() { NSMenu.popUpContextMenu(menu, with: event, for: self) }
     }
 
@@ -129,6 +147,7 @@ final class AvatarInteractionView: NSHostingView<SpriteAvatarView> {
     }
 
     override func accessibilityPerformPress() -> Bool {
+        onInteraction?()
         onClick?()
         return true
     }
