@@ -332,7 +332,7 @@ private let t0 = Date(timeIntervalSince1970: 1_791_100_000) // a fixed afternoon
             f.messaging.sessions = [AuditMessaging.claude]
             f.messaging.deliveryIssue = DeliveryIssue(title: "Couldn't reach your assistant", detail: "2 replies couldn't reach Claude Code (~/Projects/Website). It disconnected 6 min ago.", pendingCount: 2, since: t0)
             try await Snap.render("warning-popover", look: look) {
-                DeliveryWarningView(messaging: f.messaging, settings: f.settings, close: {})
+                DeliveryWarningView(messaging: f.messaging, settings: f.settings, managed: ManagedAssistantModel(settings: f.settings, controller: { nil }), close: {}, openSettings: {})
             }
         }
     }
@@ -419,6 +419,26 @@ private let t0 = Date(timeIntervalSince1970: 1_791_100_000) // a fixed afternoon
                     }
                 }
             }
+        }
+    }
+
+    /// N2: Settings › General with Sounds on and the Zeus chime chosen (set directly, so nothing previews or plays).
+    @Test func settingsGeneralSounds() async throws {
+        for look in Snap.Look.basic {
+            let f = Fixture(font: look.font); defer { f.cleanup() }
+            f.settings.popupSoundEnabled = true
+            f.settings.popupSound = .chime
+            // The General pane's own content at full height (the Settings window scrolls it in 572 × 572), with the
+            // styles SettingsView applies to every pane.
+            let view = GeneralSettingsView(settings: f.settings, login: LoginItemModel(), hotKey: GlobalHotKey(), cards: f.store, preview: { _ in })
+                .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
+                .toggleStyle(ZeusCheckboxStyle())
+                .textFieldStyle(ZeusTextFieldStyle())
+                .settingsBody()
+                .frame(width: 524, alignment: .leading).padding(24)
+                .environment(\.zeusFontChoice, .system)
+                .background(Color(nsColor: .windowBackgroundColor))
+            try await Snap.render("settings-general-sounds", look: look, padding: 0, settle: 0.6) { view }
         }
     }
 
