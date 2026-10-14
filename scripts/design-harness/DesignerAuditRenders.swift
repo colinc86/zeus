@@ -833,14 +833,12 @@ extension DesignerAuditRenders {
         hub.previewEnabled = true
         let view = AssistantSettingsView(settings: f.settings, managed: model, messaging: hub, testMessage: ComposeModel(cards: f.store, messaging: hub))
             .frame(width: 524).padding(24)
-            .frame(width: 572, height: 640, alignment: .top).clipped()
-            .overlay(alignment: .bottom) {
-                LinearGradient(colors: [Color(nsColor: .windowBackgroundColor).opacity(0), Color(nsColor: .windowBackgroundColor)], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 90)
-            }
+            // Ends just after the Folder caption, before the Permissions heading.
+            .frame(width: 572, height: 582, alignment: .top).clipped()
+            .padding(.bottom, 20)
             .background(Color(nsColor: .windowBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color(nsColor: .separatorColor)))
-        try await Readme.still("settings-\(look.name)", appearance: look.appearance, size: CGSize(width: 572, height: 640), settle: 0.8, view)
+        try await Readme.still("settings-\(look.name)", appearance: look.appearance, size: CGSize(width: 572, height: 602), settle: 0.8, view)
     }
 }

@@ -51,7 +51,7 @@ Open **Settings › Assistant**, choose **Zeus runs it**, pick an agent and a fo
 
 Zeus starts the assistant in its own tmux session, keeps it running, and picks up the same conversation next time. Peek in whenever you like with **Open in Terminal**, or copy the `tmux attach` command.
 
-You pick its permission mode. When the assistant asks for permission, Zeus shows a card that opens Terminal, so you're always the one who answers.
+You pick its permission mode. When it asks for permission, you answer right in the chat. Zeus never answers for you.
 
 Already run your assistant yourself? Choose **Connect your own** and Zeus joins the session you started.
 
