@@ -24,6 +24,7 @@ final class ConversationPanelState {
     var tail: ZeusDialogTail?
     var screenHeight: CGFloat = 900
     var height: CGFloat = 250
+    var width: CGFloat = ZeusTheme.Conversation.panelWidth
 }
 
 /// Pure presentation rules shared by the thread and its tests.
