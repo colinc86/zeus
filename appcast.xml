@@ -6,6 +6,28 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.1.10</title>
+      <pubDate>Wed, 14 Oct 2026 23:18:41 GMT</pubDate>
+      <sparkle:version>11</sparkle:version>
+      <sparkle:shortVersionString>0.1.10</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Terminal-pane sessions stop "thinking" on time too.</strong> If you connect your own assistant through its Terminal pane, Zeus now reads that pane (only while it's waiting on a reply, never typing into it) and ends the thinking indicator a few seconds after the turn ends, even without the launch hook.</li>
+<li><strong>Honest "off" state.</strong> After you stop the assistant Zeus runs, the menu and the status strip say "Your assistant is off" instead of "Ready to talk" and "Idle".</li>
+<li><strong>Sending from history.</strong> Sending a message while scrolled back in the conversation now returns you to the newest message.</li>
+<li><strong>Settings tabs for VoiceOver and automation.</strong> Each Settings tab now has a real name and reports when it's selected, so screen readers and UI scripting see "General", "Appearance", "Assistant", "Character", "Privacy" and "About".</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.1.10/Zeus-0.1.10.zip" type="application/octet-stream" sparkle:edSignature="R73QVnxgoTucWJygDeGV1xXSmPigyMmteSVfBIhhR+z1CuUoShIMEBVAeb1Tt9nAMNjPaWl//9zIVTd0xTFkBQ==" length="9214459"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.1.9</title>
       <pubDate>Wed, 14 Oct 2026 21:53:12 GMT</pubDate>
       <sparkle:version>10</sparkle:version>
