@@ -1,9 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
   <channel>
     <title>Zeus</title>
     <link>https://github.com/colinc86/zeus</link>
     <description>Zeus releases</description>
     <language>en</language>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.1.5</title>
+      <pubDate>Wed, 14 Oct 2026 01:33:48 GMT</pubDate>
+      <sparkle:version>6</sparkle:version>
+      <sparkle:shortVersionString>0.1.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<p dir="auto">Zeus now keeps itself up to date.</p>
+<ul dir="auto">
+<li><strong>Check for Updates…</strong> in the menu bar menu, and a daily automatic check you can turn off in Settings › General.</li>
+<li>Settings › General shows the version you're running.</li>
+<li>The message box grows as you type, up to six lines.</li>
+<li>Settings shows the terminal command as <code class="notranslate">tmux attach -t zeus</code>.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.1.5/Zeus-0.1.5.zip" type="application/octet-stream" sparkle:edSignature="SWdV2I4DxBSpVUQaRuaDrLjLgMetrAyn9lOSaGzcyNnSFDt1yIE1mbBFsOqJSdWWGp9vS8ZwXBfpWyAYR5PEDQ==" length="7097069"/>
+    </item>
   </channel>
 </rss>
