@@ -64,6 +64,27 @@ private func ownRecorded(_ agent: AgentKind, _ name: String, group: String = "sa
         try await eventually { f.runtime.assistantActivity == nil }
         #expect(f.runtime.managedStatus == .off && f.cards.values.isEmpty && f.runtime.managedDraftAlertCardID == nil)
     }
+    @Test(arguments: [AgentKind.codex, .opencode])
+    func recordedWorkingThenIdleWithHumanDraftEndsWithoutDraftCards(_ agent: AgentKind) async throws {
+        let screen = OwnFakeScreen(), f = try RuntimeFixture(ownScreenReader: screen); defer { f.stop() }
+        _ = connect(f, agent)
+        screen.frame = try ownRecorded(agent, "sa2_shell-working", group: "sa2")
+        #expect(await f.runtime.sendUserMessage("Native work", deliveryID: "d_sa2_draft") == .delivered)
+        try await eventually { f.runtime.activityWorkingSeen.count == 1 }
+        screen.frame = try ownRecorded(agent, "typed-draft", group: "sa2")
+        f.clock.advance(3)
+        try await eventually { f.runtime.assistantActivity == nil }
+        #expect(f.cards.values.isEmpty && !f.runtime.managedDraftWaiting && f.runtime.managedDraftAlertCardID == nil)
+    }
+    @Test func aRecordedPermissionPromptNeitherEndsActivityNorMirrorsACard() async throws {
+        let screen = OwnFakeScreen(), f = try RuntimeFixture(ownScreenReader: screen); defer { f.stop() }
+        _ = connect(f); screen.frame = try managedSnapshot("claude-blocked-permission")
+        #expect(await f.runtime.sendUserMessage("Busy") == .delivered)
+        try await eventually { screen.captures.count == 1 }
+        f.clock.advance(21)
+        try await eventually { screen.captures.count == 2 }
+        #expect(f.runtime.assistantActivity != nil && f.cards.values.isEmpty && f.runtime.managedBlockedCardID == nil)
+    }
     @Test func noImplicitActivityNoSelectionNoMatchingNamespaceMeansNoCapture() async throws {
         let screen = OwnFakeScreen(), f = try RuntimeFixture(ownScreenReader: screen); defer { f.stop() }
         let key = connect(f)

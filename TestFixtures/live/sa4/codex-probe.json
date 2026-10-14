@@ -1,0 +1,629 @@
+{
+  "idle_captures_stopped": true,
+  "launch_argv": [
+    "/CLI/codex",
+    "--no-daemon",
+    "-c",
+    "mcp_servers.zeus.env_vars=[\"TMUX\",\"TMUX_PANE\"]",
+    "-c",
+    "mcp_servers.zeus.tools.zeus_ack.approval_mode=\"approve\"",
+    "-c",
+    "check_for_update_on_startup=false",
+    "-c",
+    "model=\"sa4\"",
+    "-c",
+    "model_provider=\"sa4\"",
+    "-c",
+    "model_providers.sa4={name=\"SA4 localhost\",base_url=\"http://127.0.0.1:49648/v1\",wire_api=\"responses\",requires_openai_auth=false}",
+    "-c",
+    "projects.\"/FIXTURE/project\".trust_level=\"trusted\"",
+    "-a",
+    "never"
+  ],
+  "hooks_absent": true,
+  "settings_selection": "%0",
+  "screen_reads": 4,
+  "native_tools": [],
+  "transcript": [],
+  "agent": "codex",
+  "version": "codex-cli 0.162.1",
+  "launch_command": "user-style launch without hooks",
+  "managed": "off",
+  "private_socket": true,
+  "disposable_home": true,
+  "localhost_model": true,
+  "scenarios": [
+    {
+      "name": "fast",
+      "delivery": "d_sa4_fast",
+      "native_prompt_t": 3.135771249886602,
+      "after_prompt_s": 2.961210833163932,
+      "completion_t": 2.9956667500082403,
+      "ended_t": 6.096982083050534,
+      "after_model_completion_s": 3.101315333042294,
+      "within_5s": true
+    },
+    {
+      "name": "second",
+      "delivery": "d_sa4_second",
+      "native_prompt_t": 7.184449415886775,
+      "after_prompt_s": 3.0026750001125038,
+      "completion_t": 7.08165799989365,
+      "ended_t": 10.187124415999278,
+      "after_model_completion_s": 3.105466416105628,
+      "within_5s": true
+    }
+  ],
+  "frames": {
+    "initial-idle": {
+      "screen": "\n  \u001b[38;5;75m>_ \u001b[1m\u001b[39mOpenAI Codex\u001b[0;2m (v0.162.1)\u001b[0m\n     \u001b[2m/FIXTURE/project\u001b[0m\n\n\u001b[2m  To get started, describe a task or try one of these commands:\u001b[0m\n\n  /init\u001b[2m - create an AGENTS.md file with instructions for Codex\u001b[0m\n  /status\u001b[2m - show current session configuration\u001b[0m\n  /permissions\u001b[2m - choose what Codex is allowed to do\u001b[0m\n  /model\u001b[2m - choose what model and reasoning effort to use\u001b[0m\n  /review\u001b[2m - review any changes and find issues\u001b[0m\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\u001b[1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;5;223msa4 default\u001b[39m · \u001b[38;5;151m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts\n",
+      "inputMetadata": "2|36|120|0|1|"
+    },
+    "fast-native-idle": {
+      "screen": "\n  \u001b[38;5;75m>_ \u001b[1m\u001b[39mOpenAI Codex\u001b[0;2m (v0.162.1)\u001b[0m\n     \u001b[2m/FIXTURE/project\u001b[0m\n\n\u001b[2m  To get started, describe a task or try one of these commands:\u001b[0m\n\n  /init\u001b[2m - create an AGENTS.md file with instructions for Codex\u001b[0m\n  /status\u001b[2m - show current session configuration\u001b[0m\n  /permissions\u001b[2m - choose what Codex is allowed to do\u001b[0m\n  /model\u001b[2m - choose what model and reasoning effort to use\u001b[0m\n  /review\u001b[2m - review any changes and find issues\u001b[0m\n\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa4_fast] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;5;75mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa4_fast\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA4_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA4_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA4_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 4:49 PM\n\u001b[0m\n\n\n\n\n\n\n\n\n\n\u001b[1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;5;223msa4 default\u001b[39m · \u001b[38;5;151m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;5;179m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n",
+      "inputMetadata": "2|36|120|0|1|"
+    },
+    "fast-complete": {
+      "screen": "\n  \u001b[38;5;75m>_ \u001b[1m\u001b[39mOpenAI Codex\u001b[0;2m (v0.162.1)\u001b[0m\n     \u001b[2m/FIXTURE/project\u001b[0m\n\n\u001b[2m  To get started, describe a task or try one of these commands:\u001b[0m\n\n  /init\u001b[2m - create an AGENTS.md file with instructions for Codex\u001b[0m\n  /status\u001b[2m - show current session configuration\u001b[0m\n  /permissions\u001b[2m - choose what Codex is allowed to do\u001b[0m\n  /model\u001b[2m - choose what model and reasoning effort to use\u001b[0m\n  /review\u001b[2m - review any changes and find issues\u001b[0m\n\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa4_fast] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;5;75mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa4_fast\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA4_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA4_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA4_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 4:49 PM\n\u001b[0m\n\n\n\n\n\n\n\n\n\n\u001b[1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;5;223msa4 default\u001b[39m · \u001b[38;5;151m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;5;179m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n",
+      "inputMetadata": "2|36|120|0|1|"
+    },
+    "second-native-idle": {
+      "screen": "  /status\u001b[2m - show current session configuration\u001b[0m\n  /permissions\u001b[2m - choose what Codex is allowed to do\u001b[0m\n  /model\u001b[2m - choose what model and reasoning effort to use\u001b[0m\n  /review\u001b[2m - review any changes and find issues\u001b[0m\n\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa4_fast] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;5;75mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa4_fast\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA4_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA4_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA4_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 4:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa4_second] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;5;75mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa4_second\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA4_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA4_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA4_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 4:49 PM\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;5;223msa4 default\u001b[39m · \u001b[38;5;151m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;5;179m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n",
+      "inputMetadata": "2|36|120|0|1|"
+    },
+    "second-complete": {
+      "screen": "  /status\u001b[2m - show current session configuration\u001b[0m\n  /permissions\u001b[2m - choose what Codex is allowed to do\u001b[0m\n  /model\u001b[2m - choose what model and reasoning effort to use\u001b[0m\n  /review\u001b[2m - review any changes and find issues\u001b[0m\n\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa4_fast] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;5;75mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa4_fast\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA4_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA4_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA4_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 4:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa4_second] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;5;75mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa4_second\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA4_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA4_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA4_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 4:49 PM\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;5;223msa4 default\u001b[39m · \u001b[38;5;151m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;5;179m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n",
+      "inputMetadata": "2|36|120|0|1|"
+    },
+    "final": {
+      "screen": "  /status\u001b[2m - show current session configuration\u001b[0m\n  /permissions\u001b[2m - choose what Codex is allowed to do\u001b[0m\n  /model\u001b[2m - choose what model and reasoning effort to use\u001b[0m\n  /review\u001b[2m - review any changes and find issues\u001b[0m\n\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa4_fast] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;5;75mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa4_fast\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA4_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA4_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA4_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 4:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa4_second] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;5;75mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa4_second\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA4_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA4_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA4_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 4:49 PM\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;5;223msa4 default\u001b[39m · \u001b[38;5;151m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;5;179m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n",
+      "inputMetadata": "2|36|120|0|1|"
+    }
+  },
+  "events": [
+    {
+      "name": "compose",
+      "delivery": "d_sa4_fast",
+      "state": {
+        "activity_delivery": "d_sa4_fast",
+        "avatar": "thinking",
+        "cards": [],
+        "deliveries": [
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa4_fast"
+          }
+        ],
+        "managed": "off",
+        "phase": "sent",
+        "row": "Sent to Codex…",
+        "sampling": true,
+        "screen_reads": 0,
+        "selected_pane": "%0",
+        "sessions": [
+          {
+            "key": "codex:/FIXTURE/project#26787.1792014579315902",
+            "pane": "%0",
+            "socket": "/FIXTURE/tmux.sock"
+          }
+        ],
+        "t": 2.782191038131714
+      }
+    },
+    {
+      "name": "compose",
+      "delivery": "d_sa4_second",
+      "state": {
+        "activity_delivery": "d_sa4_second",
+        "avatar": "thinking",
+        "cards": [],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa4_fast"
+          },
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa4_second"
+          }
+        ],
+        "managed": "off",
+        "phase": "sent",
+        "row": "Sent to Codex…",
+        "sampling": true,
+        "screen_reads": 2,
+        "selected_pane": "%0",
+        "sessions": [
+          {
+            "key": "codex:/FIXTURE/project#26787.1792014579315902",
+            "pane": "%0",
+            "socket": "/FIXTURE/tmux.sock"
+          }
+        ],
+        "t": 6.94126296043396
+      }
+    }
+  ],
+  "timeline": [
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 0,
+      "selected_pane": null,
+      "sessions": [],
+      "t": 0.0004540681838989258
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 0,
+      "selected_pane": null,
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#26787.1792014579315902",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 2.013072967529297
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 0,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#26787.1792014579315902",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 2.1036150455474854
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 0,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#26787.1792014579315902",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 2.6319490671157837
+    },
+    {
+      "activity_delivery": "d_sa4_fast",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": "sent",
+      "row": "Sent to Codex…",
+      "sampling": true,
+      "screen_reads": 0,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#26787.1792014579315902",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 2.805287003517151
+    },
+    {
+      "activity_delivery": "d_sa4_fast",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": "sent",
+      "row": "Sent to Codex…",
+      "sampling": true,
+      "screen_reads": 1,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#26787.1792014579315902",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 2.835258960723877
+    },
+    {
+      "activity_delivery": "d_sa4_fast",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sampling": true,
+      "screen_reads": 1,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#26787.1792014579315902",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 2.8959790468215942
+    },
+    {
+      "activity_delivery": "d_sa4_fast",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sampling": true,
+      "screen_reads": 2,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#26787.1792014579315902",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 5.958557963371277
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 2,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#26787.1792014579315902",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 5.987318992614746
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa4_second"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 2,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#26787.1792014579315902",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 6.851590037345886
+    },
+    {
+      "activity_delivery": "d_sa4_second",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_second"
+        }
+      ],
+      "managed": "off",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sampling": true,
+      "screen_reads": 2,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#26787.1792014579315902",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 6.9659199714660645
+    },
+    {
+      "activity_delivery": "d_sa4_second",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_second"
+        }
+      ],
+      "managed": "off",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sampling": true,
+      "screen_reads": 3,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#26787.1792014579315902",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 6.992213010787964
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_second"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 4,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "codex:/FIXTURE/project#26787.1792014579315902",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 10.053478956222534
+    }
+  ],
+  "model_calls": [
+    {
+      "t": 2.9515140410512686,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_fast",
+      "step": 0,
+      "tool": "zeus_ack",
+      "tool_results": []
+    },
+    {
+      "t": 2.9795101250056177,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_fast",
+      "step": 1,
+      "tool": "exec_command",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c64-80a4-7f53-bf51-921ccb8bfe41",
+          "call_id": "call_2a40ca072aee4bdbb456999ce182cff1",
+          "output": "Wall time: 0.0065 seconds\nOutput:\n{\"acked\":[\"d_sa4_fast\"]}"
+        }
+      ]
+    },
+    {
+      "t": 2.9955160829704255,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_fast",
+      "step": 2,
+      "tool": null,
+      "tool_results": []
+    },
+    {
+      "t": 3.067193041089922,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_fast",
+      "step": 3,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c64-80a4-7f53-bf51-921ccb8bfe41",
+          "call_id": "call_2a40ca072aee4bdbb456999ce182cff1",
+          "output": "Wall time: 0.0065 seconds\nOutput:\n{\"acked\":[\"d_sa4_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c64-80fd-72f1-a518-211107e1cb69",
+          "call_id": "call_575553e7fea346c7bf8bcd71e8205f6b",
+          "output": "Chunk ID: 9b5c23\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA4_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 7.045946375001222,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_second",
+      "step": 0,
+      "tool": "zeus_ack",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c64-80a4-7f53-bf51-921ccb8bfe41",
+          "call_id": "call_2a40ca072aee4bdbb456999ce182cff1",
+          "output": "Wall time: 0.0065 seconds\nOutput:\n{\"acked\":[\"d_sa4_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c64-80fd-72f1-a518-211107e1cb69",
+          "call_id": "call_575553e7fea346c7bf8bcd71e8205f6b",
+          "output": "Chunk ID: 9b5c23\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA4_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 7.062946290941909,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_second",
+      "step": 1,
+      "tool": "exec_command",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c64-80a4-7f53-bf51-921ccb8bfe41",
+          "call_id": "call_2a40ca072aee4bdbb456999ce182cff1",
+          "output": "Wall time: 0.0065 seconds\nOutput:\n{\"acked\":[\"d_sa4_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c64-80fd-72f1-a518-211107e1cb69",
+          "call_id": "call_575553e7fea346c7bf8bcd71e8205f6b",
+          "output": "Chunk ID: 9b5c23\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA4_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c64-909b-7b73-a7fe-25b6a0f62afb",
+          "call_id": "call_8afcd7bb42f34969b894fd0b2f3a4e53",
+          "output": "Wall time: 0.0035 seconds\nOutput:\n{\"acked\":[\"d_sa4_second\"]}"
+        }
+      ]
+    },
+    {
+      "t": 7.081533000105992,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_second",
+      "step": 2,
+      "tool": null,
+      "tool_results": []
+    },
+    {
+      "t": 7.125391457928345,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_second",
+      "step": 3,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c64-80a4-7f53-bf51-921ccb8bfe41",
+          "call_id": "call_2a40ca072aee4bdbb456999ce182cff1",
+          "output": "Wall time: 0.0065 seconds\nOutput:\n{\"acked\":[\"d_sa4_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c64-80fd-72f1-a518-211107e1cb69",
+          "call_id": "call_575553e7fea346c7bf8bcd71e8205f6b",
+          "output": "Chunk ID: 9b5c23\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA4_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c64-909b-7b73-a7fe-25b6a0f62afb",
+          "call_id": "call_8afcd7bb42f34969b894fd0b2f3a4e53",
+          "output": "Wall time: 0.0035 seconds\nOutput:\n{\"acked\":[\"d_sa4_second\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13c64-90da-7380-8470-598e0ce72c28",
+          "call_id": "call_fffce44d0c2c42738f60eae40fd490e6",
+          "output": "Chunk ID: f77c83\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA4_SHELL_DONE"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,666 @@
+{
+  "idle_captures_stopped": true,
+  "launch_argv": [
+    "/CLI/opencode",
+    "--port",
+    "0",
+    "--hostname",
+    "127.0.0.1"
+  ],
+  "hooks_absent": true,
+  "settings_selection": "%0",
+  "screen_reads": 4,
+  "native_tools": [],
+  "transcript": [],
+  "agent": "opencode",
+  "version": "1.18.31",
+  "launch_command": "user-style launch without hooks",
+  "managed": "off",
+  "private_socket": true,
+  "disposable_home": true,
+  "localhost_model": true,
+  "scenarios": [
+    {
+      "name": "fast",
+      "delivery": "d_sa4_fast",
+      "native_prompt_t": 8.768853667192161,
+      "after_prompt_s": 2.46675204182975,
+      "completion_t": 8.496918250108138,
+      "ended_t": 11.235605709021911,
+      "after_model_completion_s": 2.7386874589137733,
+      "within_5s": true
+    },
+    {
+      "name": "second",
+      "delivery": "d_sa4_second",
+      "native_prompt_t": 13.361046249978244,
+      "after_prompt_s": 2.5448577092029154,
+      "completion_t": 13.255094374995679,
+      "ended_t": 15.90590395918116,
+      "after_model_completion_s": 2.650809584185481,
+      "within_5s": true
+    }
+  ],
+  "frames": {
+    "initial-idle": {
+      "screen": "\u001b[38;5;15m\u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m  \u001b[38;5;255mSA4_BOOTSTRAP\u001b[38;5;15m                                                                                                    \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;255mSA4_READY\u001b[38;5;15m\n\n     \u001b[38;5;75m▣ \u001b[38;5;15m \u001b[38;5;255mBuild\u001b[38;5;8m · GPT-4.1 mini · 1.5s\u001b[38;5;15m\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m  \u001b[38;5;75mBuild\u001b[38;5;15m \u001b[38;5;8m·\u001b[38;5;15m \u001b[38;5;255mGPT-4.1 mini\u001b[38;5;15m \u001b[38;5;8mOpenAI\u001b[38;5;15m                                                                                      \u001b[48;5;232m\n  \u001b[38;5;75m╹\u001b[38;5;234m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;5;15m\n   \u001b[38;5;8m/FIXTURE/project\u001b[38;5;15m                                                  \u001b[38;5;8m2 (0%) · $0.00\u001b[38;5;15m  \u001b[38;5;255mctrl+p \u001b[38;5;8mcommands\u001b[38;5;15m\n\n",
+      "inputMetadata": "5|34|120|0|1|"
+    },
+    "fast-native-idle": {
+      "screen": "\u001b[38;5;15m\u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m  \u001b[38;5;255mSA4_BOOTSTRAP\u001b[38;5;15m                                                                                                    \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;255mSA4_READY\u001b[38;5;15m\n\n     \u001b[38;5;75m▣ \u001b[38;5;15m \u001b[38;5;255mBuild\u001b[38;5;8m · GPT-4.1 mini · 1.5s\u001b[38;5;15m\n\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m  \u001b[38;5;255m[zeus delivery_id=d_sa4_fast] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\u001b[38;5;15m              \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;8m⚙\u001b[38;5;15m \u001b[38;5;8mzeus_zeus_ack \u001b[38;5;15m\n\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255m$ printf SA4_SHELL_DONE\u001b[38;5;15m                                                                                          \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255mSA4_SHELL_DONE\u001b[38;5;15m                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;255mSA4_FAST native turn complete.\u001b[38;5;15m\n\n     \u001b[38;5;75m▣ \u001b[38;5;15m \u001b[38;5;255mBuild\u001b[38;5;8m · GPT-4.1 mini · 544ms\u001b[38;5;15m\n\n\n\n\n\n\n\n\n\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m  \u001b[38;5;75mBuild\u001b[38;5;15m \u001b[38;5;8m·\u001b[38;5;15m \u001b[38;5;255mGPT-4.1 mini\u001b[38;5;15m \u001b[38;5;8mOpenAI\u001b[38;5;15m                                                                                      \u001b[48;5;232m\n  \u001b[38;5;75m╹\u001b[38;5;234m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;5;15m\n   \u001b[38;5;8m/FIXTURE/project\u001b[38;5;15m                                                  \u001b[38;5;8m2 (0%) · $0.00\u001b[38;5;15m  \u001b[38;5;255mctrl+p \u001b[38;5;8mcommands\u001b[38;5;15m\n\n",
+      "inputMetadata": "5|34|120|0|1|"
+    },
+    "fast-complete": {
+      "screen": "\u001b[38;5;15m\u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m  \u001b[38;5;255mSA4_BOOTSTRAP\u001b[38;5;15m                                                                                                    \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;255mSA4_READY\u001b[38;5;15m\n\n     \u001b[38;5;75m▣ \u001b[38;5;15m \u001b[38;5;255mBuild\u001b[38;5;8m · GPT-4.1 mini · 1.5s\u001b[38;5;15m\n\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m  \u001b[38;5;255m[zeus delivery_id=d_sa4_fast] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\u001b[38;5;15m              \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;8m⚙\u001b[38;5;15m \u001b[38;5;8mzeus_zeus_ack \u001b[38;5;15m\n\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255m$ printf SA4_SHELL_DONE\u001b[38;5;15m                                                                                          \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255mSA4_SHELL_DONE\u001b[38;5;15m                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;255mSA4_FAST native turn complete.\u001b[38;5;15m\n\n     \u001b[38;5;75m▣ \u001b[38;5;15m \u001b[38;5;255mBuild\u001b[38;5;8m · GPT-4.1 mini · 544ms\u001b[38;5;15m\n\n\n\n\n\n\n\n\n\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m  \u001b[38;5;75mBuild\u001b[38;5;15m \u001b[38;5;8m·\u001b[38;5;15m \u001b[38;5;255mGPT-4.1 mini\u001b[38;5;15m \u001b[38;5;8mOpenAI\u001b[38;5;15m                                                                                      \u001b[48;5;232m\n  \u001b[38;5;75m╹\u001b[38;5;234m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;5;15m\n   \u001b[38;5;8m/FIXTURE/project\u001b[38;5;15m                                                  \u001b[38;5;8m2 (0%) · $0.00\u001b[38;5;15m  \u001b[38;5;255mctrl+p \u001b[38;5;8mcommands\u001b[38;5;15m\n\n",
+      "inputMetadata": "5|34|120|0|1|"
+    },
+    "second-native-idle": {
+      "screen": "\u001b[38;5;15m\u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m  \u001b[38;5;255m[zeus delivery_id=d_sa4_fast] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\u001b[38;5;15m              \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;8m⚙\u001b[38;5;15m \u001b[38;5;8mzeus_zeus_ack \u001b[38;5;15m\n\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255m$ printf SA4_SHELL_DONE\u001b[38;5;15m                                                                                          \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255mSA4_SHELL_DONE\u001b[38;5;15m                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;255mSA4_FAST native turn complete.\u001b[38;5;15m\n\n     \u001b[38;5;75m▣ \u001b[38;5;15m \u001b[38;5;255mBuild\u001b[38;5;8m · GPT-4.1 mini · 544ms\u001b[38;5;15m\n\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m  \u001b[38;5;255m[zeus delivery_id=d_sa4_second] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\u001b[38;5;15m            \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;8m⚙\u001b[38;5;15m \u001b[38;5;8mzeus_zeus_ack \u001b[38;5;15m\n\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255m$ printf SA4_SHELL_DONE\u001b[38;5;15m                                                                                          \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255mSA4_SHELL_DONE\u001b[38;5;15m                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;255mSA4_FAST native turn complete.\u001b[38;5;15m\n\n     \u001b[38;5;75m▣ \u001b[38;5;15m \u001b[38;5;255mBuild\u001b[38;5;8m · GPT-4.1 mini · 717ms\u001b[38;5;15m\n\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m  \u001b[38;5;75mBuild\u001b[38;5;15m \u001b[38;5;8m·\u001b[38;5;15m \u001b[38;5;255mGPT-4.1 mini\u001b[38;5;15m \u001b[38;5;8mOpenAI\u001b[38;5;15m                                                                                      \u001b[48;5;232m\n  \u001b[38;5;75m╹\u001b[38;5;234m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;5;15m\n   \u001b[38;5;8m/FIXTURE/project\u001b[38;5;15m                                                  \u001b[38;5;8m2 (0%) · $0.00\u001b[38;5;15m  \u001b[38;5;255mctrl+p \u001b[38;5;8mcommands\u001b[38;5;15m\n\n",
+      "inputMetadata": "5|34|120|0|1|"
+    },
+    "second-complete": {
+      "screen": "\u001b[38;5;15m\u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m  \u001b[38;5;255m[zeus delivery_id=d_sa4_fast] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\u001b[38;5;15m              \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;8m⚙\u001b[38;5;15m \u001b[38;5;8mzeus_zeus_ack \u001b[38;5;15m\n\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255m$ printf SA4_SHELL_DONE\u001b[38;5;15m                                                                                          \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255mSA4_SHELL_DONE\u001b[38;5;15m                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;255mSA4_FAST native turn complete.\u001b[38;5;15m\n\n     \u001b[38;5;75m▣ \u001b[38;5;15m \u001b[38;5;255mBuild\u001b[38;5;8m · GPT-4.1 mini · 544ms\u001b[38;5;15m\n\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m  \u001b[38;5;255m[zeus delivery_id=d_sa4_second] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\u001b[38;5;15m            \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;8m⚙\u001b[38;5;15m \u001b[38;5;8mzeus_zeus_ack \u001b[38;5;15m\n\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255m$ printf SA4_SHELL_DONE\u001b[38;5;15m                                                                                          \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255mSA4_SHELL_DONE\u001b[38;5;15m                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;255mSA4_FAST native turn complete.\u001b[38;5;15m\n\n     \u001b[38;5;75m▣ \u001b[38;5;15m \u001b[38;5;255mBuild\u001b[38;5;8m · GPT-4.1 mini · 717ms\u001b[38;5;15m\n\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m  \u001b[38;5;75mBuild\u001b[38;5;15m \u001b[38;5;8m·\u001b[38;5;15m \u001b[38;5;255mGPT-4.1 mini\u001b[38;5;15m \u001b[38;5;8mOpenAI\u001b[38;5;15m                                                                                      \u001b[48;5;232m\n  \u001b[38;5;75m╹\u001b[38;5;234m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;5;15m\n   \u001b[38;5;8m/FIXTURE/project\u001b[38;5;15m                                                  \u001b[38;5;8m2 (0%) · $0.00\u001b[38;5;15m  \u001b[38;5;255mctrl+p \u001b[38;5;8mcommands\u001b[38;5;15m\n\n",
+      "inputMetadata": "5|34|120|0|1|"
+    },
+    "final": {
+      "screen": "\u001b[38;5;15m\u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m  \u001b[38;5;255m[zeus delivery_id=d_sa4_fast] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\u001b[38;5;15m              \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;8m⚙\u001b[38;5;15m \u001b[38;5;8mzeus_zeus_ack \u001b[38;5;15m\n\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255m$ printf SA4_SHELL_DONE\u001b[38;5;15m                                                                                          \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255mSA4_SHELL_DONE\u001b[38;5;15m                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;255mSA4_FAST native turn complete.\u001b[38;5;15m\n\n     \u001b[38;5;75m▣ \u001b[38;5;15m \u001b[38;5;255mBuild\u001b[38;5;8m · GPT-4.1 mini · 544ms\u001b[38;5;15m\n\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m  \u001b[38;5;255m[zeus delivery_id=d_sa4_second] Message from the user: SA4_FAST (call zeus_ack with this delivery_id)\u001b[38;5;15m            \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;233m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;8m⚙\u001b[38;5;15m \u001b[38;5;8mzeus_zeus_ack \u001b[38;5;15m\n\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255m$ printf SA4_SHELL_DONE\u001b[38;5;15m                                                                                          \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m  \u001b[38;5;255mSA4_SHELL_DONE\u001b[38;5;15m                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;232m\u001b[48;5;233m┃\u001b[38;5;15m                                                                                                                   \u001b[48;5;232m\n\n     \u001b[38;5;255mSA4_FAST native turn complete.\u001b[38;5;15m\n\n     \u001b[38;5;75m▣ \u001b[38;5;15m \u001b[38;5;255mBuild\u001b[38;5;8m · GPT-4.1 mini · 717ms\u001b[38;5;15m\n\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m                                                                                                                   \u001b[48;5;232m\n  \u001b[38;5;75m┃\u001b[38;5;15m\u001b[48;5;234m  \u001b[38;5;75mBuild\u001b[38;5;15m \u001b[38;5;8m·\u001b[38;5;15m \u001b[38;5;255mGPT-4.1 mini\u001b[38;5;15m \u001b[38;5;8mOpenAI\u001b[38;5;15m                                                                                      \u001b[48;5;232m\n  \u001b[38;5;75m╹\u001b[38;5;234m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;5;15m\n   \u001b[38;5;8m/FIXTURE/project\u001b[38;5;15m                                                  \u001b[38;5;8m2 (0%) · $0.00\u001b[38;5;15m  \u001b[38;5;255mctrl+p \u001b[38;5;8mcommands\u001b[38;5;15m\n\n",
+      "inputMetadata": "5|34|120|0|1|"
+    }
+  },
+  "events": [
+    {
+      "name": "compose",
+      "delivery": "d_sa4_fast",
+      "state": {
+        "activity_delivery": "d_sa4_fast",
+        "avatar": "thinking",
+        "cards": [],
+        "deliveries": [
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa4_fast"
+          }
+        ],
+        "managed": "off",
+        "phase": "sent",
+        "row": "Sent to OpenCode…",
+        "sampling": true,
+        "screen_reads": 0,
+        "selected_pane": "%0",
+        "sessions": [
+          {
+            "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+            "pane": "%0",
+            "socket": "/FIXTURE/tmux.sock"
+          }
+        ],
+        "t": 7.880542993545532
+      }
+    },
+    {
+      "name": "compose",
+      "delivery": "d_sa4_second",
+      "state": {
+        "activity_delivery": "d_sa4_second",
+        "avatar": "thinking",
+        "cards": [],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa4_fast"
+          },
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa4_second"
+          }
+        ],
+        "managed": "off",
+        "phase": "sent",
+        "row": "Sent to OpenCode…",
+        "sampling": true,
+        "screen_reads": 2,
+        "selected_pane": "%0",
+        "sessions": [
+          {
+            "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+            "pane": "%0",
+            "socket": "/FIXTURE/tmux.sock"
+          }
+        ],
+        "t": 12.413627982139587
+      }
+    }
+  ],
+  "timeline": [
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 0,
+      "selected_pane": null,
+      "sessions": [],
+      "t": 0.0004410743713378906
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 0,
+      "selected_pane": null,
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 4.851094007492065
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 0,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 7.165174961090088
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 0,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 7.712975978851318
+    },
+    {
+      "activity_delivery": "d_sa4_fast",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": "sent",
+      "row": "Sent to OpenCode…",
+      "sampling": true,
+      "screen_reads": 0,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 7.895503044128418
+    },
+    {
+      "activity_delivery": "d_sa4_fast",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": "sent",
+      "row": "Sent to OpenCode…",
+      "sampling": true,
+      "screen_reads": 1,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 7.962889075279236
+    },
+    {
+      "activity_delivery": "d_sa4_fast",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sampling": true,
+      "screen_reads": 1,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 8.019837021827698
+    },
+    {
+      "activity_delivery": "d_sa4_fast",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sampling": true,
+      "screen_reads": 2,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 11.062548041343689
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 2,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 11.091472029685974
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa4_second"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 2,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 12.008800983428955
+    },
+    {
+      "activity_delivery": "d_sa4_second",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa4_second"
+        }
+      ],
+      "managed": "off",
+      "phase": "sent",
+      "row": "Sent to OpenCode…",
+      "sampling": true,
+      "screen_reads": 2,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 12.431212067604065
+    },
+    {
+      "activity_delivery": "d_sa4_second",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa4_second"
+        }
+      ],
+      "managed": "off",
+      "phase": "sent",
+      "row": "Sent to OpenCode…",
+      "sampling": true,
+      "screen_reads": 3,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 12.638712048530579
+    },
+    {
+      "activity_delivery": "d_sa4_second",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_second"
+        }
+      ],
+      "managed": "off",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sampling": true,
+      "screen_reads": 3,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 12.667376041412354
+    },
+    {
+      "activity_delivery": "d_sa4_second",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_second"
+        }
+      ],
+      "managed": "off",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sampling": true,
+      "screen_reads": 4,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 15.749951004981995
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa4_second"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sampling": false,
+      "screen_reads": 4,
+      "selected_pane": "%0",
+      "sessions": [
+        {
+          "key": "opencode:/FIXTURE/project#27506.1792014596170702",
+          "pane": "%0",
+          "socket": "/FIXTURE/tmux.sock"
+        }
+      ],
+      "t": 15.779857993125916
+    }
+  ],
+  "model_calls": [
+    {
+      "t": 5.903126500081271,
+      "scenario": "bootstrap",
+      "delivery": null,
+      "step": 0,
+      "tool": null,
+      "tool_results": []
+    },
+    {
+      "t": 6.822793249972165,
+      "scenario": "bootstrap",
+      "delivery": null,
+      "step": 1,
+      "tool": null,
+      "tool_results": []
+    },
+    {
+      "t": 8.062632667133585,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_fast",
+      "step": 0,
+      "tool": "zeus_zeus_ack",
+      "tool_results": []
+    },
+    {
+      "t": 8.187276709126309,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_fast",
+      "step": 1,
+      "tool": "bash",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_0589582e6418408790a521ab19c0d8ff",
+          "output": "{\"acked\":[\"d_sa4_fast\"]}"
+        }
+      ]
+    },
+    {
+      "t": 8.49665233399719,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_fast",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_0589582e6418408790a521ab19c0d8ff",
+          "output": "{\"acked\":[\"d_sa4_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_c4241865ac254f6ea3852b3622bbfd79",
+          "output": "SA4_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 12.733688750071451,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_second",
+      "step": 0,
+      "tool": "zeus_zeus_ack",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_0589582e6418408790a521ab19c0d8ff",
+          "output": "{\"acked\":[\"d_sa4_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_c4241865ac254f6ea3852b3622bbfd79",
+          "output": "SA4_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 13.09475133405067,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_second",
+      "step": 1,
+      "tool": "bash",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_0589582e6418408790a521ab19c0d8ff",
+          "output": "{\"acked\":[\"d_sa4_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_c4241865ac254f6ea3852b3622bbfd79",
+          "output": "SA4_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_a9b53d70b2f94ffda0259e8491703cba",
+          "output": "{\"acked\":[\"d_sa4_second\"]}"
+        }
+      ]
+    },
+    {
+      "t": 13.254941459046677,
+      "scenario": "SA4_FAST",
+      "delivery": "d_sa4_second",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_0589582e6418408790a521ab19c0d8ff",
+          "output": "{\"acked\":[\"d_sa4_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_c4241865ac254f6ea3852b3622bbfd79",
+          "output": "SA4_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_a9b53d70b2f94ffda0259e8491703cba",
+          "output": "{\"acked\":[\"d_sa4_second\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_220cb5fb70804c219a1830d802572268",
+          "output": "SA4_SHELL_DONE"
+        }
+      ]
+    }
+  ]
+}
