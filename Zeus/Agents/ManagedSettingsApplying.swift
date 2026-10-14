@@ -3,7 +3,7 @@ import ZeusProtocol
 
 /// One exact, replaceable request. Desired editor preferences are not launch evidence.
 struct ManagedSettingsApplication: Equatable, Sendable {
-    enum Kind: Equatable, Sendable { case resume, newConversation }
+    enum Kind: Equatable, Sendable { case resume, newConversation, agentUpdate }
     enum Phase: Equatable, Sendable { case waiting, applying }
     let id: UUID
     let configuration: ManagedSessionConfig
@@ -33,4 +33,17 @@ extension ZeusRuntime: ManagedSettingsApplying {
     func applyManagedSettings(_ configuration: ManagedSessionConfig) { managedController.applyManagedSettings(configuration) }
     func switchManagedSettings(_ configuration: ManagedSessionConfig) { managedController.switchManagedSettings(configuration) }
     func cancelManagedSettingsApplication() { managedController.cancelManagedSettingsApplication() }
+}
+
+/// Optional presentation capability for an update installed by the agent itself. No automatic restart.
+@MainActor protocol ManagedAgentUpdating: AnyObject {
+    var managedAgentUpdatePending: Bool { get }
+    var managedAgentUpdateConversationID: String? { get }
+    func restartManagedAgentForUpdate()
+}
+
+extension ZeusRuntime: ManagedAgentUpdating {
+    var managedAgentUpdatePending: Bool { managedController.managedAgentUpdatePending }
+    var managedAgentUpdateConversationID: String? { managedController.managedAgentUpdateConversationID }
+    func restartManagedAgentForUpdate() { managedController.restartManagedAgentForUpdate() }
 }

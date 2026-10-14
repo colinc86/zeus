@@ -107,6 +107,8 @@ final class ConversationModel {
             }
         }
         for (index, notice) in cards.notices.enumerated() {
+            // Update housekeeping never competes with an open question.
+            if notice.kind == .agentUpdate && cards.hasOpenQuestion { continue }
             entries.append((ConversationEntry(id: "notice:\(notice.id)", timestamp: notice.createdAt,
                                              content: notice.kind == .appChange ? .appChange(notice) : .notice(notice)),
                             cards.cards.count + index, false))

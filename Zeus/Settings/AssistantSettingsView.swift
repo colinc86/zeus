@@ -57,6 +57,21 @@ struct AssistantSettingsView: View {
         if case .restarting = managed.status, active {
             TimelineView(.periodic(from: .now, by: 1)) { context in statusPanel(now: context.date) }
         } else { statusPanel(now: Date()) }
+        if managed.agentUpdatePending || managed.agentUpdateRestartPending {
+            HStack(spacing: ZeusTheme.Spacing.s) {
+                caption(managed.agentUpdateRestartPending ? managed.agentUpdateWaitingText : "Update available")
+                if !managed.agentUpdateRestartPending {
+                    KeyboardButton("Restart assistant") { managed.requestAgentUpdateRestart() }
+                        .accessibilityLabel("Restart assistant to use the update")
+                        .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
+                        .disabled(!managed.agentUpdateCanRestart)
+                }
+            }
+        }
+        if case .restartForUpdate(let mode) = managed.confirmation {
+            confirmation("Restart \(managed.agentName) with \(mode.title)? It can run any command and change any file you can, without asking. The conversation is kept.", action: "Restart assistant", cancel: "Later")
+                .id("agentUpdateConfirmation")
+        }
         if managed.confirmation == .newConversation {
             confirmation("Start a new conversation? \(selectedAgentName) starts fresh with these instructions.", action: "Start New")
                 .id("newConversationConfirmation")

@@ -33,6 +33,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     let conversation: ConversationModel
     let testMessage: ComposeModel
     let managed: ManagedAssistantModel
+    @ObservationIgnored private var managedUpdates: ManagedAgentUpdateModel?
     /// "Learn from me" (L1, CONTRACT §13). Its `learnings` is the runtime's `LearningsProviding`.
     let learn: LearnFromMe
     private(set) var isVisible = false
@@ -95,6 +96,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         status = AvatarStatusModel(cards: cards, quietHours: { [weak settings] in settings?.isQuiet(at: $0) ?? false },
                                    assistantActivity: { [weak messaging] in messaging?.assistantActivity })
         super.init()
+        managedUpdates = ManagedAgentUpdateModel(managed: managed, cards: cards)
+        managedUpdates?.onConfirmation = { [weak self] in self?.showSettings(tab: .agent) }
         cards.onHistoryCleared = { [weak self] in
             guard let self else { return }
             self.conversation.pruneClearedHistory()

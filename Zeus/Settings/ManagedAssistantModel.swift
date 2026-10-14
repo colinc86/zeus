@@ -32,6 +32,7 @@ final class ManagedAssistantModel {
         case unrestricted(ManagedPermissionMode)
         case newConversation
         case switchConversation
+        case restartForUpdate(ManagedPermissionMode)
     }
     static let agents: [AgentKind] = [.claude, .codex, .opencode]
     let settings: AppSettings
@@ -43,6 +44,7 @@ final class ManagedAssistantModel {
     private(set) var retainedSession: RetainedManagedSession?
     @ObservationIgnored private let instructionDebouncer: ManagedInstructionsDebouncer
     @ObservationIgnored private var observedConfiguration: ManagedSessionConfig?
+    @ObservationIgnored private var updateConfirmationConversation: String?
     @ObservationIgnored private var confirmedSwitchTarget: ManagedSessionConfig?
     private(set) var modes: [AgentKind: [ManagedPermissionMode]] = [:]
     private(set) var requirements: [AgentKind: String] = [:]
@@ -63,6 +65,23 @@ final class ManagedAssistantModel {
 
     var controller: (any ManagedSessionControlling)? { controllerProvider() }
     private var settingsApplier: (any ManagedSettingsApplying)? { controller as? any ManagedSettingsApplying }
+    var agentUpdater: (any ManagedAgentUpdating)? { controller as? any ManagedAgentUpdating }
+    var agentUpdatePending: Bool { enabled && agentUpdater?.managedAgentUpdatePending == true }
+    var agentUpdateRestartPending: Bool { settingsApplier?.managedSettingsApplication?.kind == .agentUpdate }
+    var agentUpdateRestartError: String? { settingsApplier?.managedSettingsApplicationError }
+    var agentUpdateCanRestart: Bool {
+        agentUpdatePending && hasActiveSession && settingsApplier?.managedCanResumeSettings == true
+            && settingsApplier?.managedSettingsApplication == nil && !switching
+    }
+    var agentUpdateWaitingText: String { "Restarting when \(agentName) is idle…" }
+    /// This action resumes the launched conversation, never a deferred agent/folder selection.
+    func requestAgentUpdateRestart() {
+        guard agentUpdateCanRestart, let applied = currentConfiguration else { return }
+        let modes = controller?.permissionModes(for: applied.agent) ?? []
+        let mode = modes.first { $0.id == applied.permissionModeID } ?? modes.first { $0.isDefault && applied.permissionModeID == nil }
+        if let mode, mode.isUnrestricted { updateConfirmationConversation = agentUpdater?.managedAgentUpdateConversationID; confirmation = .restartForUpdate(mode); return }
+        agentUpdater?.restartManagedAgentForUpdate()
+    }
     var config: ManagedSessionConfig { settings.managedSession ?? AppSettings.newManagedSession(enabled: false) }
     var enabled: Bool { config.enabled }
     var status: ManagedSessionStatus { controller?.managedStatus ?? .off }
@@ -153,6 +172,7 @@ final class ManagedAssistantModel {
             case .failed, .stopped, .off: return "Your changes are saved. Start the assistant to apply them."
             default: break
             }
+            if pending.kind == .agentUpdate { return agentUpdateWaitingText }
             if pending.kind == .newConversation { return "Switching to \(Self.name(pending.configuration.agent)) in \((pending.configuration.folder as NSString).abbreviatingWithTildeInPath) when \(agentName) is ready." }
             if pending.phase == .applying && settingsApplier?.managedCanResumeSettings == true {
                 return "Applying your changes. \(agentName) restarts and keeps the same conversation."
@@ -347,6 +367,11 @@ final class ManagedAssistantModel {
             controller.stopManagedSession()
             // An async Stop may still expose the previous failure until its operation starts.
             if status != previousStatus || (status == .stopped && controller.managedTmuxSessionName == nil) { reconcileStatus() }
+        case .restartForUpdate:
+            // Revalidate after the confirmation; a different conversation or resolved update is not authorized.
+            guard agentUpdateCanRestart, updateConfirmationConversation == agentUpdater?.managedAgentUpdateConversationID else { return }
+            updateConfirmationConversation = nil
+            agentUpdater?.restartManagedAgentForUpdate()
         case .unrestricted(let mode):
             guard permissionModes.contains(mode) else { return }
             update { $0.permissionModeID = mode.id }

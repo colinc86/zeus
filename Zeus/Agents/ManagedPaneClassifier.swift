@@ -18,6 +18,21 @@ enum ManagedPaneClassifier {
         case blocked(reason: String, dialog: String)
         case working, idle, unknown
     }
+    /// An installed update is actionable only in the current editor's footer, never in output or draft text.
+    static func agentUpdatePending(_ snapshot: ManagedPaneSnapshot, agent: AgentKind) -> Bool {
+        guard agent == .claude,
+              let input = TmuxInputSnapshot(metadata: Data(snapshot.inputMetadata.utf8), screen: Data(snapshot.screen.utf8)),
+              let composer = input.claudeInputStart else { return false }
+        let lines = snapshot.plainLines
+        guard let bottomRule = lines.indices.first(where: { index in
+            index > composer && lines[index].trimmingCharacters(in: .whitespaces).count >= 3
+                && lines[index].trimmingCharacters(in: .whitespaces).allSatisfy { $0 == "─" }
+        }) else { return false }
+        return lines.dropFirst(bottomRule + 1).contains {
+            $0.contains("✔ Update installed · Restart to update")
+        }
+    }
+
     static func classify(_ snapshot: ManagedPaneSnapshot, agent: AgentKind) -> Classification {
         let input = TmuxInputSnapshot(metadata: Data(snapshot.inputMetadata.utf8), screen: Data(snapshot.screen.utf8))
         let allLines = snapshot.plainLines

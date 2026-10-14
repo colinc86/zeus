@@ -8,6 +8,8 @@ struct ThreadNotice: Codable, Equatable, Identifiable, Sendable {
         case learning
         /// Reserved for CONTRACT §12's assistant-made changes (AC2), so both share one line style.
         case appChange
+        /// An installed CLI update; restart is always an explicit, safe-moment action.
+        case agentUpdate
     }
     static let keep = 200
 

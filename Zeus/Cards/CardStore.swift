@@ -249,6 +249,12 @@ final class CardStore: CardStoring {
         if let action { noticeActions[notice.id] = (action, doneTitle) }
         return true
     }
+    /// Reconnects an app-owned action after restoring a durable notice, or disables a stale action.
+    func setNoticeAction(id: String, action: (@MainActor () -> Void)?) {
+        guard notices.contains(where: { $0.id == id }) else { return }
+        if let action { noticeActions[id] = (action, nil) }
+        else { noticeActions.removeValue(forKey: id) }
+    }
     /// Whether the line's in-memory action is still available.
     func hasNoticeAction(id: String) -> Bool { noticeActions[id] != nil }
     /// Marks the line done, then runs its action once. A failed history write keeps the action for a retry, and a
