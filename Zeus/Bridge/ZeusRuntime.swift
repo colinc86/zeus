@@ -261,7 +261,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
             do { _ = try acknowledge(ids: ids, sessionKey: session.sessionKey) }
             catch { storageProblem = "Couldn't save polling acknowledgment: \(error.localizedDescription)" }
         }
-        if name == "zeus_ask", result.structured?["status"] == "answered", case .string(let id) = result.structured?["card_id"] {
+        if name == "zeus_ask", result.structured?["status"] == "answered" || result.structured?["status"] == "skipped", case .string(let id) = result.structured?["card_id"] {
             awaitingAnswerReceipt.remove(id)
             let receipt = answerActivityReceipts.removeValue(forKey: id)
             if written {
@@ -352,10 +352,11 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         // Demo cards have no originating agent and are recorded only in UI history.
         guard let target = card.sessionKey else { return }
         var delivery = Delivery(kind: .reply, cardID: card.id, sessionKey: target,
-                                content: "Reply to \"\(card.title ?? card.body)\": \(response.summary)", createdAt: clock.now)
+                                content: response.skipped ? "The user skipped \"\(card.title ?? card.body)\"."
+                                    : "Reply to \"\(card.title ?? card.body)\": \(response.summary)", createdAt: clock.now)
         if let intent = responseJournal?.intents.first(where: { $0.cardID == card.id }) { delivery.id = intent.deliveryID }
-        delivery.meta = ["kind": "reply", "delivery_id": delivery.id, "card_id": card.id]
-        if let option = response.optionID { delivery.meta["option_id"] = option }
+        delivery.meta = ["kind": response.skipped ? "skipped" : "reply", "delivery_id": delivery.id, "card_id": card.id]
+        if !response.skipped, let option = response.optionID { delivery.meta["option_id"] = option }
         let record = DeliveryRecord(delivery: delivery, response: response, disconnectedAt: sessions.contains(where: { $0.sessionKey == target }) ? nil : (disconnectedAt[target] ?? clock.now))
         do {
             if ledger?.record(id: record.delivery.id) == nil { try ledger?.insert(record) }
@@ -371,7 +372,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
 
     func finishWaiter(id: String, result: ToolResult) {
         guard let waiter = waiters.removeValue(forKey: id) else { return }
-        if result.structured?["status"] == "answered" {
+        if result.structured?["status"] == "answered" || result.structured?["status"] == "skipped" {
             completedResponseIDs.append(id)
             if completedResponseIDs.count > 500 { completedResponseIDs.removeFirst(completedResponseIDs.count - 500) }
             if waiter.deferResultCommit {
@@ -392,6 +393,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     }
     func pendingResult(_ id: String) -> ToolResult { result(["status": "pending", "card_id": .string(id)]) }
     func answeredResult(_ id: String, response: CardResponse) -> ToolResult {
+        if response.skipped { return result(["status": "skipped", "card_id": .string(id)]) }
         var json: [String: JSONValue] = ["status": "answered", "card_id": .string(id)]
         if let value = response.optionID { json["option_id"] = .string(value) }
         if let value = response.optionLabel { json["option_label"] = .string(value) }
