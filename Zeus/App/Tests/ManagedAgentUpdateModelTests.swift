@@ -2,6 +2,7 @@ import AppKit
 import Foundation
 import Observation
 import SwiftUI
+import Synchronization
 import Testing
 import ZeusDesign
 import ZeusProtocol
@@ -140,8 +141,14 @@ import ZeusProtocol
         f.pending()
         let restored = CardStore(fileURL: f.root.appendingPathComponent("cards.json"))
         #expect(restored.notices.count == 1 && !restored.hasNoticeAction(id: restored.notices[0].id))
+        let availabilityChanged = Mutex(false)
+        let restoredNoticeID = restored.notices[0].id
+        withObservationTracking {
+            _ = restored.hasNoticeAction(id: restoredNoticeID)
+        } onChange: { availabilityChanged.withLock { $0 = true } }
         let updates = ManagedAgentUpdateModel(managed: f.managed, cards: restored)
         updates.reconcile()
+        #expect(availabilityChanged.withLock { $0 }, "Rebinding the action must refresh an already open native thread")
         #expect(restored.notices.count == 1 && restored.hasNoticeAction(id: restored.notices[0].id))
         f.controller.managedAgentUpdatePending = false; updates.reconcile()
         f.controller.managedAgentUpdatePending = true; updates.reconcile()
