@@ -32,3 +32,7 @@ The full design is in [PRODUCT_PLAN.md](PRODUCT_PLAN.md) and [docs/CONTRACT.md](
 ## Contributing
 
 Read [AGENTS.md](AGENTS.md) (also loaded by `CLAUDE.md`) for the standards every change follows. It works as instructions for coding agents too.
+
+## License
+
+MIT. See [LICENSE](LICENSE). The bundled Departure Mono font is under the SIL Open Font License; its license ships alongside it.
