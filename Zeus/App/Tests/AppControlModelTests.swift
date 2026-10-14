@@ -248,7 +248,7 @@ import ZeusDesign
                 ?? node.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXTitle")?.takeUnretainedValue() as? String
                 ?? ((node as AnyObject).accessibilityLabel?() ?? nil)
         }
-        let undo = try #require(nodes(host).first { (($0 as AnyObject).accessibilityLabel?() ?? nil) == "Undo" })
+        let undo = try #require(nodes(host).first { (($0 as AnyObject).accessibilityLabel?() ?? nil) == "Undo: \(notice.summary)" })
         #expect((undo as AnyObject).accessibilityPerformPress?() == true)
         #expect(f.cards.notices.first?.resolvedTitle == "Undone")
         _ = try await render(ConversationNoticeLine(notice: try #require(f.cards.notices.first), maxWidth: 360, hasAction: false, perform: {}).padding(20),
