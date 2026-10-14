@@ -194,12 +194,13 @@ extension ZeusRuntime {
     }
     private func pollItem(_ record: DeliveryRecord) -> JSONValue {
         let delivery = record.delivery
-        var item: [String: JSONValue] = ["delivery_id": .string(delivery.id), "kind": .string(delivery.kind.rawValue),
-            "text": .string((delivery.meta["earlier_session"] == nil ? "" : Self.earlierSessionPrefix + " ") + (record.response?.text ?? record.response?.summary ?? record.userText ?? delivery.content)),
+        let skipped = record.response?.skipped == true
+        var item: [String: JSONValue] = ["delivery_id": .string(delivery.id), "kind": .string(skipped ? "skipped" : delivery.kind.rawValue),
+            "text": .string((delivery.meta["earlier_session"] == nil ? "" : Self.earlierSessionPrefix + " ") + (skipped ? delivery.content : (record.response?.text ?? record.response?.summary ?? record.userText ?? delivery.content))),
             "created_at": .string(delivery.createdAt.ISO8601Format(.init(includingFractionalSeconds: true)))]
         if let cardID = delivery.cardID { item["card_id"] = .string(cardID) }
-        if let option = record.response?.optionID { item["option_id"] = .string(option) }
-        if let label = record.response?.optionLabel { item["option_label"] = .string(label) }
+        if !skipped, let option = record.response?.optionID { item["option_id"] = .string(option) }
+        if !skipped, let label = record.response?.optionLabel { item["option_label"] = .string(label) }
         return .object(item)
     }
     private func missingCardResult(_ id: String) -> ToolResult {
