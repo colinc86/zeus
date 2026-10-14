@@ -419,3 +419,20 @@ The bubble never takes keyboard focus. Its panel is a non-activating `NSPanel` (
 - [ ] Ignored cards stay unseen (badge and `alert`); any interaction marks the shown card seen.
 - [ ] Above, beside or below placement works at every screen edge and corner, and the bubble follows drags.
 - [ ] No bubble during quiet hours or while hidden.
+- [ ] With **Play a sound when Zeus pops up** on, the sound plays once as the bubble appears (§14.10), never for a replaced bubble, and never more than once in 4 s.
+
+### 14.10 Sound (N2)
+
+An optional sound when the bubble pops up: Settings › General › Sounds › **Play a sound when Zeus pops up**. It's **off by default**: the user asked for it as an option, Zeus already makes no noise unless asked (the typewriter blip is off by default too), and a new sound arriving with an automatic update would surprise people.
+
+| When | Sound? |
+|---|---|
+| The bubble appears (hidden → shown), for any card that pops it (§14.1), questions included | **Yes**, once |
+| A new card replaces a bubble that's already showing | No: same pop-up |
+| Within 4 s of the last sound (`PopupSoundGate.minimumInterval`) | No |
+| Anything that stops the bubble (§14.1): panel open, so the user may be typing there; hidden or snoozed; quiet hours; a macOS Focus Zeus can see | No |
+
+- **Sounds:** **Zeus chime** (default) or the macOS sounds Glass, Ping, Pop and Tink. Choosing one, or turning the toggle on, plays it as a preview.
+- **Zeus chime:** three quick 25%-duty square-wave notes, B5 → E6 → B6 (45, 45 and 160 ms, the last one ringing out), at 20% of full scale. It's generated in code (`ZeusChime`), not a recording.
+- **Volume:** System Sound Services, so it follows the Mac's alert volume and output device (System Settings › Sound), like any alert. Zeus has no volume control of its own.
+- **Accessibility:** the sound adds to the VoiceOver announcement (§14.8); it never replaces it. Reduce Motion doesn't silence it: it's a sound, not motion.

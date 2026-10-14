@@ -155,6 +155,7 @@ When you answer a question or type a message, Zeus saves it before sending anyth
 | A tool says *"Zeus app isn't running"* | Open Zeus. It reconnects by itself. |
 | The character is gone | ⚡ → **Show Zeus**. If it's off screen: Settings → Character → **Reset Avatar Position**. |
 | Zeus looks asleep all day | Settings → Assistant → **Quiet hours**. Equal start and end times mean *all day*. |
+| I want a sound when Zeus pops up (or I don't) | Settings → General → **Sounds**: turn on **Play a sound when Zeus pops up** and pick the Zeus chime or a macOS sound. It plays at your alert volume (System Settings → Sound) and stays quiet while Zeus is hidden, during quiet hours and while the conversation is open. |
 | My own character doesn't show up | Run `zeus-sprites validate` on your folder (§3). Files with errors are skipped. |
 | The assistant posts too often or too rarely | Edit "When to reach out" in your assistant folder's `AGENTS.md`. It's yours to tune. |
 
