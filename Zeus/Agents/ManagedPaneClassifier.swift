@@ -21,11 +21,21 @@ enum ManagedPaneClassifier {
     static func classify(_ snapshot: ManagedPaneSnapshot, agent: AgentKind) -> Classification {
         let input = TmuxInputSnapshot(metadata: Data(snapshot.inputMetadata.utf8), screen: Data(snapshot.screen.utf8))
         let allLines = snapshot.plainLines
+        let codexApproval = agent == .codex && allLines.contains { $0.contains("Would you like to run the following command?") }
+            && allLines.contains {
+                let line = $0.trimmingCharacters(in: .whitespaces)
+                return line.hasPrefix("› ") && line.dropFirst(2).first?.isNumber == true
+            }
+            && allLines.contains { $0.contains("No, and tell Codex") && $0.contains("(esc)") }
+            && (allLines.last { !$0.trimmingCharacters(in: .whitespaces).isEmpty }?.contains("Press enter to confirm") == true)
         // Codex keeps a live editor while working, with its actual work indicator
         // above it. Models, shortcuts, warnings and any other footer content below
         // that composer must never determine readiness. Full-screen dialogs still
         // use their entire capture when the cursor is outside an editable composer.
-        let lines = agent == .codex ? input?.codexInputStart.map { Array(allLines.prefix($0)) } ?? allLines : allLines
+        // The highlighted numbered approval row can use the same › glyph as an
+        // editor. A complete approval widget is a dialog even when its cursor sits
+        // on that row; ordinary composer/footer variants still follow M7's rule.
+        let lines = agent == .codex && !codexApproval ? input?.codexInputStart.map { Array(allLines.prefix($0)) } ?? allLines : allLines
         let text = lines.joined(separator: "\n").lowercased()
         let lastLine = lines.last(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty })?.lowercased() ?? ""
         let footer = lines.suffix(12).joined(separator: "\n").lowercased()

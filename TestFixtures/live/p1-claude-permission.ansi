@@ -1,0 +1,40 @@
+
+[38;5;174m ▐[48;5;16m█▟███▟[39m[49m   [1mClaude Code[0m [38;5;246mv2.1.296[39m
+[38;5;174m▝▜[48;5;16m█████[49m█▀[39m  [38;5;246mHaiku 4.5 · API Usage Billing[39m
+[38;5;174m ▝▝   ▝▝ [39m  [38;5;246m/private/tmp/zp1_h7anxi67/claude/project[39m
+
+
+[38;5;246m[48;5;237m❯ [38;5;231mP1_PERMISSION_claude_7365183A-B4D6-4FAF-BAC2-23DDC96B8875[39m
+
+[38;5;246m[49m [39m Writing the private permission fixture
+[38;5;246m  ⎿  $ printf P1_PROCEEDED > p1-approval.txt[39m
+
+[38;5;153m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[39m [1m[38;5;153mBash command[0m
+ [38;5;246mWrite the private permission fixture[39m
+[38;5;239m╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+[39m printf P1_PROCEEDED > p1-approval.txt
+[38;5;239m╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+[39m Permission rule [1mBash[0m requires confirmation for this command.
+ [38;5;246m/permissions to update rules[39m
+
+ Do you want to proceed?
+ [38;5;153m❯[39m [38;5;246m1. [38;5;153mYes[39m
+   [38;5;246m2. [39mNo
+
+ [38;5;246mEsc to cancel · Tab to amend[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

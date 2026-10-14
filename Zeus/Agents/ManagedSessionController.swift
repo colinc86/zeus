@@ -5,10 +5,10 @@ import ZeusProtocol
 import ZeusDesign
 
 /// Owns exactly one tmux pane and its native conversation. Detaching Zeus never kills the agent.
-/// Visible terminal samples conservatively gate delivery; Zeus never answers agent consent dialogs.
+/// Visible samples gate delivery. Consent choices are sent only after an explicit user click.
 @MainActor
 @Observable
-final class ManagedSessionController: ManagedSessionControlling {
+final class ManagedSessionController: ManagedSessionControlling, ManagedPromptAnswering {
     private(set) var managedStatus: ManagedSessionStatus = .off
     private(set) var record: ManagedSessionRecord?
     @ObservationIgnored var onChange: (() -> Void)?
@@ -39,6 +39,14 @@ final class ManagedSessionController: ManagedSessionControlling {
     @ObservationIgnored private var blockedCandidate: String?
     @ObservationIgnored private var matchingSamples = 0
     @ObservationIgnored private var hasPaneSample = false
+    @ObservationIgnored private var promptEpoch = UUID()
+    @ObservationIgnored private var answeringPrompt = false
+    private(set) var managedPrompt: ManagedAgentPrompt?
+    var promptScope: String {
+        guard let pane = record?.pane else { return activation.uuidString }
+        return [activation.uuidString, promptEpoch.uuidString, record?.owner ?? "", pane.socket, pane.name, pane.id,
+                String(pane.serverPID), pane.sessionNumber, String(pane.pid), String(pane.startTime)].joined(separator: "|")
+    }
     /// Only a positive idle/working sample proves the dialog was answered.
     var mayResolveBlockedCard: Bool {
         switch managedStatus {
@@ -117,6 +125,32 @@ final class ManagedSessionController: ManagedSessionControlling {
               let current = try await hosting.inspect(name: pane.name, owner: record?.owner ?? "", pane: pane),
               current.id == pane.id, !current.dead, current.pid == pane.pid, current.startTime == pane.startTime,
               canAcceptInput, sessionKey == key else { throw ConnectorError.inputBusy }
+    }
+    /// A single click is authorized for this controller activation and exact pane
+    /// lifetime. Shutdown, restart, prompt changes and double-clicks invalidate it.
+    func answerManagedPrompt(fingerprint: String, optionID: String) async -> ManagedPromptAnswerResult {
+        guard attached, enabled, !answeringPrompt, case .blocked = managedStatus,
+              let prompt = managedPrompt, prompt.fingerprint == fingerprint,
+              prompt.options.contains(where: { $0.id == optionID }),
+              let pane = record?.pane, let hosting, let agent = record?.conversation?.agent else { return .changed }
+        answeringPrompt = true; defer { answeringPrompt = false }
+        let scope = promptScope
+        do {
+            let result = try await hosting.answerPrompt(pane, owner: record?.owner ?? "", agent: agent, scope: scope,
+                fingerprint: fingerprint, optionID: optionID, stillAllowed: { [weak self] in
+                    guard let self, self.attached, self.enabled, self.promptScope == scope,
+                          self.managedPrompt?.fingerprint == fingerprint, case .blocked = self.managedStatus else { return false }
+                    return !self.actions.contains(where: { [.stop, .restart, .fresh].contains($0) })
+                })
+            if case .answered = result {
+                clearBlock()
+                // A positive submission receipt invalidates the old question.
+                // A repaint must not resurrect it; normal delivery still waits
+                // for the next positive idle/working sample.
+                setStatus(.running(.unknown))
+            }
+            return result
+        } catch { return .changed }
     }
     func permissionModes(for agent: AgentKind) -> [ManagedPermissionMode] {
         refreshExecutables()
@@ -296,7 +330,7 @@ final class ManagedSessionController: ManagedSessionControlling {
         if sampledLifetime != lifetime {
             hasPaneSample = false
             sampledLifetime = lifetime; graceUntil = clock.now.addingTimeInterval(10)
-            blockedCandidate = nil; matchingSamples = 0; blockedDialog = nil
+            clearBlock()
             setStatus(attached ? .starting : .off)
         }
         startMonitor()
@@ -414,11 +448,14 @@ final class ManagedSessionController: ManagedSessionControlling {
             guard attached, enabled else { return }
             switch ManagedPaneClassifier.classify(snapshot, agent: record?.conversation?.agent ?? .other) {
             case .blocked(let reason, let dialog):
-                let signature = reason + "\n" + dialog
+                let prompt = ManagedPromptParser.parse(snapshot, agent: record?.conversation?.agent ?? .other, scope: promptScope)
+                let signature = prompt?.fingerprint ?? reason + "\n" + dialog
                 matchingSamples = blockedCandidate == signature ? matchingSamples + 1 : 1
                 blockedCandidate = signature
                 if clock.now >= graceUntil, matchingSamples >= 2 {
-                    hasPaneSample = true; blockedDialog = dialog; setStatus(.blocked(reason: reason))
+                    hasPaneSample = true; managedPrompt = prompt
+                    blockedDialog = prompt.map { [$0.title, $0.detail, $0.question].filter { !$0.isEmpty }.joined(separator: "\n\n") } ?? dialog
+                    setStatus(.blocked(reason: reason))
                 } else if case .blocked = managedStatus { /* Hold the existing card until the dialog clears. */ }
                 else { setStatus(hasPaneSample ? .running(.unknown) : .starting) }
             case .idle, .working:
@@ -430,6 +467,7 @@ final class ManagedSessionController: ManagedSessionControlling {
                 // A blank/repainting capture is not evidence that the human answered a dialog.
                 // Reset an unconfirmed candidate; retain a confirmed block until positive evidence.
                 blockedCandidate = nil; matchingSamples = 0
+                managedPrompt = nil
                 if case .blocked = managedStatus { /* Keep the block and its Terminal action. */ }
                 else { blockedDialog = nil; setStatus(hasPaneSample ? .running(.unknown) : .starting) }
             }
@@ -437,7 +475,9 @@ final class ManagedSessionController: ManagedSessionControlling {
             if canAcceptInput || managedStatus == .running(.working) { onChange?() }
         }
     }
-    private func clearBlock() { blockedCandidate = nil; matchingSamples = 0; blockedDialog = nil }
+    private func clearBlock() {
+        blockedCandidate = nil; matchingSamples = 0; blockedDialog = nil; managedPrompt = nil; promptEpoch = UUID()
+    }
     private func exited(_ pane: ManagedPane?) async throws {
         monitor?.cancel(); monitor = nil
         if let pane { record?.pane = pane }

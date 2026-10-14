@@ -73,7 +73,7 @@ struct ManagedDeliveryTests {
         for _ in 0..<3 { f.managed.controller.refresh(); try await f.managed.settle() }
         let card = try #require(f.cards.values.first)
         #expect(f.cards.values.count == 1 && card.priority == .high && card.mood == .alert)
-        #expect(card.options.first?.id == "open-terminal" && f.status.state == .alert)
+        #expect(card.options.contains { $0.id == "open-terminal" } && f.status.state == .alert)
         for _ in 0..<2 {
             f.cards.respond(id: card.id, option: "open-terminal")
             try await f.managed.settle()
