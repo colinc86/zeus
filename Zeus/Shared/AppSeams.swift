@@ -364,3 +364,29 @@ extension CardStoring {
     /// Records an assistant-made change as one thread line with its undo action (§12.5). Default: nothing, until appdev's store implements it.
     func recordAppChange(_ change: AppChange) {}
 }
+
+// MARK: - Learn from me, level 1 (CONTRACT §13)
+
+/// One summary Zeus made on this Mac for the assistant: a morning digest or a moment. Never raw events.
+struct Learning: Codable, Equatable, Identifiable, Sendable {
+    enum Kind: String, Codable, Sendable { case digest, moment }
+    let id: String
+    let kind: Kind
+    let createdAt: Date
+    /// The exact text the assistant receives; also what "View" shows the user.
+    let text: String
+}
+
+/// The learnings store. Implemented in the app (designer, L1), read by platform's runtime for `zeus_get_learnings`
+/// and the MCP notification. Everything is on this Mac; the runtime never sees raw events.
+@MainActor
+protocol LearningsProviding: AnyObject {
+    /// Off unless the user turned on Settings › Privacy › Learn from me.
+    var learningsEnabled: Bool { get }
+    /// Learnings the assistant has not read yet, oldest first.
+    func unreadLearnings() -> [Learning]
+    /// Marks everything up to and including `id` as read.
+    func markLearningsRead(through id: String)
+    /// Set by the runtime; called on the MainActor whenever a new learning is stored.
+    var onNewLearning: ((Learning) -> Void)? { get set }
+}
