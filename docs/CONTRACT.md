@@ -89,6 +89,9 @@ All types are `Codable, Sendable` and public. JSON uses camelCase keys and ISO-8
 | app→bridge | `toolResult` | `callID`, `text` (what the model sees), `structured?: JSONValue`, `isError` |
 | app→bridge | `push` | `deliveryID`, `content`, `meta: [String:String]` |
 | bridge→app | `pushWritten` | `deliveryID`. The notification reached stdout. This does **not** mean the model saw it. |
+| app→bridge | `learning` | `id`, `kind` (`digest` or `moment`), `text` (§13). Sent only to bridges whose hello offered both `channel` and `learningNotifications`; no acknowledgment, and it never consumes unread state. |
+
+`capabilities.learningNotifications: Bool` is optional and defaults to false when absent; a new Claude bridge advertises it alongside `channel`, so old bridges never receive an unknown envelope. Wire version stays 1. `BridgeClient.start` takes an optional `onLearning` callback; learning and push callbacks run serially in wire order and must not await another tool result. Non-channel and legacy sessions obtain learnings by polling `zeus_get_learnings`.
 | bridge→app | `toolResultWritten` | `callID`. The complete correlated MCP result was written and flushed to stdout. |
 | either | `error` | `message` |
 
@@ -435,6 +438,12 @@ Zeus can launch and keep alive **one** assistant session of its own. Connecting 
 
 **Undo.** `CardStoring.recordAppChange` adds a `.appChange` thread item: the summary and one button (`Undo`, or `Show now` for a hide) that runs the change's `undo` closure once and then shows as done. Creating a character or theme and undoing it switches back but keeps the file. Undo is local; nothing is sent to the assistant.
 
+**Arguments and results.** Creation tools take `name` and `json`, where `json` is complete UTF-8 JSON file text validated by the app's real loader. `zeus_move.position` is a named placement or `{screen, x, y}` in screen points. `zeus_hide` requires exactly one of integer `minutes` (1–720) or `until: "tomorrow"`. Appearance argument names are the snake_case equivalents of `AppearancePatch`; omitted fields are unchanged. Unknown arguments are rejected. Turning quiet hours off is rejected while any open Zeus question exists, without revealing the question's content or creator. State and update-check results use their seam types' Codable fields. `AppChange`-returning mutators return `{ok: true, summary}`; `zeus_set_character` keeps `{ok, previous, current}`. `AppControlError` file, argument and updater messages are returned verbatim as the compact JSON result's `error` value with `isError`. Validation failures post no chat line. Update checks are gated by the master switch too.
+
+**Update flow, precisely.** Each session must have seen the exact version in its own successful `zeus_check_for_updates`. Installation announces "Updating to X — back in a few seconds", then waits for that session's other in-flight Zeus tool calls, waiting asks, transport sends and journaled pastes, and for the managed session's blocking prompt to clear. After 60 seconds it proceeds anyway, provided the runtime is still active and both control switches remain enabled. Installation is irreversible: its announcement is the history line, and there is no Undo. If installation fails after the announcement, the reason is added to the calling session's thread, returned by this call, and returned once more by that session's next tool call; other sessions never receive it.
+
+**Card ownership.** Card update and dismiss tools cannot reach another session's card or change local native-prompt or Terminal notices. An explicit delivery-ledger handoff lets the receiving session update its earlier session's card, preserving §4's rerouting.
+
 **Instructions** (AssistantTemplate and `ZeusMCP.instructions`): change the look only when the user asks or for something you just made at their request; prefer `near-active-window` over coordinates; don't move Zeus while the user is typing to it; read the formats from `zeus_app_state.formats` before writing a character or theme; install an update only when the user asks or told you to keep Zeus current.
 
 ---
@@ -449,4 +458,6 @@ Zeus can launch and keep alive **one** assistant session of its own. Connecting 
 
 **UI.** Settings › Privacy: the switch (with a one-time sheet listing the scope and the caveat), "What Zeus has recorded" (today's list), Pause for today, Delete everything, the excluded-apps list, retention. Caption: "Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac."
 
-**Seams.** `LearningsProviding` (appdev/designer implement, runtime reads): `func unreadLearnings() -> [Learning]`, `func markRead(through id: String)`, plus an `onNewLearning` callback the runtime turns into the notification. Defined in `Zeus/Shared/AppSeams.swift` when the first branch lands.
+**Seams.** `LearningsProviding` (the app's `LearningsStore` implements it, the runtime reads it): `unreadLearnings()`, `markLearningsRead(through:)` and the `onNewLearning` callback the runtime turns into the notification. The runtime owns `onNewLearning` while started and releases it at stop. The store owns the quiet "Sent your daily summary · View" thread line.
+
+**Consumption.** `zeus_get_learnings` returns `{learnings: [Learning]}` oldest first, in batches bounded by the link's 4 MiB frame. Disabled learning returns an empty array. Only a successfully written tool result marks everything through its last returned learning ID as read; failed writes and disconnects consume nothing, and announcements never mark read. The MCP notification is exactly `notifications/zeus/learning` with `{id, kind, text}`. No raw events cross either interface.

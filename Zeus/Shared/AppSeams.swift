@@ -21,6 +21,9 @@ protocol CardStoring: AnyObject {
     /// Set by the runtime. The store calls it exactly once per user response, on the MainActor,
     /// right after it records `card.response` and sets `status = .answered`.
     var responseHandler: ((Card, CardResponse) -> Void)? { get set }
+    /// Records an assistant-made change as one thread line with its undo action (§12.5). A protocol requirement so the
+    /// runtime's call through `any CardStoring` reaches the concrete store; the extension below is the default.
+    func recordAppChange(_ change: AppChange)
 }
 
 /// Avatar status inputs (CONTRACT §7). Implemented by appdev, driven by the runtime.
