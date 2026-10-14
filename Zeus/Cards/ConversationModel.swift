@@ -18,6 +18,8 @@ struct ConversationEntry: Identifiable, Equatable, Sendable {
         case agentCard(Card)
         case userMessage(Card)
         case userAnswer(cardID: String, response: CardResponse)
+        /// A quiet app-owned line, e.g. "Sent your daily summary · View" (L1).
+        case notice(ThreadNotice)
     }
     let id: String
     let timestamp: Date
@@ -25,8 +27,9 @@ struct ConversationEntry: Identifiable, Equatable, Sendable {
     var outcome: ConversationOutcome?
 
     var isUser: Bool {
-        switch content { case .agentCard: false; case .userMessage, .userAnswer: true }
+        switch content { case .agentCard, .notice: false; case .userMessage, .userAnswer: true }
     }
+    var isNotice: Bool { if case .notice = content { return true }; return false }
     var isMuted: Bool {
         if case .agentCard(let card) = content { return card.status == .dismissed || card.status == .expired }
         return false
@@ -35,12 +38,14 @@ struct ConversationEntry: Identifiable, Equatable, Sendable {
         switch content {
         case .agentCard(let card), .userMessage(let card): card.id
         case .userAnswer(let id, _): id
+        case .notice(let notice): notice.id
         }
     }
     var body: String {
         switch content {
         case .agentCard(let card), .userMessage(let card): card.body
         case .userAnswer(_, let response): response.summary
+        case .notice(let notice): notice.summary
         }
     }
 }
@@ -98,6 +103,10 @@ final class ConversationModel {
                                                    content: .userAnswer(cardID: card.id, response: response),
                                                    outcome: .recordedReply), index, true))
             }
+        }
+        for (index, notice) in cards.notices.enumerated() {
+            entries.append((ConversationEntry(id: "notice:\(notice.id)", timestamp: notice.createdAt, content: .notice(notice)),
+                            cards.cards.count + index, false))
         }
         cachedThread = entries.sorted {
             if $0.entry.timestamp != $1.entry.timestamp { return $0.entry.timestamp < $1.entry.timestamp }

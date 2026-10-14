@@ -1,0 +1,188 @@
+import Foundation
+import Observation
+
+/// "Learn from me", level 1 (CONTRACT §13): ties the recorder, the raw store, the summarizer and the learnings
+/// together, and is what Settings › Privacy shows. Off by default; records only while the switch is on.
+@MainActor
+@Observable
+final class LearnFromMe {
+    let settings: LearnSettings
+    /// Nil when there's no Activity folder (tests that pass no folder); the switch then can't be turned on.
+    @ObservationIgnored let files: ActivityStore?
+    let learnings: LearningsStore?
+    /// Today's raw events for "What Zeus has recorded".
+    private(set) var today: [ActivityEvent] = []
+    private(set) var writeError: String?
+    @ObservationIgnored private let makeSource: () -> any ActivityEventSource
+    @ObservationIgnored private let clock: () -> Date
+    @ObservationIgnored private let calendar: Calendar
+    @ObservationIgnored private var recorder: ActivityRecorder?
+    @ObservationIgnored private var ticker: Task<Void, Never>?
+    @ObservationIgnored private var lastTickDay: String?
+    @ObservationIgnored private var startCache: [String: Date?] = [:]
+    /// Set by the app: "Delete everything" also removes the summaries' thread lines.
+    @ObservationIgnored var onDeleteEverything: (() -> Void)?
+
+    init(settings: LearnSettings, root: URL?, calendar: Calendar = .current, clock: @escaping () -> Date = Date.init,
+         source: @escaping () -> any ActivityEventSource = { WorkspaceActivitySource() }) {
+        self.settings = settings
+        self.calendar = calendar
+        self.clock = clock
+        makeSource = source
+        let files = root.map { ActivityStore(root: $0, calendar: calendar) }
+        self.files = files
+        learnings = files.map { files in LearningsStore(files: files, isEnabled: { [weak settings] in settings?.enabled ?? false }) }
+    }
+
+    var isAvailable: Bool { files != nil }
+    var isRecording: Bool { recorder?.isRunning ?? false }
+    var isPausedNow: Bool { settings.isPaused(at: clock()) }
+
+    /// App launch: prune old files, then record if the switch is on.
+    func start() {
+        prune()
+        if settings.enabled { startRecording() }
+        refreshToday()
+    }
+    func stop() {
+        ticker?.cancel()
+        ticker = nil
+        recorder?.stop()
+        recorder = nil
+    }
+
+    /// The switch. Turning it off stops recording and keeps what's stored until it ages out or is deleted.
+    func setEnabled(_ on: Bool) {
+        guard isAvailable else { return }
+        settings.enabled = on
+        if on { startRecording() } else { stop() }
+    }
+
+    func pauseForToday() {
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: clock())) ?? clock().addingTimeInterval(86_400)
+        settings.pausedUntil = tomorrow
+    }
+    func resume() { settings.pausedUntil = nil }
+
+    /// Removes every raw event and summary. Recording continues if the switch is on.
+    func deleteEverything() {
+        files?.deleteEverything()
+        learnings?.reset()
+        startCache.removeAll()
+        today = []
+        onDeleteEverything?()
+    }
+
+    func refreshToday() { today = files?.events(on: clock()) ?? [] }
+
+    /// The idle poll, the "winding down" check and the midnight prune. The app calls it every 30 s while recording.
+    func tick(now: Date? = nil) {
+        let now = now ?? clock()
+        recorder?.tick(now: now)
+        if let files {
+            let day = files.dayKey(now)
+            if let lastTickDay, lastTickDay != day { prune() }
+            lastTickDay = day
+        }
+        if let idleSince = recorder?.idleSince, let moment = LearningSummarizer.windingDown(idleSince: idleSince, now: now, calendar: calendar) {
+            send([moment], at: now)
+        }
+    }
+
+    /// Writes one event, then makes any digest or moments it triggers.
+    func record(_ event: ActivityEvent) {
+        guard let files else { return }
+        let earlier = calendar.isDate(event.t, inSameDayAs: clock()) && !today.isEmpty ? today : files.events(on: event.t)
+        do { try files.append(event); writeError = nil } catch {
+            writeError = "Zeus couldn't save today's activity. \(error.localizedDescription)"
+            return
+        }
+        if calendar.isDate(event.t, inSameDayAs: clock()) { refreshToday() }
+        guard event.showsPresence else { return }
+        sendDigestIfDue(now: event.t)
+        let median = LearningSummarizer.medianStart(previousStarts(before: event.t), calendar: calendar)
+        send(LearningSummarizer.moments(after: event, earlier: earlier, medianStart: median, calendar: calendar), at: event.t)
+    }
+
+    /// Morning-of: at the first activity of a new day, summarize the most recent earlier day not yet summarized.
+    func sendDigestIfDue(now: Date) {
+        guard let files, let learnings else { return }
+        let todayStart = calendar.startOfDay(for: now)
+        guard let weekAgo = calendar.date(byAdding: .day, value: -7, to: todayStart) else { return }
+        let pending = files.recordedDays().filter { $0 < todayStart && $0 >= weekAgo && !learnings.isDigested(files.dayKey($0)) }
+        guard let day = pending.last else { return }
+        learnings.markDigested(pending.map(files.dayKey))
+        guard let text = LearningSummarizer.digest(day: day, events: files.events(on: day), previousStarts: previousStarts(before: day),
+                                                    excluded: settings.excludedApps, calendar: calendar) else { return }
+        learnings.add(.digest, text: text, at: now)
+    }
+
+    private func send(_ moments: [Moment], at date: Date) {
+        guard let files, let learnings else { return }
+        let key = files.dayKey(date)
+        for moment in LearningSummarizer.gate(moments, ticked: settings.momentKinds, sentToday: learnings.momentsSent(on: key)) {
+            learnings.add(.moment, text: moment.text, at: date, moment: moment.kind, dayKey: key)
+        }
+    }
+
+    /// First activity of each of the 28 days before `date`, for the usual start time.
+    private func previousStarts(before date: Date) -> [Date] {
+        guard let files else { return [] }
+        let start = calendar.startOfDay(for: date)
+        guard let from = calendar.date(byAdding: .day, value: -28, to: start) else { return [] }
+        return files.recordedDays().filter { $0 >= from && $0 < start }.compactMap { day in
+            let key = files.dayKey(day)
+            if let cached = startCache[key] { return cached }
+            let first = LearningSummarizer.stats(files.events(on: day), excluded: settings.excludedApps).firstActivity
+            startCache[key] = first
+            return first
+        }
+    }
+
+    private func prune() {
+        files?.prune(now: clock(), keepingDays: settings.retentionDays)
+        learnings?.prune(now: clock(), calendar: calendar)
+        startCache.removeAll()
+    }
+
+    private func startRecording() {
+        guard recorder == nil, isAvailable else { return }
+        let recorder = ActivityRecorder(source: makeSource(),
+                                        isExcluded: { [weak settings] in settings?.isExcluded(bundleID: $0, name: $1) ?? true },
+                                        isPaused: { [weak settings] in settings?.isPaused(at: $0) ?? true },
+                                        clock: clock) { [weak self] in self?.record($0) }
+        self.recorder = recorder
+        recorder.start()
+        ticker = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(30))
+                self?.tick()
+            }
+        }
+    }
+}
+
+extension LearnFromMe {
+    /// The thread line for a learning: "Sent your daily summary", or "Sent a note: back from a break".
+    nonisolated static func noticeSummary(_ learning: Learning) -> String {
+        guard learning.kind == .moment else { return "Sent your daily summary" }
+        let kind = MomentKind.allCases.first { learning.text.hasPrefix(momentPrefix($0)) }
+        return kind.map { "Sent a note: \($0.noticeName)" } ?? "Sent a note"
+    }
+    nonisolated private static func momentPrefix(_ kind: MomentKind) -> String {
+        switch kind {
+        case .firstActivity: "First activity today"
+        case .backFromBreak: "Back at the Mac"
+        case .lateStart: "Later start than usual"
+        case .windingDown: "Day winding down"
+        }
+    }
+}
+
+extension ThreadNotice {
+    /// The thread line for a learning, with "View" showing the exact text the assistant receives.
+    static func learning(_ learning: Learning) -> ThreadNotice {
+        ThreadNotice(id: "n_" + learning.id, kind: .learning, createdAt: learning.createdAt,
+                     summary: LearnFromMe.noticeSummary(learning), actionTitle: "View", detail: learning.text)
+    }
+}

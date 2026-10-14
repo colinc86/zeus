@@ -32,6 +32,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     let conversation: ConversationModel
     let testMessage: ComposeModel
     let managed: ManagedAssistantModel
+    /// "Learn from me" (L1, CONTRACT §13). Its `learnings` is the runtime's `LearningsProviding`.
+    let learn: LearnFromMe
     private(set) var isVisible = false
     /// The composition point can set this when ZeusRuntime.start() fails.
     var runtimeError: String? { didSet { messaging.startupError = runtimeError } }
@@ -84,6 +86,11 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         managed = ManagedAssistantModel(settings: settings, controller: { [weak messaging] in messaging?.runtime as? any ManagedSessionControlling })
         conversation = ConversationModel(cards: cards, messaging: messaging)
         testMessage = ComposeModel(cards: cards, messaging: messaging)
+        // ZeusPaths.activity in the app; next to a test's own Characters folder otherwise, and none when a test passes no
+        // folder, so tests never see the real one.
+        learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: settings.userCharacterDirectory.map {
+            $0 == ZeusPaths.userCharacters ? ZeusPaths.activity : $0.deletingLastPathComponent().appendingPathComponent("Activity", isDirectory: true)
+        })
         status = AvatarStatusModel(cards: cards, quietHours: { [weak settings] in settings?.isQuiet(at: $0) ?? false },
                                    assistantActivity: { [weak messaging] in messaging?.assistantActivity })
         super.init()
@@ -94,6 +101,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             self.settings.pruneSessionLabels(keeping: Set(self.cards.cards.compactMap(\.sessionKey) + self.messaging.sessions.map(\.sessionKey)))
         }
         cards.onAdd = { [weak self] newCard in self?.receivedCard(newCard) }
+        learn.learnings?.onRecorded = { [weak cards] in cards?.recordNotice(.learning($0)) }
+        learn.onDeleteEverything = { [weak cards] in cards?.removeNotices(kind: .learning) }
     }
 
     var unreadCountText: String { "\(cards.unseenCount) unread \(cards.unseenCount == 1 ? "message" : "messages")" }
@@ -116,6 +125,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     func start() {
         settings.startWatchingUserFolders()
+        learn.start()
         configure(avatar)
         // Ghost mode changes only alpha; it never makes Zeus click-through.
         avatar.ignoresMouseEvents = false
@@ -206,6 +216,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         stopped = true
         dismissDraftCancellation()
         settings.stopWatchingUserFolders()
+        learn.stop()
         tickTask?.cancel()
         closingTask?.cancel()
         peekExitTask?.cancel()
@@ -880,7 +891,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
                                                                       messaging: messaging, preview: messaging, testMessage: testMessage,
                                                                       injectDemo: { [weak self] in self?.injectDemo($0) },
                                                                       resetPosition: { [weak self] in self?.resetPosition() },
-                                                                      navigation: settingsNavigation, login: login, hotKey: hotKey, activity: surfaceActivity, updater: updater))
+                                                                      navigation: settingsNavigation, login: login, hotKey: hotKey, activity: surfaceActivity, updater: updater, learn: learn))
             host.sizingOptions = []
             window.contentView = host
             SettingsWindowSize.restore(window, from: defaults, screen: NSScreen.main)

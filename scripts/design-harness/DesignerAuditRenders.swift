@@ -137,6 +137,14 @@ import ZeusSprites
     }
 }
 
+@MainActor private final class AuditActivitySource: ActivityEventSource {
+    func start(_ handler: @escaping @MainActor (ActivitySignal) -> Void) {}
+    func stop() {}
+    var secondsSinceLastInput: TimeInterval { 0 }
+    var frontmostApp: (bundleID: String?, name: String?)? { nil }
+    var displayCount: Int { 1 }
+}
+
 @MainActor private final class Fixture {
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-q2-\(UUID())")
     let defaults: UserDefaults
@@ -416,7 +424,9 @@ private let t0 = Date(timeIntervalSince1970: 1_791_100_000) // a fixed afternoon
                     let nav = SettingsNavigation(); nav.tab = tab
                     let view = SettingsView(settings: f.settings, managed: ManagedAssistantModel(settings: f.settings, controller: { nil }), cards: f.store, status: f.status, messaging: hub, preview: hub,
                                             testMessage: ComposeModel(cards: f.store, messaging: hub), injectDemo: { _ in }, resetPosition: {},
-                                            navigation: nav, login: LoginItemModel(), hotKey: GlobalHotKey(), activity: f.activity)
+                                            navigation: nav, login: LoginItemModel(), hotKey: GlobalHotKey(), activity: f.activity,
+                                            learn: LearnFromMe(settings: LearnSettings(defaults: f.defaults), root: f.root.appendingPathComponent("Activity"),
+                                                               source: { AuditActivitySource() }))
                     try await Snap.render("settings-\(tab.rawValue.lowercased())\(connected ? "-connected" : "")", look: look, padding: 0, settle: 0.6) {
                         view.background(Color(nsColor: .windowBackgroundColor))
                     }
@@ -488,6 +498,39 @@ private let t0 = Date(timeIntervalSince1970: 1_791_100_000) // a fixed afternoon
                                                                    detail: "Drafting release notes", progress: 0.35, since: t0)
                 try await Snap.render("theme-\(theme.id)", look: look, settle: 0.6) { f.conversation() }
             }
+        }
+    }
+
+    /// L1: Settings › Privacy at full height with "Learn from me" on and a morning's events, the one-time sheet, and the
+    /// thread's quiet "Sent your daily summary · View" line. A fake source and a temporary Activity folder only.
+    @Test func privacy() async throws {
+        let morning = Calendar.current.startOfDay(for: t0).addingTimeInterval(8 * 3600 + 42 * 60)
+        for look in Snap.Look.basic {
+            let f = Fixture(font: .system); defer { f.cleanup() }
+            let learn = LearnFromMe(settings: LearnSettings(defaults: f.defaults), root: f.root.appendingPathComponent("Activity"),
+                                    clock: { morning.addingTimeInterval(3 * 3600) }, source: { AuditActivitySource() })
+            learn.settings.introShown = true
+            learn.setEnabled(true)
+            let events: [(Double, ActivityEvent.Kind, String?)] = [(0, .unlock, nil), (2, .activate, "Things"), (14, .activate, "Xcode"),
+                (108, .private, nil), (113, .activate, "Xcode"), (143, .idle, nil), (171, .active, nil), (171, .activate, "Safari")]
+            for (minutes, kind, name) in events {
+                learn.record(ActivityEvent(t: morning.addingTimeInterval(minutes * 60), kind: kind, name: name, seconds: kind == .private ? 300 : nil))
+            }
+            let view = PrivacySettingsView(learn: learn)
+                .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
+                .toggleStyle(ZeusCheckboxStyle())
+                .settingsBody()
+                .frame(width: 524, alignment: .leading).padding(24)
+                .environment(\.zeusFontChoice, .system)
+                .background(Color(nsColor: .windowBackgroundColor))
+            try await Snap.render("settings-privacy-full", look: look, padding: 0, settle: 0.6) { view }
+            try await Snap.render("settings-privacy-sheet", look: look, padding: 0, settle: 0.6) {
+                LearnIntroSheet(turnOn: {}, notNow: {}).background(Color(nsColor: .windowBackgroundColor))
+            }
+            longThread(f)
+            f.store.recordNotice(ThreadNotice(kind: .learning, createdAt: t0.addingTimeInterval(3600), summary: "Sent your daily summary",
+                                              actionTitle: "View", detail: "Zeus's summary of Monday, October 12 (app usage and timing only):"))
+            try await Snap.render("thread-notice", look: look, settle: 0.6) { f.conversation() }
         }
     }
 
