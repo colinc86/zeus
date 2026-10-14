@@ -501,6 +501,33 @@ private let t0 = Date(timeIntervalSince1970: 1_791_100_000) // a fixed afternoon
         }
     }
 
+    /// TB1: the status strip in every state, inside a panel, for every bundled theme, light and dark.
+    @Test func statusStrip() async throws {
+        let managed = ZeusStatusStripModel.buttons(hasTerminal: true, isManaged: true)
+        let own = ZeusStatusStripModel.buttons(hasTerminal: true, isManaged: false)
+        let states: [ZeusStatusStripModel] = [
+            .waiting(questions: 1, buttons: managed), .waiting(questions: 2, buttons: managed), .unread(3, buttons: own),
+            .blocked(mirrored: false, buttons: managed), .blocked(mirrored: true, buttons: managed),
+            .activity("Claude is working on tests", buttons: managed), .notDelivered(buttons: own), .quiet(until: "8:00", buttons: own),
+            .idle(buttons: ZeusStatusStripModel.buttons(hasTerminal: false, isManaged: false, canClear: false)),
+        ]
+        for look in Snap.Look.basic {
+            for theme in ZeusThemeLibrary.load(userDirectory: nil).themes {
+                try await Snap.render("status-strip-\(theme.id)", look: look, settle: 0.4) {
+                    VStack(alignment: .leading, spacing: ZeusTheme.Spacing.m) {
+                        ForEach(Array(states.enumerated()), id: \.offset) { _, model in
+                            ZeusStatusStrip(model, onJump: {}, onSkip: {})
+                        }
+                    }
+                    .frame(width: ZeusTheme.Conversation.panelWidth - 32)
+                    .zeusDialog(tail: nil)
+                    .environment(\.zeusTheme, theme)
+                    .environment(\.zeusFontChoice, .pixel)
+                }
+            }
+        }
+    }
+
     /// L1: Settings › Privacy at full height with "Learn from me" on and a morning's events, the one-time sheet, and the
     /// thread's quiet "Sent your daily summary · View" line. A fake source and a temporary Activity folder only.
     @Test func privacy() async throws {
