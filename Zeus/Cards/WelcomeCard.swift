@@ -14,11 +14,20 @@ enum WelcomeCard {
              body: Self.body,
              priority: .high, createdAt: now, updatedAt: now)
     }
+    /// Both setup modes receive D19's introduction. Persist managed mode first and mark the welcome only after its card is durable.
+    @MainActor @discardableResult
+    static func installForLaunch(cards: CardStore, settings: AppSettings, isHidden: Bool, now: Date = Date()) -> Bool {
+        if settings.managedSession?.enabled == true {
+            guard settings.prepareManagedOnboarding(hasHistory: !cards.cards.isEmpty, isHidden: isHidden) else { return false }
+        }
+        return installIfNeeded(cards: cards, settings: settings, now: now)
+    }
     @MainActor @discardableResult
     static func installIfNeeded(cards: CardStore, settings: AppSettings, now: Date = Date()) -> Bool {
         guard !settings.hasShownWelcome else { return false }
         let isNew = cards.card(id: id) == nil
         if isNew { cards.add(make(now: now)) }
+        guard cards.card(id: id) != nil else { return false }
         settings.hasShownWelcome = true
         return isNew
     }

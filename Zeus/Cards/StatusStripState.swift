@@ -18,6 +18,7 @@ enum StatusStripState {
     }
     struct Managed {
         var enabled = false
+        var isOff = false
         var status: ManagedSessionStatus = .off
         var hasTerminal = false
         var canStartNew = false
@@ -89,6 +90,7 @@ enum StatusStripState {
         if status.avatar.state == .sleeping { return .init(sentence: status.quietUntil.map { "Quiet until \($0)" } ?? "Quiet hours", isQuiet: true, buttons: buttons) }
         if status.avatar.state == .talking { return .activity("Zeus is talking…", buttons: buttons) }
         if status.avatar.state == .happy { return .activity(status.avatar.detail ?? "Happy", buttons: buttons) }
+        if managed.isOff { return .init(sentence: "Your assistant is off", isQuiet: true, buttons: buttons) }
         return .init(sentence: status.avatar.detail ?? "Idle", isQuiet: true, buttons: buttons)
     }
     static func nextQuestion(cards: Cards, after id: String?) -> String? {

@@ -43,7 +43,7 @@ import ZeusDesign
         model.refreshAvailability()
         #expect(model.isNotStarted && model.presentation().title == "Ready to Start")
         #expect(!model.presentation().detail.contains("exited") && model.presentation().actions == [.start])
-        #expect(model.presentation().menuStatus == "Claude Code hasn't started")
+        #expect(model.presentation().menuStatus == "Your assistant is off")
         controller.managedHasLaunched = true
         #expect(!model.isNotStarted && model.presentation().title == "Stopped")
         #expect(model.presentation().detail == "Claude Code is stopped. Press Start to run it again.")

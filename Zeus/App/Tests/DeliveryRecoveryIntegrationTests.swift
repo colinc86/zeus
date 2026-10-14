@@ -65,6 +65,6 @@ import ZeusProtocol
         #expect(shell.menuUnreadDetail == "1 unread message")
         #expect(shell.menuAccessibilityLabel.contains("is stopped") && shell.menuAccessibilityLabel.contains("1 unread message"))
         controller.managedHasLaunched = false
-        #expect(shell.menuStatus == "Claude Code hasn't started")
+        #expect(shell.menuStatus == "Your assistant is off")
     }
 }
