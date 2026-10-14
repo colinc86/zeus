@@ -121,6 +121,20 @@ import ZeusProtocol
         #expect(f.controller.managedSettingsApplication == pending && f.controller.requests.count == 1)
         #expect(f.controller.lifecycleCalls.isEmpty)
     }
+    @Test func editsReplaceAConfirmedWaitingSwitchWithoutAskingAgain() throws {
+        let f = try SettingsApplyFixture(); defer { f.cleanup() }
+        f.controller.managedStatus = .running(.working)
+        f.model.chooseAgent(.codex); f.model.confirm()
+        f.model.choosePermission("read")
+        #expect(f.model.confirmation == nil && f.controller.managedSettingsApplication?.kind == .newConversation)
+        #expect(f.controller.managedSettingsApplication?.configuration.permissionModeID == "read")
+        f.model.update { $0.launchPrompt = "First" }
+        f.model.update { $0.launchPrompt = "Final" }
+        f.model.finishInstructionsEditing()
+        #expect(f.model.confirmation == nil && f.controller.managedSettingsApplication?.kind == .newConversation)
+        #expect(f.controller.managedSettingsApplication?.configuration.launchPrompt == "Final")
+        #expect(f.controller.managedSettingsApplication?.configuration.permissionModeID == "read")
+    }
     @Test func unsupportedResumeAndMissingIdentityNeverPromiseSameConversation() throws {
         let f = try SettingsApplyFixture(); defer { f.cleanup() }
         f.controller.supportsInstructions = false

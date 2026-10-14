@@ -1,15 +1,29 @@
 import Foundation
 import Testing
+import ZeusLink
 import ZeusProtocol
 @testable import Zeus
+
+@MainActor private final class SettingsHeldConnector: DeliveryConnector {
+    var delivered: [String] = []
+    var waiting: [String: CheckedContinuation<Void, Never>] = [:]
+    func canDeliver(to session: ConnectedSession, bridge: BridgeSession?, routing: any AgentRoutingSettings) -> Bool { true }
+    func deliver(_ delivery: Delivery, to session: ConnectedSession, bridge: BridgeSession?, routing: any AgentRoutingSettings) async throws {
+        delivered.append(delivery.id)
+        await withCheckedContinuation { waiting[delivery.id] = $0 }
+    }
+    func release(_ id: String) { waiting.removeValue(forKey: id)?.resume() }
+    func releaseAll() { for id in Array(waiting.keys) { release(id) } }
+}
 
 private actor ApplyCaptureHost: ManagedSessionHosting {
     let base: FakeManagedHost
     private var pause = true
     private var continuation: CheckedContinuation<Void, Never>?
     private var started: CheckedContinuation<Void, Never>?
+    private let failsLaunch: Bool
     var isWaiting: Bool { continuation != nil }
-    init(_ base: FakeManagedHost) { self.base = base }
+    init(_ base: FakeManagedHost, failsLaunch: Bool = false) { self.base = base; self.failsLaunch = failsLaunch; pause = !failsLaunch }
     func release() { continuation?.resume(); continuation = nil }
     func waitForCapture() async {
         if continuation != nil { return }
@@ -27,7 +41,13 @@ private actor ApplyCaptureHost: ManagedSessionHosting {
     func sessions() async throws -> [ManagedTmuxSession] { await base.sessions() }
     func inspect(name: String, owner: String, pane: ManagedPane?) async throws -> ManagedPane? { try await base.inspect(name: name, owner: owner, pane: pane) }
     func create(name: String, owner: String, folder: String) async throws -> ManagedPane { try await base.create(name: name, owner: owner, folder: folder) }
-    func launch(_ pane: ManagedPane, owner: String, command: ManagedLaunchCommand, folder: String) async throws -> ManagedPane { try await base.launch(pane, owner: owner, command: command, folder: folder) }
+    func launch(_ pane: ManagedPane, owner: String, command: ManagedLaunchCommand, folder: String) async throws -> ManagedPane {
+        if failsLaunch {
+            await withCheckedContinuation { continuation = $0; started?.resume(); started = nil }
+            throw ManagedSessionError.command("Injected failed launch")
+        }
+        return try await base.launch(pane, owner: owner, command: command, folder: folder)
+    }
     func requestExit(_ pane: ManagedPane, owner: String) async throws { try await base.requestExit(pane, owner: owner) }
     func removePane(_ pane: ManagedPane, owner: String) async throws { try await base.removePane(pane, owner: owner) }
 }
@@ -183,5 +203,78 @@ private actor ApplyCaptureHost: ManagedSessionHosting {
         #expect(count == (event == "replace" ? 2 : 1))
         if event == "replace" { #expect(f.controller.managedAppliedConfiguration?.launchPrompt == "Latest edit") }
         if event == "draft" { #expect(f.controller.managedSettingsApplication?.phase == .waiting) }
+    }
+
+    @Test func promptAnswerVerificationPreventsSettingsTeardownEvenAfterAnIdleRepaint() async throws {
+        let f = try ManagedFixture(); defer { f.cleanup() }
+        try await ready(f)
+        await f.host.setSnapshot(try promptFixture("p1-claude-permission"))
+        for _ in 0..<2 { f.controller.refresh(); try await f.settle() }
+        let prompt = try #require(f.controller.managedPrompt)
+        await f.host.holdAnswer()
+        let answer = Task { await f.controller.answerManagedPrompt(fingerprint: prompt.fingerprint, optionID: "1") }
+        let deadline = ContinuousClock.now + .seconds(3)
+        while await !f.host.awaitingPromptAnswer, ContinuousClock.now < deadline { await Task.yield() }
+        try #require(await f.host.awaitingPromptAnswer)
+        var changed = try #require(f.config.value); changed.permissionModeID = "plan"
+        f.controller.applyManagedSettings(changed)
+        await f.host.setSnapshot(try N1Messages.frame(.claude, "before"))
+        f.controller.refresh(); try await f.settle()
+        #expect(f.controller.managedStatus == .running(.idle))
+        #expect(!f.controller.canAcceptInput)
+        #expect(f.controller.managedSettingsApplication?.phase == .waiting)
+        #expect(await f.host.stops == 0)
+        await f.host.releaseAnswer(); _ = await answer.value; try await f.settle()
+        #expect(await f.host.stops == 1)
+        #expect(f.controller.managedAppliedConfiguration?.permissionModeID == "plan")
+        #expect(f.controller.managedPrompt == nil)
+    }
+
+    @Test func runtimeWaitsForEveryInFlightDeliveryAndRetainsTheirDurableIDs() async throws {
+        let held = SettingsHeldConnector()
+        let f = try ManagedDeliveryFixture(tmuxConnector: held)
+        defer { held.releaseAll(); f.cleanup() }
+        try await f.start(); try await f.idle()
+        let first = Task { await f.runtime.sendUserMessage("First retained message", deliveryID: "d_s3_first") }
+        let second = Task { await f.runtime.sendUserMessage("Second retained message", deliveryID: "d_s3_second") }
+        try await eventually { held.waiting.count == 2 }
+        var changed = try #require(f.managed.config.value); changed.permissionModeID = "plan"
+        f.runtime.applyManagedSettings(changed)
+        f.managed.controller.refresh(); try await f.managed.settle()
+        #expect(await f.managed.host.stops == 0)
+        held.release("d_s3_first"); _ = await first.value
+        #expect(await f.managed.host.stops == 0)
+        #expect(f.runtime.managedSettingsApplication?.phase == .waiting)
+        held.release("d_s3_second"); _ = await second.value; try await f.managed.settle()
+        #expect(await f.managed.host.stops == 1)
+        #expect(Set(f.runtime.ledger?.records.map { $0.delivery.id } ?? []) == ["d_s3_first", "d_s3_second"])
+        #expect(held.delivered.count == 2, "Resume doesn't replay already submitted messages")
+        let disk = try DeliveryLedger(location: f.managed.folder.appendingPathComponent("deliveries.json"))
+        #expect(Set(disk.records.map { $0.delivery.id }) == ["d_s3_first", "d_s3_second"])
+    }
+    @Test func confirmedTargetAlreadyReachedDoesNotDiscardThatConversationAgain() async throws {
+        let f = try ManagedFixture(agent: .opencode); defer { f.cleanup() }
+        try await ready(f)
+        let conversation = try #require(f.controller.record?.conversation)
+        var changed = try #require(f.config.value); changed.launchPrompt = "Latest instructions"
+        f.controller.switchManagedSettings(changed); try await f.settle()
+        #expect(f.controller.record?.conversation?.nativeID == conversation.nativeID)
+        #expect(f.controller.record?.conversation?.nonce == conversation.nonce)
+        #expect(f.controller.managedAppliedConfiguration?.launchPrompt == "Latest instructions")
+    }
+    @Test func failedOlderLaunchCannotEraseAReplacementRequest() async throws {
+        let f = try ManagedFixture(agent: .opencode); defer { f.cleanup() }
+        try await ready(f)
+        let paused = ApplyCaptureHost(f.host, failsLaunch: true)
+        f.controller.hosting = paused
+        var first = try #require(f.config.value); first.launchPrompt = "First"
+        f.controller.applyManagedSettings(first)
+        await paused.waitForCapture()
+        var latest = first; latest.launchPrompt = "Latest"; latest.permissionModeID = "deny"
+        f.controller.applyManagedSettings(latest)
+        await paused.release(); try await f.settle()
+        #expect(f.controller.managedSettingsApplication?.configuration == latest)
+        #expect(f.controller.managedSettingsApplication?.phase == .waiting)
+        guard case .failed = f.controller.managedStatus else { Issue.record("The failed launch must remain visible"); return }
     }
 }

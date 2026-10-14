@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 import Testing
 import ZeusProtocol
 @testable import Zeus
@@ -14,6 +15,7 @@ import ZeusProtocol
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let home = root.appendingPathComponent("home"), folder = root.appendingPathComponent("project")
         let socket = root.appendingPathComponent("tmux.sock").path
+        var launchedPanes: [ManagedPane] = []
         let model = Process(), logURL = root.appendingPathComponent("model.log")
         _ = FileManager.default.createFile(atPath: logURL.path, contents: nil)
         let log = try FileHandle(forWritingTo: logURL)
@@ -23,7 +25,7 @@ import ZeusProtocol
             cleanup.standardOutput = FileHandle.nullDevice; cleanup.standardError = FileHandle.nullDevice
             if (try? cleanup.run()) != nil { cleanup.waitUntilExit() }
             if model.isRunning { model.terminate(); model.waitUntilExit() }
-            finishNativeExitWrites()
+            finishNativeExitWrites(launchedPanes, socket: socket)
             try? log.close(); try? FileManager.default.removeItem(at: root)
         }
         let python = try #require(["/opt/homebrew/bin/python3", "/usr/bin/python3"].first { FileManager.default.isExecutableFile(atPath: $0) })
@@ -89,6 +91,7 @@ import ZeusProtocol
         }
         try await settle()
         let original = try #require(controller.record?.conversation), previousPane = try #require(controller.record?.pane)
+        launchedPanes.append(previousPane)
         let originalRequests = try requests(root)
         #expect(originalRequests.contains { instructionStrings($0).contains { $0.contains("S3_ORIGINAL_INSTRUCTIONS") } })
         var config = try #require(routing.managedSession)
@@ -102,6 +105,7 @@ import ZeusProtocol
             try await Task.sleep(for: .milliseconds(100))
         }
         try await settle()
+        if let pane = controller.record?.pane { launchedPanes.append(pane) }
         #expect(controller.record?.conversation?.nativeID == original.nativeID)
         #expect(controller.record?.conversation?.nonce == original.nonce)
         let supported = controller.supportsInstructionChangesOnResume(for: agent)
@@ -187,7 +191,20 @@ import ZeusProtocol
     }
     /// Synchronous defer cleanup: the private CLI may still be flushing its store
     /// after tmux returns from kill-server. No test UI or user process is involved.
-    private func finishNativeExitWrites() { Thread.sleep(forTimeInterval: 0.5) }
+    private func finishNativeExitWrites(_ panes: [ManagedPane], socket: String) {
+        for pane in panes where pane.socket == socket && socket.contains("/zs3_") {
+            guard let pid = Int32(exactly: pane.pid) else { continue }
+            var info = proc_bsdinfo()
+            let size = MemoryLayout.size(ofValue: info)
+            guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, Int32(size)) == size,
+                  info.pbi_start_tvsec * 1_000_000 + info.pbi_start_tvusec == pane.startTime else { continue }
+            // Only a fixture-launched lifetime, after killing its private server.
+            _ = kill(pid, SIGTERM)
+            let end = Date().addingTimeInterval(2)
+            while kill(pid, 0) == 0 && Date() < end { Thread.sleep(forTimeInterval: 0.025) }
+        }
+        Thread.sleep(forTimeInterval: 0.1)
+    }
     private func instructionStrings(_ request: JSONValue) -> [String] {
         guard case .object(let fields) = request else { return [] }
         func strings(_ value: JSONValue) -> [String] {

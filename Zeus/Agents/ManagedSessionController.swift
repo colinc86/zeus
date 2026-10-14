@@ -18,13 +18,17 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     var managedAppliedConfiguration: ManagedSessionConfig? { record?.appliedConfiguration }
     var managedCanResumeSettings: Bool { record?.conversation?.didLaunch == true && record?.conversation?.nativeID != nil }
     private var claudeSnapshotExecutable: URL?
+    private var claudeSnapshotModified: Date?
     private var claudeSnapshotSupported = false
     func supportsInstructionChangesOnResume(for agent: AgentKind) -> Bool {
         switch agent { case .claude: claudeSnapshotSupported; case .opencode: true; case .codex, .other: false }
     }
     private func refreshInstructionResumeSupport() async {
-        guard let executable = executables.agents[.claude], executable != claudeSnapshotExecutable else { return }
-        claudeSnapshotExecutable = executable
+        guard let executable = executables.agents[.claude] else { claudeSnapshotSupported = false; return }
+        let resolved = executable.resolvingSymlinksInPath()
+        let modified = try? resolved.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+        guard resolved != claudeSnapshotExecutable || modified != claudeSnapshotModified else { return }
+        claudeSnapshotExecutable = resolved; claudeSnapshotModified = modified
         let help = try? await FoundationProcessRunner().run(executable: executable, arguments: ["--help"], input: nil, environment: environment)
         claudeSnapshotSupported = help?.status == 0 && help.map { String(decoding: $0.stdout, as: UTF8.self).contains("--system-prompt-snapshot") } == true
     }
@@ -74,7 +78,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     }
     private(set) var blockedDialog: String?
     /// True only after a current, idle screen sample. Startup grace does not permit input.
-    var canAcceptInput: Bool { enabled && clock.now >= graceUntil && managedStatus == .running(.idle) && blockedCandidate == nil && managedSettingsApplication?.phase != .applying }
+    var canAcceptInput: Bool { enabled && clock.now >= graceUntil && managedStatus == .running(.idle) && blockedCandidate == nil && !answeringPrompt && managedSettingsApplication?.phase != .applying }
     var isBusy: Bool { operation != nil }
     enum RecoveryRequirement: Equatable { case newConversation }
     /// Native identity is required for resuming a launched conversation.
@@ -145,18 +149,18 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     /// A single click is authorized for this controller activation and exact pane
     /// lifetime. Shutdown, restart, prompt changes and double-clicks invalidate it.
     func answerManagedPrompt(fingerprint: String, optionID: String) async -> ManagedPromptAnswerResult {
-        guard attached, enabled, !answeringPrompt, case .blocked = managedStatus,
+        guard attached, enabled, !answeringPrompt, managedSettingsApplication?.phase != .applying, case .blocked = managedStatus,
               let prompt = managedPrompt, prompt.fingerprint == fingerprint,
               prompt.options.contains(where: { $0.id == optionID }),
               let pane = record?.pane, let hosting, let agent = record?.conversation?.agent else { return .changed }
-        answeringPrompt = true; defer { answeringPrompt = false }
+        answeringPrompt = true; defer { answeringPrompt = false; reconsiderSettingsApplication() }
         let scope = promptScope
         do {
             let result = try await hosting.answerPrompt(pane, owner: record?.owner ?? "", agent: agent, scope: scope,
                 fingerprint: fingerprint, optionID: optionID, stillAllowed: { [weak self] in
                     guard let self, self.attached, self.enabled, self.promptScope == scope,
                           self.managedPrompt?.fingerprint == fingerprint, case .blocked = self.managedStatus else { return false }
-                    return !self.actions.contains(where: { [.stop, .restart, .fresh].contains($0) })
+                    return !self.actions.contains(where: { [.stop, .restart, .fresh, .applySettings].contains($0) })
                 })
             if case .answered = result {
                 clearBlock()
@@ -297,7 +301,9 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         switch action {
         case .activate:
             guard enabled else { setStatus(.off); return }
+            let token = activation
             await refreshInstructionResumeSupport()
+            guard attached, enabled, activation == token else { return }
             try load()
             if let pane = try await existingPane(), record?.conversation?.didLaunch == true {
                 if pane.dead { try await exited(pane) }
@@ -328,10 +334,13 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
             try await discoverConversation()
             record?.restarts.append(clock.now); try save(); try await start(using: record?.appliedConfiguration)
         case .applySettings:
+            let failedRequestID = managedSettingsApplication?.id
             do { try await applySettingsWhenSafe() }
             catch {
-                managedSettingsApplication = nil
-                managedSettingsApplicationError = (error as? ManagedSessionError)?.localizedDescription ?? "Zeus couldn't apply your changes. Try again when the assistant is ready."
+                if managedSettingsApplication?.id == failedRequestID {
+                    managedSettingsApplication = nil
+                    managedSettingsApplicationError = (error as? ManagedSessionError)?.localizedDescription ?? "Zeus couldn't apply your changes. Try again when the assistant is ready."
+                }
                 if managedStatus != .running(.idle) { throw error }
                 onChange?()
             }
@@ -399,7 +408,9 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         guard var config = requested ?? configuration(), config.enabled else { setStatus(.off); return }
         try load()
         if let problem = managedRequirementsProblem(for: config.agent) { throw ManagedSessionError.command(problem) }
+        let token = activation
         await refreshInstructionResumeSupport()
+        guard attached, enabled, activation == token else { return }
         guard FileManager.default.isExecutableFile(atPath: bridge.path) else { throw ManagedSessionError.missingBridge }
         var isDirectory: ObjCBool = false
         guard config.folder.hasPrefix("/"), !config.folder.contains("\0"), FileManager.default.fileExists(atPath: config.folder, isDirectory: &isDirectory), isDirectory.boolValue else { throw ManagedSessionError.invalidFolder }
@@ -548,7 +559,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         let token = activation
         func stillCurrent() -> Bool {
             attached && enabled && activation == token && managedSettingsApplication?.id == request.id
-                && settingsApplicationAllowed?() != false && managedStatus == .running(.idle) && blockedCandidate == nil
+                && settingsApplicationAllowed?() != false && managedStatus == .running(.idle) && blockedCandidate == nil && !answeringPrompt
         }
         func deferRequest() {
             if managedSettingsApplication?.id == request.id { managedSettingsApplication?.phase = .waiting; onChange?() }
@@ -558,10 +569,19 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         try await discoverConversation()
         guard stillCurrent(), let conversation = record?.conversation,
               request.kind == .newConversation || managedCanResumeSettings else { deferRequest(); return }
-        let config = request.configuration
+        var config = request.configuration
         let folder = URL(fileURLWithPath: config.folder).resolvingSymlinksInPath().standardizedFileURL.path
-        guard request.kind == .newConversation || (config.agent == conversation.agent && folder == conversation.folder) else {
+        let changesIdentity = config.agent != conversation.agent || folder != conversation.folder
+        guard request.kind == .newConversation || !changesIdentity else {
             cancelManagedSettingsApplication(); return
+        }
+        let startsNew = request.kind == .newConversation && changesIdentity
+        if !startsNew {
+            guard managedCanResumeSettings else { deferRequest(); return }
+            if !supportsInstructionChangesOnResume(for: config.agent) { config.launchPrompt = conversation.launchPrompt }
+            if let applied = managedAppliedConfiguration, applied.permissionModeID == config.permissionModeID && applied.launchPrompt == config.launchPrompt {
+                cancelManagedSettingsApplication(); return
+            }
         }
         // A probably-idle editor may contain a human draft or Zeus's interrupted
         // paste. Only a positively empty, idle composer is safe to stop.
@@ -577,7 +597,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
             // Once teardown begins, finish this exact launch even if later edits
             // replace the request. The replacement waits for the new pane to be idle.
             guard attached, enabled, activation == token else { return }
-            if request.kind == .newConversation {
+            if startsNew {
                 record?.conversation = nil; record?.confirmedSessionKey = nil; record?.nativeEnvironment = [:]
                 record?.launchPending = false; record?.pendingWasFresh = false
             }
