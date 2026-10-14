@@ -21,6 +21,13 @@ enum ManagedPaneClassifier {
     static func classify(_ snapshot: ManagedPaneSnapshot, agent: AgentKind) -> Classification {
         let input = TmuxInputSnapshot(metadata: Data(snapshot.inputMetadata.utf8), screen: Data(snapshot.screen.utf8))
         let allLines = snapshot.plainLines
+        if agent == .claude, let composer = input?.claudeInputStart {
+            // A live bounded editor excludes both draft text and every footer.
+            // Modal choices do not have that editor. With a status line Claude
+            // hides its interrupt hint; only its current work widget proves work.
+            let output = Array(allLines.prefix(max(0, composer - 1)))
+            return claudeWorkingWidget(output) ? .working : .idle
+        }
         let codexApproval = agent == .codex && allLines.contains { $0.contains("Would you like to run the following command?") }
             && allLines.contains {
                 let line = $0.trimmingCharacters(in: .whitespaces)
@@ -58,10 +65,11 @@ enum ManagedPaneClassifier {
         }
         switch agent {
         case .claude:
+            let visibleFooter = lines.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.suffix(12).joined(separator: "\n").lowercased()
             if let blocked = dialog("warning: loading development channels", controls:
-                footer.contains("❯ 1. i am using this for local development") && footer.contains("2. exit")) { return blocked }
+                visibleFooter.contains("❯ 1. i am using this for local development") && visibleFooter.contains("2. exit")) { return blocked }
             for marker in ["select login method:", "choose the text style", "quick safety check:", "warning: claude code running in bypass", "do you want to use this api key?", "do you want to proceed?"] {
-                let controls = text.contains("❯ ") && (lastLine.contains("enter to confirm") || lastLine.contains("esc to cancel") || (marker == "select login method:" && text.contains("anthropic console")))
+                let controls = text.contains("❯ ") && (visibleFooter.contains("enter to confirm") || visibleFooter.contains("esc to cancel") || (marker == "select login method:" && text.contains("anthropic console")))
                 if let blocked = dialog(marker, controls: controls) { return blocked }
             }
         case .codex:
@@ -86,5 +94,17 @@ enum ManagedPaneClassifier {
         if footer.contains("esc to interrupt") || footer.contains("esc interrupt") { return .working }
         if input?.isProbablyIdle == true { return .idle }
         return .unknown
+    }
+
+    /// Native active widget, not Claude's ✻ finished-turn or scheduled-task history.
+    /// A tip may follow it. A later user/assistant/completion row makes it history.
+    private static func claudeWorkingWidget(_ lines: [String]) -> Bool {
+        let pattern = "^[✢✳✶✻✽·] [^\\n]*…(?:\\s*\\([^\\n]*\\))?\\s*$"
+        guard let start = lines.lastIndex(where: {
+            $0.trimmingCharacters(in: .whitespaces).range(of: pattern, options: .regularExpression) != nil
+        }) else { return false }
+        let after = lines[(start + 1)...].filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        return after.isEmpty || (after.first?.trimmingCharacters(in: .whitespaces).hasPrefix("⎿") == true
+            && after.first?.contains("Tip:") == true && after.dropFirst().allSatisfy { $0.hasPrefix("  ") })
     }
 }

@@ -73,7 +73,8 @@ struct TmuxInputSnapshot: Equatable, Sendable {
         }
         return nil
     }
-    private var claudeInputStart: Int? { claudeInputRows?.lowerBound }
+    /// A cursor-bound Claude composer; content below its upper rule is editor/footer chrome.
+    var claudeInputStart: Int? { claudeInputRows?.lowerBound }
     /// Codex's prompt, indented continuation rows and blank separator bound the
     /// composer. Nothing below that separator is consulted, including footer
     /// models, shortcuts, warnings or other text.
@@ -130,7 +131,9 @@ struct TmuxInputSnapshot: Equatable, Sendable {
                                 if code == 38 {
                                     grey = false
                                     if codes[index + 1] == 5, index + 2 < codes.count {
-                                        grey = (232...255).contains(codes[index + 2])
+                                        // OpenCode renders genuine input in 255 (near-white).
+                                        // It is not evidence of a suggestion, even at Home.
+                                        grey = (232...250).contains(codes[index + 2])
                                     } else if codes[index + 1] == 2, index + 4 < codes.count {
                                         let r = codes[index + 2], g = codes[index + 3], b = codes[index + 4]
                                         grey = r == g && g == b && (90...190).contains(r)
@@ -158,7 +161,9 @@ struct TmuxInputSnapshot: Equatable, Sendable {
         }
         let prefix: Int
         if plain.hasPrefix("❯ ") || plain.hasPrefix("› ") { prefix = 2 }
-        else if plain.hasPrefix("  ┃") { prefix = 5 }
+        else if let border = plain.firstIndex(of: "┃"), plain[..<border].allSatisfy({ $0 == " " }) {
+            prefix = plain.distance(from: plain.startIndex, to: border) + 3
+        }
         else if plain.hasPrefix("  ") { prefix = 2 }
         else { return (plain, false) }
         var allMuted = true, mutedCount = 0
@@ -182,6 +187,26 @@ struct TmuxInputSnapshot: Equatable, Sendable {
         return row
     }
     private var openCodeComposer: Bool { x == 5 && openCodeBoxStart != nil }
+    /// OpenCode centers its home-screen editor. Only use its complete native box
+    /// and command row to identify drafts; this does not authorize paste or Enter.
+    private var centeredOpenCodeDraft: String? {
+        let indent = lines[y].prefix(while: { $0 == " " }).count
+        guard indent > 2, cursorVisible, x >= indent + 3,
+              lines[y].dropFirst(indent).hasPrefix("┃"),
+              let border = lines.indices.first(where: { $0 > y && lines[$0].hasPrefix(String(repeating: " ", count: indent) + "╹") }),
+              lines[(border + 1)...].prefix(3).contains(where: { $0.contains("ctrl+p commands") }),
+              let mode = lines.indices.last(where: { $0 > y && $0 < border && lines[$0].hasPrefix(String(repeating: " ", count: indent) + "┃  ") && lines[$0].contains(" · ") }) else { return nil }
+        let prefix = String(repeating: " ", count: indent) + "┃"
+        var start = y
+        while start > 0 && lines[start - 1].hasPrefix(prefix) { start -= 1 }
+        guard (start..<mode).allSatisfy({ lines[$0].hasPrefix(prefix) }) else { return nil }
+        let text = lines[start..<mode].map { String($0.dropFirst(indent + 3)).trimmingCharacters(in: .whitespaces) }
+            .joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        if x == indent + 3, (start..<mode).allSatisfy({
+            lines[$0].dropFirst(indent + 3).trimmingCharacters(in: .whitespaces).isEmpty || mutedBody[$0]
+        }) { return nil }
+        return text.isEmpty ? nil : text
+    }
     /// Only a positively bounded composer can report a human draft. Suggestions
     /// are empty; dialogs and work are rejected separately by the pane classifier.
     var humanDraftText: String? {
@@ -194,7 +219,8 @@ struct TmuxInputSnapshot: Equatable, Sendable {
             let columns = lines.suffix(4).first(where: { $0.hasPrefix("  ╹") })?
                 .prefix(while: { $0 == " " || $0 == "╹" || $0 == "▀" || $0 == "━" }).count ?? width
             text = lines[start..<end].map { String($0.prefix(columns).dropFirst(5)).trimmingCharacters(in: .whitespaces) }.joined(separator: "\n")
-        } else { return nil }
+        } else if let draft = centeredOpenCodeDraft { text = draft }
+        else { return nil }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
     }
@@ -209,7 +235,7 @@ struct TmuxInputSnapshot: Equatable, Sendable {
     /// includes Zeus's own paste during the monitor's paste/Enter race. Delivery
     /// separately requires emptiness or an exact match to the recorded paste.
     var isProbablyIdle: Bool {
-        claudeInputStart != nil || codexInputRows != nil || openCodeBoxStart != nil || isEmpty || (prompt != nil && x == prompt?.count && lines[y].contains("› ") && Self.placeholders.contains(String(lines[y].dropFirst(x)).trimmingCharacters(in: .whitespaces)))
+        claudeInputStart != nil || codexInputRows != nil || openCodeBoxStart != nil || centeredOpenCodeDraft != nil || isEmpty || (prompt != nil && x == prompt?.count && lines[y].contains("› ") && Self.placeholders.contains(String(lines[y].dropFirst(x)).trimmingCharacters(in: .whitespaces)))
     }
     private static let placeholders: Set<String> = ["Ask Codex to do anything", "Write tests for @filename", "Find and fix a bug in @filename", "Explain this codebase", "Implement {feature}", "Improve documentation in @filename", "Summarize recent commits", "Run /review on my current changes"]
     var isEmpty: Bool {

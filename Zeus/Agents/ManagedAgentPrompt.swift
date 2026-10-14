@@ -80,14 +80,14 @@ enum ManagedPromptParser {
         case .claude:
             if let question = lines.lastIndex(of: "Do you want to proceed?"),
                let title = lines[..<question].lastIndex(where: { ["Bash command", "Edit file", "Create file", "Read file"].contains($0) }),
-               lines.filter({ !$0.isEmpty }).suffix(4).contains(where: { $0.contains("Esc to cancel") }) {
+               let controls = lines[(question + 1)...].firstIndex(where: { $0.contains("Esc to cancel") }) {
                 let body = Array(lines[(title + 1)..<question])
                 let rules = body.indices.filter { isRule(body[$0]) }
                 let detail: String
                 if let first = rules.first, let last = rules.last, first < last {
                     detail = cleanedDetail(Array(body[(first + 1)..<last]))
                 } else { detail = cleanedDetail(body) }
-                let options = numberedOptions(Array(lines[(question + 1)...]), claude: true)
+                let options = numberedOptions(Array(lines[(question + 1)..<controls]), claude: true)
                 if !detail.isEmpty, !options.isEmpty {
                     return make(lines[title] == "Bash command" ? .command : .edit, lines[title], detail, lines[question], options,
                                 context: identity((title + 1)..<question))
