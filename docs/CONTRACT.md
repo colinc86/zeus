@@ -59,7 +59,7 @@ All types are `Codable, Sendable` and public. JSON uses camelCase keys and ISO-8
 - **`CardOption`**: `{ id, label, style: primary | secondary | destructive }`.
 - **`InputSpec`**: `{ placeholder?, multiline }`.
 - **`Attachment`**: `{ id, kind: file | folder | url, label, target }`. For files, `target` is a path and `~` is allowed.
-- **`CardResponse`**: `{ optionID?, optionLabel?, text?, respondedAt, device: "mac" | "ios" }`, plus `summary`.
+- **`CardResponse`**: `{ optionID?, optionLabel?, text?, skipped: Bool, respondedAt, device: "mac" | "ios" }`, plus `summary`. `skipped` defaults to false and a missing legacy field decodes as false; a skipped response has no `optionID` (TB1, 2026-10-14).
 - **`Delivery`** (§5): `{ id ("d_"+8), kind: reply | userMessage, cardID?, sessionKey, content, meta: [String:String], createdAt, attempts, lastAttemptAt?, ackedAt?, failedAt? }`.
 - **`ZeusPaths`**:
   - `appSupport` = `~/Library/Application Support/Zeus/`
@@ -166,7 +166,7 @@ Tool results are returned as `text` (compact JSON) plus `structuredContent`.
 | Tool | Arguments (`*` = required) | Result |
 |---|---|---|
 | `zeus_say` | `text*`, `title`, `mood`, `attachments[{kind,label,target}]`, `priority`, `ttl_seconds` | `{card_id}` |
-| `zeus_ask` | `text*`, `title`, `options[{id,label,style}]`, `allow_text` (default: true if no options), `placeholder`, `multiline`, `priority`, `wait_seconds` (default 45, clamped to 0…600) | `{status:"answered", card_id, option_id?, option_label?, text?}` or `{status:"pending", card_id}` |
+| `zeus_ask` | `text*`, `title`, `options[{id,label,style}]`, `allow_text` (default: true if no options), `placeholder`, `multiline`, `priority`, `wait_seconds` (default 45, clamped to 0…600) | `{status:"answered", card_id, option_id?, option_label?, text?}`, `{status:"skipped", card_id}` (the user skipped it: don't re-ask; proceed with your best judgement or move on) or `{status:"pending", card_id}`. Polled items (`zeus_get_responses`) carry `kind:"skipped"` for the same case. |
 | `zeus_present` | `title*`, `body*`, `attachments`, `actions[{id,label,style}]`, `allow_text`, `mood`, `priority` | `{card_id}`. The chosen action comes back like a reply (§5). |
 | `zeus_update_card` | `card_id*`, `title`, `text`, `append_text`, `progress` (0…1 or null) | `{ok}` |
 | `zeus_dismiss` | `card_id*` | `{ok}` |
@@ -190,8 +190,9 @@ A **delivery** is any text Zeus sends *into* an agent session: either an answer 
 3. **Channel format.**
    - `content` is human-readable, e.g. `Reply to "Have you started on the presentation?": No, I haven't.` or `Message from the user: …`.
    - `meta = {kind, delivery_id, card_id?, option_id?}`. Keys must match `[A-Za-z0-9_]`.
+   - A skipped question (TB1) is `content = The user skipped "<title>".` (the body stands in when there is no title), `meta.kind = "skipped"`, with `delivery_id` and `card_id` and no `option_id`.
 4. **Text delivery** (tmux / OpenCode). The envelope is:
-   `[zeus delivery_id=d_… card_id=c_…] <content> (call zeus_ack with this delivery_id)`.
+   `[zeus delivery_id=d_… card_id=c_…] <content> (call zeus_ack with this delivery_id)`. A skipped question wraps the same sentence as the channel form.
    - The user's line breaks are kept (CRLF→LF, trailing whitespace trimmed); a single-line message is unchanged. Over tmux, multi-line text goes in as one owned **bracketed paste**, so a newline never submits early, followed by one Enter. Paste verification recognizes each agent's own rendering of our paste (including collapsed `[Pasted text …]` summaries) by the owned-paste journal and delivery ID, never by matching a user's draft.
    - **tmux:** use the target bridge's socket namespace and pane. Check the input before loading, immediately before pasting and after paste before Enter. Nonempty/unknown input remains saved; waiting for input or routing configuration does not consume the five-attempt budget. A detected human edit suppresses Enter and leaves the draft intact. The final snapshot→Enter step is not atomic in tmux; this remains a transport limitation.
    - **OpenCode:** `AgentRoutingSettings.openCodeSessionID(for:)` explicitly maps the Zeus process sessionKey to one native `ses…` ID. Validate `GET /session/{id}` and its exact directory. Never infer the native destination from cwd/history or inject into the global TUI draft. Missing/wrong selection queues input, with polling available.
