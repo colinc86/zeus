@@ -17,10 +17,27 @@ import ZeusSprites
 @MainActor private final class HostRouting: AgentRoutingSettings {
     var assistantSessionKey: String? { nil }
     var preferredAgent: AgentKind? { nil }
-    var deliveryMethod: DeliveryMethod { .channel }
+    var deliveryMethod: DeliveryMethod = .channel
     var tmuxTarget: String? { nil }
     var openCodeBaseURL: URL? { nil }
     var openCodeServerPassword: String? { nil }
+}
+
+/// LV1 synthetic summaries only. Read receipts and announcements are independently observable.
+@MainActor private final class HostLearnings: LearningsProviding {
+    var learningsEnabled = true
+    var onNewLearning: ((Learning) -> Void)?
+    var items = [
+        Learning(id: "lv1-digest", kind: .digest, createdAt: Date(timeIntervalSince1970: 1_700_000_000), text: "Fixture daily summary."),
+        Learning(id: "lv1-moment", kind: .moment, createdAt: Date(timeIntervalSince1970: 1_700_000_001), text: "Fixture back from a break.")
+    ]
+    var readIDs: [String] = []
+    func unreadLearnings() -> [Learning] { items }
+    func markLearningsRead(through id: String) {
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
+        readIDs.append(id); items.removeFirst(index + 1)
+    }
+    func add(_ learning: Learning) { items.append(learning); onNewLearning?(learning) }
 }
 
 /// AC1 real-CLI proof: records calls only in this private host's scratch directory.
@@ -64,18 +81,73 @@ import ZeusSprites
         guard CommandLine.arguments.count == 2 else { throw CocoaError(.fileReadInvalidFileName) }
         let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json"))
-        let runtime = ZeusRuntime(cards: cards, status: HostStatus(), characters: HostCharacters(), routing: HostRouting(),
+        let routing = HostRouting(), learnings = HostLearnings()
+        let live = ProcessInfo.processInfo.environment["ZEUS_LV1_HOST"] != nil
+        let runtime = ZeusRuntime(cards: cards, status: HostStatus(), characters: HostCharacters(), routing: routing,
                                   socketPath: root.appendingPathComponent("bridge.sock").path,
                                   ledgerURL: root.appendingPathComponent("deliveries.json"),
-                                  appControl: ProcessInfo.processInfo.environment["ZEUS_AC1_HOST"] == "1" ? HostAppControl(root: root) : nil)
+                                  appControl: ProcessInfo.processInfo.environment["ZEUS_AC1_HOST"] == "1" ? HostAppControl(root: root) : nil,
+                                  learnings: live ? learnings : nil)
         try runtime.start()
         let ready: JSONValue = ["ready": true, "socket": .string(runtime.socketPath),
                                 "defaultSocket": .string(ZeusPaths.bridgeSocket.path), "wireVersion": .number(Double(wireVersion))]
         var frame = try ZeusJSON.encoder().encode(ready); frame.append(10)
         try FileHandle.standardOutput.write(contentsOf: frame)
         // Parent closes stdin to exercise the same clean runtime.stop path as app quit.
-        _ = await Task.detached { FileHandle.standardInput.readDataToEndOfFile() }.value
+        if live {
+            // Read on a worker; command execution and runtime timers remain on MainActor.
+            await Task.detached {
+                var line = Data()
+                while let byte = try? FileHandle.standardInput.read(upToCount: 1), !byte.isEmpty {
+                    if byte[0] == 10 {
+                        await command(line, cards: cards, routing: routing, learnings: learnings, runtime: runtime)
+                        line.removeAll(keepingCapacity: true)
+                    } else { line.append(byte) }
+                }
+            }.value
+        } else { _ = await Task.detached { FileHandle.standardInput.readDataToEndOfFile() }.value }
         runtime.stop()
         await Task.yield()
+    }
+
+    @MainActor private static func command(_ data: Data, cards: CardStore, routing: HostRouting, learnings: HostLearnings, runtime: ZeusRuntime) {
+        do {
+            let request = try ZeusJSON.decoder().decode(JSONValue.self, from: data)
+            var response: [String: JSONValue] = ["ok": true]
+            switch request["command"] {
+            case "skip":
+                guard case .string(let id) = request["id"] else { throw CocoaError(.coderValueNotFound) }
+                response["recorded"] = .bool(cards.respond(id: id, response: .init(device: .mac, skipped: true)))
+            case "learning_enabled":
+                guard case .bool(let enabled) = request["enabled"] else { throw CocoaError(.coderValueNotFound) }
+                learnings.learningsEnabled = enabled
+            case "learning_add":
+                guard case .string(let id) = request["id"], case .string(let text) = request["text"] else { throw CocoaError(.coderValueNotFound) }
+                learnings.add(.init(id: id, kind: .moment, createdAt: Date(timeIntervalSince1970: 1_700_000_002), text: text))
+            case "routing":
+                guard case .string(let value) = request["method"], let method = DeliveryMethod(rawValue: value) else { throw CocoaError(.coderValueNotFound) }
+                routing.deliveryMethod = method; runtime.processDueDeliveries()
+            case "state":
+                response["cards"] = .array(cards.cards.map { ["id": .string($0.id), "title": .string($0.title ?? $0.body), "status": .string($0.status.rawValue), "skipped": .bool($0.response?.skipped == true)] })
+                response["deliveries"] = .array((runtime.ledger?.records ?? []).map {
+                    ["id": .string($0.delivery.id), "content": .string($0.delivery.content), "meta": .object($0.delivery.meta.mapValues(JSONValue.string)),
+                     "attempts": .number(Double($0.delivery.attempts)), "acked": .bool($0.delivery.ackedAt != nil)]
+                })
+                response["sessions"] = .array(runtime.sessions.map { session in
+                    ["key": .string(session.sessionKey), "channel": .bool(session.supportsChannel),
+                     "learningNotifications": .bool(runtime.bridges[session.sessionKey]?.hello.capabilities.learningNotifications == true),
+                     "pane": session.tmuxPane.map(JSONValue.string) ?? .null, "socket": session.tmuxSocketPath.map(JSONValue.string) ?? .null]
+                })
+                response["unread"] = .array(learnings.items.map { .string($0.id) })
+                response["readThrough"] = .array(learnings.readIDs.map(JSONValue.string))
+                response["waiters"] = .number(Double(runtime.waiters.count))
+            default: throw CocoaError(.coderValueNotFound)
+            }
+            var output = try ZeusJSON.encoder().encode(JSONValue.object(response)); output.append(10)
+            try FileHandle.standardOutput.write(contentsOf: output)
+        } catch {
+            let output: JSONValue = ["ok": false, "error": .string(error.localizedDescription)]
+            if var data = try? ZeusJSON.encoder().encode(output) { data.append(10); try? FileHandle.standardOutput.write(contentsOf: data) }
+        }
     }
 }

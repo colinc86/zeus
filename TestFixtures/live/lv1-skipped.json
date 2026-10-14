@@ -1,0 +1,64 @@
+{
+  "ask": {
+    "title": "Choose a path",
+    "text": "Should we keep going?",
+    "options": [
+      {
+        "id": "continue",
+        "label": "Continue"
+      },
+      {
+        "id": "later",
+        "label": "Later"
+      }
+    ],
+    "wait_seconds": 30
+  },
+  "cases": [
+    {
+      "case": "skip-waiter",
+      "claude": "2.1.299 (Claude Code)",
+      "private_socket": true,
+      "disposable_home": true,
+      "localhost_model": true,
+      "pane": "120x40",
+      "tool_result": {
+        "card_id": "c_fixture",
+        "status": "skipped"
+      }
+    },
+    {
+      "case": "skip-channel",
+      "claude": "2.1.299 (Claude Code)",
+      "private_socket": true,
+      "disposable_home": true,
+      "localhost_model": true,
+      "pane": "120x40",
+      "pending_reached_model": true,
+      "channel_notification": {
+        "jsonrpc": "2.0",
+        "method": "notifications/claude/channel",
+        "params": {
+          "content": "The user skipped \"Choose a path\".",
+          "meta": {
+            "card_id": "c_fixture",
+            "delivery_id": "d_fixture",
+            "kind": "skipped"
+          }
+        }
+      }
+    },
+    {
+      "case": "skip-tmux",
+      "claude": "2.1.299 (Claude Code)",
+      "private_socket": true,
+      "disposable_home": true,
+      "localhost_model": true,
+      "pane": "120x40",
+      "tmux_model_text": "[zeus delivery_id=d_fixture card_id=c_fixture] The user skipped \"Choose a path\". (call zeus_ack with this delivery_id)",
+      "attempts": 1,
+      "acked": true
+    }
+  ],
+  "verification": "Real Claude calls zeus_ask. Host records CardResponse(skipped:true). Synchronous result reaches Claude's model; late channel frame is captured on real agent MCP stdio (subscription channel enablement is not claimed with a synthetic API key); tmux envelope reaches real interactive Claude's model and zeus_ack commits at attempt 1. All probe helpers and scratch cleaned."
+}
