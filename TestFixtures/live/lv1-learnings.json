@@ -1,0 +1,40 @@
+{
+  "case": "learnings",
+  "claude": "2.1.299 (Claude Code)",
+  "private_socket": true,
+  "disposable_home": true,
+  "localhost_model": true,
+  "pane": "120x40",
+  "notification": {
+    "jsonrpc": "2.0",
+    "method": "notifications/zeus/learning",
+    "params": {
+      "id": "lv1-new-moment",
+      "kind": "moment",
+      "text": "Fixture new moment after connection."
+    }
+  },
+  "announcement_does_not_consume": true,
+  "tool_results": [
+    [
+      {
+        "createdAt": "2023-11-14T22:13:20.000Z",
+        "id": "lv1-digest",
+        "kind": "digest",
+        "text": "Fixture daily summary."
+      },
+      {
+        "createdAt": "2023-11-14T22:13:21.000Z",
+        "id": "lv1-moment",
+        "kind": "moment",
+        "text": "Fixture back from a break."
+      }
+    ],
+    [],
+    []
+  ],
+  "unread_after_disabled_tool": [
+    "lv1-new-moment"
+  ],
+  "verification": "Real Claude MCP tool results and transparent stdio capture from branch-built zeus-mcp and production headless runtime. Synthetic LearningsProviding only; announcements forwarded to the real agent do not consume unread state. All probe helpers and scratch cleaned."
+}
