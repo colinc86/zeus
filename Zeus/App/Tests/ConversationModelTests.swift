@@ -196,6 +196,25 @@ struct ConversationModelTests {
         #expect(f.model.replyTarget == nil) // clearing the older question still applies
     }
 
+    @Test func typedTextAnswersAnOptionsOnlyQuestionWhenNoTextQuestionIsOpen() async {
+        let f = ConversationFixture(); defer { f.cleanup() }
+        let question = f.card(.question, options: [CardOption(id: "yes", label: "Yes"), CardOption(id: "no", label: "No")]); f.cards.add(question)
+        #expect(f.model.replyTarget?.id == question.id)
+        await f.model.send("Yes, go ahead")
+        #expect(f.messaging.calls.isEmpty)
+        #expect(f.cards.card(id: question.id)?.status == .answered)
+        #expect(f.cards.card(id: question.id)?.response?.text == "Yes, go ahead")
+        #expect(!f.cards.hasOpenQuestion)
+        // Opting out still sends a plain message and leaves the question open.
+        f.clock.advance(1)
+        let another = f.card(.question, options: [CardOption(id: "ok", label: "OK")]); f.cards.add(another)
+        #expect(f.model.backspaceInComposer())
+        #expect(f.model.replyTarget == nil)
+        await f.model.send("Unrelated")
+        #expect(f.messaging.calls == ["Unrelated"])
+        #expect(f.cards.card(id: another.id)?.status == .open)
+    }
+
     @Test func latestOptionsOnlyQuestionKeepsTheNewestTextAcceptingTarget() async {
         let f = ConversationFixture(); defer { f.cleanup() }
         let textQuestion = f.card(.question, input: true); f.cards.add(textQuestion)

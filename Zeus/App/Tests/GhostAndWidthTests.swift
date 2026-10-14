@@ -22,7 +22,30 @@ struct GhostAndWidthTests {
         #expect(state.alpha == 1 && state.nextDeadline == epoch.addingTimeInterval(90))
     }
 
-    @Test(arguments: ["hidden", "panel", "peek", "hover", "question", "work"])
+    @Test(arguments: ["question", "work"])
+    func aQuestionOrWorkWakesTheAvatarButDoesNotHoldIt(reason: String) {
+        var state = AvatarGhostState()
+        let config = AvatarGhostState.Configuration(enabled: true)
+        state.update(at: epoch, configuration: config, inputs: .init())
+        state.update(at: epoch.addingTimeInterval(30), configuration: config, inputs: .init())
+        #expect(state.alpha == 0.3)
+        var input = AvatarGhostState.Inputs()
+        if reason == "question" { input.questionWaiting = true } else { input.assistantBusy = true }
+        state.update(at: epoch.addingTimeInterval(60), configuration: config, inputs: input)
+        #expect(state.alpha == 1 && state.nextDeadline == epoch.addingTimeInterval(90))
+        // Still waiting / still working: the fade happens anyway (a stuck question must not pin Zeus at full opacity).
+        state.update(at: epoch.addingTimeInterval(90), configuration: config, inputs: input)
+        #expect(state.alpha == 0.3 && state.nextDeadline == nil)
+        state.update(at: epoch.addingTimeInterval(600), configuration: config, inputs: input)
+        #expect(state.alpha == 0.3)
+        // Turning off and on again is a new wake.
+        state.update(at: epoch.addingTimeInterval(700), configuration: config, inputs: .init())
+        #expect(state.alpha == 0.3)
+        state.update(at: epoch.addingTimeInterval(710), configuration: config, inputs: input)
+        #expect(state.alpha == 1 && state.nextDeadline == epoch.addingTimeInterval(740))
+    }
+
+    @Test(arguments: ["hidden", "panel", "peek", "hover"])
     func inhibitedStatesWakeTheAvatarAndDoNotScheduleAFade(reason: String) {
         var state = AvatarGhostState()
         let config = AvatarGhostState.Configuration(enabled: true)
@@ -33,9 +56,7 @@ struct GhostAndWidthTests {
         case "hidden": input.visible = false
         case "panel": input.panelOpen = true
         case "peek": input.peekVisible = true
-        case "hover": input.hovered = true
-        case "question": input.questionWaiting = true
-        default: input.assistantBusy = true
+        default: input.hovered = true
         }
         state.update(at: epoch.addingTimeInterval(60), configuration: config, inputs: input)
         #expect(state.alpha == 1 && state.nextDeadline == nil)

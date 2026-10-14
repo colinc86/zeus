@@ -60,7 +60,7 @@ struct CharacterSettingsView: View {
                     Text(settings.idleFadeDelay < 60 ? "\(Int(settings.idleFadeDelay)) s" : "\(Int(settings.idleFadeDelay / 60)) min \(Int(settings.idleFadeDelay.truncatingRemainder(dividingBy: 60))) s")
                         .settingsBody().monospacedDigit()
                 }
-                Text("Point at Zeus to bring it back. Clicks still work while faded. Questions, work and open conversations keep Zeus visible.").settingsCaption()
+                Text("Point at Zeus to bring it back. Clicks still work while faded. A new message, a question or the assistant starting work brings Zeus back; an open conversation keeps it visible.").settingsCaption()
             }
         }
     }

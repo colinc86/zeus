@@ -14,9 +14,15 @@ struct AvatarGhostState {
         var panelOpen = false
         var peekVisible = false
         var hovered = false
+        /// A question arriving or the assistant starting work brings Zeus back like an interaction;
+        /// neither holds it visible, so a long-open question still fades (user report, 2026-10-14).
         var questionWaiting = false
         var assistantBusy = false
-        var holdsVisible: Bool { !visible || panelOpen || peekVisible || hovered || questionWaiting || assistantBusy }
+        var holdsVisible: Bool { !visible || panelOpen || peekVisible || hovered }
+        /// True when a wake-only input turned on since `previous`.
+        func wakes(since previous: Inputs?) -> Bool {
+            (questionWaiting && previous?.questionWaiting != true) || (assistantBusy && previous?.assistantBusy != true)
+        }
     }
     private(set) var alpha = 1.0
     private(set) var nextDeadline: Date?
@@ -28,7 +34,8 @@ struct AvatarGhostState {
     /// Hidden/suspended avatars have no fade deadline and return at full opacity.
     mutating func update(at now: Date, configuration: Configuration, inputs: Inputs, interaction: Bool = false) {
         if lastInteraction == nil || interaction || previousConfiguration != configuration
-            || previousInputs?.holdsVisible == true || inputs.holdsVisible || lastInteraction.map({ now < $0 }) == true {
+            || previousInputs?.holdsVisible == true || inputs.holdsVisible || inputs.wakes(since: previousInputs)
+            || lastInteraction.map({ now < $0 }) == true {
             lastInteraction = now
         }
         previousInputs = inputs; previousConfiguration = configuration

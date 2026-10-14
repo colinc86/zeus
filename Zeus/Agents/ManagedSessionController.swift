@@ -69,6 +69,14 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         return [activation.uuidString, promptEpoch.uuidString, record?.owner ?? "", pane.socket, pane.name, pane.id,
                 String(pane.serverPID), pane.sessionNumber, String(pane.pid), String(pane.startTime)].joined(separator: "|")
     }
+    /// The first unknown sample after a block, when no new block candidate exists. A prompt card still open after
+    /// `staleBlockGrace` of unknown screens resolves as unconfirmed instead of pinning a "?" over Zeus (user report, 2026-10-14).
+    @ObservationIgnored private var unknownSince: Date?
+    static let staleBlockGrace: TimeInterval = 30
+    var blockedCardStale: Bool {
+        guard case .running(.unknown) = managedStatus, blockedCandidate == nil, let since = unknownSince else { return false }
+        return clock.now.timeIntervalSince(since) >= Self.staleBlockGrace
+    }
     /// Only a positive idle/working sample proves the dialog was answered.
     var mayResolveBlockedCard: Bool {
         switch managedStatus {
@@ -536,6 +544,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
                 let signature = prompt?.fingerprint ?? reason + "\n" + dialog
                 matchingSamples = blockedCandidate == signature ? matchingSamples + 1 : 1
                 blockedCandidate = signature
+                unknownSince = nil
                 if clock.now >= graceUntil, matchingSamples >= 2 {
                     hasPaneSample = true; managedPrompt = prompt
                     blockedDialog = prompt.map { [$0.title, $0.detail, $0.question].filter { !$0.isEmpty }.joined(separator: "\n\n") } ?? dialog
@@ -544,16 +553,20 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
                 else { setStatus(hasPaneSample ? .running(.unknown) : .starting) }
             case .idle, .working:
                 guard clock.now >= graceUntil else { setStatus(.starting); return }
-                hasPaneSample = true; clearBlock()
+                hasPaneSample = true; clearBlock(); unknownSince = nil
                 let classification = ManagedPaneClassifier.classify(snapshot, agent: record?.conversation?.agent ?? .other)
                 setStatus(.running(classification == .idle ? .idle : .working))
             case .unknown:
                 // A blank/repainting capture is not evidence that the human answered a dialog.
-                // Reset an unconfirmed candidate; retain a confirmed block until positive evidence.
+                // Reset an unconfirmed candidate; retain a confirmed block until positive evidence, or until the
+                // dialog has been gone for `staleBlockGrace`: then the prompt card closes as unconfirmed.
                 blockedCandidate = nil; matchingSamples = 0
                 managedPrompt = nil
-                if case .blocked = managedStatus { /* Keep the block and its Terminal action. */ }
+                if unknownSince == nil { unknownSince = clock.now }
+                let dialogGone = clock.now.timeIntervalSince(unknownSince ?? clock.now) >= Self.staleBlockGrace
+                if case .blocked = managedStatus, !dialogGone { /* Keep the block and its Terminal action. */ }
                 else { blockedDialog = nil; setStatus(hasPaneSample ? .running(.unknown) : .starting) }
+                if blockedCardStale { onChange?() }
             }
             if case .blocked = managedStatus { onChange?() }
             if canAcceptInput || managedStatus == .running(.working) || latestInputSample?.draftText != nil { onChange?() }

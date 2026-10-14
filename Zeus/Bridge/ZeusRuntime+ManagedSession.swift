@@ -72,6 +72,7 @@ extension ZeusRuntime {
     enum ManagedBlockEnd { case answered, stopped, crashed, unavailable, disabled }
     var managedBlockEnd: ManagedBlockEnd? {
         if managedController.mayResolveBlockedCard { return .answered }
+        if managedController.blockedCardStale { return .unavailable }
         switch managedStatus {
         case .stopped: return .stopped
         case .restarting: return .crashed

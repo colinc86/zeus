@@ -126,8 +126,10 @@ final class ConversationModel {
             return $0.offset < $1.offset
         }?.element
     }
+    /// Composer text is a single reply (CONTRACT §10): to the newest open text question, or, when none is open, to the newest
+    /// options-only question, so a typed "yes, do it" closes the question instead of leaving a "?" over Zeus forever.
     var replyTarget: Card? {
-        let newest = newestTextQuestion
+        let newest = newestTextQuestion ?? newestOpenQuestion
         if let id = explicitReplyCardID, let newest, questionsAtReplySelection.contains(newest.id),
            let selected = cards.card(id: id), selected.kind == .question, selected.status == .open, selected.input != nil {
             return selected
@@ -172,7 +174,7 @@ final class ConversationModel {
         explicitReplyCardID = nil
         questionsAtReplySelection.removeAll()
         clearedReplyCardIDs.formUnion(cards.cards.filter {
-            $0.kind == .question && $0.status == .open && $0.input != nil
+            $0.kind == .question && $0.status == .open
         }.map(\.id))
     }
 

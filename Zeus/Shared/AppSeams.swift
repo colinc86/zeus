@@ -331,7 +331,8 @@ protocol AppControlling: AnyObject {
     func setTheme(id: String) throws -> AppChange
     func createTheme(name: String, json: Data) throws -> AppChange
     func move(to placement: AvatarPlacement) throws -> AppChange
-    func setSize(_ size: AvatarSize) throws -> AppChange
+    /// `size` is "small", "medium" or "large" (the app's `AvatarSize` raw values); anything else → `.invalidArgument`.
+    func setSize(_ size: String) throws -> AppChange
     /// Hide for a duration (1–720 minutes) or until tomorrow. Never an indefinite hide.
     func hide(minutes: Int?, untilTomorrow: Bool) throws -> AppChange
     func setAppearance(_ patch: AppearancePatch) throws -> AppChange
