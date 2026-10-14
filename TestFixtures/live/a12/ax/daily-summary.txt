@@ -1,0 +1,4 @@
+AXGroup
+AXGroup | Sent your daily summary
+AXStaticText | Sent your daily summary
+AXButton | View: Sent your daily summary | Collapsed

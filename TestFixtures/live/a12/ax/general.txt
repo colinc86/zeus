@@ -1,0 +1,31 @@
+AXGroup
+AXHeading | Updates
+AXCheckBox | Automatically check for updates | 0
+AXStaticText | Version 0.1.8 (9)
+AXStaticText | Updates are disabled in Debug builds.
+AXCheckBox | Let my assistant control Zeus | 1
+AXCheckBox | Let my assistant install updates | 1
+AXStaticText | Your assistant can change how Zeus looks and where it sits. Every change shows in the conversation with Undo. It can never answer its own questions or change its own settings.
+AXCheckBox | Launch Zeus at login | 1
+AXHeading | Talk shortcut
+AXCheckBox | Enable global shortcut | 1
+AXStaticText | Key
+AXPopUpButton | Shortcut key | Z
+AXCheckBox | Control | 0
+AXCheckBox | Option | 1
+AXCheckBox | Shift | 0
+AXCheckBox | Command | 1
+AXStaticText | Option + Command + Z opens Talk to Zeus from any app.
+AXButton | Reset Shortcut
+AXHeading | Sounds
+AXCheckBox | Play a sound when Zeus pops up | 0
+AXStaticText | Sound
+AXPopUpButton | Pop-up sound | Zeus chime
+AXStaticText | Plays at your Mac's alert volume, set in System Settings → Sound. Zeus stays quiet while it's hidden, during quiet hours and while the conversation is open.
+AXHeading | Message reveal
+AXCheckBox | Typewriter reveal | 1
+AXCheckBox | Retro blip sound | 0
+AXStaticText | Click a message that's typing to show it all at once. Reduce Motion turns both off, and the sound stays quiet during quiet hours.
+AXHeading | Conversation history
+AXStaticText | 0 messages saved on this Mac. Clearing removes read messages and completed history. Unread messages, open questions and actions, and unsent or unconfirmed messages are kept.
+AXButton | Clear Conversation

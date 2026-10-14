@@ -1,0 +1,4 @@
+AXGroup
+AXGroup | Status
+AXButton | Question. Waiting for your answer. Go to question
+AXButton | Skip | Command-Shift-J

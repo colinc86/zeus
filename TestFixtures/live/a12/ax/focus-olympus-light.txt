@@ -1,0 +1,17 @@
+AXGroup
+AXHeading | Learn from me
+AXStaticText | Zeus records how you use this Mac so your assistant can pick better moments to help. Each morning it sends a short summary of the day before.
+AXHeading | Zeus records
+AXStaticText | · Which app is in front, and when it changes
+AXStaticText | · Apps opening and quitting
+AXStaticText | · Locking, sleeping and waking your Mac
+AXStaticText | · Times with no input for 5 minutes or more
+AXStaticText | · How many displays are connected
+AXHeading | Zeus never records
+AXStaticText | · What you type, copy or paste
+AXStaticText | · Window titles, web addresses and file names
+AXStaticText | · Screenshots, audio or your location
+AXStaticText | Apps on your private list count only as private time, with no name.
+AXStaticText | Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac.
+AXButton | Not Now
+AXButton | Turn On

@@ -1,0 +1,68 @@
+AXGroup
+AXButton | Zeus runs it. Choose an agent and folder. Zeus starts and looks after your assistant.
+AXButton | Connect your own. Connect an agent you already run and manage yourself.
+AXHeading | Zeus couldn’t start its connection to your assistant.
+AXStaticText | Your saved files are safe. Check the reason above, then try again.
+AXButton | Show Zeus Data Folder
+AXUnknown | Assistant: Running. Claude Code is ready in /fixture.
+AXStaticText | Switches to Codex in /fixture the next time it starts.
+AXButton | Restart
+AXButton | Open in Terminal
+AXButton | Stop
+AXStaticText | Switch to Codex now? Claude Code's conversation stays in /fixture; Codex starts a new one.
+AXButton | Switch Now
+AXButton | Later
+AXStaticText | Agent
+AXButton | Claude Code
+AXButton | Codex
+AXButton | OpenCode
+AXStaticText | Folder
+AXUnknown | Folder | /fixture
+AXButton | Choose Folder
+AXStaticText | It works here, and reads this folder's AGENTS.md.
+AXStaticText | Permissions
+AXButton | Ask, Default. Asks first.
+AXStaticText | Codex's own modes. When it asks, Zeus shows a card that opens Terminal.
+AXStaticText | Logins and folder-trust prompts always wait for you in Terminal.
+AXStaticText | Instructions
+AXScrollArea
+AXTextArea | You are my personal assistant. I see you as Zeus, a small animated character on my Mac's desktop. The Zeus app is your face and your voice. I'm usually not watching this terminal, so anything you want me to see goes through Zeus.
+
+Your Zeus tools:
+- zeus_say: tell me something short.
+- zeus_ask: get a decision. One question, 2–4 short options; mark the one you recommend as primary. Always ask before anything big or hard to undo: sending, deleting, spending, publishing, or anything other people will see.
+- zeus_present: hand over finished work, with files, folders or links as attachments.
+- zeus_set_status: show what you're doing ("working" with a short detail, and progress on long tasks). Set it back to "auto" as soon as you finish or stop.
+
+How to write:
+- Point first. One idea per message, 1–3 sentences, plain words, specific times ("Tue 10:00", not "soon").
+- No preamble, no sign-off. Anything long goes in a file you attach.
+- If you're unsure or blocked, say so and suggest the next step.
+
+When to reach out: you need a decision, something of mine is at risk, you finished something, or you're blocked. Stay quiet about routine progress, and never ask the same question twice: wait for my answer.
+
+My replies and messages reach you as Zeus deliveries (a zeus channel event, or a line starting "[zeus delivery_id=…]"). Treat them as messages from me: do what they ask, answer through Zeus, then call zeus_ack with the delivery_id. If you've seen a delivery_id before, just ack it again.
+
+When you're started, check in briefly: one short zeus_say that you're ready, then wait for me.
+AXScrollBar | 0
+AXValueIndicator | 0
+AXButton
+AXButton
+AXButton
+AXButton
+AXValueIndicator | 0
+AXButton
+AXButton
+AXButton
+AXButton
+AXStaticText | Codex uses new instructions in the next new conversation.
+AXButton | Start a New Conversation
+AXButton | Reset to Default
+AXCheckBox | Start when Zeus opens | 0
+AXCheckBox | Quiet hours | 0
+AXStaticText | From
+AXPopUpButton | 22:00
+AXStaticText | Until
+AXPopUpButton | 07:00
+AXStaticText | Local time. Equal start and end means all day. Questions and agent activity take precedence.
+AXStaticText | /fixture
