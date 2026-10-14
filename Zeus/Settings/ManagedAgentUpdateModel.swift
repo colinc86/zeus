@@ -25,18 +25,24 @@ import Observation
         let conversation = managed.agentUpdater?.managedAgentUpdateConversationID
         let pending = managed.agentUpdatePending
         if conversation != conversationID {
-            deactivateNotice()
+            if conversation != nil { deactivateNotice() }
+            else if let noticeID { cards.setNoticeAction(id: noticeID, action: nil) }
             conversationID = conversation; noticeID = nil; wasPending = false; awaitingRestart = false
             noticeSummary = "\(managed.agentName) has an update"
         }
         guard let conversation else { return }
         if pending && !wasPending {
             // Re-adopting the same conversation after a Zeus relaunch reuses its active notice.
-            noticeID = cards.notices.last {
-                $0.kind == .agentUpdate && $0.id.hasPrefix("agent-update:\(conversation):") && $0.isAgentUpdateCurrent == true
-            }?.id
+            let saved = managed.settings.managedAgentUpdateNoticeState
+            noticeID = saved?.conversationID == conversation && saved?.pending == true ? saved?.noticeID : nil
+            if noticeID == nil {
+                noticeID = cards.notices.last {
+                    $0.kind == .agentUpdate && $0.id.hasPrefix("agent-update:\(conversation):") && $0.isAgentUpdateCurrent == true
+                }?.id
+            }
         }
-        if !pending && wasPending && !managed.agentUpdateRestartPending { deactivateNotice() }
+        // Quitting/detaching Zeus is not a sampled update-clear edge in the agent it leaves running.
+        if !pending && wasPending && !managed.agentUpdateRestartPending && managed.status != .off { deactivateNotice() }
         wasPending = pending
         if managed.agentUpdateRestartPending {
             if !awaitingRestart { restartIDAtRequest = managed.agentUpdateRestartID }
@@ -68,7 +74,10 @@ import Observation
         if noticeID == nil {
             let notice = ThreadNotice(id: "agent-update:\(conversation):\(UUID().uuidString)", kind: .agentUpdate,
                 createdAt: clock(), summary: "\(managed.agentName) has an update", actionTitle: "Restart assistant", isAgentUpdateCurrent: true)
-            if cards.recordNotice(notice) { noticeID = notice.id }
+            if cards.recordNotice(notice) {
+                noticeID = notice.id
+                managed.settings.managedAgentUpdateNoticeState = .init(conversationID: conversation, noticeID: notice.id, pending: true)
+            }
         }
         guard let noticeID, let notice = cards.notices.first(where: { $0.id == noticeID }), notice.resolvedTitle != "Later" else { return }
         if confirming {
@@ -88,6 +97,9 @@ import Observation
         else { cards.setNoticeAction(id: noticeID, action: nil) }
     }
     private func deactivateNotice(restarted: Bool = false) {
+        if let conversationID, let noticeID {
+            managed.settings.managedAgentUpdateNoticeState = .init(conversationID: conversationID, noticeID: noticeID, pending: false)
+        }
         guard let noticeID, let notice = cards.notices.first(where: { $0.id == noticeID }) else { return }
         updateCurrent(summary: noticeSummary ?? notice.summary, resolved: restarted ? "Restarted" : nil, actionable: false, active: false)
     }

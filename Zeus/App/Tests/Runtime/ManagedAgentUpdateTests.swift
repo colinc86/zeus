@@ -84,6 +84,7 @@ func updateSnapshot(_ name: String) throws -> ManagedPaneSnapshot {
         #expect(f.controller.record?.conversation?.agent == .claude)
         #expect(!f.controller.managedAgentUpdatePending)
         #expect(f.controller.managedSettingsApplication == nil)
+        #expect(f.controller.managedAgentUpdateLastRestartID != nil)
         let command = try #require(await f.host.commands.last).arguments
         let nativeID = try #require(identity.nativeID)
         #expect(command.contains("--resume") && command.contains(nativeID))
@@ -101,5 +102,6 @@ func updateSnapshot(_ name: String) throws -> ManagedPaneSnapshot {
         f.controller.stopManagedSession(); try await f.settle()
         #expect(f.controller.managedSettingsApplication == nil)
         #expect(await f.host.commands.count == 1)
+        #expect(f.controller.managedAgentUpdateLastRestartID == nil)
     }
 }

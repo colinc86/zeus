@@ -147,6 +147,32 @@ import ZeusProtocol
         f.controller.managedAgentUpdatePending = true; updates.reconcile()
         #expect(restored.notices.count == 2)
     }
+    @Test func historyDismissalSurvivesAppRelaunchUntilANewUpdateEdge() throws {
+        let f = try UpdateUIFixture(); defer { f.cleanup() }
+        f.pending(); f.cards.clearConversation()
+        let restored = CardStore(fileURL: f.root.appendingPathComponent("cards.json"))
+        let settings = AppSettings(defaults: f.defaults, userDirectory: nil)
+        let managed = ManagedAssistantModel(settings: settings, controller: { f.controller })
+        let updates = ManagedAgentUpdateModel(managed: managed, cards: restored)
+        updates.reconcile()
+        #expect(restored.notices.isEmpty)
+        f.controller.managedAgentUpdatePending = false; updates.reconcile()
+        f.controller.managedAgentUpdatePending = true; updates.reconcile()
+        #expect(restored.notices.count == 1)
+    }
+    @Test func quittingZeusDoesNotCreateANewUpdateEdgeWhenItAdoptsTheSameConversation() throws {
+        let f = try UpdateUIFixture(); defer { f.cleanup() }
+        f.pending()
+        let id = try #require(f.cards.notices.first?.id)
+        f.controller.managedAgentUpdatePending = false; f.controller.managedStatus = .off
+        f.updates.reconcile()
+        #expect(f.settings.managedAgentUpdateNoticeState?.pending == true)
+        let restored = CardStore(fileURL: f.root.appendingPathComponent("cards.json"))
+        let updates = ManagedAgentUpdateModel(managed: f.managed, cards: restored)
+        f.controller.managedStatus = .running(.idle); f.controller.managedAgentUpdatePending = true
+        updates.reconcile()
+        #expect(restored.notices.count == 1 && restored.notices.first?.id == id)
+    }
     @Test func disappearingFooterNeverClaimsUpToDateButSuccessfulRestartHasReceipt() throws {
         let f = try UpdateUIFixture(); defer { f.cleanup() }
         f.pending()
