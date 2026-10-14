@@ -28,6 +28,7 @@ struct SettingsView: View {
     let login: LoginItemModel
     let hotKey: GlobalHotKey
     let activity: SurfaceActivity
+    var updater: any AppUpdating = UpdaterService()
     @Environment(\.zeusPalette) private var palette
 
     var body: some View {
@@ -66,7 +67,7 @@ struct SettingsView: View {
     @ViewBuilder private var content: some View {
         switch navigation.tab {
         case .general:
-            GeneralSettingsView(settings: settings, login: login, hotKey: hotKey, cards: cards)
+            GeneralSettingsView(settings: settings, login: login, hotKey: hotKey, cards: cards, updater: updater)
         case .agent:
             AssistantSettingsView(settings: settings, managed: managed, messaging: preview, testMessage: testMessage)
         case .character:
