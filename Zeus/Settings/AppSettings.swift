@@ -64,6 +64,8 @@ final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSet
     private var selectedThemeID: String
     var avatarSize: AvatarSize { didSet { defaults.set(avatarSize.rawValue, forKey: "avatar.size") } }
     var fadeZeusWhenIdle: Bool { didSet { defaults.set(fadeZeusWhenIdle, forKey: "avatar.ghost.enabled") } }
+    /// Settings › General › "Show menu bar icon" (MB1). Off removes the icon; Zeus's right-click menu has the same items.
+    var showMenuBarIcon: Bool { didSet { defaults.set(showMenuBarIcon, forKey: "general.showMenuBarIcon") } }
     private var ghostOpacity: Double
     private var ghostDelay: TimeInterval
     private var savedConversationWidth: Double
@@ -194,6 +196,7 @@ final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSet
         selectedThemeID = Self.themeID(saved: defaults.string(forKey: "appearance.theme"), in: themes)
         avatarSize = AvatarSize(rawValue: defaults.string(forKey: "avatar.size") ?? "") ?? .medium
         fadeZeusWhenIdle = defaults.bool(forKey: "avatar.ghost.enabled")
+        showMenuBarIcon = defaults.object(forKey: "general.showMenuBarIcon") as? Bool ?? true
         ghostOpacity = AvatarGhostState.Configuration.opacity((defaults.object(forKey: "avatar.ghost.opacity") as? Double) ?? 0.3)
         ghostDelay = AvatarGhostState.Configuration.delay((defaults.object(forKey: "avatar.ghost.delay") as? Double) ?? 30)
         let width = (defaults.object(forKey: "conversation.width") as? Double) ?? Double(ConversationWidth.minimum)

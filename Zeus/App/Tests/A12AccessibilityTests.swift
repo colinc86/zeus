@@ -207,7 +207,7 @@ import ZeusProtocol
         #expect(ordered(f.tabLabels(privacy), startingAt: privacyLabels[0]) == privacyLabels)
         let generalLabels = f.tabLabels(general)
         #expect(Set(generalLabels).count == generalLabels.count && !generalLabels.contains { $0.hasPrefix("Unmatched") })
-        #expect(ordered(generalLabels, startingAt: "Let my assistant control Zeus").starts(with: ["Let my assistant control Zeus", "Let my assistant install updates", "Launch Zeus at login"]))
+        #expect(ordered(generalLabels, startingAt: "Let my assistant control Zeus").starts(with: ["Let my assistant control Zeus", "Let my assistant install updates", "Show menu bar icon", "Launch Zeus at login"]))
         let characterLabels = f.tabLabels(character)
         #expect(!characterLabels.contains { $0.hasPrefix("Unmatched") })
         #expect(characterLabels.contains("Idle opacity") && characterLabels.contains("Idle fade delay"))

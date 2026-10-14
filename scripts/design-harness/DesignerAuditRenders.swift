@@ -131,7 +131,8 @@ import ZeusSprites
         let help = (object.accessibilityHelp?() ?? nil) ?? ""
         let isElement = object.isAccessibilityElement?() ?? false
         if isElement || !label.isEmpty || !title.isEmpty {
-            lines.append(String(repeating: "  ", count: depth) + "[\(role)] label=\"\(label)\" title=\"\(title)\" value=\"\(value)\"" + (help.isEmpty ? "" : " help=\"\(help)\""))
+            let selected = object.isAccessibilitySelected?() ?? false
+            lines.append(String(repeating: "  ", count: depth) + "[\(role)] label=\"\(label)\" title=\"\(title)\" value=\"\(value)\"" + (help.isEmpty ? "" : " help=\"\(help)\"") + (selected ? " selected" : ""))
         }
         for child in (object.accessibilityChildren?() ?? nil) ?? [] { axTree(child, depth: depth + 1, into: &lines) }
     }
@@ -615,6 +616,26 @@ private let t0 = Date(timeIntervalSince1970: 1_791_100_000) // a fixed afternoon
             }
         }
         try Snap.dump("context-menu", describe(shell.makeContextMenu()).joined(separator: "\n"))
+        // MB1: the menu bar icon's menu is the same model rendered by SwiftUI; dump it the same way to compare.
+        let menuBar = NSHostingMenu(rootView: ZeusMenuContent(model: shell.menuModel) { _ in })
+        menuBar.update()
+        try Snap.dump("menu-bar-menu", describe(menuBar).joined(separator: "\n"))
+        // Connect your own, with a question waiting: the strip's sentence leads, and choosing it jumps there.
+        f.settings.managedSession?.enabled = false
+        f.store.add(Card(id: "c_menuq", kind: .question, title: "Venue", body: "Book the usual room?", options: [CardOption(id: "y", label: "Yes")]))
+        f.store.markAllSeen()
+        try await Task.sleep(for: .seconds(3)) // past the new card's 2.5-s "talking" moment
+        try Snap.dump("context-menu-question", describe(shell.makeContextMenu()).joined(separator: "\n"))
+        f.store.clearConversation()
+        f.settings.managedSession?.enabled = true
+
+        // MB1 / PM note: the Settings tab bar must name each tab and mark the selected one.
+        let tabs = try await Snap.render("ax-settings-tabs", look: .init(appearance: .aqua, font: .pixel), settle: 0.4) {
+            SettingsTabBar(navigation: SettingsNavigation()).frame(width: 640).environment(\.accessibilityEnabled, true)
+        }
+        var tabLines: [String] = []
+        Snap.axTree(tabs, into: &tabLines)
+        try Snap.dump("ax-settings-tabs", tabLines.joined(separator: "\n"))
 
         longThread(f)
         let host = try await Snap.render("ax-thread", look: .init(appearance: .aqua, font: .pixel), settle: 0.6) { f.conversation() }

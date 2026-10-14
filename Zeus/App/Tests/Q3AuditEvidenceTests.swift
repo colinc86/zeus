@@ -224,7 +224,9 @@ import ZeusProtocol
         shell.messaging.previewEnabled = true
         shell.messaging.previewDeliveryIssue = DeliveryIssue(title: "Couldn't reach your assistant", detail: "A reply needs retry", pendingCount: 1, since: f.clock.now)
         let menu = shell.makeContextMenu()
-        #expect(menu.items.contains { $0.title == "Delivery problem…" && $0.target === shell })
+        // MB1: the one menu routes "Delivery problem…" through its own target to `shell.perform(.deliveryProblem)`.
+        #expect(menu.items.contains { $0.title == "Delivery problem…" && $0.identifier?.rawValue == "delivery" && $0.action != nil && $0.target != nil })
+        #expect(shell.menuModel.sections[1].contains { $0.kind == .action(.deliveryProblem) })
         let avatar = AvatarInteractionView(rootView: SpriteAvatarView(settings: f.settings, status: shell.status,
             messaging: shell.messaging, artLayout: shell.artLayout, activity: shell.surfaceActivity))
         #expect(avatar.accessibilityCustomActions()?.map(\.name) == ["Show delivery problem"])
