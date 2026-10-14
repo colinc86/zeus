@@ -49,13 +49,21 @@ private actor RuntimeHostBuilder {
         let args = ["swift", "build", "--package-path", package.path, "--configuration", configuration, "--product", "Host"]
         let result = try await FoundationProcessRunner(timeout: 120).run(executable: URL(fileURLWithPath: "/usr/bin/xcrun"), arguments: args)
         guard result.status == 0 else { throw E2EFailure("Runtime host build failed: " + String(decoding: result.stderr + result.stdout, as: UTF8.self)) }
-        let location = try await FoundationProcessRunner().run(executable: URL(fileURLWithPath: "/usr/bin/xcrun"),
-            arguments: ["swift", "build", "--package-path", package.path, "--configuration", configuration, "--show-bin-path"])
+        let location: ProcessResult
+        do {
+            // SwiftPM setup under the full suite is not a five-second tmux operation.
+            location = try await FoundationProcessRunner(timeout: 30).run(executable: URL(fileURLWithPath: "/usr/bin/xcrun"),
+                arguments: ["swift", "build", "--package-path", package.path, "--configuration", configuration, "--show-bin-path"])
+        } catch { throw E2EFailure("P13 \(configuration) host path lookup (xcrun swift build --show-bin-path) failed: \(error)") }
+        guard location.status == 0 else { throw E2EFailure("P13 \(configuration) host path lookup (xcrun swift build --show-bin-path) failed: " + String(decoding: location.stderr, as: UTF8.self)) }
         let executable = URL(fileURLWithPath: String(decoding: location.stdout, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)).appendingPathComponent("Host")
         if configuration == "release" {
-            let signed = try await FoundationProcessRunner().run(executable: URL(fileURLWithPath: "/usr/bin/codesign"),
-                arguments: ["--force", "--sign", "-", "--options", "runtime", executable.path])
-            guard signed.status == 0 else { throw E2EFailure("Cannot harden Release test host") }
+            let signed: ProcessResult
+            do {
+                signed = try await FoundationProcessRunner(timeout: 30).run(executable: URL(fileURLWithPath: "/usr/bin/codesign"),
+                    arguments: ["--force", "--sign", "-", "--options", "runtime", executable.path])
+            } catch { throw E2EFailure("P13 release host ad-hoc signing (codesign --sign - --options runtime) failed: \(error)") }
+            guard signed.status == 0 else { throw E2EFailure("P13 release host ad-hoc signing (codesign --sign - --options runtime) failed: " + String(decoding: signed.stderr, as: UTF8.self)) }
         }
         return executable
     }
