@@ -261,6 +261,15 @@ The first rule that matches wins:
 
 If cards are open, a badge shows the open-card count, whatever the state.
 
+**Ghost mode** (Settings › Character, user decision 2026-10-13). When "Fade Zeus when idle" is on, the avatar window's alpha goes to the
+chosen opacity (10–90 %) after the chosen delay (5 s – 10 min) with no interaction. It returns to full opacity, and the delay restarts, on:
+pointer over the avatar, a click or drag, the Talk shortcut, a new card or peek, an open question, assistant activity, or the panel
+opening. It never fades while the panel or a peek is showing, or while hidden. Faded Zeus still takes clicks (no click-through).
+Reduce Motion removes the fade animation. `AvatarGhostState` is the pure reducer; the shell owns the timer.
+
+**Panel width** (§10). The conversation panel is resizable by dragging its edge: minimum `ZeusTheme.Conversation.panelWidth` (today's
+width), maximum half the screen, persisted in Settings and clamped on screen change. `ZeusBubble(maxWidth:)` follows it.
+
 ---
 
 ## 8. ZeusDesign: theme & components (designer delivers, appdev composes)
