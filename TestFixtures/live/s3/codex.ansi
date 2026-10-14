@@ -1,0 +1,40 @@
+     [2m/FIXTURE/project[0m
+
+
+[1;2m› [0mCall zeus_say with a short greeting, then wait for the user. Zeus managed conversation: 2EC8327E-79AE-464C-BCB2-
+  09AEA8A866B7 (internal marker; do not include it in your greeting).
+
+
+[2m• [0mS3_READY
+
+[2m  Worked for <1s • 11:20 PM
+
+[0m
+[1;2m› [0m[zeus delivery_id=d_3333abcd] Message from the user: S3_RESUME_PROBE (call zeus_ack with this delivery_id)
+
+
+[2m• [0mS3_READY
+
+[2m  Worked for <1s • 11:20 PM
+
+[0m[38;5;5m/status[39m
+
+  [38;2;99;168;248m>_ [1m[39mOpenAI Codex[0;2m (v0.162.1)[0m
+
+[2m  Model:               [0ms3[2m (reasoning none, summaries auto)[0m
+[2m  Model provider:      [0ms3
+[2m  Directory:           [0m/FIXTURE/project
+[2m  Permissions:         [0mRead Only (Ask for approval)
+[2m  Agents.md:           [0m<none>
+[2m  Collaboration mode:  [0mDefault
+[2m  Session:             [0m01a138a3-aa0c-7a60-9565-8815ba2e9bb1
+
+[2m  Token usage:         [0m4 total [2m (2 input + 2 output)[0m
+[2m  Context window:      [0m100% left[2m (2 used / 258K)[0m
+[2m  Limits:              data not available yet[0m
+
+
+[1m›[0m [2mAsk Codex to do anything[0m
+
+  [38;2;246;226;183ms3 default[39m · [38;2;171;223;167m/FIXTURE/project[39m
+  [1m?[0m for shortcuts                                                                              ⚠ [38;2;196;167;103m1 warning[39m · [1mf2[0m to view

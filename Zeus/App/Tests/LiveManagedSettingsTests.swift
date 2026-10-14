@@ -94,6 +94,35 @@ import ZeusProtocol
 }
 
 @Suite(.serialized) @MainActor struct LiveManagedSettingsTests {
+    @Test func switchConfirmationOffersLaterAndEscapeKeepsTheRunningConversation() async throws {
+        let f = try LiveManagedFixture(); defer { f.cleanup() }
+        f.model.update { $0.folder = "/fixture" }
+        f.settings.managedLaunchedConfig = f.model.config
+        f.controller.managedStatus = .running(.idle)
+        f.model.chooseAgent(.codex)
+        let host = f.assistantHost(); try await f.settle(host)
+        #expect(f.model.confirmation == .switchConversation)
+        let labels = liveAXNodes(host).map(liveAXDescription)
+        #expect(labels.contains { $0.contains("Switch Now") })
+        #expect(labels.contains { $0.contains("Later") })
+        #expect(labels.contains { $0.contains("Claude Code's conversation stays in /fixture") })
+        let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0,
+            windowNumber: host.window?.windowNumber ?? 0, context: nil, characters: "\u{1b}",
+            charactersIgnoringModifiers: "\u{1b}", isARepeat: false, keyCode: 53))
+        #expect(host.window?.performKeyEquivalent(with: event) == true)
+        try await f.settle(host)
+        #expect(f.model.confirmation == nil && f.controller.fresh == 0 && f.model.agentName == "Claude Code")
+        #expect(f.model.needsNewConversation, "Later saves the preference without replacing the conversation")
+        if ProcessInfo.processInfo.environment["ZEUS_S3_RENDER"] == "1" {
+            f.model.perform(.restart); try await f.settle(host)
+            let image = try #require(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+            host.cacheDisplay(in: host.bounds, to: image)
+            let png = try #require(image.representation(using: .png, properties: [:]))
+            var root = URL(fileURLWithPath: #filePath)
+            for _ in 0..<4 { root.deleteLastPathComponent() }
+            try png.write(to: root.appendingPathComponent("build/s3/settings-switch.png"))
+        }
+    }
     @Test(arguments: [AgentKind.claude, .codex, .opencode])
     func pendingAgentCopyNamesTheSelectionWithoutRelabelingTheRunningAssistant(selected: AgentKind) async throws {
         let f = try LiveManagedFixture(); defer { f.cleanup() }

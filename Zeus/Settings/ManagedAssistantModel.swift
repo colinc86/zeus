@@ -31,6 +31,7 @@ final class ManagedAssistantModel {
         case switchToOwn
         case unrestricted(ManagedPermissionMode)
         case newConversation
+        case switchConversation
     }
     static let agents: [AgentKind] = [.claude, .codex, .opencode]
     let settings: AppSettings
@@ -38,6 +39,10 @@ final class ManagedAssistantModel {
     var confirmation: Confirmation?
     private(set) var switching = false
     private(set) var actionError: String?
+    private(set) var instructionsAreDebouncing = false
+    @ObservationIgnored private let instructionDebouncer: ManagedInstructionsDebouncer
+    @ObservationIgnored private var observedConfiguration: ManagedSessionConfig?
+    @ObservationIgnored private var confirmedSwitchTarget: ManagedSessionConfig?
     private(set) var modes: [AgentKind: [ManagedPermissionMode]] = [:]
     private(set) var requirements: [AgentKind: String] = [:]
     private var launchedConfig: ManagedSessionConfig? {
@@ -46,14 +51,17 @@ final class ManagedAssistantModel {
     }
     @ObservationIgnored private let controllerProvider: () -> (any ManagedSessionControlling)?
 
-    init(settings: AppSettings, controller: @escaping () -> (any ManagedSessionControlling)?) {
+    init(settings: AppSettings, controller: @escaping () -> (any ManagedSessionControlling)?, instructionDebouncer: ManagedInstructionsDebouncer = .init()) {
         self.settings = settings
         controllerProvider = controller
+        self.instructionDebouncer = instructionDebouncer
+        observedConfiguration = settings.managedSession
         reconcileStatus()
         observeStatus()
     }
 
     var controller: (any ManagedSessionControlling)? { controllerProvider() }
+    private var settingsApplier: (any ManagedSettingsApplying)? { controller as? any ManagedSettingsApplying }
     var config: ManagedSessionConfig { settings.managedSession ?? AppSettings.newManagedSession(enabled: false) }
     var enabled: Bool { config.enabled }
     var status: ManagedSessionStatus { controller?.managedStatus ?? .off }
@@ -65,7 +73,7 @@ final class ManagedAssistantModel {
             && (controller as? any ManagedPresentationProviding)?.managedHasLaunched == false
     }
     var currentConfiguration: ManagedSessionConfig? {
-        ManagedPresentationConfiguration.current(desired: settings.managedSession, launched: launchedConfig, controller: controller)
+        ManagedPresentationConfiguration.current(desired: settings.managedSession, launched: settingsApplier?.managedAppliedConfiguration ?? launchedConfig, controller: controller)
     }
     var agentName: String { hasActiveSession ? currentConfiguration.map { Self.name($0.agent) } ?? "Your assistant" : Self.name(config.agent) }
     private var currentFolderLabel: String { (currentConfiguration?.folder as NSString?)?.abbreviatingWithTildeInPath ?? "its folder" }
@@ -91,11 +99,28 @@ final class ManagedAssistantModel {
     }
     var needsRestart: Bool {
         guard hasActiveSession, let current = comparisonConfiguration else { return false }
-        return config.agent != current.agent || config.folder != current.folder || config.permissionModeID != current.permissionModeID
+        return config.agent != current.agent || !Self.sameFolder(config.folder, current.folder) || config.permissionModeID != current.permissionModeID
+            || (supportsInstructionResume && config.launchPrompt != current.launchPrompt)
+    }
+    private var supportsInstructionResume: Bool { settingsApplier?.supportsInstructionChangesOnResume(for: config.agent) == true }
+    var instructionsCaption: String {
+        let selected = Self.name(config.agent)
+        if hasActiveSession, !needsNewConversation, supportsInstructionResume, settingsApplier?.managedCanResumeSettings == true {
+            return "Changes apply when \(selected) is ready. It restarts and keeps the same conversation."
+        }
+        if !supportsInstructionResume { return "\(selected) uses new instructions in the next new conversation." }
+        return "Used when your assistant starts a new conversation."
     }
     var needsNewConversation: Bool {
         guard let current = comparisonConfiguration else { return false }
-        return config.agent != current.agent || config.folder != current.folder
+        return config.agent != current.agent || !Self.sameFolder(config.folder, current.folder)
+    }
+    var switchConfirmation: String {
+        let next = Self.name(config.agent)
+        if config.agent != currentConfiguration?.agent {
+            return "Switch to \(next) now? \(agentName)'s conversation stays in \(currentFolderLabel); \(next) starts a new one."
+        }
+        return "Switch folders now? \(agentName)'s conversation stays in \(currentFolderLabel); \(next) starts a new one in \(folderLabel)."
     }
     private var recoveryAgentName: String {
         let previous = (controller as? ZeusRuntime)?.managedController.record?.conversation?.agent ?? launchedConfig?.agent ?? config.agent
@@ -105,6 +130,20 @@ final class ManagedAssistantModel {
         if let actionError { return actionError }
         if settings.managedSettingsError != nil { return settings.managedSettingsError }
         if controller == nil { return Self.noControllerNote }
+        if let error = settingsApplier?.managedSettingsApplicationError { return error }
+        if let pending = settingsApplier?.managedSettingsApplication {
+            switch status {
+            case .failed, .stopped, .off: return "Your changes are saved. Start the assistant to apply them."
+            default: break
+            }
+            if pending.kind == .newConversation { return "Switching to \(Self.name(pending.configuration.agent)) in \((pending.configuration.folder as NSString).abbreviatingWithTildeInPath) when \(agentName) is ready." }
+            if pending.phase == .applying && settingsApplier?.managedCanResumeSettings == true {
+                return "Applying your changes. \(agentName) restarts and keeps the same conversation."
+            }
+            return "\(agentName) picks up your changes when it finishes what it's doing."
+        }
+        if needsNewConversation { return "Switches to \(Self.name(config.agent)) in \(folderLabel) the next time it starts." }
+        if instructionsAreDebouncing { return "Your instruction changes are saved." }
         if needsRestart && !requiresFreshConversation { return ZeusManagedCopy.restartToApply }
         return requirementsProblem
     }
@@ -158,7 +197,7 @@ final class ManagedAssistantModel {
             result.detail = ZeusRuntimeCopy.Managed.cantResume(agent: recoveryAgentName)
             result.menuStatus = ZeusRuntimeCopy.Managed.cantResumeTitle
             result.actions = [.newConversation] + (attachCommand == nil ? [] : [.openInTerminal])
-        } else if needsRestart {
+        } else if needsRestart && settingsApplier?.managedSettingsApplication == nil && !instructionsAreDebouncing {
             switch status {
             case .running, .starting:
                 result.actions.removeAll { $0 == .restart }; result.actions.insert(.restart, at: 0)
@@ -198,6 +237,7 @@ final class ManagedAssistantModel {
         confirmation = nil
         settings.managedAgentInitialized = true
         update { $0.agent = agent; $0.permissionModeID = nil }
+        offerConversationSwitch()
     }
     func choosePermission(_ id: String) {
         guard let mode = permissionModes.first(where: { $0.id == id }), id != selectedPermissionID else { return }
@@ -215,12 +255,63 @@ final class ManagedAssistantModel {
         confirmation = nil
         let firstFolder = config.folder.isEmpty
         update { $0.folder = path; if firstFolder { $0.startWhenZeusOpens = true } }
+        offerConversationSwitch()
     }
     func update(_ edit: (inout ManagedSessionConfig) -> Void) {
-        var next = config; edit(&next)
-        if next != settings.managedSession { settings.managedSession = next }
+        let previous = config
+        var next = previous; edit(&next)
+        if next != settings.managedSession {
+            settings.managedSession = next; observedConfiguration = next
+            configurationEdited(previous: previous)
+        }
     }
-    func cancelConfirmation() { confirmation = nil }
+    /// Blur commits immediately; normal typing waits for the coalescing timer.
+    func finishInstructionsEditing() { instructionDebouncer.flush() }
+    private func configurationEdited(previous: ManagedSessionConfig) {
+        guard previous.agent != config.agent || previous.folder != config.folder || previous.permissionModeID != config.permissionModeID
+                || previous.launchPrompt != config.launchPrompt || previous.enabled != config.enabled else { return }
+        if let target = confirmedSwitchTarget, target.agent != config.agent || !Self.sameFolder(target.folder, config.folder) || !enabled { confirmedSwitchTarget = nil }
+        if previous.agent == config.agent && previous.folder == config.folder && previous.permissionModeID == config.permissionModeID
+            && previous.enabled == config.enabled && !supportsInstructionResume && confirmedSwitchTarget == nil { return }
+        instructionDebouncer.cancel(); instructionsAreDebouncing = false
+        settingsApplier?.cancelManagedSettingsApplication()
+        if let target = confirmedSwitchTarget, enabled, settingsApplier != nil {
+            if previous.launchPrompt != config.launchPrompt {
+                instructionsAreDebouncing = true
+                instructionDebouncer.schedule { [weak self] in
+                    guard let self else { return }
+                    self.instructionsAreDebouncing = false; self.submitConfirmedSwitch(to: target)
+                }
+            } else { submitConfirmedSwitch(to: target) }
+            return
+        }
+        guard hasActiveSession, enabled, !needsNewConversation, settingsApplier != nil else { return }
+        if previous.launchPrompt != config.launchPrompt, config.launchPrompt != currentConfiguration?.launchPrompt, supportsInstructionResume {
+            instructionsAreDebouncing = true
+            instructionDebouncer.schedule { [weak self] in
+                guard let self else { return }
+                self.instructionsAreDebouncing = false; self.submitResumeSettingsIfNeeded()
+            }
+        } else { submitResumeSettingsIfNeeded() }
+    }
+    private func submitResumeSettingsIfNeeded() {
+        guard hasActiveSession, enabled, !switching, !needsNewConversation, let current = currentConfiguration, let settingsApplier,
+              current.permissionModeID != config.permissionModeID || (supportsInstructionResume && current.launchPrompt != config.launchPrompt) else { return }
+        settingsApplier.applyManagedSettings(config)
+    }
+    private func submitConfirmedSwitch(to target: ManagedSessionConfig) {
+        guard enabled, config.agent == target.agent, Self.sameFolder(config.folder, target.folder) else { return }
+        if needsNewConversation { settingsApplier?.switchManagedSettings(config) }
+        else { confirmedSwitchTarget = nil; submitResumeSettingsIfNeeded() }
+    }
+    func cancelConfirmation() {
+        if confirmation == .switchConversation { confirmedSwitchTarget = nil }
+        confirmation = nil
+    }
+    private func offerConversationSwitch() {
+        if hasActiveSession && needsNewConversation { confirmation = .switchConversation }
+        else if confirmation == .switchConversation { confirmation = nil }
+    }
     func confirm() {
         guard let confirmation else { return }
         self.confirmation = nil; actionError = nil
@@ -235,6 +326,12 @@ final class ManagedAssistantModel {
         case .unrestricted(let mode):
             guard permissionModes.contains(mode) else { return }
             update { $0.permissionModeID = mode.id }
+        case .switchConversation:
+            refreshAvailability()
+            guard canStart else { return }
+            instructionDebouncer.cancel(); instructionsAreDebouncing = false
+            if let settingsApplier { confirmedSwitchTarget = config; settingsApplier.switchManagedSettings(config) }
+            else { launchedConfig = config; controller?.startNewManagedConversation() }
         case .newConversation:
             refreshAvailability()
             guard canStart else { return }
@@ -249,12 +346,15 @@ final class ManagedAssistantModel {
         case .start, .tryAgain:
             refreshAvailability()
             guard canStart else { return }
-            if needsNewConversation || requiresFreshConversation { confirmation = .newConversation; return }
+            if needsNewConversation { confirmation = .switchConversation; return }
+            if requiresFreshConversation { confirmation = .newConversation; return }
             launchedConfig = config; controller.startManagedSession()
         case .restart, .restartNow:
             refreshAvailability()
             guard canStart else { return }
-            if needsNewConversation || requiresFreshConversation { confirmation = .newConversation; return }
+            if needsNewConversation { confirmation = .switchConversation; return }
+            if requiresFreshConversation { confirmation = .newConversation; return }
+            if needsRestart, settingsApplier != nil { finishInstructionsEditing(); submitResumeSettingsIfNeeded(); return }
             launchedConfig = config; controller.restartManagedSession()
         case .stop: controller.stopManagedSession()
         case .openInTerminal: controller.openManagedSessionInTerminal()
@@ -265,6 +365,13 @@ final class ManagedAssistantModel {
         }
     }
     private func reconcileStatus() {
+        if let applied = settingsApplier?.managedAppliedConfiguration, launchedConfig != applied { launchedConfig = applied }
+        if let target = confirmedSwitchTarget, let applied = settingsApplier?.managedAppliedConfiguration,
+           applied.agent == target.agent && Self.sameFolder(applied.folder, target.folder) { confirmedSwitchTarget = nil }
+        if observedConfiguration != settings.managedSession {
+            let previous = observedConfiguration ?? config; observedConfiguration = settings.managedSession
+            configurationEdited(previous: previous)
+        }
         if switching {
             switch status {
             case .stopped:
@@ -278,9 +385,16 @@ final class ManagedAssistantModel {
             }
         }
         if launchedConfig == nil, hasActiveSession, let currentConfiguration { launchedConfig = currentConfiguration }
+        if !instructionsAreDebouncing && settingsApplier?.managedSettingsApplication == nil && settingsApplier?.managedSettingsApplicationError == nil {
+            submitResumeSettingsIfNeeded()
+        }
     }
     private func observeStatus() {
-        withObservationTracking { _ = status; _ = controller?.managedTmuxSessionName; _ = currentConfiguration } onChange: { [weak self] in
+        withObservationTracking {
+            _ = status; _ = controller?.managedTmuxSessionName; _ = currentConfiguration; _ = settings.managedSession
+            _ = settingsApplier?.managedSettingsApplication; _ = settingsApplier?.managedSettingsApplicationError; _ = settingsApplier?.managedCanResumeSettings
+            _ = supportsInstructionResume
+        } onChange: { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.reconcileStatus()
@@ -290,6 +404,11 @@ final class ManagedAssistantModel {
     }
     static func name(_ agent: AgentKind) -> String {
         switch agent { case .claude: "Claude Code"; case .codex: "Codex"; case .opencode: "OpenCode"; case .other: "Agent" }
+    }
+    private static func sameFolder(_ left: String, _ right: String) -> Bool {
+        guard left.hasPrefix("/"), right.hasPrefix("/") else { return left == right }
+        return URL(fileURLWithPath: left).resolvingSymlinksInPath().standardizedFileURL.path
+            == URL(fileURLWithPath: right).resolvingSymlinksInPath().standardizedFileURL.path
     }
     static func designState(_ status: ManagedSessionStatus) -> ZeusManagedState {
         switch status {

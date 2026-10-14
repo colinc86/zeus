@@ -12,6 +12,7 @@ struct AssistantSettingsView: View {
     @Environment(\.zeusAnimationsActive) private var active
     @State private var choosingFolder = false
     @FocusState private var confirmationFocused: Bool
+    @FocusState private var instructionsFocused: Bool
     private var selectedAgentName: String { ManagedAssistantModel.name(managed.config.agent) }
 
     static let setupChoices: [ZeusChoice<Bool>] = [
@@ -48,6 +49,10 @@ struct AssistantSettingsView: View {
         if managed.confirmation == .newConversation {
             confirmation("Start a new conversation? \(selectedAgentName) starts fresh with these instructions.", action: "Start New")
                 .id("newConversationConfirmation")
+        }
+        if managed.confirmation == .switchConversation {
+            confirmation(managed.switchConfirmation, action: "Switch Now", cancel: "Later")
+                .id("switchConversationConfirmation")
         }
         HStack {
             title("Agent")
@@ -89,8 +94,11 @@ struct AssistantSettingsView: View {
         title("Instructions")
         ZeusFieldChrome { TextEditor(text: Binding(get: { managed.config.launchPrompt }, set: { prompt in managed.update { $0.launchPrompt = prompt } }))
             .font(.system(size: 13)).foregroundStyle(palette.text).tint(palette.focusRing).scrollContentBackground(.hidden).frame(height: 148)
+            .focused($instructionsFocused)
             .accessibilityLabel("Assistant instructions") }
-        caption(ZeusManagedCopy.launchPromptNote)
+        .onChange(of: instructionsFocused) { _, focused in if !focused { managed.finishInstructionsEditing() } }
+        .onDisappear { managed.finishInstructionsEditing() }
+        caption(managed.instructionsCaption)
         HStack(spacing: ZeusTheme.Spacing.s) {
             Button("Start a New Conversation") { managed.confirmation = .newConversation }.accessibilityLabel("Start a New Conversation")
                 .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).disabled(!managed.canStart)
@@ -110,13 +118,13 @@ struct AssistantSettingsView: View {
             })
             .disabled(managed.switching)
     }
-    private func confirmation(_ text: String, action: String) -> some View {
+    private func confirmation(_ text: String, action: String, cancel: String = "Cancel") -> some View {
         VStack(alignment: .leading, spacing: ZeusTheme.Spacing.s) {
             Text(text).zeusFont(.caption).foregroundStyle(palette.text).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: ZeusTheme.Spacing.s) {
                 Button(action) { managed.confirm() }.accessibilityLabel(action).buttonStyle(ZeusButtonStyle(.destructive, size: .small))
                     .focusable()
-                Button("Cancel") { managed.cancelConfirmation() }.accessibilityLabel("Cancel").buttonStyle(ZeusButtonStyle(.secondary, size: .small))
+                Button(cancel) { managed.cancelConfirmation() }.accessibilityLabel(cancel).buttonStyle(ZeusButtonStyle(.secondary, size: .small))
                     .focusable().focused($confirmationFocused)
                     .keyboardShortcut(.cancelAction)
             }

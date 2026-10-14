@@ -128,6 +128,14 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
             self.noteManagedScreenActivity(); self.updateManagedPresentation(); self.probeManagedChannel()
             self.bindWaitingUserMessages(); self.processDueDeliveries()
         }
+        managedController.settingsApplicationAllowed = { [weak self] in
+            guard let self, self.running, self.sends.isEmpty else { return false }
+            let key = self.managedController.sessionKey
+            return !(self.ledger?.records ?? []).contains {
+                $0.isPending && $0.delivery.sessionKey == key && ($0.delivery.meta["tmux_paste_destination"] != nil
+                    || ($0.delivery.meta["managed_channel_sent_at"] != nil && $0.delivery.meta["managed_channel_fallback"] != "true"))
+            }
+        }
         managedController.activate()
         if !managedController.enabled { updateManagedPresentation() }
         observeRouting()

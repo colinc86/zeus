@@ -180,6 +180,9 @@ struct ManagedTmuxIntegrationTests {
 import json, os, pathlib, signal, sqlite3, sys, time, uuid
 kind = sys.argv[1]
 a = sys.argv[2:]
+if a == ['--help']:
+    print('Private fixture CLI usage')
+    sys.exit(0)
 home = pathlib.Path(os.environ['HOME'])
 home.mkdir(parents=True, exist_ok=True)
 with (home / 'launches.jsonl').open('a') as f:

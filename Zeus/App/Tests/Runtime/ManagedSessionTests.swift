@@ -156,7 +156,8 @@ struct ManagedSessionTests {
         let second = try #require(await f.host.commands.last)
         #expect(!second.arguments.contains(initial))
         #expect(second.arguments.contains(context ?? "missing"))
-        #expect(f.controller.record?.conversation?.launchPrompt.contains("Original instructions") == true)
+        #expect(f.controller.record?.conversation?.launchPrompt == (f.controller.supportsInstructionChangesOnResume(for: agent)
+            ? "Changed only for next conversation" : "Original instructions '$()'\nSecond line"))
         #expect(!FileManager.default.fileExists(atPath: f.folder.appendingPathComponent(".mcp.json").path))
         if agent == .codex {
             #expect(second.arguments.contains("--no-daemon"))

@@ -107,7 +107,7 @@ private final class ManagedUIController: ManagedSessionControlling, ManagedTermi
         default: break
         }
         #expect(ConversationView.composerPlaceholder(managed: f.model.currentConfiguration, status: status, assistantLabel: nil) == "Message Claude…")
-        f.model.perform(.restart); #expect(f.model.confirmation == .newConversation)
+        f.model.perform(.restart); #expect(f.model.confirmation == .switchConversation)
         f.model.confirm(); #expect(f.controller.calls == ["new"])
         f.controller.managedStatus = .starting
         #expect(ConversationView.composerPlaceholder(managed: f.model.currentConfiguration, status: .starting, assistantLabel: nil) == "Message your assistant…")
@@ -344,7 +344,7 @@ private final class ManagedUIController: ManagedSessionControlling, ManagedTermi
         #expect(f.controller.calls == ["start", "restart"])
         #expect(!f.model.needsRestart)
         f.model.chooseFolder("/tmp/Other"); f.model.perform(.restart)
-        #expect(f.model.confirmation == .newConversation && f.controller.calls.count == 2)
+        #expect(f.model.confirmation == .switchConversation && f.controller.calls.count == 2)
         f.model.cancelConfirmation(); #expect(f.model.needsRestart)
         f.model.perform(.restart); f.model.confirm()
         #expect(f.controller.calls == ["start", "restart", "new"])
@@ -360,7 +360,7 @@ private final class ManagedUIController: ManagedSessionControlling, ManagedTermi
         model.refreshAvailability()
         #expect(model.needsRestart && model.needsNewConversation)
         model.perform(.restart)
-        #expect(model.confirmation == .newConversation && f.controller.calls == ["start"])
+        #expect(model.confirmation == .switchConversation && f.controller.calls == ["start"])
     }
     @Test func terminalActionUsesControllerAttachCommandAndDoesNotModifyConfiguration() throws {
         let f = try ManagedUIFixture(status: .blocked(reason: "Sign in")); defer { f.cleanup() }

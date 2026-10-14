@@ -28,6 +28,8 @@ struct ManagedSessionRecord: Codable, Sendable {
     var pendingWasFresh = false
     /// Only native profile locations, never authentication material.
     var nativeEnvironment: [String: String] = [:]
+    /// Exact preferences from the last successful launch; old records have no evidence.
+    var appliedConfiguration: ManagedSessionConfig?
 }
 
 struct ManagedSessionStore: Sendable {
