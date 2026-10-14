@@ -1,5 +1,5 @@
 // Q2 visual-audit harness (designer). NOT part of the app's test suite.
-// docs/audit/harness/render.sh copies this file into Zeus/App/Tests, runs only this suite, and removes it again.
+// scripts/design-harness/render.sh copies this file into Zeus/App/Tests, runs only this suite, and removes it again.
 // It renders every app surface into offscreen, borderless windows parked far off-screen (no screen capture)
 // and writes PNGs (2x) to build/q2-renders/, plus text dumps of menus and the accessibility tree.
 
@@ -31,13 +31,16 @@ import ZeusSprites
 @MainActor @Observable private final class AuditManagedController: ManagedSessionControlling {
     var managedStatus: ManagedSessionStatus = .off
     var missingTmux = false
+    /// README renders: every agent installed.
+    var allInstalled = false
     var managedTmuxSessionName: String? { managedStatus == .off ? nil : "zeus" }
-    var managedAttachCommand: String? { managedTmuxSessionName.map { "tmux attach -t \($0)" } }
+    var managedAttachCommand: String? { managedTmuxSessionName.map { ZeusManagedCopy.attachCommand(session: $0) } }
     func permissionModes(for agent: AgentKind) -> [ManagedPermissionMode] {
-        agent == .opencode ? [] : ManagedAgentLaunch.policies(for: agent).map(\.mode)
+        agent == .opencode && !allInstalled ? [] : ManagedAgentLaunch.policies(for: agent).map(\.mode)
     }
     func managedRequirementsProblem(for agent: AgentKind) -> String? {
         if missingTmux { return "Not installed: tmux (brew install tmux). Install it, then press Check Again." }
+        if allInstalled { return nil }
         return agent == .opencode ? "Not installed: OpenCode (the opencode command). Install it, then press Check Again." : nil
     }
     func startManagedSession() {}
@@ -543,4 +546,339 @@ extension DesignerAuditRenders {
     var sessions: [ConnectedSession] = []
     var next: MessageSendResult = .delivered
     func sendUserMessage(_ text: String) async -> MessageSendResult { next }
+}
+
+// MARK: - README showcase (task R)
+// `render.sh readme` renders the README art into build/readme-renders/: stills as PNG, animations as numbered PNG
+// frames (12 fps) that readme-assets.py turns into GIFs in docs/readme/. Everything comes from the real views and
+// the sprite renderer. Fixture data only: generic names and folders.
+
+@MainActor @Observable private final class ReadmeClock { var time: Double = 0 }
+
+private struct ReadmeClocked<Content: View>: View {
+    let clock: ReadmeClock
+    let content: (Double) -> Content
+    var body: some View { content(clock.time) }
+}
+
+/// One sprite frame, nearest-neighbour at a whole-number scale.
+private struct ReadmeSprite: View {
+    let character: SpriteCharacter
+    let state: AvatarState
+    let time: Double
+    let scale: CGFloat
+    var body: some View {
+        let image = SpriteRenderer.render(character, state: state, time: max(0, time))
+        Image(decorative: image, scale: 1).resizable().interpolation(.none)
+            .frame(width: CGFloat(image.width) * scale, height: CGFloat(image.height) * scale)
+    }
+}
+
+/// A rounded pixel panel the art sits on. Outside it is the GIF key color (made transparent by readme-assets.py).
+private struct ReadmeStage<Content: View>: View {
+    var desktop = false
+    /// GIF frames: fill outside the panel with the key color. Stills stay transparent.
+    var keyed = true
+    let size: CGSize
+    @ViewBuilder let content: Content
+    @Environment(\.zeusPalette) private var palette
+    @Environment(\.colorScheme) private var scheme
+    var body: some View {
+        let shape = PixelRoundedRectangle(step: 2, steps: 3)
+        ZStack { content }
+            .frame(width: size.width, height: size.height)
+            .background(desktop ? Snap.backdrop(scheme == .dark) : palette.panel)
+            .clipShape(shape)
+            .overlay(shape.strokeBorder(palette.outline, lineWidth: 2))
+            .background(keyed ? Readme.key : .clear)
+    }
+}
+
+/// A small framed label, e.g. an agent name.
+private struct ReadmeChip: View {
+    let text: String
+    var selected = false
+    @Environment(\.zeusPalette) private var palette
+    var body: some View {
+        let shape = PixelRoundedRectangle(steps: 1)
+        Text(text).zeusFont(.button)
+            .foregroundStyle(selected ? palette.onAccent : palette.text)
+            .padding(.horizontal, ZeusTheme.Spacing.s).padding(.vertical, ZeusTheme.Spacing.xs)
+            .background(shape.fill(selected ? palette.accent : palette.field))
+            .overlay(shape.strokeBorder(palette.outline, lineWidth: 1))
+    }
+}
+
+@MainActor private enum Readme {
+    static let out = Snap.repo.appendingPathComponent("build/readme-renders")
+    /// Pure magenta: never used by the palette or the sprites, so it's safe as the GIF's transparent color.
+    static let key = Color(red: 1, green: 0, blue: 1)
+    static let characters = CharacterLibrary.load(userDirectory: nil).characters
+    static func character(_ id: String) -> SpriteCharacter {
+        characters.first { $0.id == id } ?? characters[0]
+    }
+    static let looks: [(name: String, appearance: NSAppearance.Name)] = [("light", .aqua), ("dark", .darkAqua)]
+
+    static func window(_ view: AnyView, appearance: NSAppearance.Name, size: CGSize) -> (NSHostingView<AnyView>, NSWindow) {
+        let host = NSHostingView(rootView: AnyView(view.environment(\.zeusFontChoice, .pixel)))
+        let window = NSWindow(contentRect: CGRect(x: -24000, y: -24000, width: size.width, height: size.height),
+                              styleMask: [.borderless], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.appearance = NSAppearance(named: appearance)
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.contentView = host
+        window.orderFrontRegardless()
+        return (host, window)
+    }
+
+    static func write(_ view: NSView, to url: URL) throws {
+        let bounds = view.bounds
+        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(bounds.width * 2), pixelsHigh: Int(bounds.height * 2),
+                                         bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                         colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return }
+        rep.size = bounds.size
+        view.cacheDisplay(in: bounds, to: rep)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try rep.representation(using: .png, properties: [:])?.write(to: url)
+    }
+
+    /// A still at its fitting size (or `size`), on a transparent background.
+    static func still(_ name: String, appearance: NSAppearance.Name, size: CGSize? = nil, settle: Double = 0.6, _ view: some View) async throws {
+        let (host, window) = window(AnyView(view), appearance: appearance, size: size ?? CGSize(width: 900, height: 900))
+        try await Task.sleep(for: .seconds(settle))
+        if size == nil { window.setContentSize(host.fittingSize) }
+        host.layoutSubtreeIfNeeded()
+        try await Task.sleep(for: .seconds(settle))
+        if size == nil { window.setContentSize(host.fittingSize); host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .seconds(0.1)) }
+        try write(host, to: out.appendingPathComponent("\(name).png"))
+        window.orderOut(nil)
+    }
+
+    /// Numbered frames at `fps` for `seconds`, for readme-assets.py.
+    static func frames<V: View>(_ name: String, appearance: NSAppearance.Name, size: CGSize, seconds: Double, fps: Double = 12,
+                                _ content: @escaping (Double) -> V) async throws {
+        let clock = ReadmeClock()
+        let (host, window) = window(AnyView(ReadmeClocked(clock: clock, content: content)), appearance: appearance, size: size)
+        let dir = out.appendingPathComponent("frames/\(name)")
+        try? FileManager.default.removeItem(at: dir)
+        try await Task.sleep(for: .seconds(0.6))
+        for i in 0..<Int(seconds * fps) {
+            clock.time = Double(i) / fps
+            try await Task.sleep(for: .milliseconds(40))
+            host.layoutSubtreeIfNeeded()
+            try write(host, to: dir.appendingPathComponent(String(format: "%03d.png", i)))
+        }
+        try "\(fps)".write(to: dir.appendingPathComponent("fps.txt"), atomically: true, encoding: .utf8)
+        window.orderOut(nil)
+    }
+
+    static let session = ConnectedSession(id: UUID(), sessionKey: "claude:/Users/alex/Assistant", agent: .claude, cwd: "/Users/alex/Assistant",
+                                          clientName: "Claude Code", supportsChannel: true, tmuxPane: nil, connectedAt: t0)
+    static let startSlides = Card(id: "c_slides", kind: .question, body: "Your Q3 review is Thursday at 10. Want me to start the slides?",
+                                  options: [CardOption(id: "s", label: "Start them", style: .primary), CardOption(id: "n", label: "Not yet")])
+    static let draftReady = Card(id: "c_draft", kind: .message, body: "First draft ready.")
+}
+
+/// The hero: the wordmark, and Zeus offering to start a task before a meeting: ask, a one-click answer, work, done.
+private struct ReadmeHero: View {
+    let time: Double
+    @Environment(\.zeusPalette) private var palette
+    static let size = CGSize(width: 880, height: 320)
+    static let seconds = 12.0
+
+    var body: some View {
+        let zeus = Readme.character("zeus")
+        let (state, since) = phase
+        ReadmeStage(size: Self.size) {
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: ZeusTheme.Spacing.l) {
+                    Text("Zeus").font(.custom(ZeusFonts.pixelFamily, size: 66)).foregroundStyle(palette.title)
+                    Text("Your agent. Your assistant.\nYour way.")
+                        .font(.custom(ZeusFonts.pixelFamily, size: 16.5)).foregroundStyle(palette.text).lineSpacing(6)
+                        .fixedSize()
+                    HStack(spacing: ZeusTheme.Spacing.s) {
+                        ReadmeChip(text: "Claude Code"); ReadmeChip(text: "Codex"); ReadmeChip(text: "OpenCode")
+                    }
+                }
+                .padding(.leading, 36)
+                Spacer(minLength: 0)
+            }
+            HStack(alignment: .bottom, spacing: 0) {
+                Spacer(minLength: 0)
+                // The sprite canvas has empty columns at its sides, so the tail can tuck in.
+                // Every bubble hangs from the same top edge, so the tail always points at Zeus's face.
+                bubble.frame(height: 158, alignment: .top).padding(.trailing, -20)
+                ReadmeSprite(character: zeus, state: state, time: time - since, scale: 4)
+            }
+            .padding(.trailing, 16).padding(.bottom, 12)
+            .frame(maxHeight: .infinity, alignment: .bottom)
+        }
+    }
+
+    /// The state at `time` and when it started. Starts and ends idle with no bubble, so the loop is seamless.
+    var phase: (AvatarState, Double) {
+        switch time {
+        case ..<1.2: (.idle, 0)
+        case ..<1.8: (.alert, 1.2)
+        case ..<3.8: (.talking, 1.8)
+        case ..<6.0: (.idle, 3.8)
+        case ..<9.0: (.working, 6.0)
+        case ..<11.4: (.happy, 9.0)
+        default: (.idle, 11.4)
+        }
+    }
+
+    @ViewBuilder var bubble: some View {
+        switch time {
+        case 1.8..<6.0:
+            // The question types out, waits, then "Start them" is clicked.
+            let card = Readme.startSlides
+            let answered: String? = time >= 5.0 ? "s" : nil
+            peek(card, answered: answered, reveal: min(1, (time - 1.8) / 1.6))
+        case 6.0..<9.0:
+            VStack(alignment: .leading, spacing: ZeusTheme.Spacing.s) {
+                Text("Drafting the slides").zeusFont(.button).foregroundStyle(palette.title)
+                ZeusProgressRow(value: min(1, (time - 6.0) / 2.6))
+            }
+            .frame(width: 220)
+            .zeusDialog(tail: ZeusDialogTail(edge: .trailing, offset: 34))
+            .environment(\.zeusAnimationsActive, false)
+        case 9.0..<11.4:
+            peek(Readme.draftReady, answered: nil, reveal: min(1, (time - 9.0) / 0.6))
+        default:
+            EmptyView()
+        }
+    }
+
+    private func peek(_ card: Card, answered: String?, reveal: Double) -> some View {
+        let layout = PeekLayout.measure(card: card, font: .pixel, moreCount: 0, error: nil, answeredOptionID: answered,
+                                        available: CGSize(width: 1400, height: 800))
+        return PeekContent(card: card, layout: layout, moreCount: 0, error: nil, answeredOptionID: answered,
+                           tail: ZeusDialogTail(edge: .trailing, offset: 34), reveal: .fraction(reveal))
+            .environment(\.zeusAnimationsActive, false)
+    }
+}
+
+/// The roster: eight characters stepping through the same states together.
+private struct ReadmeRoster: View {
+    let time: Double
+    @Environment(\.zeusPalette) private var palette
+    static let ids = ["zeus", "ghost", "robot", "pumpkin", "slime", "wizard", "cat", "owl"]
+    static let states: [(AvatarState, Double)] = [(.idle, 2), (.thinking, 2), (.working, 2), (.alert, 1.5), (.happy, 2)]
+    static let size = CGSize(width: 880, height: 230)
+    static var seconds: Double { states.map(\.1).reduce(0, +) }
+
+    var current: (AvatarState, Double) {
+        var start = 0.0
+        for (state, length) in Self.states {
+            if time < start + length { return (state, start) }
+            start += length
+        }
+        return (Self.states[0].0, 0)
+    }
+
+    var body: some View {
+        let (state, since) = current
+        ReadmeStage(size: Self.size) {
+            VStack(spacing: ZeusTheme.Spacing.l) {
+                HStack(spacing: ZeusTheme.Spacing.s) {
+                    ForEach(Self.states, id: \.0) { s, _ in ReadmeChip(text: s.rawValue, selected: s == state) }
+                }
+                HStack(alignment: .bottom, spacing: 0) {
+                    ForEach(Self.ids, id: \.self) { id in
+                        let character = Readme.character(id)
+                        VStack(spacing: ZeusTheme.Spacing.s) {
+                            ReadmeSprite(character: character, state: state, time: time - since, scale: 2)
+                            Text(character.name).zeusFont(.caption).foregroundStyle(palette.secondaryText)
+                        }
+                        .frame(width: 104)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// The peek bubble on the desktop, next to Zeus.
+private struct ReadmePeek: View {
+    var body: some View {
+        let card = Card(kind: .question, title: "Pick a venue", body: "Which venue should I book for Friday's team dinner?",
+                        options: [CardOption(id: "a", label: "Harbor Loft", style: .primary), CardOption(id: "b", label: "The Greenhouse"),
+                                  CardOption(id: "c", label: "Somewhere else")])
+        let layout = PeekLayout.measure(card: card, font: .pixel, moreCount: 0, error: nil, answeredOptionID: nil,
+                                        available: CGSize(width: 1400, height: 800))
+        ReadmeStage(desktop: true, keyed: false, size: CGSize(width: 520, height: 210)) {
+            HStack(alignment: .bottom, spacing: 0) {
+                PeekContent(card: card, layout: layout, moreCount: 0, error: nil, answeredOptionID: nil,
+                            tail: ZeusDialogTail(edge: .trailing, offset: 34), reveal: .full)
+                    .environment(\.zeusAnimationsActive, false)
+                    .padding(.trailing, -12)
+                ReadmeSprite(character: Readme.character("zeus"), state: .talking, time: 0.2, scale: 3)
+            }
+            .padding(.bottom, 12)
+            .frame(maxHeight: .infinity, alignment: .bottom)
+        }
+    }
+}
+
+extension DesignerAuditRenders {
+    @Test func readme() async throws {
+        let previousZone = NSTimeZone.default
+        NSTimeZone.default = TimeZone(identifier: "America/New_York") ?? .current
+        defer { NSTimeZone.default = previousZone }
+        try? FileManager.default.removeItem(at: Readme.out)
+        for look in Readme.looks {
+            try await Readme.frames("hero-\(look.name)", appearance: look.appearance, size: ReadmeHero.size, seconds: ReadmeHero.seconds) { ReadmeHero(time: $0) }
+            try await Readme.frames("roster-\(look.name)", appearance: look.appearance, size: ReadmeRoster.size, seconds: ReadmeRoster.seconds) { ReadmeRoster(time: $0) }
+            try await Readme.still("peek-\(look.name)", appearance: look.appearance, ReadmePeek())
+            try await conversation(look)
+            try await settings(look)
+        }
+    }
+
+    /// Ask → one-click answer → finished work with Open and Reveal → the next job in progress.
+    private func conversation(_ look: (name: String, appearance: NSAppearance.Name)) async throws {
+        let f = Fixture(font: .pixel); defer { f.cleanup() }
+        let s = Readme.session.sessionKey
+        let base = Date(timeIntervalSince1970: 1_791_137_100)
+        func at(_ minutes: Double) -> Date { base.addingTimeInterval(minutes * 60) }
+        f.messaging.sessions = [Readme.session]
+        f.store.add(Card(id: "u_1", kind: .userMessage, body: "Can you get the slides ready for Thursday's review?", createdAt: at(0), updatedAt: at(0)))
+        f.store.add(Card(id: "c_q", kind: .question, title: "Slides", body: "Should I update last quarter's deck, or start a fresh one?",
+                         options: [CardOption(id: "u", label: "Update last deck", style: .primary), CardOption(id: "f", label: "Start fresh")],
+                         sessionKey: s, createdAt: at(1), updatedAt: at(1), status: .answered,
+                         response: CardResponse(optionID: "u", optionLabel: "Update last deck", respondedAt: at(2), device: .mac)))
+        f.store.add(Card(id: "c_c", kind: .content, title: "Slides are ready", body: "I updated the charts with this quarter's numbers and added speaker notes.",
+                         attachments: [Attachment(kind: .file, label: "Q3 review.key", target: "/Users/alex/Assistant/Q3 review.key"),
+                                       Attachment(kind: .folder, label: "Charts", target: "/Users/alex/Assistant/Charts")],
+                         sessionKey: s, createdAt: at(6), updatedAt: at(6)))
+        f.messaging.assistantActivity = AssistantActivity(phase: .working, sessionKey: s, agentName: "Claude Code",
+                                                          detail: "Exporting a PDF copy for the team", progress: 0.6, since: at(7))
+        try await Readme.still("conversation-\(look.name)", appearance: look.appearance, settle: 0.8, f.conversation().padding(2))
+    }
+
+    /// Settings › Assistant with "Zeus runs it": Claude Code running in ~/Assistant.
+    private func settings(_ look: (name: String, appearance: NSAppearance.Name)) async throws {
+        let f = Fixture(font: .pixel); defer { f.cleanup() }
+        f.settings.managedSession = AppSettings.newManagedSession(enabled: true)
+        let controller = AuditManagedController()
+        controller.allInstalled = true
+        let model = ManagedAssistantModel(settings: f.settings, controller: { controller })
+        model.refreshAvailability()
+        model.chooseFolder("/Users/alex/Assistant")
+        model.perform(.start)
+        controller.managedStatus = .running(.idle)
+        let hub = AgentMessagingHub()
+        hub.previewEnabled = true
+        let view = AssistantSettingsView(settings: f.settings, managed: model, messaging: hub, testMessage: ComposeModel(cards: f.store, messaging: hub))
+            .frame(width: 524).padding(24)
+            // Ends just after the Folder caption, before the Permissions heading.
+            .frame(width: 572, height: 582, alignment: .top).clipped()
+            .padding(.bottom, 20)
+            .background(Color(nsColor: .windowBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color(nsColor: .separatorColor)))
+        try await Readme.still("settings-\(look.name)", appearance: look.appearance, size: CGSize(width: 572, height: 602), settle: 0.8, view)
+    }
 }
