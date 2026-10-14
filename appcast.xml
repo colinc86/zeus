@@ -6,6 +6,34 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.1.8</title>
+      <pubDate>Wed, 14 Oct 2026 21:09:58 GMT</pubDate>
+      <sparkle:version>9</sparkle:version>
+      <sparkle:shortVersionString>0.1.8</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Your assistant can control Zeus.</strong> New tools let it switch or create characters and themes, move Zeus, change its size, hide it for a while, adjust look-and-feel settings, check for updates and install one after announcing it. Every change shows in the conversation as one line with Undo. It can never answer its own questions, change its own permissions or session, or touch your data. Two switches in Settings › General: "Let my assistant control Zeus" and "Let my assistant install updates" (both on).</li>
+<li><strong>Status strip.</strong> A line between the messages and the input tells you why Zeus shows "?" or "!" and takes you to that message. Skip a question you don't want to answer (your assistant is told). Quick buttons: Terminal, New conversation, Clear, Settings. ⌘J jumps. Clicking Zeus while it shows "?" opens the conversation at that question.</li>
+<li><strong>Learn from me (off by default).</strong> Settings › Privacy: Zeus can note when and in which apps you work, on this Mac only, and send your assistant a short morning summary plus up to four notes a day. No keystrokes, window titles or screenshots. Private apps count as private time with no name. See what was recorded, pause for today, or delete everything.</li>
+<li><strong>Keyboard and VoiceOver.</strong> Every new control has one Tab stop and a themed focus ring. ⌘⌥← and ⌘⌥→ change the panel width; Reset width is in the panel's menu. Undo and the private-app picker announce their results.</li>
+<li><strong>Links are clickable.</strong> Web, file and mail addresses in messages open with a click.</li>
+<li><strong>Connect your own.</strong> Switching away from "Zeus runs it" while the agent is running now asks "Stop the Zeus-run agent?" with Stop or Keep Running.</li>
+<li><strong>Zeus stops "thinking" when the agent is done.</strong> When the assistant Zeus runs finishes its turn without sending a reply, the thinking indicator and pose now end as soon as its terminal goes idle, instead of after five minutes.</li>
+<li><strong>Fade works even with a question waiting.</strong> "Fade Zeus when idle" now dims Zeus after the delay even while a question is open or the assistant is working. A new question or new work brings Zeus back, then it fades again.</li>
+<li><strong>Typed answers close option questions.</strong> When your assistant asks a question with choices and you type your answer instead of clicking one, the question is answered with your text instead of staying open with a "?" over Zeus.</li>
+<li><strong>Terminal prompts that vanish.</strong> If an assistant prompt disappears from Terminal without Zeus seeing the answer, the prompt card closes as unconfirmed after 30 seconds instead of staying open.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.1.8/Zeus-0.1.8.zip" type="application/octet-stream" sparkle:edSignature="e+7GCPN5kFAHZQAiGwT58IDIyPmDY3hET9vs8HEhCRVaXaYXgCGe3B3FcS3G03N9Oy/crOxr1o1s2QN5cHoEDw==" length="8881749"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.1.7</title>
       <pubDate>Wed, 14 Oct 2026 13:29:56 GMT</pubDate>
       <sparkle:version>8</sparkle:version>
