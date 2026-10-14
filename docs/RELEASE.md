@@ -7,7 +7,9 @@ scripts/release.sh
 ```
 
 This runs `scripts/test.sh`, recreates `build/release/`, builds Release for **arm64
-and x86_64**, and creates `build/release/Zeus-<version>.dmg`. Use
+and x86_64**, and creates `build/release/Zeus-<version>.dmg` and the Sparkle
+update archive `Zeus-<version>.zip`. Without `--publish`, the script stops at local
+artifacts: it never creates tags, GitHub releases, commits or pushes. Use
 `--skip-tests` only when the same revision has already passed tests. Debug builds
 remain ad-hoc and retain the usual build directories.
 
@@ -22,6 +24,88 @@ Release disables Xcode's base-entitlement injection so it cannot acquire the
 The pipeline verifies both architectures, authority, team, runtime and timestamp
 on the app and bridge, rejects debugger entitlements, then verifies the actual
 packaged copies after mounting.
+
+## Versions and Sparkle signing
+
+Set `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml` before
+releasing. They are the only source of the version and build number. Commit those
+changes before publishing from clean main. Use versions
+like `0.1.4` or `0.1.5-beta.1` and positive integer build numbers. Sparkle compares
+the build number, so increase it for **every** release, including betas. The script
+refuses a build that does not strictly exceed the highest build in `appcast.xml`.
+An exact existing item is accepted only for an idempotent publish resume.
+
+Build once with Sparkle integrated so Xcode resolves its tools. They are under this
+checkout's `build/SourcePackages/artifacts/` or the Release SourcePackages directory,
+in `Sparkle/bin`. The release script discovers `generate_keys` and `sign_update`
+there; it never borrows another app's artifacts or tools from global DerivedData.
+Create the named signing account once, interactively:
+
+```sh
+path/to/Sparkle/bin/generate_keys --account zeus
+path/to/Sparkle/bin/generate_keys --account zeus -p
+```
+
+The private EdDSA key stays in the Keychain. Do not export it or put it in an
+environment variable, tracked file or release artifact. Put the printed **public**
+key in the app's `SUPublicEDKey` setting and rebuild. The pipeline checks the built
+app's key against `generate_keys --account zeus -p` and checks its `SUFeedURL`.
+A missing account, placeholder/mismatched public key or missing tools fails with
+setup instructions. No key is created automatically.
+
+After app stapling and DMG verification, `ditto -c -k --keepParent` archives the
+final app and `sign_update --account zeus` signs that ZIP. The feed carries its
+EdDSA signature and actual byte length. [Sparkle's signing and publishing guide](https://sparkle-project.org/documentation/)
+
+## Publishing and resuming
+
+Publishing is explicitly opt-in and requires clean `main`, `origin` pointing at
+the public `colinc86/zeus` repository, authenticated `gh`, and notarized artifacts.
+Keep the Markdown notes outside `build/release/`, which a new build recreates, and
+outside tracked/untracked source files so `main` stays clean. For example:
+
+```sh
+mkdir -p build
+# Write the user-facing release notes to build/notes.md, then:
+scripts/release.sh --publish build/notes.md
+```
+
+The script fetches `origin/main` and refuses to publish from behind it. It tags
+the packaged source revision as `v<version>`, pushes that tag, creates the GitHub
+release with the DMG and ZIP, and renders the Markdown through GitHub's HTML API.
+It verifies uploaded bytes against local SHA-256 values, writes the ZIP's public
+`browser_download_url` into `appcast.xml`, then commits and pushes **only** the
+appcast on main. Public updates require no GitHub integration token in Zeus.
+`SUFeedURL` is `https://raw.githubusercontent.com/colinc86/zeus/main/appcast.xml`.
+
+Versions ending in `-beta.N` become GitHub prereleases. As in the reference Gloss
+flow, they are listed in the same appcast without a separate Sparkle channel, so
+installed copies checking that feed can be offered them. Release notes appear as
+HTML in Sparkle and as Markdown on GitHub. The minimum system version is 26.0.
+
+If publication fails after tagging, keep `build/release/` and the original notes:
+
+```sh
+scripts/release.sh --publish build/notes.md --resume
+```
+
+Resume never rebuilds, notarizes or signs again. `publish.json` remembers the
+source revision, version/build, signature and archive hashes. Existing tags and
+releases must match; missing assets are uploaded without overwriting existing
+assets. Existing uploaded bytes and the appcast item are verified. The appcast
+write is atomic and an identical rerun leaves it byte-for-byte unchanged. Resume
+also finishes a committed appcast whose push failed, or an appcast file left
+uncommitted by an interrupted commit. It refuses changed artifacts, changed
+notes, unrelated source changes or a tag pointing elsewhere. If main advanced
+remotely, update it first; unrelated code changes require a new release build.
+Do not delete the saved artifacts until publication succeeds.
+
+`--publish --no-notarize` and `--resume` without `--publish` are rejected. A local
+signed build cannot be promoted to a shareable release without rebuilding through
+the notarized path. `python3 -B scripts/test_release.py` exercises appcast ordering,
+idempotence, version checks, public-key checks and interrupted publication using
+disposable files and mocked GitHub/git commands; it never contacts GitHub or tags
+the repository. These tests also run in `scripts/test.sh`.
 
 ## Notarization
 
@@ -111,6 +195,6 @@ succeed, and both stapled tickets must validate.
 
 Review `build/release/logs/`: build/signature logs, notarization status and failures,
 stapler validation, `layout-verified.json`, and Gatekeeper results. The final
-`SHA256SUMS` is calculated **after** stapling. Share the DMG only when its status
-says signed/notarized/stapled and the final D17 art is installed. No upload or
-publication service is part of this pipeline.
+`SHA256SUMS` covers the DMG and ZIP and is calculated **after** stapling. Share the
+DMG only when its status says signed/notarized/stapled and the final art is
+installed. `signature.txt` and `publish.json` stay in the ignored release directory.

@@ -4,6 +4,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
 
+echo "==> Release/appcast tests (offline fixtures)"
+python3 -B scripts/test_release.py
+
 echo "==> ZeusKit tests"
 swift test --package-path Packages/ZeusKit --scratch-path "$ROOT/build/ZeusKit"
 
