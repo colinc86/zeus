@@ -43,6 +43,7 @@
     "secondaryText": "#58627A",
     "title": "#875800",
     "accent": "#E8B931",
+    "link": "#875800",
     "onAccent": "#2B1D00",
     "secondaryFill": "#E9E4D8",
     "onSecondary": "#1F2A44",

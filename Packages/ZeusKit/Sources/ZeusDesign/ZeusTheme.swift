@@ -91,6 +91,27 @@ public struct ZeusPalette: Sendable, Hashable {
     public var focusRing: Color
     /// "Running" and other healthy states (at least 3:1 against the panel; never the only cue).
     public var positive: Color
+    /// The theme's own link color, or nil to use `accent` (D18; see `link`).
+    public var linkColor: Color? = nil
+    /// The theme's own hairline color, or nil for the default (see `divider`).
+    public var dividerColor: Color? = nil
+
+    /// Link text in messages, underlined (at least 4.5:1 on the agent's bubble; 7:1 under Increase Contrast).
+    /// `accent` unless the theme sets `link`: a pale accent that serves buttons can't serve text.
+    public var link: Color { linkColor ?? accent }
+    /// Hairline rules inside a panel, such as the line under the status strip (at least 3:1 against the panel).
+    public var divider: Color { dividerColor ?? secondaryText.opacity(Self.dividerOpacity) }
+    /// The default divider: secondary text at this opacity.
+    public static let dividerOpacity = 0.75
+
+    /// The colors for text inside the user's own bubble: links and bold runs take `onUserBubble`, so they read on
+    /// `userBubble` whatever the agent bubble needs. Pass it to `ZeusMarkdown.attributed` for user bubbles.
+    public var userBubbleText: ZeusPalette {
+        var copy = self
+        copy.linkColor = onUserBubble
+        copy.title = onUserBubble
+        return copy
+    }
 
     /// The dark appearance: a midnight dialog box with a pale frame.
     public static let dark = ZeusPalette(
@@ -98,7 +119,7 @@ public struct ZeusPalette: Sendable, Hashable {
         text: Color(hex: 0xF4F1FF), secondaryText: Color(hex: 0xA9A3C7), title: Color(hex: 0xF6C544),
         accent: Color(hex: 0xF6C544), onAccent: Color(hex: 0x2A1D05),
         secondaryFill: Color(hex: 0x3A3354), onSecondary: Color(hex: 0xF4F1FF),
-        destructive: Color(hex: 0xF06A7E), onDestructive: Color(hex: 0x1A0710),
+        destructive: Color(hex: 0xF57A8C), onDestructive: Color(hex: 0x1A0710),
         field: Color(hex: 0x120F1D), fieldBorder: Color(hex: 0x5B5380),
         track: Color(hex: 0x2C2640), fill: Color(hex: 0x7AD7FF),
         badge: Color(hex: 0xC8364D), onBadge: Color(hex: 0xFFFFFF),
@@ -112,10 +133,10 @@ public struct ZeusPalette: Sendable, Hashable {
     /// The light appearance: a parchment dialog box with an ink frame.
     public static let light = ZeusPalette(
         outline: Color(hex: 0x2A2140), frame: Color(hex: 0xC9BFA3), panel: Color(hex: 0xFBF7EA),
-        text: Color(hex: 0x2A2140), secondaryText: Color(hex: 0x6E6488), title: Color(hex: 0x9A6408),
+        text: Color(hex: 0x2A2140), secondaryText: Color(hex: 0x6E6488), title: Color(hex: 0x8C5A06),
         accent: Color(hex: 0xF6C544), onAccent: Color(hex: 0x2A1D05),
         secondaryFill: Color(hex: 0xEDE5CF), onSecondary: Color(hex: 0x2A2140),
-        destructive: Color(hex: 0xC8364D), onDestructive: Color(hex: 0xFFFFFF),
+        destructive: Color(hex: 0xB8303F), onDestructive: Color(hex: 0xFFFFFF),
         field: Color(hex: 0xFFFFFF), fieldBorder: Color(hex: 0xB8AD8F),
         track: Color(hex: 0xE9E1C9), fill: Color(hex: 0x2B74B8),
         badge: Color(hex: 0xC8364D), onBadge: Color(hex: 0xFFFFFF),
@@ -123,7 +144,8 @@ public struct ZeusPalette: Sendable, Hashable {
         agentBubble: Color(hex: 0xFFFFFF), userBubble: Color(hex: 0xDCEBFA), onUserBubble: Color(hex: 0x2A2140),
         sessionColors: [Color(hex: 0x2F7FC8), Color(hex: 0xB07A10), Color(hex: 0x3E9A4A), Color(hex: 0xC0508A)],
         focusRing: Color(hex: 0xA87000),
-        positive: Color(hex: 0x2E7D3A)
+        positive: Color(hex: 0x2E7D3A),
+        linkColor: Color(hex: 0x8C5A06)
     )
 
     /// Increase Contrast, dark: full-strength frame and text, darker fills behind light labels.
@@ -132,7 +154,7 @@ public struct ZeusPalette: Sendable, Hashable {
         text: Color(hex: 0xFFFFFF), secondaryText: Color(hex: 0xD6D1F0), title: Color(hex: 0xFFD966),
         accent: Color(hex: 0xFFD966), onAccent: Color(hex: 0x1A1000),
         secondaryFill: Color(hex: 0x3A3354), onSecondary: Color(hex: 0xFFFFFF),
-        destructive: Color(hex: 0xFF8A9A), onDestructive: Color(hex: 0x1A0710),
+        destructive: Color(hex: 0xFFB3BE), onDestructive: Color(hex: 0x1A0710),
         field: Color(hex: 0x0A0812), fieldBorder: Color(hex: 0xB0A8DC),
         track: Color(hex: 0x2C2640), fill: Color(hex: 0x9AE4FF),
         badge: Color(hex: 0xA82238), onBadge: Color(hex: 0xFFFFFF),
@@ -149,7 +171,7 @@ public struct ZeusPalette: Sendable, Hashable {
         text: Color(hex: 0x14101F), secondaryText: Color(hex: 0x433A58), title: Color(hex: 0x6E4500),
         accent: Color(hex: 0xF6C544), onAccent: Color(hex: 0x1A1000),
         secondaryFill: Color(hex: 0xE4DAC0), onSecondary: Color(hex: 0x14101F),
-        destructive: Color(hex: 0xA51F35), onDestructive: Color(hex: 0xFFFFFF),
+        destructive: Color(hex: 0x8E1A2D), onDestructive: Color(hex: 0xFFFFFF),
         field: Color(hex: 0xFFFFFF), fieldBorder: Color(hex: 0x4A4060),
         track: Color(hex: 0xD8CFB4), fill: Color(hex: 0x1C5A96),
         badge: Color(hex: 0xA82238), onBadge: Color(hex: 0xFFFFFF),
@@ -157,7 +179,8 @@ public struct ZeusPalette: Sendable, Hashable {
         agentBubble: Color(hex: 0xFFFFFF), userBubble: Color(hex: 0xD3E5F8), onUserBubble: Color(hex: 0x14101F),
         sessionColors: [Color(hex: 0x1C5A96), Color(hex: 0x7A5200), Color(hex: 0x24652F), Color(hex: 0x8E2F63)],
         focusRing: Color(hex: 0x6E4500),
-        positive: Color(hex: 0x1D5E28)
+        positive: Color(hex: 0x1D5E28),
+        linkColor: Color(hex: 0x6E4500)
     )
 
     /// The palette for a color scheme and contrast (Increase Contrast picks the high-contrast palettes).

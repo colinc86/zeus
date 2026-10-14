@@ -35,7 +35,7 @@ A user file with the same `id` as a bundled theme replaces it. Zeus reloads the 
 
 ## 2. Colors
 
-Every color is `"#RRGGBB"`, or `"#RRGGBBAA"` for translucency. A field you leave out keeps the value from Zeus's own palette for that appearance: Midnight for dark, Parchment for light, or the matching high-contrast palette.
+Every color is `"#RRGGBB"`, or `"#RRGGBBAA"` for translucency. A field you leave out keeps the value from Zeus's own palette for that appearance: Midnight for dark, Parchment for light, or the matching high-contrast palette. The exceptions are `link` and `divider`, which default from the theme's own colors (below).
 
 | Field | Used for |
 |---|---|
@@ -53,13 +53,17 @@ Every color is `"#RRGGBB"`, or `"#RRGGBBAA"` for translucency. A field you leave
 | `agentBubble`, `userBubble`, `onUserBubble` | the assistant's bubble; the user's bubble and its text |
 | `focusRing` | keyboard focus ring |
 | `positive` | "Running" and other healthy states |
+| `link` | links in messages, underlined. Optional: defaults to the theme's `accent`. Set it when the accent is too pale for text, as Sorbet and Parchment do. In the user's own bubble, links use `onUserBubble`. |
+| `divider` | hairline rules inside a panel, such as the line under the status strip. Optional: defaults to the theme's `secondaryText` at 75 %. |
 | `sessionColors` | a list of exactly **4** colors for the session dots |
 
 ## 3. Contrast
 
 `ZeusContrast` (ZeusDesign) lists every text and background pair the views draw:
 - **Text:** at least 4.5:1, and 7:1 in high-contrast blocks.
-- **Controls and indicators:** at least 3:1.
+- **Controls and indicators:** at least 3:1, including the status strip's icons and the `divider` rule.
+
+The pairs cover message links on both bubbles, the status strip, the quiet thread lines (e.g. *Switched to Wisp · Undo*), and Settings text on the macOS window background of the theme's own appearance. `ZeusNewSurfaceContrastTests` names each failure by theme, look and role.
 
 Every bundled theme passes; `ZeusThemeLibraryTests` checks it. A user theme that misses still loads, and Settings tags it **Low contrast** with a one-line caption naming the first pair that fails, e.g. *Some text may be hard to read: body text on agent bubble is 1.6:1; it needs 4.5:1.*
 

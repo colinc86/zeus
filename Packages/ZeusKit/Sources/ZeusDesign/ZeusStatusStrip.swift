@@ -334,8 +334,3 @@ private struct StripIconButton: View {
         .accessibilityLabel(item.button.title)
     }
 }
-
-extension ZeusPalette {
-    /// Hairline rules inside a panel, such as the line under the status strip.
-    public var divider: Color { secondaryText.opacity(0.25) }
-}

@@ -662,7 +662,8 @@ private struct ConversationBubble: View, Equatable {
     }
     private var card: Card? { if case .agentCard(let card) = entry.content { return card }; return nil }
     private var bodyText: some View {
-        let markdown = ZeusMarkdown.attributed(entry.body, choice: settings.fontChoice, palette: palette)
+        // D18: links and bold runs in the user's own bubble take its text color, so they read on `userBubble`.
+        let markdown = ZeusMarkdown.attributed(entry.body, choice: settings.fontChoice, palette: entry.isUser ? palette.userBubbleText : palette)
         return MessageBodyView(markdown: markdown, active: isVisible && card?.kind == .message,
                                enabled: settings.typewriterEnabled, soundEnabled: settings.soundEnabled && !settings.isQuiet(at: Date()), reveal: model.revealer(cardID: entry.sourceCardID))
     }

@@ -501,6 +501,32 @@ private let t0 = Date(timeIntervalSince1970: 1_791_100_000) // a fixed afternoon
         }
     }
 
+    /// D18: the 0.1.8 text styles in every bundled theme, light and dark: links in both bubbles, a skipped question,
+    /// the quiet Undo and summary lines, and the strip waiting on an open question.
+    @Test func contrastSurfaces() async throws {
+        func at(_ minutes: Double) -> Date { t0.addingTimeInterval(minutes * 60) }
+        for look in Snap.Look.basic {
+            for theme in ZeusThemeLibrary.load(userDirectory: nil).themes {
+                let f = Fixture(font: .pixel); defer { f.cleanup() }
+                f.settings.setTheme(id: theme.id)
+                let s = AuditMessaging.claude.sessionKey
+                f.store.add(Card(id: "u_1", kind: .userMessage, body: "Use the notes at https://example.com/q3 please", createdAt: at(0), updatedAt: at(0)))
+                f.store.add(Card(id: "c_1", kind: .message, body: "Done. The **draft** is at https://example.com/draft and the old one stays put.",
+                                 sessionKey: s, createdAt: at(1), updatedAt: at(1)))
+                f.store.add(Card(id: "c_2", kind: .question, title: "Venue", body: "Book the usual room?",
+                                 options: [CardOption(id: "y", label: "Yes", style: .primary)], sessionKey: s, createdAt: at(2), updatedAt: at(2),
+                                 status: .answered, response: CardResponse(respondedAt: at(3), device: .mac, skipped: true)))
+                f.store.recordNotice(ThreadNotice(kind: .appChange, createdAt: at(4), summary: "Switched to Wisp", actionTitle: "Undo"), action: {}, doneTitle: "Undone")
+                f.store.recordNotice(ThreadNotice(kind: .learning, createdAt: at(5), summary: "Sent your daily summary", actionTitle: "View", detail: "Summary"))
+                f.store.add(Card(id: "c_3", kind: .question, title: "Slides", body: "Update last deck, or start fresh?",
+                                 options: [CardOption(id: "u", label: "Update", style: .primary), CardOption(id: "f", label: "Start fresh")],
+                                 sessionKey: s, createdAt: at(6), updatedAt: at(6)))
+                f.store.markAllSeen()
+                try await Snap.render("contrast-\(theme.id)", look: look, settle: 0.6) { f.conversation() }
+            }
+        }
+    }
+
     /// TB1: the status strip in every state, inside a panel, for every bundled theme, light and dark.
     @Test func statusStrip() async throws {
         let managed = ZeusStatusStripModel.buttons(hasTerminal: true, isManaged: true)
