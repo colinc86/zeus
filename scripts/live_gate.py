@@ -129,13 +129,9 @@ def main(argv=None):
         result='FAIL';(build/'console.log').write_text('tmux is required for private live fixtures.\n')
     else:
         app_build=build/'app';app_build.mkdir()
-        result,_=run_bounded(['scripts/build.sh'],base,app_build,600)
-    if result=='PASS' and any(p in ('cy1','e2e') and action=='run' for p,a,action in jobs):
-        # Prepare the native test bundle once; each row thereafter only executes it.
-        argv=xcode_command('e2e',build)
-        argv=argv[:argv.index('-resultBundlePath')]+['build-for-testing','-quiet']
-        test_build=build/'native-tests';test_build.mkdir()
-        result,_=run_bounded(argv,base,test_build,600)
+        build_argv=['scripts/build.sh']
+        if any(p in ('cy1','e2e') and action=='run' for p,a,action in jobs):build_argv += ['--for-testing']
+        result,_=run_bounded(build_argv,base,app_build,600)
     if result!='PASS':
         rows.append(dict(probe='build',agent='—',result=result,seconds=round(time.monotonic()-began,2),evidence=str(build.relative_to(ROOT))))
         failed=True

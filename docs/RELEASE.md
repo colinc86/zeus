@@ -8,7 +8,8 @@ scripts/release.sh
 ```
 
 Before every release, run the **full** live gate on the revision being packaged:
-`scripts/live.sh`. It builds the app once, then serially verifies app control,
+`scripts/live.sh`. It builds the app and native test bundle once (`build.sh --for-testing`), then
+serially verifies app control,
 learnings/Skip, managed and own-session completion, native screen variants,
 Connect-your-own delivery, and real bridge E2E. Every native CLI uses its own
 private tmux socket, disposable HOME/config, scratch folder and localhost model.
