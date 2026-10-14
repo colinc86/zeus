@@ -82,6 +82,7 @@ struct TalkHotKey: Codable, Equatable {
         var function = false
     }
     /// Hardware codes are independent of modifiers; key equivalents use AppKit's special-key characters.
+    // Special key symbols are system-font labels/menu equivalents, never pixel-font text.
     static let keys: [Key] = {
         var keys: [Key] = []
         let letters = [kVK_ANSI_A,kVK_ANSI_B,kVK_ANSI_C,kVK_ANSI_D,kVK_ANSI_E,kVK_ANSI_F,kVK_ANSI_G,kVK_ANSI_H,kVK_ANSI_I,kVK_ANSI_J,kVK_ANSI_K,kVK_ANSI_L,kVK_ANSI_M,kVK_ANSI_N,kVK_ANSI_O,kVK_ANSI_P,kVK_ANSI_Q,kVK_ANSI_R,kVK_ANSI_S,kVK_ANSI_T,kVK_ANSI_U,kVK_ANSI_V,kVK_ANSI_W,kVK_ANSI_X,kVK_ANSI_Y,kVK_ANSI_Z]
@@ -94,17 +95,17 @@ struct TalkHotKey: Codable, Equatable {
             (kVK_ANSI_Equal,"=","="),(kVK_ANSI_Minus,"-","-"),(kVK_ANSI_LeftBracket,"[","["),(kVK_ANSI_RightBracket,"]","]"),
             (kVK_ANSI_Quote,"'","'"),(kVK_ANSI_Semicolon,";",";"),(kVK_ANSI_Backslash,"\\","\\"),(kVK_ANSI_Comma,",",","),
             (kVK_ANSI_Slash,"/","/"),(kVK_ANSI_Period,".","."),(kVK_ANSI_Grave,"`","`"),
-            (kVK_Space,"Space"," "),(kVK_Return,"↩","\r"),(kVK_Tab,"⇥","\t"),(kVK_Escape,"⎋","\u{1B}"),(kVK_Delete,"⌫","\u{8}"),
-            (kVK_ForwardDelete,"⌦",String(UnicodeScalar(NSDeleteFunctionKey) ?? "\u{FFFD}")),
+            (kVK_Space,"Space"," "),(kVK_Return,"\u{21A9}","\r"),(kVK_Tab,"\u{21E5}","\t"),(kVK_Escape,"\u{238B}","\u{1B}"),(kVK_Delete,"\u{232B}","\u{8}"),
+            (kVK_ForwardDelete,"\u{2326}",String(UnicodeScalar(NSDeleteFunctionKey) ?? "\u{FFFD}")),
             (kVK_LeftArrow,"←",String(UnicodeScalar(NSLeftArrowFunctionKey) ?? "\u{FFFD}")),(kVK_RightArrow,"→",String(UnicodeScalar(NSRightArrowFunctionKey) ?? "\u{FFFD}")),
             (kVK_UpArrow,"↑",String(UnicodeScalar(NSUpArrowFunctionKey) ?? "\u{FFFD}")),(kVK_DownArrow,"↓",String(UnicodeScalar(NSDownArrowFunctionKey) ?? "\u{FFFD}")),
             (kVK_Home,"↖",String(UnicodeScalar(NSHomeFunctionKey) ?? "\u{FFFD}")),(kVK_End,"↘",String(UnicodeScalar(NSEndFunctionKey) ?? "\u{FFFD}")),
-            (kVK_PageUp,"⇞",String(UnicodeScalar(NSPageUpFunctionKey) ?? "\u{FFFD}")),(kVK_PageDown,"⇟",String(UnicodeScalar(NSPageDownFunctionKey) ?? "\u{FFFD}")),
+            (kVK_PageUp,"\u{21DE}",String(UnicodeScalar(NSPageUpFunctionKey) ?? "\u{FFFD}")),(kVK_PageDown,"\u{21DF}",String(UnicodeScalar(NSPageDownFunctionKey) ?? "\u{FFFD}")),
             (kVK_ANSI_KeypadDecimal,"Keypad .","."),(kVK_ANSI_KeypadMultiply,"Keypad *","*"),(kVK_ANSI_KeypadPlus,"Keypad +","+"),
             (kVK_ANSI_KeypadClear,"Keypad Clear",String(UnicodeScalar(NSClearLineFunctionKey) ?? "\u{FFFD}")),(kVK_ANSI_KeypadDivide,"Keypad /","/"),
-            (kVK_ANSI_KeypadEnter,"Keypad ↩","\u{3}"),(kVK_ANSI_KeypadMinus,"Keypad -","-"),(kVK_ANSI_KeypadEquals,"Keypad =","="),
+            (kVK_ANSI_KeypadEnter,"Keypad \u{21A9}","\u{3}"),(kVK_ANSI_KeypadMinus,"Keypad -","-"),(kVK_ANSI_KeypadEquals,"Keypad =","="),
             (kVK_ISO_Section,"§","§"),(kVK_JIS_Yen,"¥","¥"),(kVK_JIS_Underscore,"_","_"),(kVK_JIS_KeypadComma,"Keypad ,",","),
-            (kVK_JIS_Eisu,"Eisu","英"),(kVK_JIS_Kana,"Kana","かな")]
+            (kVK_JIS_Eisu,"Eisu","\u{82F1}"),(kVK_JIS_Kana,"Kana","\u{304B}\u{306A}")]
         for (code, name, equivalent) in special { if let character = equivalent.first { keys.append(.init(code: UInt32(code), name: name, equivalent: character)) } }
         let keypad = [kVK_ANSI_Keypad0,kVK_ANSI_Keypad1,kVK_ANSI_Keypad2,kVK_ANSI_Keypad3,kVK_ANSI_Keypad4,kVK_ANSI_Keypad5,kVK_ANSI_Keypad6,kVK_ANSI_Keypad7,kVK_ANSI_Keypad8,kVK_ANSI_Keypad9]
         for (index, code) in keypad.enumerated() { keys.append(.init(code: UInt32(code), name: "Keypad \(index)", equivalent: Character(String(index)))) }

@@ -112,7 +112,8 @@ struct ZeusShortcutRecorder: View {
                 }
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(width: 180)
-                KeyboardButton(action: { recorder.reset() }, label: { Text("↺").frame(minWidth: 22, minHeight: 22) })
+                // The native Settings font supplies the reset symbol (outside the pixel font).
+                KeyboardButton(action: { recorder.reset() }, label: { Text("\u{21BA}").frame(minWidth: 22, minHeight: 22) })
                     .buttonStyle(.plain).foregroundStyle(palette.secondaryText)
                     .opacity(!settings.talkHotKey.enabled || settings.talkHotKey == TalkHotKey() ? 0.5 : 1)
                     .help("Reset to ⌥⌘Z").accessibilityLabel("Reset to Option-Command-Z")
