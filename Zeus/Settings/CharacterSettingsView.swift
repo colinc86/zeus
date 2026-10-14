@@ -5,6 +5,7 @@ struct CharacterSettingsView: View {
     @Bindable var settings: AppSettings
     let resetPosition: () -> Void
     @State private var importer: LibraryImportModel
+    @Environment(\.zeusPalette) private var palette
 
     init(settings: AppSettings, resetPosition: @escaping () -> Void) {
         self.settings = settings
