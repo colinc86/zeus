@@ -66,7 +66,7 @@ enum ManagedAgentLaunch {
     /// Writes only Zeus-owned injection artifacts. User config, plugins and instructions stay enabled.
     static func command(conversation: ManagedConversation, permissionID: String?, executable: URL,
                         bridge: URL, socket: String, pane: ManagedPane, directory: URL,
-                        environment: [String: String]) throws -> ManagedLaunchCommand {
+                        environment: [String: String], systemPromptSnapshotOff: Bool = false) throws -> ManagedLaunchCommand {
         let policies = policies(for: conversation.agent)
         let id = permissionID == "default" && conversation.agent == .claude ? "manual" : permissionID
         guard let policy = id.map({ id in policies.first { $0.mode.id == id } }) ?? policies.first(where: { $0.mode.isDefault }) else {
@@ -92,6 +92,7 @@ enum ManagedAgentLaunch {
             // do not impose a consent warning for a channel that cannot register.
             args += ["--mcp-config", path, "--append-system-prompt", conversation.launchPrompt,
                      "--allowedTools", allowed] + policy.arguments
+            if systemPromptSnapshotOff { args += ["--system-prompt-snapshot", "off"] }
             if conversation.didLaunch, let id = conversation.nativeID { args += ["--resume", id] } else { args += ["--session-id", conversation.nonce, conversation.firstMessage] }
         case .codex:
             let location = pane.socket + ",\(pane.serverPID),\(pane.sessionNumber)"

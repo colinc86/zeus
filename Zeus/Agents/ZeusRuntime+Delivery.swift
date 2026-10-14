@@ -141,6 +141,7 @@ extension ZeusRuntime {
                 self.noteDeliveredActivity(sessionKey: session.sessionKey, deliveryID: id, token: activityToken, sessionID: session.id)
             } else { self.activityEarlyAcknowledgments.removeValue(forKey: id) }
             self.sends.removeValue(forKey: id); self.sendTokens.removeValue(forKey: id)
+            self.managedController.reconsiderSettingsApplication()
             if recoveringPaste, outcome != .delivered {
                 self.deferredSends[id] = self.clock.now.addingTimeInterval(5)
             }
