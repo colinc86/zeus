@@ -1,6 +1,7 @@
 import Darwin
 import Foundation
 import ZeusDesign
+import ZeusProtocol
 
 /// Captured from one owned pane, not from terminal text. Dead signal and exit status are separate.
 struct ManagedPane: Codable, Equatable, Sendable {
@@ -27,11 +28,17 @@ protocol ManagedSessionHosting: Sendable {
     func removePane(_ pane: ManagedPane, owner: String) async throws
     func capture(_ pane: ManagedPane, owner: String) async throws -> ManagedPaneSnapshot
     func conversationEnvironment(_ pane: ManagedPane, owner: String) async throws -> [String: String]
+    func answerPrompt(_ pane: ManagedPane, owner: String, agent: AgentKind, scope: String,
+                      fingerprint: String, optionID: String,
+                      stillAllowed: @MainActor @Sendable () -> Bool) async throws -> ManagedPromptAnswerResult
 }
 
 extension ManagedSessionHosting {
     func capture(_ pane: ManagedPane, owner: String) async throws -> ManagedPaneSnapshot { .init(screen: "", inputMetadata: "") }
     func conversationEnvironment(_ pane: ManagedPane, owner: String) async throws -> [String: String] { [:] }
+    func answerPrompt(_ pane: ManagedPane, owner: String, agent: AgentKind, scope: String,
+                      fingerprint: String, optionID: String,
+                      stillAllowed: @MainActor @Sendable () -> Bool) async throws -> ManagedPromptAnswerResult { .changed }
 }
 
 /// All clients clear inherited TMUX. Tests supply a private -S namespace; production uses default.
@@ -163,6 +170,62 @@ struct ManagedTmux: ManagedSessionHosting {
         guard let after = try await inspect(name: pane.name, owner: owner, pane: pane), !after.dead else { throw ManagedSessionError.ownershipChanged }
         try validateLifetime(pane, after)
         return .init(screen: screen, inputMetadata: metadata)
+    }
+    /// Input is generated only from a freshly parsed listed choice. No paste,
+    /// free-text, default acceptance or timer-based answer is available here.
+    func answerPrompt(_ pane: ManagedPane, owner: String, agent: AgentKind, scope: String,
+                      fingerprint: String, optionID: String,
+                      stillAllowed: @MainActor @Sendable () -> Bool) async throws -> ManagedPromptAnswerResult {
+        let snapshot = try await capture(pane, owner: owner)
+        guard let prompt = ManagedPromptParser.parse(snapshot, agent: agent, scope: scope),
+              prompt.fingerprint == fingerprint, let option = prompt.options.first(where: { $0.id == optionID }) else { return .changed }
+        let keys: [String]
+        switch option.key {
+        case .digit(let digit): keys = [String(digit)]
+        case .shortcut(let shortcut): keys = [shortcut.rawValue]
+        case .horizontal(let index):
+            guard let highlighted = prompt.highlightedOption, prompt.options.indices.contains(index) else { return .changed }
+            let movement = index - highlighted
+            var current = highlighted
+            for _ in 0..<abs(movement) {
+                guard await stillAllowed() else { return .changed }
+                _ = try await checked(["send-keys", "-t", pane.id, movement < 0 ? "Left" : "Right"], socket: pane.socket)
+                current += movement < 0 ? -1 : 1
+                let navigationDeadline = ContinuousClock.now + .seconds(1)
+                while true {
+                    let frame = try await capture(pane, owner: owner)
+                    guard let next = ManagedPromptParser.parse(frame, agent: agent, scope: scope),
+                          next.fingerprint == fingerprint else { return .changed }
+                    if next.highlightedOption == current { break }
+                    guard ContinuousClock.now < navigationDeadline else { return .changed }
+                    try await Task.sleep(for: .milliseconds(20))
+                }
+            }
+            // Revalidate even when the clicked option was already highlighted.
+            let frame = try await capture(pane, owner: owner)
+            guard let selected = ManagedPromptParser.parse(frame, agent: agent, scope: scope),
+                  selected.fingerprint == fingerprint, selected.highlightedOption == index else { return .changed }
+            keys = ["Enter"]
+        }
+        guard await stillAllowed() else { return .changed }
+        _ = try await checked(["send-keys", "-t", pane.id] + keys, socket: pane.socket)
+        // Verification polls are read-only: never press the choice again.
+        let deadline = ContinuousClock.now + .seconds(3)
+        repeat {
+            do {
+                let latest = try await capture(pane, owner: owner)
+                switch ManagedPaneClassifier.classify(latest, agent: agent) {
+                case .idle, .working: return .answered(optionID: option.id, label: option.label)
+                case .blocked:
+                    if ManagedPromptParser.parse(latest, agent: agent, scope: scope)?.fingerprint != fingerprint {
+                        return .answered(optionID: option.id, label: option.label)
+                    }
+                case .unknown: break
+                }
+            } catch { return .unconfirmed(label: option.label) }
+            try await Task.sleep(for: .milliseconds(100))
+        } while ContinuousClock.now < deadline
+        return .unconfirmed(label: option.label)
     }
     func conversationEnvironment(_ pane: ManagedPane, owner: String) async throws -> [String: String] {
         guard try await inspect(name: pane.name, owner: owner, pane: pane) != nil else { throw ManagedSessionError.ownershipChanged }
