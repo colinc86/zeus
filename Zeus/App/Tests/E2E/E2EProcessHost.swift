@@ -23,7 +23,8 @@ private actor RuntimeHostBuilder {
         var inputs = [root.appendingPathComponent("TestFixtures/E2EHost/RuntimeHost.swift"),
                       root.appendingPathComponent("Zeus/Shared/AppSeams.swift"),
                       root.appendingPathComponent("Zeus/Cards/AttachmentTarget.swift"),
-                      root.appendingPathComponent("Zeus/Cards/CardStore.swift")]
+                      root.appendingPathComponent("Zeus/Cards/CardStore.swift"),
+                      root.appendingPathComponent("Zeus/Cards/ThreadNotice.swift")]
         for directory in ["Zeus/Bridge", "Zeus/Agents"] {
             inputs += try FileManager.default.contentsOfDirectory(at: root.appendingPathComponent(directory), includingPropertiesForKeys: nil)
                 .filter { $0.pathExtension == "swift" && $0.lastPathComponent != "DebugSpriteFrameCounter.swift" }
