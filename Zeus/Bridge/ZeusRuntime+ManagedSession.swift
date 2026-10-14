@@ -26,12 +26,43 @@ extension ZeusRuntime: ManagedSessionControlling {
 
 import ZeusDesign
 
+extension ZeusRuntime: ManagedPromptAnswering {
+    var managedPrompt: ManagedAgentPrompt? { managedController.managedPrompt }
+    func answerManagedPrompt(fingerprint: String, optionID: String) async -> ManagedPromptAnswerResult {
+        guard running else { return .changed }
+        let token = generation, id = managedBlockedCardID
+        let original = id.flatMap { cards.card(id: $0) }
+        let result = await managedController.answerManagedPrompt(fingerprint: fingerprint, optionID: optionID)
+        guard running, generation == token else { return result }
+        if case .answered = result {
+            if let id, let original {
+                cards.update(id: id) {
+                    $0.status = .answered; $0.response = nil; $0.options = []; $0.input = nil
+                    $0.body = original.body + "\n\n" + result.message
+                    $0.mood = nil; $0.priority = .low
+                }
+                if managedBlockedCardID == id { managedBlockedCardID = nil }
+            }
+        } else if let id, let original {
+            cards.update(id: id) { $0.body = original.body + "\n\n" + result.message }
+        }
+        managedController.refresh()
+        return result
+    }
+}
+
 extension ZeusRuntime {
     static let managedCardPrefix = "managed-block_"
     func managedBlockedCopy() -> (title: String, body: String, action: String) {
         let agent = managedController.record?.conversation?.agent ?? .other
         let name = agent == .claude ? "Claude Code" : agent == .codex ? "Codex" : "OpenCode"
         let dialog = managedController.blockedDialog ?? ""
+        if let prompt = managedPrompt, !prompt.options.isEmpty {
+            return (prompt.title, [prompt.detail, prompt.question].filter { !$0.isEmpty }.joined(separator: "\n\n"), "Open in Terminal")
+        }
+        if managedPrompt == nil, let id = managedBlockedCardID, let card = cards.card(id: id), card.status == .open {
+            return (card.title ?? "Agent question", card.body, "Open in Terminal")
+        }
         var copy = ZeusManagedCopy.blockedCard(agent: name, dialog: dialog)
         if dialog.lowercased().contains("warning: loading development channels") {
             copy.body = "Claude Code is asking you to confirm Zeus's message channel. Choose “I am using this for local development” (option 1) in Terminal to continue. Zeus never chooses for you.\n\n" + copy.body
@@ -50,7 +81,13 @@ extension ZeusRuntime {
         }
     }
 
-    /// One card per continuous block. Terminal is an action, never an agent answer.
+    func managedBlockedOptions() -> [CardOption] {
+        let choices = (managedPrompt?.options ?? []).map { option in
+            CardOption(id: "managed-answer:\(managedPrompt?.fingerprint ?? ""):\(option.id)", label: option.label)
+        }
+        return choices + [.init(id: "open-terminal", label: "Open in Terminal", style: choices.isEmpty ? .primary : .secondary)]
+    }
+    /// One card per continuous block. Choices are local UI actions, never MCP replies.
     func updateManagedPresentation() {
         if case .blocked = managedController.managedStatus {
             if managedBlockedCardID == nil || cards.card(id: managedBlockedCardID ?? "")?.status != .open {
@@ -59,26 +96,27 @@ extension ZeusRuntime {
                     ?? (Self.managedCardPrefix + UUID().uuidString)
                 managedBlockedCardID = id
                 cards.add(Card(id: id, kind: .content, title: copy.title, body: copy.body,
-                    options: [.init(id: "open-terminal", label: copy.action, style: .primary)],
+                    options: managedBlockedOptions(),
                     priority: .high, mood: .alert, sessionKey: managedController.sessionKey,
                     createdAt: clock.now, updatedAt: clock.now))
             }
             if let id = managedBlockedCardID, let card = cards.card(id: id), card.status == .open {
                 let copy = managedBlockedCopy()
-                if card.title != copy.title || card.body != copy.body {
-                    cards.update(id: id) { $0.title = copy.title; $0.body = copy.body }
+                let options = managedBlockedOptions()
+                if card.title != copy.title || card.body != copy.body || card.options != options {
+                    cards.update(id: id) { $0.title = copy.title; $0.body = copy.body; $0.options = options; $0.input = nil }
                 }
             }
             if let id = managedBlockedCardID, let key = managedController.sessionKey, cards.card(id: id)?.sessionKey == nil {
                 cards.update(id: id) { $0.sessionKey = key }
             }
             if let presentation = status as? any ManagedBlockingPresenting {
-                presentation.setManagedBlock("Waiting for you in Terminal")
+                presentation.setManagedBlock(managedPrompt?.options.isEmpty == false ? "Waiting for your answer" : "Waiting for you in Terminal")
             } else {
-                status.setOverride(.alert, detail: "Waiting for you in Terminal", progress: nil, ttl: 10)
+                status.setOverride(.alert, detail: managedPrompt?.options.isEmpty == false ? "Waiting for your answer" : "Waiting for you in Terminal", progress: nil, ttl: 10)
             }
-        } else if let id = managedBlockedCardID, let end = managedBlockEnd {
-            if resolveManagedCard(id, end: end) { managedBlockedCardID = nil }
+        } else if let end = managedBlockEnd {
+            if let id = managedBlockedCardID, resolveManagedCard(id, end: end) { managedBlockedCardID = nil }
             if let presentation = status as? any ManagedBlockingPresenting { presentation.setManagedBlock(nil) }
             else { status.clearOverride() }
         }
@@ -104,6 +142,16 @@ extension ZeusRuntime {
         guard card.id.hasPrefix(Self.managedCardPrefix) else { return false }
         if card.id == managedBlockedCardID {
             if card.status == .answered { cards.update(id: card.id) { $0.response = nil; $0.status = .open } }
+        }
+        if let optionID = response.optionID, optionID.hasPrefix("managed-answer:") {
+            let parts = optionID.split(separator: ":", maxSplits: 2).map(String.init)
+            guard card.id == managedBlockedCardID, card.options.contains(where: { $0.id == optionID }),
+                  response.text?.isEmpty != false, parts.count == 3 else {
+                cards.update(id: card.id) { $0.body = card.body + "\n\n" + ManagedPromptAnswerResult.changed.message }
+                return true
+            }
+            Task { [weak self] in _ = await self?.answerManagedPrompt(fingerprint: parts[1], optionID: parts[2]) }
+            return true
         }
         if response.optionID == "open-terminal", managedAttachCommand != nil { openManagedSessionInTerminal() }
         // The action is navigation, never evidence that a prompt was answered.

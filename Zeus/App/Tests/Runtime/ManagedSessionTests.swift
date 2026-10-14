@@ -14,6 +14,23 @@ actor FakeManagedHost: ManagedSessionHosting {
     var collisionOnce = false
     var snapshot = ManagedPaneSnapshot(screen: "", inputMetadata: "")
     var captures: [String] = []
+    var promptAnswers: [String] = []
+    var holdPromptAnswer = false
+    private var promptContinuation: CheckedContinuation<Void, Never>?
+    var awaitingPromptAnswer: Bool { promptContinuation != nil }
+    func holdAnswer() { holdPromptAnswer = true }
+    func releaseAnswer() { holdPromptAnswer = false; promptContinuation?.resume(); promptContinuation = nil }
+    func answerPrompt(_ pane: ManagedPane, owner: String, agent: AgentKind, scope: String,
+                      fingerprint: String, optionID: String,
+                      stillAllowed: @MainActor @Sendable () -> Bool) async throws -> ManagedPromptAnswerResult {
+        if holdPromptAnswer { await withCheckedContinuation { promptContinuation = $0 } }
+        guard let current = try inspect(name: pane.name, owner: owner, pane: pane), current == pane,
+              let prompt = ManagedPromptParser.parse(snapshot, agent: agent, scope: scope), prompt.fingerprint == fingerprint,
+              let option = prompt.options.first(where: { $0.id == optionID }), await stillAllowed() else { return .changed }
+        promptAnswers.append(optionID)
+        snapshot = .init(screen: "Working · esc to interrupt", inputMetadata: "0|0|120|0|0")
+        return .answered(optionID: option.id, label: option.label)
+    }
     func capture(_ pane: ManagedPane, owner: String) throws -> ManagedPaneSnapshot {
         guard try inspect(name: pane.name, owner: owner, pane: pane) != nil else { throw ManagedSessionError.ownershipChanged }
         captures.append(pane.id); return snapshot

@@ -36,6 +36,6 @@ struct Round5RecoveredActionTests {
         f.cards.update(id: old) { $0.status = .answered }
         f.runtime.updateManagedPresentation()
         #expect(f.runtime.managedBlockedCardID != old)
-        #expect(f.cards.values.last?.status == .open && f.cards.values.last?.options.first?.id == "open-terminal")
+        #expect(f.cards.values.last?.status == .open && f.cards.values.last?.options.contains { $0.id == "open-terminal" } == true)
     }
 }

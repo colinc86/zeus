@@ -83,7 +83,7 @@ import ZeusDesign
         }
         guard case .blocked = runtime.managedStatus else { throw ManagedSessionError.command("Expected blocked, got \(runtime.managedStatus)") }
         let blocked = try #require(cards.cards.first { $0.id.hasPrefix(ZeusRuntime.managedCardPrefix) })
-        #expect(blocked.priority == .high && blocked.options.first?.id == "open-terminal" && avatar.state == .alert)
+        #expect(blocked.priority == .high && blocked.options.contains { $0.id == "open-terminal" } && avatar.state == .alert)
         let saved = try Data(contentsOf: root.appendingPathComponent("cards.json"))
         #expect(conversation.pickOption(cardID: blocked.id, optionID: "open-terminal"))
         try await wait("local Terminal action", controller: controller) { terminal.files.count == 1 && !controller.isBusy }
