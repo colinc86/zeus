@@ -34,7 +34,7 @@ enum ConversationLayout {
         grouped(entry, after: previous, sources: Dictionary(uniqueKeysWithValues: cards.map { ($0.id, $0) }))
     }
     static func grouped(_ entry: ConversationEntry, after previous: ConversationEntry?, sources: [String: Card]) -> Bool {
-        guard let previous, entry.isUser == previous.isUser,
+        guard let previous, entry.isUser == previous.isUser, !entry.isNotice, !previous.isNotice,
               entry.timestamp.timeIntervalSince(previous.timestamp) < 120,
               Calendar.current.isDate(entry.timestamp, inSameDayAs: previous.timestamp) else { return false }
         return sources[entry.sourceCardID]?.sessionKey == sources[previous.sourceCardID]?.sessionKey
@@ -68,7 +68,7 @@ enum ConversationLayout {
         for entry in entries {
             if needsDivider(entry, after: previousEntry) { previousSession = nil }
             previousEntry = entry
-            guard !entry.isUser else { continue }
+            guard !entry.isUser, !entry.isNotice else { continue }
             let key = sources[entry.sourceCardID]?.sessionKey
             if let key, key != previousSession { labels.insert(entry.id) }
             previousSession = key
@@ -107,7 +107,7 @@ enum ConversationLayout {
     }
     static func unseenBelow(entries: [ConversationEntry], visible: Set<String>, seen: Set<String>) -> Int {
         guard let lastVisible = entries.lastIndex(where: { visible.contains($0.id) }) else { return 0 }
-        return entries.dropFirst(lastVisible + 1).filter { !$0.isUser && !seen.contains($0.sourceCardID) }.count
+        return entries.dropFirst(lastVisible + 1).filter { !$0.isUser && !$0.isNotice && !seen.contains($0.sourceCardID) }.count
     }
     static func isAtBottom(lastBottom: CGFloat, viewportHeight: CGFloat) -> Bool { lastBottom <= viewportHeight + 24 }
     static func intersects(_ frame: CGRect, viewportHeight: CGFloat) -> Bool { frame.maxY > 0 && frame.minY < viewportHeight }

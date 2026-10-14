@@ -395,6 +395,15 @@ struct ConversationView: View {
             if labeledEntries.contains(entry.id), let key = sources[entry.sourceCardID]?.sessionKey {
                 ZeusSessionLabel(settings.sessionLabels.label(key), colorIndex: ZeusSessionLabel.colorIndex(for: key))
             }
+            if case .notice(let notice) = entry.content {
+                ConversationNoticeLine(notice: notice, maxWidth: ConversationWidth.bubble(panelWidth: panel.width, user: false),
+                                       hasAction: store.hasNoticeAction(id: notice.id), perform: { store.performNoticeAction(id: notice.id) })
+                    .background(GeometryReader { geometry in
+                        let frame = geometry.frame(in: .named("threadContent"))
+                        Color.clear.preference(key: ThreadFrames.self,
+                            value: entry.id == latestID ? [entry.id: frame, "latestMessage": frame] : [entry.id: frame])
+                    })
+            } else {
             ConversationVisibleBubble(bubble: ConversationBubble(entry: entry, answerCaption: ConversationLayout.answerCaption(entry, after: previous, sources: sources), showTime: !grouped, shortcuts: entry.sourceCardID == shortcutID,
                                model: model, settings: settings, isVisible: panel.isVisible, maxWidth: ConversationWidth.bubble(panelWidth: panel.width, user: entry.isUser),
                                openSettings: openSettings, copySetup: copySetup, sessions: messaging.sessions, focus: $focusedControl,
@@ -404,6 +413,7 @@ struct ConversationView: View {
                     Color.clear.preference(key: ThreadFrames.self,
                         value: entry.id == latestID ? [entry.id: frame, "latestMessage": frame] : [entry.id: frame])
                 })
+            }
         }
         .padding(.top, row.first ? 0 : grouped ? 4 : 10)
     }

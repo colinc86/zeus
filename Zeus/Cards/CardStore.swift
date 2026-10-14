@@ -13,6 +13,9 @@ final class CardStore: CardStoring {
     private(set) var seenIDs: Set<String> = []
     private(set) var outgoingStates: [String: OutgoingMessageState] = [:] { didSet { if outgoingStates != oldValue { threadRevision &+= 1 } } }
     private(set) var outgoingDeliveryIDs: [String: String] = [:]
+    /// Quiet app-owned lines in the thread, such as "Sent your daily summary · View" (L1).
+    private(set) var notices: [ThreadNotice] = [] { didSet { if notices != oldValue { threadRevision &+= 1 } } }
+    @ObservationIgnored private var noticeActions: [String: (run: @MainActor () -> Void, doneTitle: String?)] = [:]
     // Definitive app-owned send outcomes survive a failed caption write in this process.
     // They are published only when the complete history transaction can be saved.
     @ObservationIgnored private var pendingOutgoingStates: [String: OutgoingMessageState] = [:]
@@ -36,11 +39,14 @@ final class CardStore: CardStoring {
         var revealedIDs: Set<String>
         var outgoingStates: [String: OutgoingMessageState] = [:]
         var outgoingDeliveryIDs: [String: String] = [:]
-        init(cards: [Card], seenIDs: Set<String>, revealedIDs: Set<String>, outgoingStates: [String: OutgoingMessageState] = [:], outgoingDeliveryIDs: [String: String] = [:]) {
+        /// Quiet app-owned thread lines (L1). Older history has none.
+        var notices: [ThreadNotice] = []
+        init(cards: [Card], seenIDs: Set<String>, revealedIDs: Set<String>, outgoingStates: [String: OutgoingMessageState] = [:], outgoingDeliveryIDs: [String: String] = [:],
+             notices: [ThreadNotice]) {
             self.cards = cards; self.seenIDs = seenIDs; self.revealedIDs = revealedIDs
-            self.outgoingStates = outgoingStates; self.outgoingDeliveryIDs = outgoingDeliveryIDs
+            self.outgoingStates = outgoingStates; self.outgoingDeliveryIDs = outgoingDeliveryIDs; self.notices = notices
         }
-        private enum CodingKeys: String, CodingKey { case version, cards, seenIDs, revealedIDs, outgoingStates, outgoingDeliveryIDs }
+        private enum CodingKeys: String, CodingKey { case version, cards, seenIDs, revealedIDs, outgoingStates, outgoingDeliveryIDs, notices }
         init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             version = try container.decode(Int.self, forKey: .version)
@@ -48,6 +54,7 @@ final class CardStore: CardStoring {
             seenIDs = try container.decode(Set<String>.self, forKey: .seenIDs)
             outgoingStates = try container.decodeIfPresent([String: OutgoingMessageState].self, forKey: .outgoingStates) ?? [:]
             outgoingDeliveryIDs = try container.decodeIfPresent([String: String].self, forKey: .outgoingDeliveryIDs) ?? [:]
+            notices = try container.decodeIfPresent([ThreadNotice].self, forKey: .notices) ?? []
             // Legacy history that was already read must never replay after this upgrade.
             revealedIDs = try container.decodeIfPresent(Set<String>.self, forKey: .revealedIDs) ?? seenIDs
         }
@@ -119,7 +126,7 @@ final class CardStore: CardStoring {
         let nextCards = cards + [card]
         var nextIDs = outgoingDeliveryIDs; nextIDs[card.id] = deliveryID
         guard save(snapshot: Snapshot(cards: nextCards, seenIDs: seenIDs, revealedIDs: revealedIDs,
-                                      outgoingStates: nextStates, outgoingDeliveryIDs: nextIDs)) else { return false }
+                                      outgoingStates: nextStates, outgoingDeliveryIDs: nextIDs, notices: notices)) else { return false }
         cards = nextCards
         outgoingStates = nextStates
         outgoingDeliveryIDs = nextIDs
@@ -135,7 +142,7 @@ final class CardStore: CardStoring {
         var next = outgoingStates
         next[cardID] = state
         guard save(snapshot: Snapshot(cards: cards, seenIDs: seenIDs, revealedIDs: revealedIDs,
-                                      outgoingStates: next, outgoingDeliveryIDs: outgoingDeliveryIDs)) else {
+                                      outgoingStates: next, outgoingDeliveryIDs: outgoingDeliveryIDs, notices: notices)) else {
             // Failed pre-send .sending writes never authorize a send and need no deferred outcome.
             if state != .sending { pendingOutgoingStates[cardID] = state }
             return false
@@ -218,14 +225,50 @@ final class CardStore: CardStoring {
         let kept = cards.filter { protectsHistory($0) || pending.contains($0.id) || outgoingStates[$0.id]?.protectsHistory == true }
         let ids = Set(kept.map(\.id))
         let next = Snapshot(cards: kept, seenIDs: seenIDs.intersection(ids), revealedIDs: revealedIDs.intersection(ids),
-                            outgoingStates: outgoingStates.filter { ids.contains($0.key) }, outgoingDeliveryIDs: outgoingDeliveryIDs.filter { ids.contains($0.key) })
+                            outgoingStates: outgoingStates.filter { ids.contains($0.key) }, outgoingDeliveryIDs: outgoingDeliveryIDs.filter { ids.contains($0.key) }, notices: [])
         guard save(snapshot: next) else { return false }
-        cards = next.cards; seenIDs = next.seenIDs; revealedIDs = next.revealedIDs; outgoingStates = next.outgoingStates; outgoingDeliveryIDs = next.outgoingDeliveryIDs
+        cards = next.cards; seenIDs = next.seenIDs; revealedIDs = next.revealedIDs; outgoingStates = next.outgoingStates; outgoingDeliveryIDs = next.outgoingDeliveryIDs; notices = next.notices
         onHistoryCleared?()
         return true
     }
 
     func card(id: String) -> Card? { cards.first { $0.id == id } }
+
+    /// Adds a quiet thread line. It never badges, peeks or plays a sound. The newest 200 are kept.
+    /// `action` (e.g. AC2's Undo) lives only in memory: after a relaunch the line shows without its button.
+    /// Running it once replaces the button with `doneTitle` ("Undone").
+    @discardableResult func recordNotice(_ notice: ThreadNotice, action: (@MainActor () -> Void)? = nil, doneTitle: String? = nil) -> Bool {
+        guard !notices.contains(where: { $0.id == notice.id }) else { return false }
+        var next = snapshot
+        next.notices = Array((next.notices + [notice]).suffix(ThreadNotice.keep))
+        guard commit(next) else { return false }
+        if let action { noticeActions[notice.id] = (action, doneTitle) }
+        return true
+    }
+    /// Whether the line's in-memory action is still available.
+    func hasNoticeAction(id: String) -> Bool { noticeActions[id] != nil }
+    /// Marks the line done, then runs its action once. A failed history write keeps the action for a retry, and a
+    /// reload never shows it again.
+    func performNoticeAction(id: String) {
+        guard let (action, doneTitle) = noticeActions[id],
+              updateNotice(id: id, { $0.resolvedTitle = doneTitle ?? $0.resolvedTitle }) else { return }
+        noticeActions.removeValue(forKey: id)
+        action()
+    }
+    @discardableResult func updateNotice(id: String, _ mutate: (inout ThreadNotice) -> Void) -> Bool {
+        guard let index = notices.firstIndex(where: { $0.id == id }) else { return false }
+        var next = snapshot
+        mutate(&next.notices[index])
+        next.notices[index].id = id
+        return commit(next)
+    }
+    /// "Delete everything" in Settings › Privacy also removes the summaries' thread lines.
+    @discardableResult func removeNotices(kind: ThreadNotice.Kind) -> Bool {
+        guard notices.contains(where: { $0.kind == kind }) else { return true }
+        var next = snapshot
+        next.notices.removeAll { $0.kind == kind }
+        return commit(next)
+    }
 
     @discardableResult
     func update(id: String, _ mutate: (inout Card) -> Void) -> Bool {
@@ -267,13 +310,13 @@ final class CardStore: CardStoring {
         guard let card = card(id: id), card.kind != .userMessage, !revealedIDs.contains(id) else { return false }
         var next = revealedIDs
         next.insert(id)
-        guard save(snapshot: Snapshot(cards: cards, seenIDs: seenIDs, revealedIDs: next, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs)) else { return false }
+        guard save(snapshot: Snapshot(cards: cards, seenIDs: seenIDs, revealedIDs: next, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs, notices: notices)) else { return false }
         revealedIDs = next
         return true
     }
     func markAllRevealed() {
         let next = revealedIDs.union(cards.filter { $0.kind != .userMessage }.map(\.id))
-        guard next != revealedIDs, save(snapshot: Snapshot(cards: cards, seenIDs: seenIDs, revealedIDs: next, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs)) else { return }
+        guard next != revealedIDs, save(snapshot: Snapshot(cards: cards, seenIDs: seenIDs, revealedIDs: next, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs, notices: notices)) else { return }
         revealedIDs = next
     }
 
@@ -292,7 +335,7 @@ final class CardStore: CardStoring {
         nextCards[index].updatedAt = clock()
         nextSeenIDs.insert(id)
         let answered = nextCards[index]
-        guard save(snapshot: Snapshot(cards: nextCards, seenIDs: nextSeenIDs, revealedIDs: revealedIDs, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs)) else { return false }
+        guard save(snapshot: Snapshot(cards: nextCards, seenIDs: nextSeenIDs, revealedIDs: revealedIDs, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs, notices: notices)) else { return false }
         cards = nextCards
         seenIDs = nextSeenIDs
         responseHandler?(answered, response)
@@ -319,11 +362,11 @@ final class CardStore: CardStoring {
     }
 
     private var snapshot: Snapshot {
-        Snapshot(cards: cards, seenIDs: seenIDs, revealedIDs: revealedIDs, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs)
+        Snapshot(cards: cards, seenIDs: seenIDs, revealedIDs: revealedIDs, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs, notices: notices)
     }
     @discardableResult private func commit(_ next: Snapshot) -> Bool {
         guard save(snapshot: next) else { return false }
-        cards = next.cards; seenIDs = next.seenIDs; revealedIDs = next.revealedIDs; outgoingStates = next.outgoingStates; outgoingDeliveryIDs = next.outgoingDeliveryIDs
+        cards = next.cards; seenIDs = next.seenIDs; revealedIDs = next.revealedIDs; outgoingStates = next.outgoingStates; outgoingDeliveryIDs = next.outgoingDeliveryIDs; notices = next.notices
         return true
     }
 
@@ -360,6 +403,7 @@ final class CardStore: CardStoring {
             revealedIDs = snapshot.revealedIDs.intersection(ids)
             outgoingStates = snapshot.outgoingStates.filter { ids.contains($0.key) }
             outgoingDeliveryIDs = snapshot.outgoingDeliveryIDs.filter { ids.contains($0.key) }
+            notices = snapshot.notices
         } catch { persistenceError = "Zeus couldn't read your conversation history. \(error.localizedDescription)" }
     }
 
@@ -373,7 +417,7 @@ final class CardStore: CardStoring {
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .iso8601
             encoder.outputFormatting = [.sortedKeys]
-            let data = try encoder.encode(snapshot ?? Snapshot(cards: cards, seenIDs: seenIDs, revealedIDs: revealedIDs, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs))
+            let data = try encoder.encode(snapshot ?? Snapshot(cards: cards, seenIDs: seenIDs, revealedIDs: revealedIDs, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs, notices: notices))
             try data.write(to: fileURL, options: .atomic)
             // Another successful transaction can still contain an older send caption.
             // Keep the repair action available until the known outcome is committed.
@@ -421,7 +465,7 @@ extension CardStore: CardHistoryRetaining {
         let ids = Set(kept.map(\.id))
         let next = Snapshot(cards: kept, seenIDs: seenIDs.intersection(ids), revealedIDs: revealedIDs.intersection(ids),
                             outgoingStates: outgoingStates.filter { ids.contains($0.key) },
-                            outgoingDeliveryIDs: outgoingDeliveryIDs.filter { ids.contains($0.key) })
+                            outgoingDeliveryIDs: outgoingDeliveryIDs.filter { ids.contains($0.key) }, notices: notices)
         guard commit(next) else { return }
         onHistoryCleared?() // Also prune transient reveals and labels after successful retention.
     }
