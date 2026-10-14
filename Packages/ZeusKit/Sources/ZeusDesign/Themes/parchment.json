@@ -1,0 +1,39 @@
+{
+  "_help": "Zeus's light look: parchment with an ink frame.",
+  "format": 1,
+  "id": "parchment",
+  "name": "Parchment",
+  "appearance": "light",
+  "colors": {
+    "outline": "#2A2140",
+    "frame": "#C9BFA3",
+    "panel": "#FBF7EA",
+    "text": "#2A2140",
+    "secondaryText": "#6E6488",
+    "title": "#9A6408",
+    "accent": "#F6C544",
+    "onAccent": "#2A1D05",
+    "secondaryFill": "#EDE5CF",
+    "onSecondary": "#2A2140",
+    "destructive": "#C8364D",
+    "onDestructive": "#FFFFFF",
+    "field": "#FFFFFF",
+    "fieldBorder": "#B8AD8F",
+    "track": "#E9E1C9",
+    "fill": "#2B74B8",
+    "badge": "#C8364D",
+    "onBadge": "#FFFFFF",
+    "shadow": "#2A214040",
+    "agentBubble": "#FFFFFF",
+    "userBubble": "#DCEBFA",
+    "onUserBubble": "#2A2140",
+    "focusRing": "#A87000",
+    "positive": "#2E7D3A",
+    "sessionColors": [
+      "#2F7FC8",
+      "#B07A10",
+      "#3E9A4A",
+      "#C0508A"
+    ]
+  }
+}

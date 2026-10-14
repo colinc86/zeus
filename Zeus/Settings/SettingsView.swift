@@ -4,7 +4,7 @@ import ZeusProtocol
 import ZeusDesign
 
 enum SettingsTab: String, CaseIterable {
-    case general = "General", agent = "Assistant", character = "Character", about = "About"
+    case general = "General", appearance = "Appearance", agent = "Assistant", character = "Character", about = "About"
     #if DEBUG
     case debug = "Debug"
     #endif
@@ -29,9 +29,15 @@ struct SettingsView: View {
     let hotKey: GlobalHotKey
     let activity: SurfaceActivity
     var updater: any AppUpdating = UpdaterService()
-    @Environment(\.zeusPalette) private var palette
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
+    /// This root's own colors come from the theme directly: the environment it sets applies to its children.
+    private var palette: ZeusPalette { settings.currentTheme.palette(for: colorScheme, contrast: colorSchemeContrast) }
 
-    var body: some View {
+    // T1: the selected theme reaches every view below through \.zeusTheme (and so \.zeusPalette).
+    var body: some View { rootBody.environment(\.zeusTheme, settings.currentTheme) }
+
+    @ViewBuilder private var rootBody: some View {
         VStack(alignment: .leading, spacing: 20) {
             SettingsTabBar(navigation: navigation)
             Rectangle().fill(palette.fieldBorder).frame(height: ZeusTheme.pixel)
@@ -68,6 +74,8 @@ struct SettingsView: View {
         switch navigation.tab {
         case .general:
             GeneralSettingsView(settings: settings, login: login, hotKey: hotKey, cards: cards, updater: updater)
+        case .appearance:
+            AppearanceSettingsView(settings: settings)
         case .agent:
             AssistantSettingsView(settings: settings, managed: managed, messaging: preview, testMessage: testMessage)
         case .character:

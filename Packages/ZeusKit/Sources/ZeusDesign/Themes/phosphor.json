@@ -1,0 +1,39 @@
+{
+  "_help": "A green phosphor terminal.",
+  "format": 1,
+  "id": "phosphor",
+  "name": "Phosphor",
+  "appearance": "dark",
+  "colors": {
+    "outline": "#000000",
+    "frame": "#3CFF7A",
+    "panel": "#0A140C",
+    "text": "#8CFFAA",
+    "secondaryText": "#5CC97A",
+    "title": "#D4FF5A",
+    "accent": "#33FF66",
+    "onAccent": "#021A08",
+    "secondaryFill": "#14361D",
+    "onSecondary": "#B4FFC7",
+    "destructive": "#FF7A66",
+    "onDestructive": "#1A0400",
+    "field": "#050B06",
+    "fieldBorder": "#2A7A40",
+    "track": "#0F2A16",
+    "fill": "#33FF66",
+    "badge": "#C8364D",
+    "onBadge": "#FFFFFF",
+    "shadow": "#00000080",
+    "agentBubble": "#0F1F12",
+    "userBubble": "#173F23",
+    "onUserBubble": "#D2FFDD",
+    "focusRing": "#D4FF5A",
+    "positive": "#33FF66",
+    "sessionColors": [
+      "#33FF66",
+      "#FFD23F",
+      "#5AD1FF",
+      "#FF7AC6"
+    ]
+  }
+}

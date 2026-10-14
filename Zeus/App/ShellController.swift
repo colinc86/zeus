@@ -111,7 +111,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     }
 
     func start() {
-        settings.startWatchingCharacters()
+        settings.startWatchingUserFolders()
         configure(avatar)
         // Ghost mode changes only alpha; it never makes Zeus click-through.
         avatar.ignoresMouseEvents = false
@@ -199,7 +199,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     func stop() {
         stopped = true
-        settings.stopWatchingCharacters()
+        settings.stopWatchingUserFolders()
         tickTask?.cancel()
         closingTask?.cancel()
         peekExitTask?.cancel()

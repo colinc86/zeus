@@ -15,9 +15,6 @@ struct GeneralSettingsView: View {
         VStack(alignment: .leading, spacing: 16) {
             UpdateSettingsView(updater: updater)
             SettingsDivider()
-            Text("Appearance").settingsTitle()
-            SettingsSegments(label: "Conversation font", options: ZeusFontChoice.allCases.map { ($0, $0.displayName) }, selection: $settings.fontChoice)
-            SettingsDivider()
             Toggle("Launch Zeus at login", isOn: Binding(get: { login.enabled }, set: { value in Task { await login.setEnabled(value) } }))
                 .accessibilityLabel("Launch Zeus at login")
                 .disabled(login.isUpdating)

@@ -17,7 +17,10 @@ struct PeekView: View {
     let open: (PeekModel.OpenAction) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    var body: some View {
+    // T1: the selected theme reaches every view below through \.zeusTheme (and so \.zeusPalette).
+    var body: some View { rootBody.environment(\.zeusTheme, settings.currentTheme) }
+
+    private var rootBody: some View {
         return Group {
             if model.isVisible, let card = model.card {
                 PeekContent(card: card, layout: panel.layout, moreCount: model.moreCount, error: model.answerError,

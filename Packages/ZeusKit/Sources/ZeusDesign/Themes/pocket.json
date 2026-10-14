@@ -1,0 +1,39 @@
+{
+  "_help": "Four shades of handheld green, plus a red for errors and a blue session dot.",
+  "format": 1,
+  "id": "pocket",
+  "name": "Pocket",
+  "appearance": "light",
+  "colors": {
+    "outline": "#0F380F",
+    "frame": "#306230",
+    "panel": "#9BBC0F",
+    "text": "#0F380F",
+    "secondaryText": "#0F380F",
+    "title": "#0F380F",
+    "accent": "#0F380F",
+    "onAccent": "#9BBC0F",
+    "secondaryFill": "#B5CF4A",
+    "onSecondary": "#0F380F",
+    "destructive": "#6B1414",
+    "onDestructive": "#E4F0B8",
+    "field": "#B5CF4A",
+    "fieldBorder": "#306230",
+    "track": "#8BAC0F",
+    "fill": "#0F380F",
+    "badge": "#C8364D",
+    "onBadge": "#FFFFFF",
+    "shadow": "#0F380F66",
+    "agentBubble": "#8BAC0F",
+    "userBubble": "#0F380F",
+    "onUserBubble": "#9BBC0F",
+    "focusRing": "#0F380F",
+    "positive": "#306230",
+    "sessionColors": [
+      "#0F380F",
+      "#306230",
+      "#6B1414",
+      "#1E3A6B"
+    ]
+  }
+}
