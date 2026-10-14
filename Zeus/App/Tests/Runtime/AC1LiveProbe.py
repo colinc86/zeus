@@ -53,6 +53,7 @@ class Model(http.server.BaseHTTPRequestHandler):
     lock = threading.Lock()
     action = None
     requests = []
+    completion_text = None
 
     def log_message(self, *_):
         pass
@@ -70,7 +71,7 @@ class Model(http.server.BaseHTTPRequestHandler):
             Model.requests.append(body)
             background = Model.action is not None and not names
             target, arguments = (None, {}) if background else Model.action(body) if Model.action else ("zeus_app_state" if stage == 0 else "zeus_move" if stage == 1 else None, {"position": "near-active-window"} if stage == 1 else {})
-            name = next((n for n in names if n.endswith("__" + target)), None) if target else None
+            name = next((n for n in names if n == target or n.endswith("__" + target)), None) if target else None
             if target and not name:
                 raise RuntimeError(f"Expected {target} in real Claude model tools: {names}")
             if not background:
@@ -83,7 +84,7 @@ class Model(http.server.BaseHTTPRequestHandler):
         event({"type": "message_start", "message": {"id": "msg_" + uuid.uuid4().hex, "type": "message", "role": "assistant", "model": body.get("model"), "content": [], "stop_reason": None, "stop_sequence": None, "usage": {"input_tokens": 1, "output_tokens": 1}}})
         content = {"type": "tool_use", "id": "tool_" + uuid.uuid4().hex, "name": name, "input": {}} if name else {"type": "text", "text": ""}
         event({"type": "content_block_start", "index": 0, "content_block": content})
-        delta = {"type": "input_json_delta", "partial_json": json.dumps(arguments)} if name else {"type": "text_delta", "text": "AC1_PROVED" if Model.action is None else "LV1_PROVED"}
+        delta = {"type": "input_json_delta", "partial_json": json.dumps(arguments)} if name else {"type": "text_delta", "text": Model.completion_text if Model.completion_text is not None else "AC1_PROVED" if Model.action is None else "LV1_PROVED"}
         event({"type": "content_block_delta", "index": 0, "delta": delta}); event({"type": "content_block_stop", "index": 0})
         event({"type": "message_delta", "delta": {"stop_reason": "tool_use" if name else "end_turn", "stop_sequence": None}, "usage": {"output_tokens": 1}}); event({"type": "message_stop"})
 

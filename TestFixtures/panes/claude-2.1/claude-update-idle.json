@@ -1,0 +1,7 @@
+{
+  "screen": "\u001b[38;5;174m ▐\u001b[48;5;16m▛███▛█\u001b[39m\u001b[49m   \u001b[1mClaude\u001b[0m \u001b[1mCode\u001b[0m \u001b[38;5;246mv2.1.299\u001b[39m\n\u001b[38;5;174m▝▜\u001b[48;5;16m█████\u001b[49m█▀\u001b[39m  \u001b[38;5;246mHaiku\u001b[39m \u001b[38;5;246m4.5\u001b[39m \u001b[38;5;246m·\u001b[39m \u001b[38;5;246mAPI\u001b[39m \u001b[38;5;246mUsage\u001b[39m \u001b[38;5;246mBilling\u001b[39m\n\u001b[38;5;174m ▝▝\u001b[39m   \u001b[38;5;174m▝▝\u001b[39m   \u001b[38;5;246m/FIXTURE/project\u001b[39m\n\n\n\u001b[38;5;246m\u001b[48;5;237m❯ \u001b[38;5;231mPC1_IDLE: finish a short turn.\u001b[39m\n\n\u001b[38;5;231m\u001b[49m⏺\u001b[39m PC1 fixture complete.\n\n\u001b[38;5;246m✻\u001b[39m \u001b[38;5;246mWorked for 0s · done 2:12 PM\u001b[39m\n\n\u001b[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\u001b[39m❯ \u001b[7m \u001b[0m\n\u001b[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\u001b[39m  \u001b[38;5;246m⏸ manual mode on · ← for agents\u001b[39m                                               \u001b[38;5;114m✔ Update installed · Restart to update\u001b[39m\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+  "inputMetadata": "2|12|120|0|0|",
+  "agent": "claude",
+  "version": "2.1.299 (Claude Code)",
+  "provenance": "Native updater notice from updating only the throwaway HOME copy of Claude."
+}
