@@ -501,6 +501,18 @@ private let t0 = Date(timeIntervalSince1970: 1_791_100_000) // a fixed afternoon
         }
     }
 
+    /// D19: the first-run welcome card in every bundled theme, light and dark.
+    @Test func welcomeThemes() async throws {
+        for look in Snap.Look.basic {
+            for theme in ZeusThemeLibrary.load(userDirectory: nil).themes {
+                let f = Fixture(font: .pixel); defer { f.cleanup() }
+                f.settings.setTheme(id: theme.id)
+                f.store.add(WelcomeCard.make(now: t0))
+                try await Snap.render("welcome-\(theme.id)", look: look, settle: 0.6) { f.conversation() }
+            }
+        }
+    }
+
     /// D18: the 0.1.8 text styles in every bundled theme, light and dark: links in both bubbles, a skipped question,
     /// the quiet Undo and summary lines, and the strip waiting on an open question.
     @Test func contrastSurfaces() async throws {
