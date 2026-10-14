@@ -528,6 +528,7 @@ extension ZeusRuntime {
             Task { @MainActor in
                 guard let self, self.running, self.generation == token else { return }
                 self.managedController.configurationChanged()
+                self.reconcileOwnScreenSampling()
                 self.processDueDeliveries()
                 self.observeRouting()
             }
