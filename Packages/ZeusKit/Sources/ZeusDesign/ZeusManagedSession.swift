@@ -390,8 +390,8 @@ public struct ZeusChoiceList<ID: Hashable & Sendable>: View {
                     .focusable(false)
                     .focusable(enabled && choice.isEnabled, interactions: .edit)
                     .focusEffectDisabled().focused($focused, equals: choice.id)
-                    .onKeyPress(keys: [.space, .return]) { _ in
-                        guard enabled && choice.isEnabled else { return .ignored }
+                    .onKeyPress(keys: [.space, .return]) { press in
+                        guard enabled && choice.isEnabled, press.modifiers.intersection([.command, .option, .control]).isEmpty else { return .ignored }
                         selection = choice.id; return .handled
                     }
                     .disabled(!choice.isEnabled)
@@ -473,8 +473,8 @@ public struct ZeusCheckboxStyle: ToggleStyle {
             .focusable(false)
             .focusable(enabled, interactions: .edit)
             .focusEffectDisabled().focused($focused)
-            .onKeyPress(keys: [.space, .return]) { _ in
-                guard enabled else { return .ignored }
+            .onKeyPress(keys: [.space, .return]) { press in
+                guard enabled, press.modifiers.intersection([.command, .option, .control]).isEmpty else { return .ignored }
                 configuration.isOn.toggle(); return .handled
             }
             .accessibilityRepresentation { Toggle(isOn: configuration.$isOn) { configuration.label } }

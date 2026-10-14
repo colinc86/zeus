@@ -5,7 +5,8 @@ import Testing
 @testable import ZeusDesign
 
 @MainActor private final class KeyboardAuditPanel: NSPanel {
-    override var canBecomeKey: Bool { false }
+    var allowsKeys = false
+    override var canBecomeKey: Bool { allowsKeys }
     override var canBecomeMain: Bool { false }
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
 }
@@ -79,6 +80,50 @@ import Testing
         for item in buttons {
             #expect(keyboardAX(host).contains { (($0 as AnyObject).accessibilityLabel?() ?? nil) == item.button.title })
         }
+    }
+
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["ZEUS_A12_LIVE_KEYS"] == "1", "Requires an unlocked Mac; private offscreen window only."))
+    func nativeChoiceAndCheckboxSpaceReturnAndModifierGuard() async throws {
+        let app = NSApplication.shared
+        app.setActivationPolicy(.accessory)
+        let state = KeyboardAuditState()
+        let host = NSHostingView(rootView: KeyboardAuditControls(state: state).padding(8).frame(width: 420)
+            .environment(\.accessibilityEnabled, true))
+        let panel = KeyboardAuditPanel(contentRect: CGRect(x: -20000, y: -20000, width: 420, height: 300),
+            styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        panel.allowsKeys = true; panel.isReleasedWhenClosed = false; panel.contentView = host
+        defer { panel.orderOut(nil); panel.contentView = nil; panel.close() }
+        app.activate(); panel.makeKeyAndOrderFront(nil)
+        for _ in 0..<8 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
+        try #require(panel.isKeyWindow && app.isActive)
+        func focus(_ label: String) async throws {
+            let node = try #require(keyboardAX(host).first { ($0 as AnyObject).accessibilityLabel?() == label })
+            let target = try #require((node as AnyObject).accessibilityFrame?())
+            for _ in 0..<12 {
+                if let view = panel.firstResponder as? NSView {
+                    let rect = panel.convertToScreen(view.convert(view.bounds, to: nil))
+                    if target.contains(CGPoint(x: rect.midX, y: rect.midY)) { return }
+                }
+                panel.selectNextKeyView(nil); try await Task.sleep(for: .milliseconds(20))
+            }
+            Issue.record("Tab didn't reach \(label)"); throw CocoaError(.coderValueNotFound)
+        }
+        func key(_ text: String, code: UInt16, modifiers: NSEvent.ModifierFlags = []) throws {
+            let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: 0,
+                windowNumber: panel.windowNumber, context: nil, characters: text, charactersIgnoringModifiers: text, isARepeat: false, keyCode: code))
+            app.sendEvent(event)
+        }
+        try await focus("Codex. Installed")
+        try key("\r", code: 36, modifiers: .option)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(state.selected == "claude")
+        try key("\r", code: 36)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(state.selected == "codex")
+        try await focus("Let my assistant control Zeus")
+        try key(" ", code: 49)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(state.checked)
     }
 }
 

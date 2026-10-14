@@ -309,8 +309,8 @@ private struct StripLink<Label: View>: View {
         .buttonStyle(.plain)
         .focusable(false)
         .focusable(enabled, interactions: .edit).focusEffectDisabled().focused($focused)
-        .onKeyPress(keys: [.space, .return]) { _ in
-            guard enabled else { return .ignored }
+        .onKeyPress(keys: [.space, .return]) { press in
+            guard enabled, press.modifiers.intersection([.command, .option, .control]).isEmpty else { return .ignored }
             action(); return .handled
         }
         .accessibilityLabel(accessibility)
@@ -340,8 +340,8 @@ private struct StripIconButton: View {
         .disabled(!item.isEnabled)
         .opacity(item.isEnabled ? 1 : 0.5)
         .focusable(enabled && item.isEnabled, interactions: .edit).focusEffectDisabled().focused($focused)
-        .onKeyPress(keys: [.space, .return]) { _ in
-            guard enabled && item.isEnabled else { return .ignored }
+        .onKeyPress(keys: [.space, .return]) { press in
+            guard enabled && item.isEnabled, press.modifiers.intersection([.command, .option, .control]).isEmpty else { return .ignored }
             action(); return .handled
         }
         .onHover { hovering = $0 }
