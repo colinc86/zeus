@@ -1,12 +1,11 @@
 #!/bin/bash
 # Developer ID release. No credential extraction; notarytool uses a named profile.
 set -euo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 cd "$(dirname "$0")/.."
 ZEUS_RELEASE_ROOT="$PWD"
 RELEASE="$ZEUS_RELEASE_ROOT/build/release"
 VENV="$ZEUS_RELEASE_ROOT/build/dmg-venv"
-VERSION=0.1.4
-BUILD_NUMBER=5
 # Signing identity, team and notary profile come from the environment or the git-ignored
 # scripts/release.local.env (see scripts/release.local.env.example).
 LOCAL_ENV="$ZEUS_RELEASE_ROOT/scripts/release.local.env"
@@ -21,15 +20,21 @@ SKIP_TESTS=false
 NOTARIZE=true
 LAYOUT="$ZEUS_RELEASE_ROOT/scripts/dmg/layout.json"
 ART_DIR="$ZEUS_RELEASE_ROOT/scripts/dmg/art"
+PUBLISH_NOTES=""
+RESUME=false
 
 usage() {
   cat <<'USAGE'
 Usage: scripts/release.sh [--skip-tests] [--no-notarize] [--art-dir PATH] [--layout PATH]
+                          [--publish NOTES.md [--resume]]
   --skip-tests    Skip scripts/test.sh (tests run by default).
   --no-notarize   Produce signed local artifacts; skip Apple submission/stapling/Gatekeeper.
   --art-dir      D17's background PNGs and volume .icns (default scripts/dmg/art).
   --layout       JSON coordinates and art filenames (default scripts/dmg/layout.json).
-Outputs: build/release/Zeus-<version>.dmg, Zeus.app, SHA256SUMS, verification logs.
+  --publish      Publish notarized DMG + Sparkle ZIP, then commit/push appcast.xml on main.
+  --resume       Finish an interrupted publish from saved build/release/ artifacts; no rebuild.
+Outputs: build/release/Zeus-<version>.dmg and .zip, Zeus.app, SHA256SUMS, verification logs.
+Version/build come only from project.yml. Without --publish, no GitHub or git mutations.
 The release directory is recreated; the build-only Python venv is cached under build/.
 USAGE
 }
@@ -38,6 +43,10 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --skip-tests) SKIP_TESTS=true; shift ;;
     --no-notarize) NOTARIZE=false; shift ;;
+    --resume) RESUME=true; shift ;;
+    --publish)
+      [ "$#" -ge 2 ] && [ -n "$2" ] || die '--publish requires a Markdown notes file'
+      PUBLISH_NOTES="$2"; shift 2 ;;
     --art-dir|--layout)
       [ "$#" -ge 2 ] || die "$1 requires a path"
       if [ "$1" = --art-dir ]; then ART_DIR="$2"; else LAYOUT="$2"; fi
@@ -46,6 +55,20 @@ while [ "$#" -gt 0 ]; do
     *) usage >&2; die "Unknown option: $1" ;;
   esac
 done
+command -v python3 >/dev/null || die 'Missing build tool: python3'
+VERSION=$(python3 scripts/release_support.py version --field version)
+BUILD_NUMBER=$(python3 scripts/release_support.py version --field build)
+if "$RESUME" && [ -z "$PUBLISH_NOTES" ]; then die '--resume requires --publish NOTES.md'; fi
+if [ -n "$PUBLISH_NOTES" ]; then
+  "$NOTARIZE" || die '--publish cannot be combined with --no-notarize'
+  command -v gh >/dev/null || die 'Missing publishing tool: gh'
+  if "$RESUME"; then
+    python3 scripts/release_support.py publish --notes "$PUBLISH_NOTES" --resume
+    exit 0
+  fi
+  python3 scripts/release_support.py preflight --notes "$PUBLISH_NOTES"
+fi
+python3 scripts/appcast.py appcast.xml --version "$VERSION" --build "$BUILD_NUMBER" --check-build
 [ -n "$IDENTITY" ] && [ -n "$TEAM" ] || die 'Set ZEUS_SIGN_IDENTITY and ZEUS_TEAM_ID (copy scripts/release.local.env.example to scripts/release.local.env).'
 for tool in xcodegen xcodebuild xcrun codesign hdiutil tiffutil sips python3; do
   command -v "$tool" >/dev/null || die "Missing build tool: $tool"
@@ -88,7 +111,7 @@ xcodebuild -project Zeus.xcodeproj -scheme Zeus -configuration Release \
   -destination 'generic/platform=macOS' \
   -derivedDataPath "$RELEASE/DerivedData" \
   -clonedSourcePackagesDirPath "$RELEASE/SourcePackages" \
-  CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM" \
+  CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM" \
   clean build > "$RELEASE/logs/build.log" 2>&1 || {
   tail -n 100 "$RELEASE/logs/build.log" >&2
   die 'Release build/signing failed. Install the specified Developer ID certificate and private key; Debug remains ad-hoc.'
@@ -103,7 +126,7 @@ verify_code() {
     cat "$RELEASE/logs/$label-verify.log" >&2; die "Signature verification failed: $path";
   }
   codesign -dvv "$path" > "$RELEASE/logs/$label-signature.log" 2>&1
-  cat "$RELEASE/logs/$label-signature.log"
+  # Identity and team are local signing configuration, not public release output.
   grep -Fq "Authority=$IDENTITY" "$RELEASE/logs/$label-signature.log" || die "Wrong signing authority: $path"
   grep -Fq "TeamIdentifier=$TEAM" "$RELEASE/logs/$label-signature.log" || die "Wrong signing team: $path"
   grep -Eq '^Timestamp=.' "$RELEASE/logs/$label-signature.log" || die "No secure timestamp: $path"
@@ -194,5 +217,21 @@ fi
 cat "$RELEASE/RELEASE-STATUS.txt"
 hdiutil detach "$MOUNT" >/dev/null
 MOUNTED=false
-(cd "$RELEASE" && shasum -a 256 "Zeus-$VERSION.dmg" > SHA256SUMS)
+echo '==> Sparkle archive of the verified app'
+ditto -c -k --keepParent "$APP" "$RELEASE/Zeus-$VERSION.zip"
+(cd "$RELEASE" && shasum -a 256 "Zeus-$VERSION.dmg" "Zeus-$VERSION.zip" > SHA256SUMS)
 echo "==> Release ready: $DMG"
+echo '==> Verify public Sparkle key and sign ZIP (Keychain account: zeus)'
+if "$NOTARIZE"; then
+  python3 scripts/release_support.py sign --notarized
+else
+  python3 scripts/release_support.py sign
+fi
+if [ -n "$PUBLISH_NOTES" ]; then
+  python3 scripts/release_support.py publish --notes "$PUBLISH_NOTES" || {
+    printf 'Publishing interrupted. Keep build/release/ and resume with:\n  scripts/release.sh --publish %q --resume\n' "$PUBLISH_NOTES" >&2
+    exit 1
+  }
+else
+  echo '==> Local artifacts only; use --publish NOTES.md on clean main to publish a notarized release.'
+fi
