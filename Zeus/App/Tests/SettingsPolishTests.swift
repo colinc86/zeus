@@ -48,7 +48,7 @@ import ZeusProtocol
         #expect(key.menuShortcut?.modifiers == [.command, .option])
         key.enabled = false
         #expect(key.menuShortcut == nil)
-        key.key = ""; key.enabled = true
+        key.keyCode = UInt32.max; key.enabled = true
         #expect(key.menuShortcut == nil)
     }
     @Test func clearHistoryPreservesOpenAndPendingAndRemovesTheirOldSeenMetadata() throws {

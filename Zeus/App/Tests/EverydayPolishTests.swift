@@ -85,7 +85,7 @@ struct EverydayPolishTests {
     @Test func hotkeyPersistsAndInvalidStoredShortcutFallsBackSafely() throws {
         let (name, defaults) = try defaults(); defer { defaults.removePersistentDomain(forName: name) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
-        #expect(settings.talkHotKey.displayName == "Option + Command + Z")
+        #expect(settings.talkHotKey.displayName == "⌥⌘Z")
         #expect(settings.talkHotKey.keyCode == UInt32(kVK_ANSI_Z))
         settings.talkHotKey = TalkHotKey(key: "K", command: false, option: false, control: true, shift: true)
         settings.soundEnabled = true; settings.typewriterEnabled = false
@@ -101,7 +101,7 @@ struct EverydayPolishTests {
 
     @Test func hotkeyValidationRejectsUnmodifiedAndUnknownKeys() {
         #expect(!TalkHotKey(key: "Z", command: false, option: false).isValid)
-        #expect(!TalkHotKey(key: "?").isValid)
+        #expect(!TalkHotKey(keyCode: UInt32.max).isValid)
         #expect(TalkHotKey.letters.allSatisfy { TalkHotKey(key: $0).isValid })
     }
 
