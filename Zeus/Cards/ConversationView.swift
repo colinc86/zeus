@@ -121,7 +121,7 @@ struct ConversationView: View {
         ScrollViewReader { proxy in
             VStack(spacing: 8) {
                 thread(proxy: proxy)
-                LocalStatusStrip(StatusStripState.make(cards: stripCards, status: stripStatus, managed: stripManaged, activity: indicator),
+                ZeusStatusStrip(StatusStripState.make(cards: stripCards, status: stripStatus, managed: stripManaged, activity: indicator),
                     onJump: StatusStripState.jump(cards: stripCards, status: stripStatus, managed: stripManaged, activity: indicator) == nil ? nil : { jumpStatus(proxy) },
                     onSkip: canSkipFromStrip ? { skipFromStrip() } : nil,
                     onButton: stripButton)
@@ -185,6 +185,9 @@ struct ConversationView: View {
                 }
             }
             .onChange(of: focusedControl) { _, target in
+                #if DEBUG || ZEUS_PERFORMANCE_PROBE
+                panel.focusedControlForDiagnostics = target
+                #endif
                 guard let target else { return }
                 // A person operating thread controls owns the viewport until they jump to latest.
                 setPinned(false)
@@ -282,7 +285,7 @@ struct ConversationView: View {
     private func skipFromStrip() {
         guard canSkipFromStrip, let card = StatusStripState.questions(stripCards).first else { return }
         setPinned(false)
-        _ = store.skip(id: card.id)
+        if store.skip(id: card.id), !store.hasOpenQuestion || focusedControl?.entryID == "card:\(card.id)" { focusComposer() }
     }
     private func jumpStatus(_ proxy: ScrollViewProxy) {
         guard var target = StatusStripState.jump(cards: stripCards, status: stripStatus, managed: stripManaged, activity: indicator) else { return }
@@ -505,8 +508,7 @@ struct ConversationView: View {
             }
             Button("") { latest(proxy) }.keyboardShortcut(.downArrow, modifiers: .command).focusable(false)
             Button("", action: openSettings).keyboardShortcut(",", modifiers: .command).focusable(false)
-            Button("") { jumpStatus(proxy) }.keyboardShortcut("j", modifiers: .command).focusable(false)
-            Button("") { skipFromStrip() }.keyboardShortcut("j", modifiers: [.command, .shift]).focusable(false)
+            ConversationStripKeys(jump: { jumpStatus(proxy) }, skip: canSkipFromStrip ? { skipFromStrip() } : nil)
         }.opacity(0).allowsHitTesting(false).accessibilityHidden(true)
     }
 }
@@ -586,7 +588,10 @@ private struct ConversationBubble: View, Equatable {
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel(ConversationLayout.accessibilityLabel(entry, sessions: sessions))
-            if let card, card.response?.skipped == true { Text("Skipped").zeusFont(.caption).foregroundStyle(palette.secondaryText) }
+            if let card, card.response?.skipped == true {
+                Text("Skipped").zeusFont(.caption).foregroundStyle(palette.secondaryText)
+                    .accessibilityElement(children: .ignore).accessibilityLabel("Skipped")
+            }
             if case .userAnswer(_, let response) = entry.content, response.device == .ios { Text("Answered on iPhone").zeusFont(.caption).foregroundStyle(palette.secondaryText) }
             if entry.outcome == .discarded {
                 Text("Discarded").zeusFont(.caption).foregroundStyle(palette.secondaryText)

@@ -154,7 +154,7 @@ final class ConversationModel {
     func rearmReplyTarget(cardID: String) {
         guard let card = cards.card(id: cardID), StatusStripState.isSkippable(card) else { return }
         explicitReplyCardID = cardID
-        questionsAtReplySelection = Set(cards.cards.filter { $0.kind == .question && $0.status == .open && $0.input != nil }.map(\.id))
+        questionsAtReplySelection = Set(cards.cards.filter { $0.kind == .question && $0.status == .open }.map(\.id))
         clearedReplyCardIDs.remove(cardID)
     }
 

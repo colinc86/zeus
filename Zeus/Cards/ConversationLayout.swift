@@ -18,6 +18,7 @@ final class ConversationPanelState {
     @ObservationIgnored var newestMessageTopForDiagnostics: CGFloat?
     @ObservationIgnored var latestButtonVisibleForDiagnostics = false
     @ObservationIgnored var newestMessageFrameForDiagnostics: CGRect?
+    @ObservationIgnored var focusedControlForDiagnostics: ConversationControlTarget?
     #endif
     var composerFocused = false
     var keyboardScroll: ConversationScrollCommand?

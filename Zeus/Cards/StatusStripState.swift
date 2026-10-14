@@ -9,7 +9,7 @@ enum StatusStripState {
         var seen: Set<String> = []
         var outgoing: [String: OutgoingMessageState] = [:]
         var pendingIDs: Set<String> = []
-        var canClear = true
+        var canClear: Bool? = nil
     }
     struct Status {
         var avatar: AvatarPresentation
@@ -42,7 +42,7 @@ enum StatusStripState {
     static func questions(_ cards: Cards) -> [Card] { ordered(cards.values.filter(isOpenQuestion)) }
     static func unread(_ cards: Cards) -> [Card] { ordered(cards.values.filter { $0.kind != .userMessage && !cards.seen.contains($0.id) }) }
     static func mirroredPrompt(_ cards: Cards) -> Card? {
-        ordered(cards.values.filter { $0.status == .open && $0.id.hasPrefix(ZeusRuntime.managedCardPrefix)
+        ordered(cards.values.filter { $0.status == .open && $0.id.hasPrefix(CardStore.managedActionPrefix)
             && $0.options.contains { $0.id != "open-terminal" } }).last
     }
     static func failed(_ cards: Cards) -> Card? {
@@ -60,47 +60,35 @@ enum StatusStripState {
         if managed.enabled, case .blocked = managed.status {
             return mirroredPrompt(cards).map { .prompt($0.id) } ?? (managed.hasTerminal ? .terminal : nil)
         }
-        switch status.avatar.state {
-        case .alert:
-            if let first = unread(cards).first { return .unread(first.id) }
-        case .waiting:
-            if let first = questions(cards).first { return .question(first.id) }
-        case .thinking, .working, .talking, .happy: return .latest
-        default: break
-        }
+        if let first = unread(cards).first { return .unread(first.id) }
+        if activity != nil || [.thinking, .working].contains(status.avatar.state) { return .latest }
+        if let first = questions(cards).first { return .question(first.id) }
         if status.deliveryProblem { return failed(cards).map { .failed($0.id) } ?? .latest }
+        if [.talking, .happy].contains(status.avatar.state) { return .latest }
         return nil
     }
     static func make(cards: Cards, status: Status, managed: Managed, activity: ConversationActivityPresentation?) -> ZeusStatusStripModel {
         var buttons: [ZeusStatusStripModel.Item] = []
         if managed.hasTerminal { buttons.append(.init(.terminal)) }
         if managed.enabled { buttons.append(.init(.newConversation, isEnabled: managed.canStartNew)) }
-        buttons += [.init(.clear, isEnabled: cards.canClear), .init(.settings)]
+        buttons += [.init(.clear, isEnabled: cards.canClear ?? !cards.values.isEmpty), .init(.settings)]
         if managed.enabled, case .blocked = managed.status {
             let mirrored = mirroredPrompt(cards) != nil
             return .init(glyph: .alert, sentence: mirrored ? "Waiting for your answer" : "Waiting for you in Terminal",
                          actionTitle: mirrored ? "Go to prompt" : managed.hasTerminal ? "Open" : nil, buttons: buttons)
         }
-        switch status.avatar.state {
-        case .alert:
-            let count = unread(cards).count
-            if count > 0 { return .init(glyph: .alert, sentence: count > 1 ? "\(count) unread" : "Unread", actionTitle: "Show", buttons: buttons) }
-        case .waiting:
-            let open = questions(cards)
-            if let first = open.first {
-                return .init(glyph: .question, sentence: open.count > 1 ? "\(open.count) questions" : "Waiting for your answer",
-                             actionTitle: open.count > 1 ? "Go to oldest" : "Go to question",
-                             skipTitle: isSkippable(first) ? "Skip" : nil, buttons: buttons)
-            }
-        case .thinking, .working:
-            return .init(sentence: status.avatar.detail ?? activity?.label ?? (status.avatar.state == .working ? "Working…" : "Thinking…"), buttons: buttons)
-        case .talking: return .init(sentence: "Zeus is talking…", buttons: buttons)
-        case .happy:
-            return .init(sentence: status.avatar.detail ?? status.avatar.state.rawValue.capitalized, buttons: buttons)
-        default: break
+        let count = unread(cards).count
+        if count > 0 { return .unread(count, buttons: buttons) }
+        if let activity { return .activity(status.avatar.detail ?? activity.label, buttons: buttons) }
+        if [.thinking, .working].contains(status.avatar.state) {
+            return .activity(status.avatar.detail ?? (status.avatar.state == .working ? "Working…" : "Thinking…"), buttons: buttons)
         }
-        if status.deliveryProblem { return .init(sentence: "Message not delivered", actionTitle: "Show", buttons: buttons) }
+        let open = questions(cards)
+        if let first = open.first { return .waiting(questions: open.count, skippable: isSkippable(first), buttons: buttons) }
+        if status.deliveryProblem { return .notDelivered(buttons: buttons) }
         if status.avatar.state == .sleeping { return .init(sentence: status.quietUntil.map { "Quiet until \($0)" } ?? "Quiet hours", isQuiet: true, buttons: buttons) }
+        if status.avatar.state == .talking { return .activity("Zeus is talking…", buttons: buttons) }
+        if status.avatar.state == .happy { return .activity(status.avatar.detail ?? "Happy", buttons: buttons) }
         return .init(sentence: status.avatar.detail ?? "Idle", isQuiet: true, buttons: buttons)
     }
     static func nextQuestion(cards: Cards, after id: String?) -> String? {
