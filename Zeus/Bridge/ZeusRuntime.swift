@@ -41,6 +41,11 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored var deferredSends: [String: Date] = [:]
     @ObservationIgnored var sends: [String: Task<MessageSendResult, Never>] = [:]
     @ObservationIgnored var storageProblem: String?
+    var managedDraftAlertCardID: String?
+    var managedDraftWaiting = false
+    var managedDraftCancellation: ManagedDraftCancellation?
+    @ObservationIgnored var managedDraftEpisode: ManagedDraftEpisode?
+    @ObservationIgnored var recoveredDraftCardID: String?
     @ObservationIgnored var handledResponses: Set<String> = []
     @ObservationIgnored var completedResponseIDs: [String] = []
     @ObservationIgnored var unsaved: [DeliveryRecord] = []
@@ -109,7 +114,11 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         do { try loaded.prepareLegacyUserMessages() }
         catch { listener.stop(); throw error }
         recoveredUserMessageIDs = Set(loaded.records.filter { $0.delivery.kind == .userMessage }.map { $0.delivery.id })
-        let recoveredBlocks = ((cards as? any CardPersistenceReporting)?.persistedCards ?? []).filter { $0.id.hasPrefix(Self.managedCardPrefix) && $0.status == .open }
+        let localCards = ((cards as? any CardPersistenceReporting)?.persistedCards ?? []).filter { $0.id.hasPrefix(Self.managedCardPrefix) && $0.status == .open }
+        let recoveredDrafts = localCards.filter { $0.id.hasPrefix(Self.managedDraftPrefix) }
+        recoveredDraftCardID = recoveredDrafts.last?.id
+        for card in recoveredDrafts.dropLast() { resolveManagedCard(card.id, end: .unavailable) }
+        let recoveredBlocks = localCards.filter { !$0.id.hasPrefix(Self.managedDraftPrefix) }
         managedBlockedCardID = recoveredBlocks.last?.id
         for card in recoveredBlocks.dropLast() { resolveManagedCard(card.id) }
         loaded.onChange = { [weak self] records in self?.publishUserMessageDeliveries(records) }
@@ -148,6 +157,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         for session in sessions { disconnectedAt[session.sessionKey] = clock.now }
         running = false
         managedController.shutdown()
+        managedDraftAlertCardID = nil; managedDraftWaiting = false; managedDraftCancellation = nil; managedDraftEpisode = nil
         (status as? any ManagedBlockingPresenting)?.setManagedBlock(nil)
         for task in managedProbeTasks.values { task.cancel() }
         managedProbeTasks.removeAll(); managedChannelProbes.removeAll(); managedChannelReady.removeAll()
@@ -199,6 +209,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
             storageProblem = "Couldn't save the message: \(error.localizedDescription)"; refreshProblem()
             return .failed(reason: "Zeus couldn't save your message. Check that your Mac has free disk space, then try again.")
         }
+        refreshManagedDraftAlert()
         guard let task = beginSend(id: delivery.id) else {
             refreshQueueReasons(); refreshProblem(); scheduleRetry()
             return .queued(reason: ledger.record(id: delivery.id)?.queueReason ?? "Waiting for your assistant to connect.")

@@ -56,6 +56,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     @ObservationIgnored private var peekExitTask: Task<Void, Never>?
     private let warning = NSPopover()
     private var openingWarning = false
+    @ObservationIgnored private var draftCancellationAlert: NSAlert?
+    @ObservationIgnored private var draftCancellationID: UUID?
+    @ObservationIgnored private weak var draftCancellationProvider: (any ManagedDraftAlertControlling)?
     @ObservationIgnored private var closingTask: Task<Void, Never>?
     @ObservationIgnored private var keyMonitor: Any?
     private var settingsWindow: NSWindow?
@@ -96,6 +99,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     var unreadCountText: String { "\(cards.unseenCount) unread \(cards.unseenCount == 1 ? "message" : "messages")" }
 
     var menuStatus: String {
+        if let detail = (messaging.runtime as? any ManagedDraftAlertControlling)?.managedDraftStatusDetail { return detail }
         let usual = MenuPresentation.status(state: status.state, unread: cards.unseenCount, activity: messaging.assistantActivity, sessionLabel: messaging.assistantActivity.map { settings.sessionLabels.label($0.sessionKey) })
         if managed.prioritizesMenuStatus { return managed.menuStatus(usual: usual, unread: cards.unseenCount) }
         if cards.unseenCount > 0 { return usual }
@@ -184,6 +188,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         hotKey.configure(settings.talkHotKey)
         observeHotKeySettings()
         observeAssistantSessionSelection()
+        observeDraftCancellation()
         let managedOnboarding = settings.consumeManagedOnboarding(hasHistory: !cards.cards.isEmpty, isHidden: visibility.isHidden)
         let welcomeAdded = settings.managedSession?.enabled == true ? false : WelcomeCard.installIfNeeded(cards: cards, settings: settings)
         if (managedOnboarding || welcomeAdded) && !visibility.isHidden { showTalkPanel() }
@@ -199,6 +204,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     func stop() {
         stopped = true
+        dismissDraftCancellation()
         settings.stopWatchingUserFolders()
         tickTask?.cancel()
         closingTask?.cancel()
@@ -550,6 +556,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     private func closeCard(restoreFocus: Bool = true) {
         resizeFixedX = nil
+        dismissDraftCancellation()
         cardPanelState.isVisible = false
         warning.performClose(nil)
         conversation.closePanel()
@@ -572,7 +579,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     }
 
     func windowDidResignKey(_ notification: Notification) {
-        guard (notification.object as? NSWindow) === card, !warning.isShown, !openingWarning else { return }
+        guard (notification.object as? NSWindow) === card, !warning.isShown, !openingWarning, draftCancellationAlert == nil else { return }
         closeCard(restoreFocus: false)
     }
 
@@ -641,6 +648,55 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         if messaging.runtime != nil, !messaging.previewEnabled {
             settings.reconcileAssistantSession(with: messaging.sessions)
         }
+    }
+
+    /// Confirmation is scoped by the runtime to the deliveries present at the click.
+    /// Return keeps them; closing the panel never authorizes a cancellation.
+    static func makeDraftCancellationAlert(count: Int) -> NSAlert {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Cancel \(count) queued messages?"
+        alert.informativeText = "These messages won't be sent. The unsent text in your assistant's Terminal will stay there."
+        alert.addButton(withTitle: "Keep Messages").keyEquivalent = "\r"
+        alert.addButton(withTitle: "Cancel \(count) Messages").keyEquivalent = ""
+        return alert
+    }
+
+    private func observeDraftCancellation() {
+        withObservationTracking {
+            _ = messaging.runtime
+            _ = (messaging.runtime as? any ManagedDraftAlertControlling)?.managedDraftCancellation
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, !self.stopped else { return }
+                self.observeDraftCancellation()
+            }
+        }
+        let provider = messaging.runtime as? any ManagedDraftAlertControlling
+        let request = provider?.managedDraftCancellation
+        guard request?.id != draftCancellationID else { return }
+        dismissDraftCancellation()
+        guard let provider, let request else { return }
+        openConversation(at: request.cardID)
+        let alert = Self.makeDraftCancellationAlert(count: request.count)
+        draftCancellationAlert = alert
+        draftCancellationID = request.id
+        draftCancellationProvider = provider
+        alert.beginSheetModal(for: card) { [weak self, weak provider] response in
+            guard let self, self.draftCancellationID == request.id else { return }
+            self.draftCancellationAlert = nil; self.draftCancellationID = nil; self.draftCancellationProvider = nil
+            provider?.respondToDraftCancellation(id: request.id, confirmed: response == .alertSecondButtonReturn)
+        }
+    }
+
+    private func dismissDraftCancellation() {
+        guard let alert = draftCancellationAlert else { return }
+        // Invalidate before ending the sheet: its completion must not confirm an old request.
+        let id = draftCancellationID
+        let provider = draftCancellationProvider
+        draftCancellationAlert = nil; draftCancellationID = nil; draftCancellationProvider = nil
+        card.endSheet(alert.window, returnCode: .alertFirstButtonReturn)
+        if let id { provider?.respondToDraftCancellation(id: id, confirmed: false) }
     }
 
     private func positionCard() {

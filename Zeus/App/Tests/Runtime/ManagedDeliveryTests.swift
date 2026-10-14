@@ -43,7 +43,9 @@ struct ManagedDeliveryFixture {
         managed.clock.advance(10, wake: false)
         let agent = try #require(managed.controller.record?.conversation?.agent)
         let fixture = agent == .claude ? "claude-idle" : agent == .codex ? "codex-ready" : "opencode-ready"
-        await managed.host.setSnapshot(try managedSnapshot(fixture))
+        // A plain legacy Codex capture loses the muted placeholder styling and
+        // cannot prove empty input. Use the actual ANSI/cursor fixture instead.
+        await managed.host.setSnapshot(try agent == .codex ? N1Messages.frame(.codex, "three-lines-before") : managedSnapshot(fixture))
         managed.controller.refresh(); try await managed.settle()
     }
     func cleanup() { runtime.stop(); managed.cleanup() }

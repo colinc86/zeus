@@ -62,6 +62,8 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     @ObservationIgnored private var promptEpoch = UUID()
     @ObservationIgnored private var answeringPrompt = false
     private(set) var managedPrompt: ManagedAgentPrompt?
+    /// Read-only, ownership-validated visible input, scoped to this process lifetime.
+    @ObservationIgnored private(set) var latestInputSample: ManagedInputSample?
     var promptScope: String {
         guard let pane = record?.pane else { return activation.uuidString }
         return [activation.uuidString, promptEpoch.uuidString, record?.owner ?? "", pane.socket, pane.name, pane.id,
@@ -271,6 +273,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     /// Leaves the process and ownership lease intact. No SIGTERM/kill-window during app shutdown.
     func shutdown() {
         managedSettingsApplication = nil
+        latestInputSample = nil
         sampledLifetime = nil; clearBlock()
         attached = false; activation = UUID(); actions.removeAll()
         monitor?.cancel(); monitor = nil; recovery?.cancel(); recovery = nil
@@ -397,6 +400,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         }
         let lifetime = "\(pane.pid).\(pane.startTime)"
         if sampledLifetime != lifetime {
+            latestInputSample = nil
             hasPaneSample = false
             sampledLifetime = lifetime; graceUntil = clock.now.addingTimeInterval(10)
             clearBlock()
@@ -487,6 +491,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         }
     }
     private func stop() async throws {
+        latestInputSample = nil
         setStatus(enabled ? .stopped : .off)
         monitor?.cancel(); monitor = nil; recovery?.cancel(); recovery = nil
         // Stop remains available if a native store is temporarily unreadable. No context is deleted.
@@ -524,6 +529,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
                 throw error
             }
             guard attached, enabled else { return }
+            latestInputSample = .init(pane: current, agent: record?.conversation?.agent ?? .other, snapshot: snapshot, capturedAt: clock.now)
             switch ManagedPaneClassifier.classify(snapshot, agent: record?.conversation?.agent ?? .other) {
             case .blocked(let reason, let dialog):
                 let prompt = ManagedPromptParser.parse(snapshot, agent: record?.conversation?.agent ?? .other, scope: promptScope)
@@ -550,7 +556,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
                 else { blockedDialog = nil; setStatus(hasPaneSample ? .running(.unknown) : .starting) }
             }
             if case .blocked = managedStatus { onChange?() }
-            if canAcceptInput || managedStatus == .running(.working) { onChange?() }
+            if canAcceptInput || managedStatus == .running(.working) || latestInputSample?.draftText != nil { onChange?() }
             reconsiderSettingsApplication()
         }
     }

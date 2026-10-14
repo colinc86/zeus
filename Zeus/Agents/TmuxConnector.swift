@@ -36,7 +36,7 @@ enum AgentInjectionText {
 
 /// Conservative text snapshot of the active terminal input. Unknown prompts,
 /// unknown hidden cursors and multiline drafts stay queued rather than being submitted.
-struct TmuxInputSnapshot: Equatable {
+struct TmuxInputSnapshot: Equatable, Sendable {
     let lines: [String]
     let x: Int
     let y: Int
@@ -182,6 +182,22 @@ struct TmuxInputSnapshot: Equatable {
         return row
     }
     private var openCodeComposer: Bool { x == 5 && openCodeBoxStart != nil }
+    /// Only a positively bounded composer can report a human draft. Suggestions
+    /// are empty; dialogs and work are rejected separately by the pane classifier.
+    var humanDraftText: String? {
+        guard !isEmpty else { return nil }
+        let text: String
+        if let rows = claudeInputRows ?? codexInputRows {
+            text = rows.map { String(lines[$0].dropFirst(2)) }.joined(separator: "\n")
+        } else if let start = openCodeBoxStart,
+                  let end = lines.indices.last(where: { $0 > y && lines[$0].hasPrefix("  ┃  ") && lines[$0].contains(" · ") }) {
+            let columns = lines.suffix(4).first(where: { $0.hasPrefix("  ╹") })?
+                .prefix(while: { $0 == " " || $0 == "╹" || $0 == "▀" || $0 == "━" }).count ?? width
+            text = lines[start..<end].map { String($0.prefix(columns).dropFirst(5)).trimmingCharacters(in: .whitespaces) }.joined(separator: "\n")
+        } else { return nil }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
     private var prompt: String? {
         if openCodeComposer { return String(lines[y].prefix(x)).padding(toLength: x, withPad: " ", startingAt: 0) }
         let line = lines[y]
@@ -193,7 +209,7 @@ struct TmuxInputSnapshot: Equatable {
     /// includes Zeus's own paste during the monitor's paste/Enter race. Delivery
     /// separately requires emptiness or an exact match to the recorded paste.
     var isProbablyIdle: Bool {
-        claudeInputStart != nil || codexInputRows != nil || isEmpty || (prompt != nil && x == prompt?.count && lines[y].contains("› ") && Self.placeholders.contains(String(lines[y].dropFirst(x)).trimmingCharacters(in: .whitespaces)))
+        claudeInputStart != nil || codexInputRows != nil || openCodeBoxStart != nil || isEmpty || (prompt != nil && x == prompt?.count && lines[y].contains("› ") && Self.placeholders.contains(String(lines[y].dropFirst(x)).trimmingCharacters(in: .whitespaces)))
     }
     private static let placeholders: Set<String> = ["Ask Codex to do anything", "Write tests for @filename", "Find and fix a bug in @filename", "Explain this codebase", "Implement {feature}", "Improve documentation in @filename", "Summarize recent commits", "Run /review on my current changes"]
     var isEmpty: Bool {
