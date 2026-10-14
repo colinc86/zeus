@@ -39,7 +39,12 @@ final class ActivityRecorder {
     private(set) var idleSince: Date?
     private var current: (bundleID: String?, name: String?)?
     private var privateSince: Date?
-    private var asleepOrLocked = false
+    /// Locked or asleep: the idle poll has nothing to do, so its owner suspends it (PERF2).
+    private(set) var asleepOrLocked = false {
+        didSet { if asleepOrLocked != oldValue { onSuspendedChange?(asleepOrLocked) } }
+    }
+    /// Called when the Mac locks or sleeps (true) and when it unlocks or wakes (false).
+    var onSuspendedChange: ((Bool) -> Void)?
 
     init(source: any ActivityEventSource, isExcluded: @escaping (String?, String?) -> Bool, isPaused: @escaping (Date) -> Bool,
          clock: @escaping () -> Date = Date.init, write: @escaping (ActivityEvent) -> Void) {

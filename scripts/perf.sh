@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 30-second CPU-time deltas for the built app. Isolated state and optional idle bridge.
+# CPU-time deltas (30 s by default), idle wakeups/s and energy impact for the built app. Isolated state and optional idle bridge.
 # Default: visible Zeus, closed conversation, no cards. --pid attaches read-only.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -17,9 +17,15 @@ p.add_argument('--bridge', action='store_true', help='also launch an idle real b
 p.add_argument('--trace', action='store_true', help='record a separate 10 s Time Profiler trace after CPU measurement')
 p.add_argument('--sample', action='store_true', help='collect a separate 10 s stack sample after CPU measurement')
 p.add_argument('--label', default='idle')
+p.add_argument('--seconds', type=int, default=30, help='length of the CPU interval')
+p.add_argument('--learn', action='store_true', help='turn on Learn from me (recorder and idle poll) in the isolated home')
+p.add_argument('--ghost', type=float, help='turn on Fade Zeus when idle at this opacity, after the shortest delay (5 s)')
+p.add_argument('--question', action='store_true', help='also seed one open, seen question card')
 a = p.parse_args(sys.argv[2:])
 if a.history < 0: p.error('--history must be nonnegative')
-if a.pid and (a.hidden or a.bridge or a.history): p.error('--hidden/--bridge require an isolated launch')
+if a.seconds < 5: p.error('--seconds must be at least 5')
+if a.pid and (a.hidden or a.bridge or a.history or a.learn or a.ghost is not None or a.question):
+    p.error('--hidden/--bridge/--history/--learn/--ghost/--question require an isolated launch')
 label = ''.join(c if c.isalnum() or c in '-_' else '_' for c in a.label)
 result = root / 'build/perf' / (datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '-' + label)
 result.mkdir(parents=True)
@@ -40,6 +46,18 @@ def counters(targets):
     if set(rows) != set(targets.values()): raise RuntimeError('A measured process exited during the CPU interval')
     return rows
 
+# Wakeups come from proc_pid_rusage (top's IDLEW column reads 0 for these processes): interrupt wakeups, and the
+# package-idle wakeups Activity Monitor calls "Idle Wake Ups".
+import ctypes
+libproc = ctypes.CDLL('/usr/lib/libproc.dylib')
+class RUsage(ctypes.Structure):
+    _fields_ = [('uuid', ctypes.c_uint8 * 16), ('user_time', ctypes.c_uint64), ('system_time', ctypes.c_uint64),
+                ('pkg_idle_wkups', ctypes.c_uint64), ('interrupt_wkups', ctypes.c_uint64), ('rest', ctypes.c_uint64 * 40)]
+def wakeups(pid):
+    usage = RUsage()
+    if libproc.proc_pid_rusage(pid, 2, ctypes.byref(usage)) != 0: return None
+    return usage.interrupt_wkups, usage.pkg_idle_wkups
+
 temporary_home = tempfile.TemporaryDirectory(prefix='zperf_', dir='/private/tmp')
 try:
     home = pathlib.Path(temporary_home.name)
@@ -57,13 +75,20 @@ try:
                     'general.sound': False, 'general.typewriter': False,
                     'general.talkHotKey': json.dumps({'key': 'Z', 'command': True, 'option': True,
                         'control': False, 'shift': False, 'enabled': False}).encode()}
+        if a.learn: settings.update({'learn.enabled': True, 'learn.introShown': True})
+        if a.ghost is not None: settings.update({'avatar.ghost.enabled': True, 'avatar.ghost.opacity': a.ghost, 'avatar.ghost.delay': 5.0})
         with (prefs / (info['CFBundleIdentifier'] + '.plist')).open('wb') as f: plistlib.dump(settings, f)
-        if a.history:
+        if a.history or a.question:
             support = home / 'Library/Application Support/Zeus'; support.mkdir(parents=True)
             cards = [{'id': 'c_%08d' % i, 'kind': 'message', 'body': 'A completed update from the assistant.',
                       'options': [], 'attachments': [], 'priority': 'normal',
                       'createdAt': '2026-10-10T00:00:00Z', 'updatedAt': '2026-10-10T00:00:00Z',
                       'status': 'dismissed'} for i in range(a.history)]
+            if a.question:
+                cards.append({'id': 'c_question', 'kind': 'question', 'title': 'Slides', 'body': 'Update last deck, or start fresh?',
+                              'options': [{'id': 'u', 'label': 'Update', 'style': 'primary'}, {'id': 'f', 'label': 'Start fresh', 'style': 'secondary'}],
+                              'attachments': [], 'priority': 'normal', 'createdAt': '2026-10-10T00:01:00Z',
+                              'updatedAt': '2026-10-10T00:01:00Z', 'status': 'open'})
             (support / 'cards.json').write_text(json.dumps({'version': 1, 'cards': cards, 'seenIDs': [c['id'] for c in cards]}))
         # Never start a managed agent, and keep any tmux use off the user's server and agent configs.
         tmux_dir = home / 'tmux'; tmux_dir.mkdir()
@@ -85,8 +110,10 @@ try:
             if child.poll() is not None or time.monotonic() > deadline:
                 raise RuntimeError('Isolated app did not start a healthy runtime; inspect app.log')
             time.sleep(0.1)
-        context = {'mode': 'isolated launch', 'app': str(app), 'character': a.character,
-                   'hidden': a.hidden, 'conversation': 'closed', 'cards': a.history, 'bridge': a.bridge}
+        context = {'mode': 'isolated launch', 'app': str(app), 'character': a.character, 'hidden': a.hidden,
+                   'conversation': os.environ.get('ZEUS_PERF_PANEL') or 'closed', 'cards': a.history, 'bridge': a.bridge,
+                   'learn': a.learn, 'ghost_opacity': a.ghost, 'question': a.question,
+                   'activity': os.environ.get('ZEUS_PERF_ACTIVITY'), 'ignore_occlusion': os.environ.get('ZEUS_PERF_IGNORE_OCCLUSION') == '1'}
         if a.bridge:
             output = (result / 'bridge.stdout.ndjson').open('wb'); error = (result / 'bridge.stderr').open('wb')
             handles.extend([output, error])
@@ -102,11 +129,15 @@ try:
     if not a.pid:
         history = home / 'Library/Application Support/Zeus/cards.json'
         actual = json.loads(history.read_text()) if history.exists() else {'cards': []}
-        if len(actual['cards']) != a.history:
+        if len(actual['cards']) != a.history + (1 if a.question else 0):
             raise RuntimeError('Unexpected cards/welcome: isolated launch controls did not take effect')
+    # top's second sample covers the same interval: that interval's energy impact (POWER).
+    tops = {name: subprocess.Popen(['/usr/bin/top', '-l', '2', '-s', str(a.seconds), '-pid', str(pid), '-stats', 'pid,power'],
+                                   stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True) for name, pid in targets.items()}
+    wake_start = {name: wakeups(pid) for name, pid in targets.items()}
     start_values = previous = counters(targets); start = prior_time = time.monotonic()
     rows = []; per_target = {name: [] for name in targets}
-    for n in range(1, 31):
+    for n in range(1, a.seconds + 1):
         time.sleep(max(0, start + n - time.monotonic()))
         current = counters(targets); now = time.monotonic()
         for name, pid in targets.items():
@@ -115,13 +146,23 @@ try:
             rows.append([name, pid, now - start, current[pid][0], cpu, current[pid][1]])
         previous, prior_time = current, now
     elapsed = now - start
+    wake_end = {name: wakeups(pid) for name, pid in targets.items()}
     summary = {'context': context, 'git': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
                'os': subprocess.check_output(['/usr/bin/sw_vers', '-productVersion'], text=True).strip(),
                'machine': subprocess.check_output(['/usr/sbin/sysctl', '-n', 'machdep.cpu.brand_string'], text=True).strip(),
                'measurement': '100% = one full CPU core; cumulative ps TIME delta / monotonic elapsed',
                'elapsed_seconds': elapsed, 'processes': {}}
+    def top_figures(name, pid):
+        figures = {}
+        if wake_start[name] and wake_end[name]:
+            figures['wakeups_per_second'] = (wake_end[name][0] - wake_start[name][0]) / elapsed
+            figures['idle_wakeups_per_second'] = (wake_end[name][1] - wake_start[name][1]) / elapsed
+        out, _ = tops[name].communicate(timeout=a.seconds + 30)
+        samples = [line.split() for line in out.splitlines() if line.split()[:1] == [str(pid)]]
+        if len(samples) >= 2: figures['energy_impact'] = float(samples[1][1])
+        return figures
     for name, pid in targets.items():
-        summary['processes'][name] = {'pid': pid, 'cpu_seconds': previous[pid][0] - start_values[pid][0],
+        summary['processes'][name] = {**top_figures(name, pid), 'pid': pid, 'cpu_seconds': previous[pid][0] - start_values[pid][0],
             'mean_cpu_percent': (previous[pid][0] - start_values[pid][0]) / elapsed * 100,
             'median_one_second_percent': statistics.median(per_target[name]),
             'max_one_second_percent': max(per_target[name]), 'rss_kib': previous[pid][1]}
