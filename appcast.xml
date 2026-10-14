@@ -6,6 +6,28 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.1.9</title>
+      <pubDate>Wed, 14 Oct 2026 21:53:12 GMT</pubDate>
+      <sparkle:version>10</sparkle:version>
+      <sparkle:shortVersionString>0.1.9</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>One menu.</strong> The menu bar icon and a right-click on Zeus now show the same menu: status (with a jump to the waiting question or unread message), Talk, Hide, Character, Size, Theme, Settings, Check for Updates, About, Quit.</li>
+<li><strong>Hide the menu bar icon.</strong> Settings › General › "Show menu bar icon". Zeus always stays reachable: turning the icon off shows Zeus, reopening the app brings Zeus back, and ⌥⌘Z keeps working.</li>
+<li><strong>Your assistant's own updates.</strong> When the assistant Zeus runs has an update waiting (Claude Code's "Restart to update"), one quiet line offers "Restart assistant". It restarts at a safe moment and keeps the conversation. Nothing restarts without your click.</li>
+<li><strong>Zeus knows the moment your assistant finishes.</strong> Sessions Zeus launches, and sessions you start with the command copied from Settings, now tell Zeus when a turn ends. The thinking indicator clears in well under a second even when the assistant doesn't send a reply, for Claude Code, Codex and OpenCode. Nothing in your saved agent configuration is changed; the hook applies to that launch only.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.1.9/Zeus-0.1.9.zip" type="application/octet-stream" sparkle:edSignature="36LYGafxw6n3EB9dhJCk5Utm8beBrnw382o3Vh3aUOSCZSPVVjZM99vHemwxbFUwse96wBUem2Hxng1WF8TnDw==" length="9141842"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.1.8</title>
       <pubDate>Wed, 14 Oct 2026 21:09:58 GMT</pubDate>
       <sparkle:version>9</sparkle:version>
