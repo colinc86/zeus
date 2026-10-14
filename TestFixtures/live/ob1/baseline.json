@@ -1,0 +1,309 @@
+{
+  "claude": "2.1.300 (Claude Code)",
+  "private_socket": true,
+  "disposable_home": true,
+  "localhost_model": true,
+  "steps": [
+    {
+      "t": 1.635,
+      "step": "1 fresh launch",
+      "state": {
+        "avatar": "idle",
+        "can_input": false,
+        "cards": [],
+        "confirmation": null,
+        "deliveries": [],
+        "enabled": true,
+        "folder": "",
+        "managed": "off",
+        "menu": "Claude Code hasn't started",
+        "mounted": true,
+        "native_id": null,
+        "nonce": null,
+        "pane": null,
+        "pane_pid": null,
+        "pane_start": null,
+        "panel": true,
+        "phase": null,
+        "sessions": 0,
+        "strip": "Idle",
+        "t": 0.9126060009002686,
+        "welcome_shown": true
+      }
+    }
+  ],
+  "events": [],
+  "fresh_ax": [
+    {
+      "label": "",
+      "role": "AXGroup"
+    },
+    {
+      "label": "Conversation width",
+      "role": "AXSplitter"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXScrollArea"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXScrollBar"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXTextField"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXTextArea"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    },
+    {
+      "label": "",
+      "role": "AXUnknown"
+    }
+  ],
+  "model_events": [],
+  "timeline": [
+    {
+      "avatar": "idle",
+      "can_input": false,
+      "cards": [],
+      "confirmation": null,
+      "deliveries": [],
+      "enabled": true,
+      "folder": "",
+      "managed": "off",
+      "menu": "Claude Code hasn't started",
+      "mounted": true,
+      "native_id": null,
+      "nonce": null,
+      "pane": null,
+      "pane_pid": null,
+      "pane_start": null,
+      "panel": true,
+      "phase": null,
+      "sessions": 0,
+      "strip": "Idle",
+      "t": 0.6989500522613525,
+      "trigger": "launch",
+      "welcome_shown": true
+    },
+    {
+      "avatar": "idle",
+      "can_input": false,
+      "cards": [],
+      "confirmation": null,
+      "deliveries": [],
+      "enabled": true,
+      "folder": "",
+      "managed": "off",
+      "menu": "Claude Code hasn't started",
+      "mounted": true,
+      "native_id": null,
+      "nonce": null,
+      "pane": null,
+      "pane_pid": null,
+      "pane_start": null,
+      "panel": true,
+      "phase": null,
+      "sessions": 0,
+      "strip": "Idle",
+      "t": 0.9215070009231567,
+      "trigger": "ax",
+      "welcome_shown": true
+    }
+  ]
+}

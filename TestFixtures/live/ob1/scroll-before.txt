@@ -1,0 +1,13 @@
+OB1 native accepted-send regression, production at 9578178 before the two-line fix.
+The Send AX action accepted the draft, while the thread stayed in earlier history.
+
+􀟈 Test nativeComposerSendReturnsAnUnpinnedThreadToLatest() started.
+􀢄 Test nativeComposerSendReturnsAnUnpinnedThreadToLatest() recorded an issue at Q3NativeScrollAuditTests.swift:141:9: Expectation failed: f.panel.atBottom
+􀄵 f.panel.atBottom → false
+􀢄 Test nativeComposerSendReturnsAnUnpinnedThreadToLatest() recorded an issue at Q3NativeScrollAuditTests.swift:322:9: Expectation failed: frame.maxY <= native.offset + native.height + 2
+􀄵 frame.maxY <= native.offset + native.height + 2 → false
+􀄵   frame.maxY → 1925.0
+􀄵   native.offset + native.height + 2 → 602.0
+􀢄 Test nativeComposerSendReturnsAnUnpinnedThreadToLatest() failed after 3.264 seconds with 2 issues.
+	Q3NativeScrollAuditTests.nativeComposerSendReturnsAnUnpinnedThreadToLatest()
+	Q3NativeScrollAuditTests.nativeComposerSendReturnsAnUnpinnedThreadToLatest()
