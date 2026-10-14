@@ -264,7 +264,10 @@ public struct ZeusStatusStrip: View {
             }
             if let skip = model.skipTitle, let onSkip {
                 Text("·").foregroundStyle(palette.secondaryText).accessibilityHidden(true)
-                StripLink(accessibility: skip, action: onSkip) { Text(skip).foregroundStyle(palette.title) }.fixedSize()
+                StripLink(accessibility: skip, action: onSkip) { Text(skip).foregroundStyle(palette.title) }
+                    .fixedSize()
+                    .help("Skip (⇧⌘J)")
+                    .accessibilityHint("Command-Shift-J")
             }
         }
     }
@@ -293,6 +296,7 @@ private struct StripLink<Label: View>: View {
     @ViewBuilder let label: () -> Label
     @FocusState private var focused: Bool
     @Environment(\.zeusPalette) private var palette
+    @Environment(\.isEnabled) private var enabled
 
     var body: some View {
         SwiftUI.Button(action: action) {
@@ -303,7 +307,12 @@ private struct StripLink<Label: View>: View {
                 .frame(minHeight: 22).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .focusable().focusEffectDisabled().focused($focused)
+        .focusable(false)
+        .focusable(enabled, interactions: .edit).focusEffectDisabled().focused($focused)
+        .onKeyPress(keys: [.space, .return]) { _ in
+            guard enabled else { return .ignored }
+            action(); return .handled
+        }
         .accessibilityLabel(accessibility)
     }
 }
@@ -315,6 +324,7 @@ private struct StripIconButton: View {
     @State private var hovering = false
     @FocusState private var focused: Bool
     @Environment(\.zeusPalette) private var palette
+    @Environment(\.isEnabled) private var enabled
 
     var body: some View {
         SwiftUI.Button(action: action) {
@@ -326,9 +336,14 @@ private struct StripIconButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .focusable(false)
         .disabled(!item.isEnabled)
         .opacity(item.isEnabled ? 1 : 0.5)
-        .focusable().focusEffectDisabled().focused($focused)
+        .focusable(enabled && item.isEnabled, interactions: .edit).focusEffectDisabled().focused($focused)
+        .onKeyPress(keys: [.space, .return]) { _ in
+            guard enabled && item.isEnabled else { return .ignored }
+            action(); return .handled
+        }
         .onHover { hovering = $0 }
         .help(item.button.title)
         .accessibilityLabel(item.button.title)
