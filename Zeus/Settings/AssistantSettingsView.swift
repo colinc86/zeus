@@ -57,6 +57,10 @@ struct AssistantSettingsView: View {
         if case .restarting = managed.status, active {
             TimelineView(.periodic(from: .now, by: 1)) { context in statusPanel(now: context.date) }
         } else { statusPanel(now: Date()) }
+        if case .restartForUpdate(let mode) = managed.confirmation {
+            confirmation("Restart \(managed.agentName) in \(mode.title) mode? It can run any command and change any file you can, without asking. The conversation is kept.", action: "Restart Assistant", cancel: "Later")
+                .id("agentUpdateConfirmation")
+        }
         if managed.confirmation == .newConversation {
             confirmation("Start a new conversation? \(selectedAgentName) starts fresh with these instructions.", action: "Start New")
                 .id("newConversationConfirmation")

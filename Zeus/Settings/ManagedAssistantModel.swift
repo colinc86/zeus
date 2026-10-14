@@ -32,10 +32,12 @@ final class ManagedAssistantModel {
         case unrestricted(ManagedPermissionMode)
         case newConversation
         case switchConversation
+        case restartForUpdate(ManagedPermissionMode)
     }
     static let agents: [AgentKind] = [.claude, .codex, .opencode]
     let settings: AppSettings
     var createFolder: (() throws -> URL)?
+    @ObservationIgnored var hasPendingQuestion: () -> Bool = { false }
     var confirmation: Confirmation?
     private(set) var switching = false
     private(set) var actionError: String?
@@ -43,6 +45,7 @@ final class ManagedAssistantModel {
     private(set) var retainedSession: RetainedManagedSession?
     @ObservationIgnored private let instructionDebouncer: ManagedInstructionsDebouncer
     @ObservationIgnored private var observedConfiguration: ManagedSessionConfig?
+    @ObservationIgnored private var updateConfirmationConversation: String?
     @ObservationIgnored private var confirmedSwitchTarget: ManagedSessionConfig?
     private(set) var modes: [AgentKind: [ManagedPermissionMode]] = [:]
     private(set) var requirements: [AgentKind: String] = [:]
@@ -63,6 +66,24 @@ final class ManagedAssistantModel {
 
     var controller: (any ManagedSessionControlling)? { controllerProvider() }
     private var settingsApplier: (any ManagedSettingsApplying)? { controller as? any ManagedSettingsApplying }
+    var agentUpdater: (any ManagedAgentUpdating)? { controller as? any ManagedAgentUpdating }
+    var agentUpdatePending: Bool { enabled && agentUpdater?.managedAgentUpdatePending == true }
+    var agentUpdateRestartPending: Bool { settingsApplier?.managedSettingsApplication?.kind == .agentUpdate }
+    var agentUpdateRestartID: UUID? { agentUpdater?.managedAgentUpdateLastRestartID }
+    var agentUpdateRestartError: String? { settingsApplier?.managedSettingsApplicationError }
+    var agentUpdateCanRestart: Bool {
+        agentUpdatePending && hasActiveSession && settingsApplier?.managedCanResumeSettings == true
+            && settingsApplier?.managedSettingsApplication == nil && !switching && !hasPendingQuestion()
+    }
+    var agentUpdateWaitingText: String { "Restarting when \(agentName) is idle…" }
+    /// This action resumes the launched conversation, never a deferred agent/folder selection.
+    func requestAgentUpdateRestart() {
+        guard agentUpdateCanRestart, let applied = currentConfiguration else { return }
+        let modes = controller?.permissionModes(for: applied.agent) ?? []
+        let mode = modes.first { $0.id == applied.permissionModeID } ?? modes.first { $0.isDefault && applied.permissionModeID == nil }
+        if let mode, mode.isUnrestricted { updateConfirmationConversation = agentUpdater?.managedAgentUpdateConversationID; confirmation = .restartForUpdate(mode); return }
+        agentUpdater?.restartManagedAgentForUpdate()
+    }
     var config: ManagedSessionConfig { settings.managedSession ?? AppSettings.newManagedSession(enabled: false) }
     var enabled: Bool { config.enabled }
     var status: ManagedSessionStatus { controller?.managedStatus ?? .off }
@@ -92,6 +113,10 @@ final class ManagedAssistantModel {
     var canStart: Bool { enabled && controller != nil && !config.folder.isEmpty && requirementsProblem == nil && !permissionModes.isEmpty && !switching }
     var disabledActions: Set<ZeusManagedPresentation.Action> {
         var actions: Set<ZeusManagedPresentation.Action> = canStart ? [] : [.start, .tryAgain, .restart, .restartNow, .newConversation]
+        if agentUpdatePending || agentUpdateRestartPending {
+            if agentUpdateCanRestart { actions.remove(.restart) }
+            else { actions.insert(.restart) }
+        }
         if attachCommand == nil { actions.insert(.openInTerminal) }
         return actions
     }
@@ -153,12 +178,14 @@ final class ManagedAssistantModel {
             case .failed, .stopped, .off: return "Your changes are saved. Start the assistant to apply them."
             default: break
             }
+            if pending.kind == .agentUpdate { return agentUpdateWaitingText }
             if pending.kind == .newConversation { return "Switching to \(Self.name(pending.configuration.agent)) in \((pending.configuration.folder as NSString).abbreviatingWithTildeInPath) when \(agentName) is ready." }
             if pending.phase == .applying && settingsApplier?.managedCanResumeSettings == true {
                 return "Applying your changes. \(agentName) restarts and keeps the same conversation."
             }
             return "\(agentName) picks up your changes when it finishes what it's doing."
         }
+        if agentUpdatePending { return "\(agentName) has an update. Restart to use it; the conversation is kept." }
         if needsNewConversation { return "Switches to \(Self.name(config.agent)) in \(folderLabel) the next time it starts." }
         if instructionsAreDebouncing { return "Your instruction changes are saved." }
         if needsRestart && !requiresFreshConversation { return ZeusManagedCopy.restartToApply }
@@ -214,7 +241,7 @@ final class ManagedAssistantModel {
             result.detail = ZeusRuntimeCopy.Managed.cantResume(agent: recoveryAgentName)
             result.menuStatus = ZeusRuntimeCopy.Managed.cantResumeTitle
             result.actions = [.newConversation] + (attachCommand == nil ? [] : [.openInTerminal])
-        } else if needsRestart && settingsApplier?.managedSettingsApplication == nil && !instructionsAreDebouncing {
+        } else if agentUpdatePending || (needsRestart && settingsApplier?.managedSettingsApplication == nil && !instructionsAreDebouncing) {
             switch status {
             case .running, .starting:
                 result.actions.removeAll { $0 == .restart }; result.actions.insert(.restart, at: 0)
@@ -347,6 +374,11 @@ final class ManagedAssistantModel {
             controller.stopManagedSession()
             // An async Stop may still expose the previous failure until its operation starts.
             if status != previousStatus || (status == .stopped && controller.managedTmuxSessionName == nil) { reconcileStatus() }
+        case .restartForUpdate:
+            // Revalidate after the confirmation; a different conversation or resolved update is not authorized.
+            guard agentUpdateCanRestart, updateConfirmationConversation == agentUpdater?.managedAgentUpdateConversationID else { return }
+            updateConfirmationConversation = nil
+            agentUpdater?.restartManagedAgentForUpdate()
         case .unrestricted(let mode):
             guard permissionModes.contains(mode) else { return }
             update { $0.permissionModeID = mode.id }
@@ -374,6 +406,7 @@ final class ManagedAssistantModel {
             if requiresFreshConversation { confirmation = .newConversation; return }
             launchedConfig = config; controller.startManagedSession()
         case .restart, .restartNow:
+            if agentUpdatePending || agentUpdateRestartPending { requestAgentUpdateRestart(); return }
             refreshAvailability()
             guard canStart else { return }
             if needsNewConversation { confirmation = .switchConversation; return }

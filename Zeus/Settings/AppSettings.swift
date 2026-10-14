@@ -32,6 +32,19 @@ final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSet
             else { defaults.removeObject(forKey: "agent.managedLaunchedConfig") }
         }
     }
+    /// Keep only the current conversation's quiet-notice edge, independently of history clearing.
+    struct AgentUpdateNoticeState: Codable, Equatable {
+        let conversationID: String
+        let noticeID: String
+        var pending: Bool
+    }
+    var managedAgentUpdateNoticeState: AgentUpdateNoticeState? {
+        get { defaults.data(forKey: "agent.updateNotice").flatMap { try? JSONDecoder().decode(AgentUpdateNoticeState.self, from: $0) } }
+        set {
+            if let newValue, let data = try? JSONEncoder().encode(newValue) { defaults.set(data, forKey: "agent.updateNotice") }
+            else { defaults.removeObject(forKey: "agent.updateNotice") }
+        }
+    }
     let managedConfigurationWasFresh: Bool
     private(set) var managedSettingsError: String?
     var managedAgentInitialized: Bool { didSet { defaults.set(managedAgentInitialized, forKey: "agent.managedAgentInitialized") } }

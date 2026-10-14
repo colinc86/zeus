@@ -15,6 +15,7 @@ final class CardStore: CardStoring {
     private(set) var outgoingDeliveryIDs: [String: String] = [:]
     /// Quiet app-owned lines in the thread, such as "Sent your daily summary · View" (L1).
     private(set) var notices: [ThreadNotice] = [] { didSet { if notices != oldValue { threadRevision &+= 1 } } }
+    private var noticeActionRevision: UInt64 = 0
     @ObservationIgnored private var noticeActions: [String: (run: @MainActor () -> Void, doneTitle: String?)] = [:]
     @ObservationIgnored private var pendingAppChanges: [(notice: ThreadNotice, action: @MainActor () -> Void)] = []
     // Definitive app-owned send outcomes survive a failed caption write in this process.
@@ -246,17 +247,28 @@ final class CardStore: CardStoring {
         var next = snapshot
         next.notices = Array((next.notices + [notice]).suffix(ThreadNotice.keep))
         guard commit(next) else { return false }
-        if let action { noticeActions[notice.id] = (action, doneTitle) }
+        if let action { noticeActions[notice.id] = (action, doneTitle); noticeActionRevision &+= 1 }
         return true
     }
+    /// Reconnects an app-owned action after restoring a durable notice, or disables a stale action.
+    func setNoticeAction(id: String, action: (@MainActor () -> Void)?) {
+        guard notices.contains(where: { $0.id == id }) else { return }
+        let wasAvailable = noticeActions[id] != nil
+        if let action { noticeActions[id] = (action, nil) }
+        else { noticeActions.removeValue(forKey: id) }
+        if wasAvailable != (action != nil) { noticeActionRevision &+= 1 }
+    }
     /// Whether the line's in-memory action is still available.
-    func hasNoticeAction(id: String) -> Bool { noticeActions[id] != nil }
+    func hasNoticeAction(id: String) -> Bool {
+        _ = noticeActionRevision
+        return noticeActions[id] != nil
+    }
     /// Marks the line done, then runs its action once. A failed history write keeps the action for a retry, and a
     /// reload never shows it again.
     func performNoticeAction(id: String) {
         guard let (action, doneTitle) = noticeActions[id],
               updateNotice(id: id, { $0.resolvedTitle = doneTitle ?? $0.resolvedTitle }) else { return }
-        noticeActions.removeValue(forKey: id)
+        noticeActions.removeValue(forKey: id); noticeActionRevision &+= 1
         action()
     }
     @discardableResult func updateNotice(id: String, _ mutate: (inout ThreadNotice) -> Void) -> Bool {
@@ -396,7 +408,7 @@ final class CardStore: CardStoring {
         next.notices = Array((next.notices + pendingAppChanges.map(\.notice)).suffix(ThreadNotice.keep))
         guard commit(next) else { return false }
         for pending in pendingAppChanges where notices.contains(where: { $0.id == pending.notice.id }) {
-            noticeActions[pending.notice.id] = (pending.action, "Undone")
+            noticeActions[pending.notice.id] = (pending.action, "Undone"); noticeActionRevision &+= 1
         }
         pendingAppChanges.removeAll()
         pendingOutgoingStates.removeAll()
@@ -458,7 +470,9 @@ extension CardStore: AppChangeRecording {
     }
     private func pruneNoticeActions() {
         let ids = Set(notices.map(\.id))
+        let previousCount = noticeActions.count
         noticeActions = noticeActions.filter { ids.contains($0.key) }
+        if previousCount != noticeActions.count { noticeActionRevision &+= 1 }
     }
 }
 

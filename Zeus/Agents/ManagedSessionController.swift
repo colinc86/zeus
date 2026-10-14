@@ -8,7 +8,7 @@ import ZeusDesign
 /// Visible samples gate delivery. Consent choices are sent only after an explicit user click.
 @MainActor
 @Observable
-final class ManagedSessionController: ManagedSessionControlling, ManagedSettingsApplying, ManagedPromptAnswering {
+final class ManagedSessionController: ManagedSessionControlling, ManagedSettingsApplying, ManagedPromptAnswering, ManagedAgentUpdating {
     private(set) var managedStatus: ManagedSessionStatus = .off
     private(set) var record: ManagedSessionRecord?
     @ObservationIgnored var onChange: (() -> Void)?
@@ -17,6 +17,25 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     private(set) var managedSettingsApplicationError: String?
     var managedAppliedConfiguration: ManagedSessionConfig? { record?.appliedConfiguration }
     var managedCanResumeSettings: Bool { record?.conversation?.didLaunch == true && record?.conversation?.nativeID != nil }
+    private(set) var managedAgentUpdatePending = false
+    private(set) var managedAgentUpdateLastRestartID: UUID?
+    var managedAgentUpdateConversationID: String? { record?.conversation?.nonce }
+    @ObservationIgnored private var updateSamples = 0
+    private func resetAgentUpdate() {
+        updateSamples = 0
+        if managedAgentUpdatePending { managedAgentUpdatePending = false; onChange?() }
+    }
+    private func sampleAgentUpdate(_ snapshot: ManagedPaneSnapshot) {
+        let pending = ManagedPaneClassifier.agentUpdatePending(snapshot, agent: record?.conversation?.agent ?? .other)
+        updateSamples = pending ? min(2, updateSamples + 1) : 0
+        let next = updateSamples >= 2
+        if next != managedAgentUpdatePending { managedAgentUpdatePending = next; onChange?() }
+    }
+    /// Uses the applied identity/configuration, even if Settings contains a deferred agent/folder switch.
+    func restartManagedAgentForUpdate() {
+        guard managedAgentUpdatePending, let applied = managedAppliedConfiguration else { return }
+        requestSettings(applied, kind: .agentUpdate)
+    }
     private var claudeSnapshotExecutable: URL?
     private var claudeSnapshotModified: Date?
     private var claudeSnapshotSupported = false
@@ -244,7 +263,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
             ?? ((!config.folder.hasPrefix("/") || config.folder.contains("\0") || !FileManager.default.fileExists(atPath: config.folder, isDirectory: &directory) || !directory.boolValue) ? ManagedSessionError.invalidFolder.localizedDescription : nil)
             ?? ((id.map { value in policies.contains { $0.mode.id == value } } ?? policies.contains { $0.mode.isDefault }) ? nil : ManagedSessionError.invalidPermission.localizedDescription)
         guard problem == nil else { managedSettingsApplication = nil; managedSettingsApplicationError = problem; onChange?(); return }
-        if kind == .resume, !supportsInstructionChangesOnResume(for: config.agent), let conversation = record?.conversation {
+        if kind != .newConversation, !supportsInstructionChangesOnResume(for: config.agent), let conversation = record?.conversation {
             config.launchPrompt = conversation.launchPrompt
         }
         if kind == .resume, let applied = managedAppliedConfiguration,
@@ -281,6 +300,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     /// Leaves the process and ownership lease intact. No SIGTERM/kill-window during app shutdown.
     func shutdown() {
         managedSettingsApplication = nil
+        resetAgentUpdate()
         latestInputSample = nil
         sampledLifetime = nil; clearBlock()
         attached = false; activation = UUID(); actions.removeAll()
@@ -409,6 +429,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         let lifetime = "\(pane.pid).\(pane.startTime)"
         if sampledLifetime != lifetime {
             latestInputSample = nil
+            resetAgentUpdate()
             hasPaneSample = false
             sampledLifetime = lifetime; graceUntil = clock.now.addingTimeInterval(10)
             clearBlock()
@@ -500,6 +521,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     }
     private func stop() async throws {
         latestInputSample = nil
+        resetAgentUpdate()
         setStatus(enabled ? .stopped : .off)
         monitor?.cancel(); monitor = nil; recovery?.cancel(); recovery = nil
         // Stop remains available if a native store is temporarily unreadable. No context is deleted.
@@ -537,6 +559,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
                 throw error
             }
             guard attached, enabled else { return }
+            sampleAgentUpdate(snapshot)
             latestInputSample = .init(pane: current, agent: record?.conversation?.agent ?? .other, snapshot: snapshot, capturedAt: clock.now)
             switch ManagedPaneClassifier.classify(snapshot, agent: record?.conversation?.agent ?? .other) {
             case .blocked(let reason, let dialog):
@@ -598,7 +621,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         if !startsNew {
             guard managedCanResumeSettings else { deferRequest(); return }
             if !supportsInstructionChangesOnResume(for: config.agent) { config.launchPrompt = conversation.launchPrompt }
-            if let applied = managedAppliedConfiguration, applied.permissionModeID == config.permissionModeID && applied.launchPrompt == config.launchPrompt {
+            if request.kind != .agentUpdate, let applied = managedAppliedConfiguration, applied.permissionModeID == config.permissionModeID && applied.launchPrompt == config.launchPrompt {
                 cancelManagedSettingsApplication(); return
             }
         }
@@ -621,6 +644,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
                 record?.launchPending = false; record?.pendingWasFresh = false
             }
             record?.restarts = []; try save(); try await start(using: config)
+            if request.kind == .agentUpdate, attached, enabled, activation == token { managedAgentUpdateLastRestartID = request.id }
             if managedSettingsApplication?.id == request.id { managedSettingsApplication = nil }
             onChange?()
         } catch {
@@ -632,6 +656,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         blockedCandidate = nil; matchingSamples = 0; blockedDialog = nil; managedPrompt = nil; promptEpoch = UUID()
     }
     private func exited(_ pane: ManagedPane?) async throws {
+        resetAgentUpdate()
         monitor?.cancel(); monitor = nil
         if let pane { record?.pane = pane }
         if pane?.exitStatus == 0 && pane?.signal == nil { try? await discoverConversation(); try save(); setStatus(.stopped); return }
