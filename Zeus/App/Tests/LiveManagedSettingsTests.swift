@@ -126,6 +126,13 @@ import ZeusProtocol
         #expect(!f.model.enabled && f.model.confirmation == nil && f.controller.managedStatus == .running(.idle))
         #expect(f.model.retainedSessionNotice == "Your Zeus-run agent is still running in tmux (tmux attach -t zeus)")
         #expect(liveAXNodes(host).contains { liveAXDescription($0).contains("Your Zeus-run agent is still running") })
+        if ProcessInfo.processInfo.environment["ZEUS_CY1_RENDER"] == "1" {
+            let image = try #require(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+            host.cacheDisplay(in: host.bounds, to: image)
+            var root = URL(fileURLWithPath: #filePath)
+            for _ in 0..<4 { root.deleteLastPathComponent() }
+            try #require(image.representation(using: .png, properties: [:])).write(to: root.appendingPathComponent("TestFixtures/live/cy1/keep-running-notice.png"))
+        }
         f.controller.managedStatus = .stopped; try await f.settle(host)
         #expect(f.model.retainedSessionNotice == nil)
     }

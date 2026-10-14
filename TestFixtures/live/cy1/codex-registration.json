@@ -1,0 +1,1 @@
+["/CLI/codex", "mcp", "add", "zeus", "--", "/BUNDLE/Zeus.app/Contents/MacOS/zeus-mcp", "--agent", "codex", "--socket", "/FIXTURE/bridge.sock"]
