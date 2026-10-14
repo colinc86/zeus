@@ -18,7 +18,7 @@ protocol DeliveryConnector {
 @MainActor
 struct ChannelDeliveryConnector: DeliveryConnector {
     func canDeliver(to session: ConnectedSession, bridge: BridgeSession?, routing: any AgentRoutingSettings) -> Bool {
-        session.agent == .claude && session.supportsChannel && bridge != nil
+        routing.deliveryMethod == .channel && session.agent == .claude && session.supportsChannel && bridge != nil
     }
     func deliver(_ delivery: Delivery, to session: ConnectedSession, bridge: BridgeSession?, routing: any AgentRoutingSettings) async throws {
         guard canDeliver(to: session, bridge: bridge, routing: routing), let bridge else { throw BridgeLinkError.disconnected }
