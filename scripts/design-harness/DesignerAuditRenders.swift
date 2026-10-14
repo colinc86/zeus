@@ -1060,3 +1060,115 @@ extension DesignerAuditRenders {
         try await Readme.still("settings-\(look.name)", appearance: look.appearance, size: CGSize(width: 572, height: 602), settle: 0.8, view)
     }
 }
+
+// MARK: - D20 proposal mock-up: the smallest character editor (not app code)
+
+/// A static mock of the proposed "Edit a Copy…" editor over the real Pixel Cat: its layers, palette and one layer's
+/// pixel grid read from cat.json, and the live preview drawn by the real renderer.
+private struct EditorMockup: View {
+    let rows: [String]
+    let palette: [(String, Color)]
+    let layers: [String]
+    let character: SpriteCharacter
+    @Environment(\.zeusPalette) private var zp
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Edit “Pixel Cat (copy)”").zeusFont(.title).foregroundStyle(zp.title)
+                Spacer()
+                Text("Saved to Characters as pixel-cat-copy.json").zeusFont(.caption).foregroundStyle(zp.secondaryText)
+            }
+            HStack(alignment: .top, spacing: 18) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Layers").zeusFont(.button).foregroundStyle(zp.text)
+                    ForEach(layers, id: \.self) { name in
+                        Text(name).zeusFont(.caption).foregroundStyle(name == "head" ? zp.onAccent : zp.text)
+                            .padding(.horizontal, 8).padding(.vertical, 3).frame(width: 110, alignment: .leading)
+                            .background(name == "head" ? zp.accent : .clear)
+                    }
+                    Text("Colors").zeusFont(.button).foregroundStyle(zp.text).padding(.top, 6)
+                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(22), spacing: 4), count: 4), spacing: 4) {
+                        ForEach(Array(palette.enumerated()), id: \.offset) { i, entry in
+                            Rectangle().fill(entry.1).frame(width: 22, height: 22)
+                                .overlay(Rectangle().strokeBorder(i == 1 ? zp.focusRing : zp.outline, lineWidth: i == 1 ? 2 : 1))
+                        }
+                    }
+                    .frame(width: 110, alignment: .leading)
+                }
+                VStack(spacing: 8) {
+                    HStack(spacing: 6) {
+                        ForEach(["Pencil", "Erase", "Fill", "Pick"], id: \.self) { tool in
+                            Button(tool) {}.buttonStyle(ZeusButtonStyle(tool == "Pencil" ? .primary : .secondary, size: .small))
+                        }
+                        Spacer()
+                        Button("Undo") {}.buttonStyle(ZeusButtonStyle(.secondary, size: .small))
+                    }
+                    Canvas { context, size in
+                        let cols = rows.map(\.count).max() ?? 1
+                        let cell = min(size.width / CGFloat(cols), size.height / CGFloat(rows.count))
+                        let colors = Dictionary(palette.map { ($0.0, $0.1) }, uniquingKeysWith: { a, _ in a })
+                        for (y, row) in rows.enumerated() {
+                            for (x, ch) in row.enumerated() {
+                                let rect = CGRect(x: CGFloat(x) * cell, y: CGFloat(y) * cell, width: cell, height: cell)
+                                if let color = colors[String(ch)] { context.fill(Path(rect), with: .color(color)) }
+                                context.stroke(Path(rect), with: .color(zp.fieldBorder.opacity(0.5)), lineWidth: 0.5)
+                            }
+                        }
+                    }
+                    .frame(width: 360, height: 300)
+                    .background(zp.field)
+                    .overlay(Rectangle().strokeBorder(zp.fieldBorder, lineWidth: 1))
+                    Text("Layer “head”, 16 × 13. Option-click picks a color.").zeusFont(.caption).foregroundStyle(zp.secondaryText)
+                }
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("On your desktop now").zeusFont(.button).foregroundStyle(zp.text)
+                    HStack(alignment: .bottom, spacing: 10) {
+                        ForEach([(AvatarState.idle, "idle"), (.happy, "happy"), (.alert, "alert")], id: \.1) { state, name in
+                            VStack(spacing: 4) {
+                                ReadmeSprite(character: character, state: state, time: 0.4, scale: 3)
+                                Text(name).zeusFont(.caption).foregroundStyle(zp.secondaryText)
+                            }
+                        }
+                    }
+                    Text("Frames: working").zeusFont(.button).foregroundStyle(zp.text).padding(.top, 6)
+                    ForEach(["1  body · head · tailA", "2  body · head · tailB", "+ Add Frame"], id: \.self) { line in
+                        Text(line).zeusFont(.caption).foregroundStyle(line.hasPrefix("+") ? zp.title : zp.text)
+                    }
+                    Text("Motion: bob, 1 px, 0.5 s").zeusFont(.caption).foregroundStyle(zp.secondaryText)
+                }
+            }
+            HStack(spacing: 8) {
+                Spacer()
+                Button("Open JSON") {}.buttonStyle(ZeusButtonStyle(.secondary, size: .small))
+                Button("Revert") {}.buttonStyle(ZeusButtonStyle(.secondary, size: .small))
+                Button("Save") {}.buttonStyle(ZeusButtonStyle(.primary, size: .small))
+            }
+        }
+        .padding(22)
+        .zeusDialog(tail: nil)
+        .environment(\.zeusFontChoice, .pixel)
+    }
+}
+
+extension DesignerAuditRenders {
+    /// D20: a mock-up of the proposed character editor, light and dark, for `.team/proposals/character-editor.md`.
+    @Test func editorMockup() async throws {
+        var root = URL(fileURLWithPath: #filePath)
+        while !FileManager.default.fileExists(atPath: root.appendingPathComponent("Packages").path), root.pathComponents.count > 1 {
+            root.deleteLastPathComponent()
+        }
+        let data = try Data(contentsOf: root.appendingPathComponent("Packages/ZeusKit/Sources/ZeusSprites/Characters/cat.json"))
+        let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let palette = try #require(json["palette"] as? [String: String]).sorted { $0.key < $1.key }
+            .compactMap { key, hex in Color(themeHex: hex).map { (key, $0) } }
+        let layers = try #require(json["layers"] as? [String: Any])
+        let head = try #require((layers["head"] as? [String: Any])?["rows"] as? [String])
+        for look in Snap.Look.basic {
+            try await Snap.render("editor-mockup", look: look, settle: 0.5) {
+                EditorMockup(rows: head, palette: Array(palette.prefix(16)), layers: ["body", "head", "earsUp", "eyes", "eyesBlink", "whiskers", "tailA", "tailB"].filter { layers[$0] != nil },
+                             character: Readme.character("cat"))
+            }
+        }
+    }
+}
