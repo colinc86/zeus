@@ -117,7 +117,7 @@ Codex can't receive messages directly, so Zeus **types them into Codex's Termina
    ```
 2. Start Codex in tmux, from your assistant's folder:
    ```sh
-   tmux new-session -s codex codex
+   tmux new-session -s codex codex --no-daemon -c 'mcp_servers.zeus.env_vars=["TMUX","TMUX_PANE"]'
    ```
 3. In Settings, set **How Zeus reaches it** to **Its Terminal pane**, pick the pane running Codex (or type one, such as `%3`), and choose its **Assistant session**.
 4. Press **Send Test Message**. A line starting `[zeus delivery_id=…]` appears in Codex and is submitted.
