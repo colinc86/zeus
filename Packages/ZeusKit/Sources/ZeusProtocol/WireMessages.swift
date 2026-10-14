@@ -82,17 +82,21 @@ public struct BridgeHello: Codable, Sendable, Equatable {
         public var channel: Bool
         /// Reports tool results only after the MCP stdout frame has been flushed.
         public var toolResultWritten: Bool
-        private enum CodingKeys: String, CodingKey { case channel, toolResultWritten }
+        /// Understands the additive digest/moment notification. Older bridges default to false.
+        public var learningNotifications: Bool
+        private enum CodingKeys: String, CodingKey { case channel, toolResultWritten, learningNotifications }
         /// Older bridges do not offer stdout receipts.
         public init(from decoder: any Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             channel = try c.decode(Bool.self, forKey: .channel)
             toolResultWritten = try c.decodeIfPresent(Bool.self, forKey: .toolResultWritten) ?? false
+            learningNotifications = try c.decodeIfPresent(Bool.self, forKey: .learningNotifications) ?? false
         }
     
         /// Creates Capabilities.
-        public init(channel: Bool = false, toolResultWritten: Bool = false) {
+        public init(channel: Bool = false, toolResultWritten: Bool = false, learningNotifications: Bool = false) {
             self.channel = channel; self.toolResultWritten = toolResultWritten
+            self.learningNotifications = learningNotifications
         }
     }
     
@@ -244,6 +248,20 @@ public struct BridgeSuperseded: Codable, Sendable, Equatable {
     public init(sessionKey: String) { self.sessionKey = sessionKey }
 }
 
+/// A digest/moment notification. No raw activity data can cross this typed boundary.
+public struct BridgeLearning: Codable, Sendable, Equatable {
+    /// Only digests and moments are eligible to leave the local store.
+    public enum Kind: String, Codable, Sendable { case digest, moment }
+    /// Stable store identity; announcements do not commit read state.
+    public let id: String
+    /// Whether this is a daily summary or a timely moment.
+    public let kind: Kind
+    /// The exact derived summary, with no raw-event fields.
+    public let text: String
+    /// Creates a derived-learning announcement.
+    public init(id: String, kind: Kind, text: String) { self.id = id; self.kind = kind; self.text = text }
+}
+
 /// Flat wire envelope, discriminated by the JSON `type` member.
 public enum WireMessage: Codable, Sendable, Equatable {
     case hello(BridgeHello)
@@ -255,6 +273,7 @@ public enum WireMessage: Codable, Sendable, Equatable {
     case toolResultWritten(ToolResultWritten)
     case error(BridgeError)
     case superseded(BridgeSuperseded)
+    case learning(BridgeLearning)
     private enum CodingKeys: String, CodingKey { case type }
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -269,6 +288,7 @@ public enum WireMessage: Codable, Sendable, Equatable {
         case "toolResultWritten": self = .toolResultWritten(try ToolResultWritten(from: decoder))
         case "error": self = .error(try BridgeError(from: decoder))
         case "superseded": self = .superseded(try BridgeSuperseded(from: decoder))
+        case "learning": self = .learning(try BridgeLearning(from: decoder))
         default: throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown wire type: \(type)")
         }
     }
@@ -284,6 +304,7 @@ public enum WireMessage: Codable, Sendable, Equatable {
         case .toolResultWritten(let value): try container.encode("toolResultWritten", forKey: .type); try value.encode(to: encoder)
         case .error(let value): try container.encode("error", forKey: .type); try value.encode(to: encoder)
         case .superseded(let value): try container.encode("superseded", forKey: .type); try value.encode(to: encoder)
+        case .learning(let value): try container.encode("learning", forKey: .type); try value.encode(to: encoder)
         }
     }
 }

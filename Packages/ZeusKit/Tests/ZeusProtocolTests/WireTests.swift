@@ -10,7 +10,8 @@ import Testing
         .toolCall(.init(callID: "call1", name: "zeus_say", arguments: ["text": "Hi"])),
         .toolResult(.init(callID: "call1", result: result)),
         .push(.init(deliveryID: "d_12345678", content: "Hello", meta: ["kind": "userMessage"])),
-        .pushWritten(.init(deliveryID: "d_12345678")), .toolResultWritten(.init(callID: "call1")), .error(.init(message: "Bad version")), .superseded(.init(sessionKey: hello.sessionKey))
+        .pushWritten(.init(deliveryID: "d_12345678")), .toolResultWritten(.init(callID: "call1")), .error(.init(message: "Bad version")), .superseded(.init(sessionKey: hello.sessionKey)),
+        .learning(.init(id: "l_1", kind: .digest, text: "A quiet morning."))
     ]
     for message in messages {
         let data = try ZeusJSON.encoder().encode(message)
@@ -69,7 +70,13 @@ import Testing
         ("zeus_dismiss", ["card_id"], ["card_id"]),
         ("zeus_set_status", ["state", "detail", "progress", "ttl_seconds"], ["state"]),
         ("zeus_get_responses", [], []), ("zeus_ack", ["delivery_ids"], ["delivery_ids"]),
-        ("zeus_list_characters", [], []), ("zeus_set_character", ["id"], ["id"])
+        ("zeus_list_characters", [], []), ("zeus_set_character", ["id"], ["id"]),
+        ("zeus_app_state", [], []), ("zeus_create_character", ["name", "json"], ["name", "json"]),
+        ("zeus_set_theme", ["id"], ["id"]), ("zeus_create_theme", ["name", "json"], ["name", "json"]),
+        ("zeus_move", ["position"], ["position"]), ("zeus_set_size", ["size"], ["size"]),
+        ("zeus_hide", ["minutes", "until"], []),
+        ("zeus_set_appearance", ["ghost_mode", "ghost_opacity", "ghost_delay_seconds", "popup_sound", "popup_sound_name", "font", "panel_width", "quiet_hours", "quiet_start_hour", "quiet_end_hour"], []),
+        ("zeus_check_for_updates", [], []), ("zeus_install_update", ["version"], ["version"]), ("zeus_get_learnings", [], [])
     ]
     #expect(ZeusMCP.tools.count == expected.count)
     for (name, keys, required) in expected {

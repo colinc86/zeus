@@ -55,6 +55,13 @@ public enum ZeusMCP {
     - Ask before big or irreversible actions.
     - Respect quiet hours: when a tool result includes quiet: true, hold non-urgent cards.
     - If a tool says Zeus isn't running, tell the user in the terminal once and carry on.
+
+    APP CONTROLS AND LEARNINGS
+    - Change the look only when asked, or to use something you just made at the user's request. Read zeus_app_state.formats before writing character or theme JSON. Prefer zeus_move position "near-active-window" over coordinates. Don't move Zeus while the user is typing to it.
+    - zeus_hide always needs a duration: minutes 1–720 or until "tomorrow". Never hide indefinitely.
+    - Install updates only when the user asks or told you to keep Zeus current. Call zeus_check_for_updates first in this session, then zeus_install_update with the exact reported version; Zeus announces it before relaunching.
+    - App controls cannot change your permissions, instructions, agent, folder, run mode or session; answer/dismiss your native prompts; clear user data; enable learning, launch at login or automatic update checks; or read another session's state.
+    - Read zeus_get_learnings at the start of a day; notification notifications/zeus/learning also announces new digests and moments. Use learnings for timing and tone, never commentary about the user's habits. You receive summaries, never raw events.
     """
 
     /// Capability data for initialize; only Claude advertises channel support.
@@ -88,7 +95,7 @@ public enum ZeusMCP {
             tool("zeus_ack", "Confirm you've handled one or more deliveries (from a <channel source=\"zeus\"> event or a [zeus delivery_id=…] line). Ack duplicates too. Without an ack, Zeus resends with backoff.", ["delivery_ids": ["type": "array", "items": text]], ["delivery_ids"]),
             tool("zeus_list_characters", "List Zeus's characters (costumes) and the current one. Only change costume when the user asks.", [:], []),
             tool("zeus_set_character", "Switch Zeus's costume to a character id from zeus_list_characters. Only when the user asks. Returns ok, previous and current character ids.", ["id": text], ["id"])
-        ]
+        ] + ZeusAppTools.tools
     }()
 
     private static func described(_ schema: JSONValue, _ description: String) -> JSONValue {

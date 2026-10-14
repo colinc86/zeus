@@ -182,7 +182,8 @@ public actor MCPServer {
         do {
             if clientStarted { _ = try await bridge.reconnectNow() }
             else {
-                _ = try await bridge.start(hello: greeting, onPush: { [weak self] push in await self?.forward(push) })
+                _ = try await bridge.start(hello: greeting, onPush: { [weak self] push in await self?.forward(push) },
+                    onLearning: { [weak self] learning in await self?.forwardLearning(learning) })
                 clientStarted = true
             }
             lastConnectionError = nil
@@ -197,6 +198,15 @@ public actor MCPServer {
         }
     }
 
+    private func forwardLearning(_ learning: BridgeLearning) async {
+        guard running, configuration.agent == .claude else { return }
+        if !initialized {
+            let ready = await withCheckedContinuation { readyWaiters.append($0) }
+            guard ready, running else { return }
+        }
+        do { try await write(JSONRPC.learning(learning)) }
+        catch { events?.yield(.failure(error)) }
+    }
     private func forward(_ push: AgentPush) async {
         guard running, configuration.agent == .claude else { return }
         if !initialized {

@@ -5,7 +5,7 @@ import ZeusProtocol
 
 @MainActor struct AgentErgonomicsTests {
     @Test func missingCardsAreErrorsAndSuccessfulMutationsEchoActualState() async throws {
-        let f = try RuntimeFixture(); defer { f.stop() }
+        let f = try RuntimeFixture(appControl: FakeAppControl()); defer { f.stop() }
         for tool in ["zeus_update_card", "zeus_dismiss"] {
             let failure = await f.call(tool, ["card_id": "c_missing"])
             #expect(failure.isError && failure.structured?["error"] != nil)

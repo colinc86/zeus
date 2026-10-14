@@ -19,6 +19,8 @@ public final class BridgeSession: Identifiable, Sendable {
     }
     /// Resolves on pushWritten; throws on disconnect, cancellation or timeout (5 seconds).
     public func push(_ push: AgentPush) async throws { try await receipts.push(push) }
+    /// Announces a learning; unread state is committed only by the polling tool's result receipt.
+    public func notifyLearning(_ learning: BridgeLearning) async throws { try await channel.send(.learning(learning)) }
     internal func written(_ id: String) async { await receipts.written(id) }
     internal func supersede() async {
         try? await channel.send(.superseded(.init(sessionKey: sessionKey)))

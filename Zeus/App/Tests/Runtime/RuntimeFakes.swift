@@ -34,12 +34,14 @@ final class TestRuntimeClock: RuntimeClock {
 }
 
 @MainActor
-final class FakeCards: CardStoring, LocalCardActionHandling {
+final class FakeCards: CardStoring, LocalCardActionHandling, AppChangeRecording {
     let clock: TestRuntimeClock
     var values: [Card] = []
     var responseHandler: ((Card, CardResponse) -> Void)?
     var localActionHandler: ((Card, CardResponse) -> Bool)?
     var onAdd: ((Card) -> Void)?
+    var appChanges: [AppChange] = []
+    func recordAppChange(_ change: AppChange) { appChanges.append(change) }
     init(clock: TestRuntimeClock) { self.clock = clock }
     func add(_ card: Card) { values.append(card); onAdd?(card) }
     func card(id: String) -> Card? { values.first { $0.id == id } }
@@ -130,14 +132,14 @@ struct RuntimeFixture {
     let routing: FakeRouting
     let connector: FakeConnector
     let runtime: ZeusRuntime
-    init(channelOnly: Bool = false, directory: URL? = nil) throws {
+    init(channelOnly: Bool = false, directory: URL? = nil, appControl: (any AppControlling)? = nil, learnings: (any LearningsProviding)? = nil) throws {
         self.directory = directory ?? URL(fileURLWithPath: "/tmp/zrun_" + UUID().uuidString.prefix(8))
         clock = TestRuntimeClock(); cards = FakeCards(clock: clock); status = FakeStatus()
         characters = FakeCharacters(); routing = FakeRouting(); connector = FakeConnector()
         runtime = ZeusRuntime(cards: cards, status: status, characters: characters, routing: routing, clock: clock,
                               socketPath: self.directory.appendingPathComponent("bridge.sock").path,
                               ledgerURL: self.directory.appendingPathComponent("deliveries.json"),
-                              connectors: channelOnly ? [ChannelDeliveryConnector()] : [connector], quietHours: { [status] _ in status.quiet }, targetIsDead: { _ in false })
+                              connectors: channelOnly ? [ChannelDeliveryConnector()] : [connector], quietHours: { [status] _ in status.quiet }, targetIsDead: { _ in false }, appControl: appControl, learnings: learnings)
         try runtime.start()
     }
     func connect(_ key: String = "claude:/assistant", channel: Bool = true, agent: AgentKind = .claude, id: UUID = UUID()) {

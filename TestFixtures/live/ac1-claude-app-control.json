@@ -1,0 +1,42 @@
+{
+  "claude": "2.1.299 (Claude Code)",
+  "pane": "120x40",
+  "private_socket": true,
+  "disposable_home": true,
+  "localhost_model": true,
+  "app_state_received": true,
+  "moves": 1,
+  "app_state_result": {
+    "build": "fixture",
+    "characterID": "zeus",
+    "formats": {
+      "character": "docs/design/SPRITE_FORMAT.md",
+      "theme": "docs/design/THEME_FORMAT.md"
+    },
+    "ghostMode": false,
+    "hidden": false,
+    "panelOpen": false,
+    "position": {
+      "x": 10,
+      "y": 20
+    },
+    "quietHoursActive": false,
+    "screen": 0,
+    "screens": [
+      {
+        "height": 800,
+        "scale": 2,
+        "width": 1200
+      }
+    ],
+    "size": "medium",
+    "themeID": "day",
+    "userIdleSeconds": 30,
+    "version": "dev-ac1"
+  },
+  "move_result": {
+    "ok": true,
+    "summary": "Moved Zeus near the active window"
+  },
+  "verification": "Real installed Claude called both MCP tools against the branch-built bridge and production headless runtime with a fake app seam. No paid model requests; private tmux and disposable HOME/config. All probe-owned processes and scratch files cleaned up."
+}
