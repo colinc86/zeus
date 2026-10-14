@@ -12,6 +12,8 @@ extension ZeusRuntime {
         var deadline: Date
         let order: Int
         var deliveryID: String?
+        /// Last completed native Claude turn before this response started. Not persisted or exposed to agents.
+        var managedCompletionAtStart: String?
     }
 
     /// Tool traffic advances an existing response; it never starts or revives one.
@@ -90,17 +92,41 @@ extension ZeusRuntime {
             if record.value.phase == .sent {
                 record.value = activityValue(phase: .thinking, sessionKey: key, since: record.value.since)
             }
-            record.deadline = max(record.deadline, clock.now.addingTimeInterval(300))
+            // An explicit working status owns its TTL. Screen evidence only refreshes the implicit response lease.
+            if record.value.phase != .working { record.deadline = max(record.deadline, clock.now.addingTimeInterval(300)) }
             activityRecords[key] = record
             refreshAssistantActivity()
         case .running(.idle):
             guard record.value.phase != .working,
                   activityWorkingSeen.contains(key)
+                    || managedTurnCompleted(since: record, sessionKey: key)
                     || clock.now.timeIntervalSince(record.value.since) >= Self.managedIdleEndsActivityAfter else { return }
             endAssistantActivity(sessionKey: key)
         default:
             return
         }
+    }
+
+    /// A short Claude turn can begin and end between the three-second samples. A *new* native completion footer,
+    /// attached to its user turn and followed by a positive idle sample, is completion evidence even then.
+    /// Other agents and unrecognized screens retain the conservative working/grace rules.
+    private func managedTurnCompleted(since record: ActivityRecord, sessionKey: String) -> Bool {
+        guard managedController.sessionKey == sessionKey, let sample = managedController.latestInputSample,
+              sample.agent == .claude, sample.capturedAt >= record.value.since, sample.classification == .idle,
+              let completed = Self.claudeCompletedTurn(sample.snapshot) else { return false }
+        return completed != record.managedCompletionAtStart
+    }
+
+    nonisolated static func claudeCompletedTurn(_ snapshot: ManagedPaneSnapshot) -> String? {
+        let lines = snapshot.plainLines
+        // Native Claude 2.1.299: "✻ Cogitated for 0s · done 2:10 PM". Keep columns: indented tool/model/user
+        // content is not the native footer. The preceding user prompt scopes identical same-minute footers.
+        guard let end = lines.lastIndex(where: { $0.hasPrefix("✻ ") && $0.contains(" for ") && $0.contains(" · done ") }),
+              let start = lines[..<end].lastIndex(where: { $0.hasPrefix("❯ ") && !$0.dropFirst(2).trimmingCharacters(in: .whitespaces).isEmpty }) else { return nil }
+        // A cron turn has its own native start without a user prompt. Its footer must not be attached to
+        // an older user delivery (PC1's real scheduled-idle capture). A later user prompt resets this scope.
+        guard !lines[start..<end].contains(where: { $0.hasPrefix("✻ Running scheduled task") }) else { return nil }
+        return lines[start...end].joined(separator: "\n")
     }
 
     /// A response post, explicit end, disconnect or discarded source invalidates late receipts.
@@ -132,7 +158,9 @@ extension ZeusRuntime {
         activityOrder += 1
         activityWorkingSeen.remove(sessionKey)
         activityRecords[sessionKey] = ActivityRecord(value: activityValue(phase: phase, sessionKey: sessionKey,
-            since: clock.now, detail: detail, progress: progress), deadline: deadline, order: activityOrder, deliveryID: deliveryID)
+            since: clock.now, detail: detail, progress: progress), deadline: deadline, order: activityOrder, deliveryID: deliveryID,
+            managedCompletionAtStart: managedController.sessionKey == sessionKey
+                ? managedController.latestInputSample.flatMap { $0.agent == .claude ? Self.claudeCompletedTurn($0.snapshot) : nil } : nil)
     }
 
     private func activityValue(phase: AssistantActivity.Phase, sessionKey: String, since: Date,
