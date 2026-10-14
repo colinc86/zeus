@@ -75,6 +75,22 @@ import Testing
         #expect(announcements.contains("Recording") && announcements.contains("⌃⌥Space"))
         model.start(); #expect(!model.handle(try event(kVK_Tab)) && !model.isRecording)
     }
+    @Test func stopThenDelayedCancelOrSettingsObservationCannotRegisterAgain() {
+        // No key events, global registration or real preferences are needed on the fixed path.
+        for shortcut in [TalkHotKey(keyCode: UInt32(kVK_F19), option: true, control: true, shift: true), TalkHotKey(keyCode: UInt32.max)] {
+            let global = GlobalHotKey(); defer { global.stop() }
+            let model = ShortcutRecorderModel(registration: global, current: { shortcut }, save: { _ in Issue.record("Cancel must not save") })
+            model.start(); global.stop(); model.cancel()
+            #expect(!model.isRecording && !global.isRegistered && global.error == nil)
+            global.configure(shortcut) // A previously queued Settings observer must also stay stopped.
+            #expect(!global.isRegistered && global.error == nil)
+            var disabled = TalkHotKey(); disabled.enabled = false
+            global.start(disabled)
+            global.configure(TalkHotKey(keyCode: UInt32.max))
+            #expect(global.error != nil) // Explicit startup re-enables normal validation.
+        }
+    }
+
     @Test func menuAndCaptionUseTheNonLetterEquivalent() throws {
         let suite = "zeus-kr1-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }

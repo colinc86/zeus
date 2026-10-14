@@ -10,10 +10,16 @@ final class GlobalHotKey {
     @ObservationIgnored private var hotKey: EventHotKeyRef?
     @ObservationIgnored private var configured: TalkHotKey?
     @ObservationIgnored private var suspended = false
+    @ObservationIgnored private var stopped = false
+    var isRegistered: Bool { hotKey != nil }
     @ObservationIgnored private var handler: EventHandlerRef?
     private nonisolated static let signature: OSType = 0x5A455553 // ZEUS
 
+    /// Explicit app startup is the only path that can reactivate a stopped registrar.
+    func start(_ shortcut: TalkHotKey) { stopped = false; configure(shortcut) }
+
     func configure(_ shortcut: TalkHotKey) {
+        guard !stopped else { return }
         if configured == shortcut, hotKey != nil, !suspended { return }
         unregister()
         configured = shortcut
@@ -35,14 +41,15 @@ final class GlobalHotKey {
         if status != noErr { error = "That shortcut is taken by another app." }
     }
 
-    func suspend() { suspended = true; error = nil; unregister() }
-    func resume(_ shortcut: TalkHotKey) { suspended = false; configure(shortcut) }
+    func suspend() { guard !stopped else { return }; suspended = true; error = nil; unregister() }
+    func resume(_ shortcut: TalkHotKey) { guard !stopped else { return }; suspended = false; configure(shortcut) }
     private func unregister() {
         if let hotKey { UnregisterEventHotKey(hotKey); self.hotKey = nil }
     }
 
     func stop() {
-        if let hotKey { UnregisterEventHotKey(hotKey); self.hotKey = nil }
+        stopped = true; suspended = false; configured = nil; error = nil
+        unregister()
         if let handler { RemoveEventHandler(handler); self.handler = nil }
         onPressed = nil
     }

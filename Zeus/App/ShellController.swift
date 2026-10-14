@@ -202,7 +202,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             if ConversationLayout.hotKeyCloses(isVisible: self.cardPanelState.isVisible, isKey: self.card.isKeyWindow) { self.closeCard() }
             else { self.showTalkPanel() }
         }
-        hotKey.configure(settings.talkHotKey)
+        hotKey.start(settings.talkHotKey)
         observeHotKeySettings()
         observeMenuBarIconSetting()
         observeAssistantSessionSelection()
