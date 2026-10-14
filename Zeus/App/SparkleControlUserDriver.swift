@@ -8,20 +8,28 @@ import Sparkle
     private var validatedTarget = false
     private var cancelled = false
     private var downloadCancellation: (() -> Void)?
+    private var requestID: UUID?
     private var reply: ((Result<Void, any Error>) -> Void)?
     private let permissionResponse: () -> SUUpdatePermissionResponse
     init(standard: any SPUUserDriver, permissionResponse: @escaping () -> SUUpdatePermissionResponse = {
         SUUpdatePermissionResponse(automaticUpdateChecks: false, sendSystemProfile: false)
     }) { self.standard = standard; self.permissionResponse = permissionResponse }
-    func beginInstall(version: String, build: String, reply: @escaping (Result<Void, any Error>) -> Void) {
+    @discardableResult func beginInstall(version: String, build: String, requestID: UUID = UUID(), reply: @escaping (Result<Void, any Error>) -> Void) -> UUID {
+        self.requestID = requestID
         target = (version, build); self.reply = reply; validatedTarget = false; cancelled = false
+        return requestID
     }
     func finishInstall(_ result: Result<Void, any Error>) { let completion = reply; reply = nil; completion?(result) }
     func endCycle() {
         if reply != nil { finishInstall(.failure(AppControlError.updaterUnavailable("The update installation ended before relaunch."))) }
-        target = nil; validatedTarget = false; downloadCancellation = nil
+        target = nil; validatedTarget = false; downloadCancellation = nil; requestID = nil
     }
-    func cancelInstall() { cancelled = true; finishInstall(.failure(CancellationError())); downloadCancellation?() }
+    func cancelInstall(requestID: UUID? = nil, cycleStarted: Bool = true) {
+        guard target != nil, requestID == nil || requestID == self.requestID else { return }
+        cancelled = true; finishInstall(.failure(CancellationError()))
+        let cancel = downloadCancellation; downloadCancellation = nil; cancel?()
+        if !cycleStarted { endCycle() }
+    }
     func show(_ request: SPUUpdatePermissionRequest, reply: @escaping (SUUpdatePermissionResponse) -> Void) {
         if target != nil { reply(permissionResponse()) }
         else { standard.show(request, reply: reply) }
@@ -62,7 +70,8 @@ import Sparkle
     func showReady(toInstallAndRelaunch reply: @escaping (SPUUserUpdateChoice) -> Void) {
         if target != nil {
             if validatedTarget && !cancelled { reply(.install) }
-            else { finishInstall(.failure(AppControlError.noKnownUpdate)); reply(.dismiss) }
+            // At this stage Dismiss may still install on quit. Skip cancels this installation.
+            else { finishInstall(.failure(AppControlError.noKnownUpdate)); reply(.skip) }
         } else { standard.showReady(toInstallAndRelaunch: reply) }
     }
     func showInstallingUpdate(withApplicationTerminated terminated: Bool, retryTerminatingApplication: @escaping () -> Void) {

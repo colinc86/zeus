@@ -113,8 +113,9 @@ import ZeusDesign
         surface.controlMoveAvatar(to: origin)
         return AppChange(summary: "Moved Zeus", undoTitle: "Undo", undo: { [weak surface] in surface?.controlMoveAvatar(to: previous) })
     }
-    func setSize(_ size: AvatarSize) throws -> AppChange {
+    func setSize(_ name: String) throws -> AppChange {
         try requireControl()
+        guard let size = AvatarSize(rawValue: name) else { throw AppControlError.invalidArgument("Unknown size: \(name).") }
         let previous = settings.avatarSize, settings = settings
         settings.avatarSize = size
         return AppChange(summary: "Set Zeus size to \(size.rawValue)", undoTitle: "Undo", undo: { settings.avatarSize = previous })

@@ -29,7 +29,7 @@ struct ConversationNoticeLine: View {
                             .frame(minHeight: 22).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .focusable().focused($actionFocused)
+                    .focusable().focusEffectDisabled().focused($actionFocused)
                     .accessibilityLabel(title)
                 case .done(let title):
                     Text("·").foregroundStyle(palette.secondaryText).accessibilityHidden(true)

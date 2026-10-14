@@ -109,6 +109,25 @@ import Testing
         driver.showDownloadInitiated(cancellation: { cancelled += 1 })
         driver.cancelInstall()
         driver.showReady(toInstallAndRelaunch: { choice = $0 })
-        #expect(cancelled == 1 && choice == .dismiss)
+        #expect(cancelled == 1 && choice == .skip)
+    }
+    @Test func cancelledBeforeCheckRestoresManualUIAndOldCancellationCannotCancelANewInstall() {
+        let standard = AC2StandardDriver(), driver = SparkleControlUserDriver(standard: AC2StandardDriver())
+        let routed = SparkleControlUserDriver(standard: standard)
+        var completions = 0
+        let old = routed.beginInstall(version: "1.1", build: "11") { _ in completions += 1 }
+        routed.cancelInstall(requestID: old, cycleStarted: false)
+        routed.showUserInitiatedUpdateCheck(cancellation: {})
+        #expect(completions == 1 && standard.calls == ["check"])
+        let new = routed.beginInstall(version: "1.2", build: "12") { _ in completions += 1 }
+        routed.cancelInstall(requestID: old, cycleStarted: false)
+        #expect(routed.installationChoice(version: "1.2", build: "12", informationOnly: false) == .install)
+        var choice: SPUUserUpdateChoice?
+        routed.showReady(toInstallAndRelaunch: { choice = $0 })
+        #expect(choice == .install && completions == 1)
+        routed.cancelInstall(requestID: new, cycleStarted: false)
+        #expect(completions == 2)
+        // Cancellation without any request is also harmless to a fresh manual driver.
+        driver.cancelInstall(requestID: old, cycleStarted: false)
     }
 }

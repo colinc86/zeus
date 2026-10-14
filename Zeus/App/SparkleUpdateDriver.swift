@@ -53,13 +53,17 @@ import Sparkle
         guard updater.canCheckForUpdates, !updater.sessionInProgress else { throw AppControlError.updaterUnavailable("An update operation is already in progress.") }
         self.checkedBuild = nil
         try Task.checkCancellation()
+        let requestID = UUID()
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (reply: CheckedContinuation<Void, any Error>) in
-                userDriver.beginInstall(version: version, build: checkedBuild.build) { reply.resume(with: $0) }
-                if Task.isCancelled { userDriver.cancelInstall() } else { updater.checkForUpdates() }
+                userDriver.beginInstall(version: version, build: checkedBuild.build, requestID: requestID) { reply.resume(with: $0) }
+                if Task.isCancelled { userDriver.cancelInstall(requestID: requestID, cycleStarted: false) } else { updater.checkForUpdates() }
             }
         } onCancel: {
-            Task { @MainActor [weak self] in self?.userDriver.cancelInstall() }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.userDriver.cancelInstall(requestID: requestID, cycleStarted: self.updater.sessionInProgress)
+            }
         }
     }
     private func finishInformation(_ result: Result<UpdateCheckResult, any Error>) {
