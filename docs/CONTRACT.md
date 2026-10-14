@@ -186,7 +186,7 @@ A **delivery** is any text Zeus sends *into* an agent session: either an answer 
 2. **Routing.**
    - A reply goes to the card's `sessionKey`.
    - A user message goes to the **assistant session** chosen in Settings.
-   - The connector depends on the target: a Claude bridge that supports channels gets a channel `push`. Otherwise the assistant's configured method is used: tmux, OpenCode HTTP, or polling only.
+   - The connector follows the **effective delivery method**. For "Connect your own" that is the method selected in Settings: channel (only for a Claude bridge that supports channels; otherwise queued), tmux, OpenCode HTTP, or polling only. A Terminal pane the user picked is honoured even when the same session also offers a channel (CY1, 2026-10-14). For the managed session the runtime picks channel when the managed channel probe has succeeded and tmux otherwise, overriding the Settings value.
 3. **Channel format.**
    - `content` is human-readable, e.g. `Reply to "Have you started on the presentation?": No, I haven't.` or `Message from the user: …`.
    - `meta = {kind, delivery_id, card_id?, option_id?}`. Keys must match `[A-Za-z0-9_]`.
