@@ -96,14 +96,12 @@ import Testing
         app.activate(); panel.makeKeyAndOrderFront(nil)
         for _ in 0..<8 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
         try #require(panel.isKeyWindow && app.isActive)
+        // A12b: wait until that control itself has keyboard focus. The first responder starts as the whole hosting view,
+        // whose centre can fall inside any row, so a "responder centre inside the row" check passed before any Tab.
         func focus(_ label: String) async throws {
-            let node = try #require(keyboardAX(host).first { ($0 as AnyObject).accessibilityLabel?() == label })
-            let target = try #require((node as AnyObject).accessibilityFrame?())
             for _ in 0..<12 {
-                if let view = panel.firstResponder as? NSView {
-                    let rect = panel.convertToScreen(view.convert(view.bounds, to: nil))
-                    if target.contains(CGPoint(x: rect.midX, y: rect.midY)) { return }
-                }
+                let node = try #require(keyboardAX(host).first { ($0 as AnyObject).accessibilityLabel?() == label })
+                if (node as AnyObject).isAccessibilityFocused?() == true, let view = panel.firstResponder as? NSView, view !== host { return }
                 panel.selectNextKeyView(nil); try await Task.sleep(for: .milliseconds(20))
             }
             Issue.record("Tab didn't reach \(label)"); throw CocoaError(.coderValueNotFound)
