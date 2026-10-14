@@ -1,0 +1,7136 @@
+{
+  "claude": "2.1.299 (Claude Code)",
+  "private_socket": true,
+  "disposable_home": true,
+  "localhost_model": true,
+  "scenarios": [
+    {
+      "name": "say",
+      "prompt_t": 13.336411625146866,
+      "idle_t": 15.751329082995653,
+      "idle_after_prompt_s": 2.415,
+      "within_5s": true
+    },
+    {
+      "name": "work-no-say",
+      "prompt_t": 20.27452704194002,
+      "idle_t": 21.907014208147302,
+      "idle_after_prompt_s": 1.632,
+      "within_5s": true
+    },
+    {
+      "name": "fast-no-say",
+      "prompt_t": 22.26199408294633,
+      "idle_t": 42.887779208133,
+      "idle_after_prompt_s": 20.626,
+      "within_5s": false
+    },
+    {
+      "name": "ask-option",
+      "prompt_t": 45.87958650011569,
+      "idle_t": 48.30219120811671,
+      "idle_after_prompt_s": 2.423,
+      "within_5s": true
+    },
+    {
+      "name": "ask-text",
+      "prompt_t": 51.280814999947324,
+      "idle_t": 53.67811500001699,
+      "idle_after_prompt_s": 2.397,
+      "within_5s": true
+    },
+    {
+      "name": "ask-skip",
+      "prompt_t": 56.63678158307448,
+      "idle_t": 59.082271167077124,
+      "idle_after_prompt_s": 2.445,
+      "within_5s": true
+    },
+    {
+      "name": "closed-say",
+      "prompt_t": 62.03945125010796,
+      "idle_t": 62.04067254206166,
+      "idle_after_prompt_s": 0.001,
+      "within_5s": true
+    }
+  ],
+  "events": [
+    {
+      "t": 12.822122792014852,
+      "trigger": "send say",
+      "state": {
+        "activity_deadline": 313.14519000053406,
+        "avatar": "thinking",
+        "can_input": true,
+        "cards": [],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": true,
+        "phase": "sent",
+        "quiet": false,
+        "row": "Sent to Claude\u2026",
+        "sample_t": 12.757202982902527,
+        "sessions": 1,
+        "t": 13.145620942115784,
+        "trigger": "send",
+        "waiters": 0
+      },
+      "result": "delivered"
+    },
+    {
+      "t": 13.336411625146866,
+      "trigger": "native prompt returned say",
+      "state": {
+        "activity_deadline": null,
+        "avatar": "talking",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": true,
+        "phase": null,
+        "quiet": false,
+        "row": null,
+        "sample_t": 12.757202982902527,
+        "sessions": 1,
+        "waiters": 0
+      }
+    },
+    {
+      "t": 15.751553500071168,
+      "trigger": "send work-no-say",
+      "state": {
+        "activity_deadline": 315.94130992889404,
+        "avatar": "thinking",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": true,
+        "phase": "sent",
+        "quiet": false,
+        "row": "Sent to Claude\u2026",
+        "sample_t": 15.790300965309143,
+        "sessions": 1,
+        "t": 15.941743016242981,
+        "trigger": "send",
+        "waiters": 0
+      },
+      "result": "delivered"
+    },
+    {
+      "t": 20.27452704194002,
+      "trigger": "native prompt returned work-no-say",
+      "state": {
+        "activity_deadline": 318.7760409116745,
+        "avatar": "thinking",
+        "can_input": false,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "panel": true,
+        "phase": "thinking",
+        "quiet": false,
+        "row": "Claude is thinking\u2026",
+        "sample_t": 18.772310972213745,
+        "sessions": 1,
+        "waiters": 0
+      }
+    },
+    {
+      "t": 21.90725520811975,
+      "trigger": "send fast-no-say",
+      "state": {
+        "activity_deadline": 322.0954329967499,
+        "avatar": "thinking",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": true,
+        "phase": "sent",
+        "quiet": false,
+        "row": "Sent to Claude\u2026",
+        "sample_t": 21.81476891040802,
+        "sessions": 1,
+        "t": 22.095953941345215,
+        "trigger": "send",
+        "waiters": 0
+      },
+      "result": "delivered"
+    },
+    {
+      "t": 22.26199408294633,
+      "trigger": "native prompt returned fast-no-say",
+      "state": {
+        "activity_deadline": 322.0954329967499,
+        "avatar": "thinking",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": true,
+        "phase": "sent",
+        "quiet": false,
+        "row": "Sent to Claude\u2026",
+        "sample_t": 21.81476891040802,
+        "sessions": 1,
+        "waiters": 0
+      }
+    },
+    {
+      "t": 42.88869004207663,
+      "trigger": "send ask-option",
+      "state": {
+        "activity_deadline": 343.10316491127014,
+        "avatar": "thinking",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": true,
+        "phase": "sent",
+        "quiet": false,
+        "row": "Sent to Claude\u2026",
+        "sample_t": 42.809786915779114,
+        "sessions": 1,
+        "t": 43.10374891757965,
+        "trigger": "send",
+        "waiters": 0
+      },
+      "result": "delivered"
+    },
+    {
+      "t": 45.70930562494323,
+      "trigger": "question waiting ask-option",
+      "state": {
+        "activity_deadline": null,
+        "avatar": "waiting",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 ask-option"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": true,
+        "phase": null,
+        "quiet": false,
+        "row": null,
+        "sample_t": 42.809786915779114,
+        "sessions": 1,
+        "waiters": 1
+      }
+    },
+    {
+      "t": 45.87958650011569,
+      "trigger": "native prompt returned ask-option",
+      "state": {
+        "activity_deadline": null,
+        "avatar": "talking",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-option"
+          },
+          {
+            "id": "c_93809322",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-option"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": true,
+        "phase": null,
+        "quiet": false,
+        "row": null,
+        "sample_t": 42.809786915779114,
+        "sessions": 1,
+        "waiters": 0
+      }
+    },
+    {
+      "t": 48.303109457949176,
+      "trigger": "send ask-text",
+      "state": {
+        "activity_deadline": 348.52817690372467,
+        "avatar": "thinking",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-option"
+          },
+          {
+            "id": "c_93809322",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-option"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": true,
+        "phase": "sent",
+        "quiet": false,
+        "row": "Sent to Claude\u2026",
+        "sample_t": 45.887515902519226,
+        "sessions": 1,
+        "t": 48.52884089946747,
+        "trigger": "send",
+        "waiters": 0
+      },
+      "result": "delivered"
+    },
+    {
+      "t": 51.133366083027795,
+      "trigger": "question waiting ask-text",
+      "state": {
+        "activity_deadline": null,
+        "avatar": "waiting",
+        "can_input": false,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-option"
+          },
+          {
+            "id": "c_93809322",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-option"
+          },
+          {
+            "id": "c_27b3fce0",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 ask-text"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "panel": true,
+        "phase": null,
+        "quiet": false,
+        "row": null,
+        "sample_t": 48.85348892211914,
+        "sessions": 1,
+        "waiters": 1
+      }
+    },
+    {
+      "t": 51.280814999947324,
+      "trigger": "native prompt returned ask-text",
+      "state": {
+        "activity_deadline": null,
+        "avatar": "talking",
+        "can_input": false,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-option"
+          },
+          {
+            "id": "c_93809322",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-option"
+          },
+          {
+            "id": "c_27b3fce0",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-text"
+          },
+          {
+            "id": "c_448e9802",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-text"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "panel": true,
+        "phase": null,
+        "quiet": false,
+        "row": null,
+        "sample_t": 48.85348892211914,
+        "sessions": 1,
+        "waiters": 0
+      }
+    },
+    {
+      "t": 53.67896116711199,
+      "trigger": "send ask-skip",
+      "state": {
+        "activity_deadline": 353.8838219642639,
+        "avatar": "thinking",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-option"
+          },
+          {
+            "id": "c_93809322",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-option"
+          },
+          {
+            "id": "c_27b3fce0",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-text"
+          },
+          {
+            "id": "c_448e9802",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-text"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": true,
+        "phase": "sent",
+        "quiet": false,
+        "row": "Sent to Claude\u2026",
+        "sample_t": 51.93389391899109,
+        "sessions": 1,
+        "t": 53.88463890552521,
+        "trigger": "send",
+        "waiters": 0
+      },
+      "result": "delivered"
+    },
+    {
+      "t": 56.48494383296929,
+      "trigger": "question waiting ask-skip",
+      "state": {
+        "activity_deadline": null,
+        "avatar": "waiting",
+        "can_input": false,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-option"
+          },
+          {
+            "id": "c_93809322",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-option"
+          },
+          {
+            "id": "c_27b3fce0",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-text"
+          },
+          {
+            "id": "c_448e9802",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-text"
+          },
+          {
+            "id": "c_8e80d78f",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 ask-skip"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "panel": true,
+        "phase": null,
+        "quiet": false,
+        "row": null,
+        "sample_t": 54.90430295467377,
+        "sessions": 1,
+        "waiters": 1
+      }
+    },
+    {
+      "t": 56.63678158307448,
+      "trigger": "native prompt returned ask-skip",
+      "state": {
+        "activity_deadline": null,
+        "avatar": "talking",
+        "can_input": false,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-option"
+          },
+          {
+            "id": "c_93809322",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-option"
+          },
+          {
+            "id": "c_27b3fce0",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-text"
+          },
+          {
+            "id": "c_448e9802",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-text"
+          },
+          {
+            "id": "c_8e80d78f",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": true,
+            "status": "answered",
+            "title": "SA1 ask-skip"
+          },
+          {
+            "id": "c_5454ac7f",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-skip"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "panel": true,
+        "phase": null,
+        "quiet": false,
+        "row": null,
+        "sample_t": 54.90430295467377,
+        "sessions": 1,
+        "waiters": 0
+      }
+    },
+    {
+      "t": 59.08499100012705,
+      "trigger": "send closed-say",
+      "state": {
+        "activity_deadline": 359.32485592365265,
+        "avatar": "thinking",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-option"
+          },
+          {
+            "id": "c_93809322",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-option"
+          },
+          {
+            "id": "c_27b3fce0",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-text"
+          },
+          {
+            "id": "c_448e9802",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-text"
+          },
+          {
+            "id": "c_8e80d78f",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": true,
+            "status": "answered",
+            "title": "SA1 ask-skip"
+          },
+          {
+            "id": "c_5454ac7f",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-skip"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": false,
+        "phase": "sent",
+        "quiet": false,
+        "row": null,
+        "sample_t": 57.90977191925049,
+        "sessions": 1,
+        "t": 59.32578992843628,
+        "trigger": "send",
+        "waiters": 0
+      },
+      "result": "delivered"
+    },
+    {
+      "t": 61.910380917135626,
+      "trigger": "open and read panel",
+      "state": {
+        "activity_deadline": null,
+        "avatar": "alert",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-option"
+          },
+          {
+            "id": "c_93809322",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-option"
+          },
+          {
+            "id": "c_27b3fce0",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-text"
+          },
+          {
+            "id": "c_448e9802",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-text"
+          },
+          {
+            "id": "c_8e80d78f",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": true,
+            "status": "answered",
+            "title": "SA1 ask-skip"
+          },
+          {
+            "id": "c_5454ac7f",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-skip"
+          },
+          {
+            "id": "c_fdcca7ed",
+            "options": [],
+            "seen": false,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: closed-say"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": false,
+        "phase": null,
+        "quiet": false,
+        "row": null,
+        "sample_t": 60.92729699611664,
+        "sessions": 1,
+        "waiters": 0
+      }
+    },
+    {
+      "t": 62.03945125010796,
+      "trigger": "native prompt returned closed-say",
+      "state": {
+        "activity_deadline": null,
+        "avatar": "idle",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-option"
+          },
+          {
+            "id": "c_93809322",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-option"
+          },
+          {
+            "id": "c_27b3fce0",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-text"
+          },
+          {
+            "id": "c_448e9802",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-text"
+          },
+          {
+            "id": "c_8e80d78f",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": true,
+            "status": "answered",
+            "title": "SA1 ask-skip"
+          },
+          {
+            "id": "c_5454ac7f",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-skip"
+          },
+          {
+            "id": "c_fdcca7ed",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: closed-say"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": true,
+        "phase": null,
+        "quiet": false,
+        "row": null,
+        "sample_t": 60.92729699611664,
+        "sessions": 1,
+        "waiters": 0
+      }
+    },
+    {
+      "t": 62.04111483297311,
+      "trigger": "send ttl",
+      "state": {
+        "activity_deadline": 362.28673791885376,
+        "avatar": "thinking",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-option"
+          },
+          {
+            "id": "c_93809322",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-option"
+          },
+          {
+            "id": "c_27b3fce0",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-text"
+          },
+          {
+            "id": "c_448e9802",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-text"
+          },
+          {
+            "id": "c_8e80d78f",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": true,
+            "status": "answered",
+            "title": "SA1 ask-skip"
+          },
+          {
+            "id": "c_5454ac7f",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-skip"
+          },
+          {
+            "id": "c_fdcca7ed",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: closed-say"
+          }
+        ],
+        "detail": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": true,
+        "phase": "sent",
+        "quiet": false,
+        "row": "Sent to Claude\u2026",
+        "sample_t": 60.92729699611664,
+        "sessions": 1,
+        "t": 62.287822008132935,
+        "trigger": "send",
+        "waiters": 0
+      },
+      "result": "delivered"
+    },
+    {
+      "t": 62.387209417065606,
+      "trigger": "explicit working ttl",
+      "state": {
+        "activity_deadline": 92.30657494068146,
+        "avatar": "working",
+        "can_input": true,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-option"
+          },
+          {
+            "id": "c_93809322",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-option"
+          },
+          {
+            "id": "c_27b3fce0",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-text"
+          },
+          {
+            "id": "c_448e9802",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-text"
+          },
+          {
+            "id": "c_8e80d78f",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": true,
+            "status": "answered",
+            "title": "SA1 ask-skip"
+          },
+          {
+            "id": "c_5454ac7f",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-skip"
+          },
+          {
+            "id": "c_fdcca7ed",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: closed-say"
+          }
+        ],
+        "detail": "SA1 explicit work",
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "panel": true,
+        "phase": "working",
+        "quiet": false,
+        "row": "SA1 explicit work",
+        "sample_t": 60.92729699611664,
+        "sessions": 1,
+        "waiters": 0
+      }
+    },
+    {
+      "t": 66.45046066702344,
+      "trigger": "native prompt returned ttl",
+      "state": {
+        "activity_deadline": 363.9278429746628,
+        "avatar": "working",
+        "can_input": false,
+        "cards": [
+          {
+            "id": "c_86492e56",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: say"
+          },
+          {
+            "id": "c_a8625c57",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-option"
+          },
+          {
+            "id": "c_93809322",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-option"
+          },
+          {
+            "id": "c_27b3fce0",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": false,
+            "status": "answered",
+            "title": "SA1 ask-text"
+          },
+          {
+            "id": "c_448e9802",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-text"
+          },
+          {
+            "id": "c_8e80d78f",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ],
+            "seen": true,
+            "skipped": true,
+            "status": "answered",
+            "title": "SA1 ask-skip"
+          },
+          {
+            "id": "c_5454ac7f",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 response recorded: ask-skip"
+          },
+          {
+            "id": "c_fdcca7ed",
+            "options": [],
+            "seen": true,
+            "skipped": false,
+            "status": "open",
+            "title": "SA1 reply: closed-say"
+          }
+        ],
+        "detail": "SA1 explicit work",
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "panel": true,
+        "phase": "working",
+        "quiet": false,
+        "row": "SA1 explicit work",
+        "sample_t": 63.92395901679993,
+        "sessions": 1,
+        "waiters": 0
+      }
+    }
+  ],
+  "model_events": [
+    {
+      "t": 1.5597432921640575,
+      "scenario": "bootstrap",
+      "step": 1,
+      "tool": null,
+      "tool_results": []
+    },
+    {
+      "t": 13.20931504201144,
+      "scenario": "say",
+      "step": 0,
+      "tool": "zeus_say",
+      "tool_results": []
+    },
+    {
+      "t": 13.237551874946803,
+      "scenario": "say",
+      "step": 1,
+      "tool": null,
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        }
+      ]
+    },
+    {
+      "t": 15.993054083082825,
+      "scenario": "work-no-say",
+      "step": 0,
+      "tool": "Read",
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        }
+      ]
+    },
+    {
+      "t": 20.036666417028755,
+      "scenario": "work-no-say",
+      "step": 1,
+      "tool": null,
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        }
+      ]
+    },
+    {
+      "t": 22.155258666956797,
+      "scenario": "fast-no-say",
+      "step": 0,
+      "tool": "Read",
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        }
+      ]
+    },
+    {
+      "t": 22.18058337504044,
+      "scenario": "fast-no-say",
+      "step": 1,
+      "tool": null,
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        }
+      ]
+    },
+    {
+      "t": 43.171856542117894,
+      "scenario": "ask-option",
+      "step": 0,
+      "tool": "zeus_ask",
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        }
+      ]
+    },
+    {
+      "t": 45.74777812510729,
+      "scenario": "ask-option",
+      "step": 1,
+      "tool": "zeus_say",
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        },
+        {
+          "tool_use_id": "tool_3abc0f52420c472890709dc33d25e397",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_a8625c57\",\"option_id\":\"yes\",\"option_label\":\"Yes\",\"status\":\"answered\"}"
+        }
+      ]
+    },
+    {
+      "t": 45.77516679209657,
+      "scenario": "ask-option",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        },
+        {
+          "tool_use_id": "tool_3abc0f52420c472890709dc33d25e397",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_a8625c57\",\"option_id\":\"yes\",\"option_label\":\"Yes\",\"status\":\"answered\"}"
+        },
+        {
+          "tool_use_id": "tool_3b25a5fd94c444889e609e4a2e797939",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_93809322\"}"
+        }
+      ]
+    },
+    {
+      "t": 48.587595832999796,
+      "scenario": "ask-text",
+      "step": 0,
+      "tool": "zeus_ask",
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        },
+        {
+          "tool_use_id": "tool_3abc0f52420c472890709dc33d25e397",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_a8625c57\",\"option_id\":\"yes\",\"option_label\":\"Yes\",\"status\":\"answered\"}"
+        },
+        {
+          "tool_use_id": "tool_3b25a5fd94c444889e609e4a2e797939",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_93809322\"}"
+        }
+      ]
+    },
+    {
+      "t": 51.151032499969006,
+      "scenario": "ask-text",
+      "step": 1,
+      "tool": "zeus_say",
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        },
+        {
+          "tool_use_id": "tool_3abc0f52420c472890709dc33d25e397",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_a8625c57\",\"option_id\":\"yes\",\"option_label\":\"Yes\",\"status\":\"answered\"}"
+        },
+        {
+          "tool_use_id": "tool_3b25a5fd94c444889e609e4a2e797939",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_93809322\"}"
+        },
+        {
+          "tool_use_id": "tool_cb7d9de936e7471798db45a4779431fd",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_27b3fce0\",\"status\":\"answered\",\"text\":\"Typed fixture reply\"}"
+        }
+      ]
+    },
+    {
+      "t": 51.172979375114664,
+      "scenario": "ask-text",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        },
+        {
+          "tool_use_id": "tool_3abc0f52420c472890709dc33d25e397",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_a8625c57\",\"option_id\":\"yes\",\"option_label\":\"Yes\",\"status\":\"answered\"}"
+        },
+        {
+          "tool_use_id": "tool_3b25a5fd94c444889e609e4a2e797939",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_93809322\"}"
+        },
+        {
+          "tool_use_id": "tool_cb7d9de936e7471798db45a4779431fd",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_27b3fce0\",\"status\":\"answered\",\"text\":\"Typed fixture reply\"}"
+        },
+        {
+          "tool_use_id": "tool_9e71f414aff44e9cbd1dc3b3b4a0ee06",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_448e9802\"}"
+        }
+      ]
+    },
+    {
+      "t": 53.94406054215506,
+      "scenario": "ask-skip",
+      "step": 0,
+      "tool": "zeus_ask",
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        },
+        {
+          "tool_use_id": "tool_3abc0f52420c472890709dc33d25e397",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_a8625c57\",\"option_id\":\"yes\",\"option_label\":\"Yes\",\"status\":\"answered\"}"
+        },
+        {
+          "tool_use_id": "tool_3b25a5fd94c444889e609e4a2e797939",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_93809322\"}"
+        },
+        {
+          "tool_use_id": "tool_cb7d9de936e7471798db45a4779431fd",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_27b3fce0\",\"status\":\"answered\",\"text\":\"Typed fixture reply\"}"
+        },
+        {
+          "tool_use_id": "tool_9e71f414aff44e9cbd1dc3b3b4a0ee06",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_448e9802\"}"
+        }
+      ]
+    },
+    {
+      "t": 56.51317162509076,
+      "scenario": "ask-skip",
+      "step": 1,
+      "tool": "zeus_say",
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        },
+        {
+          "tool_use_id": "tool_3abc0f52420c472890709dc33d25e397",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_a8625c57\",\"option_id\":\"yes\",\"option_label\":\"Yes\",\"status\":\"answered\"}"
+        },
+        {
+          "tool_use_id": "tool_3b25a5fd94c444889e609e4a2e797939",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_93809322\"}"
+        },
+        {
+          "tool_use_id": "tool_cb7d9de936e7471798db45a4779431fd",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_27b3fce0\",\"status\":\"answered\",\"text\":\"Typed fixture reply\"}"
+        },
+        {
+          "tool_use_id": "tool_9e71f414aff44e9cbd1dc3b3b4a0ee06",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_448e9802\"}"
+        },
+        {
+          "tool_use_id": "tool_ec6a991f3b7245e69dd0e65ea51abce8",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_8e80d78f\",\"status\":\"skipped\"}"
+        }
+      ]
+    },
+    {
+      "t": 56.537253292044625,
+      "scenario": "ask-skip",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        },
+        {
+          "tool_use_id": "tool_3abc0f52420c472890709dc33d25e397",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_a8625c57\",\"option_id\":\"yes\",\"option_label\":\"Yes\",\"status\":\"answered\"}"
+        },
+        {
+          "tool_use_id": "tool_3b25a5fd94c444889e609e4a2e797939",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_93809322\"}"
+        },
+        {
+          "tool_use_id": "tool_cb7d9de936e7471798db45a4779431fd",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_27b3fce0\",\"status\":\"answered\",\"text\":\"Typed fixture reply\"}"
+        },
+        {
+          "tool_use_id": "tool_9e71f414aff44e9cbd1dc3b3b4a0ee06",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_448e9802\"}"
+        },
+        {
+          "tool_use_id": "tool_ec6a991f3b7245e69dd0e65ea51abce8",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_8e80d78f\",\"status\":\"skipped\"}"
+        },
+        {
+          "tool_use_id": "tool_4812bc3fb5f447d9ad417d5ed6d3c25c",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_5454ac7f\"}"
+        }
+      ]
+    },
+    {
+      "t": 59.382435833103955,
+      "scenario": "closed-say",
+      "step": 0,
+      "tool": "zeus_say",
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        },
+        {
+          "tool_use_id": "tool_3abc0f52420c472890709dc33d25e397",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_a8625c57\",\"option_id\":\"yes\",\"option_label\":\"Yes\",\"status\":\"answered\"}"
+        },
+        {
+          "tool_use_id": "tool_3b25a5fd94c444889e609e4a2e797939",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_93809322\"}"
+        },
+        {
+          "tool_use_id": "tool_cb7d9de936e7471798db45a4779431fd",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_27b3fce0\",\"status\":\"answered\",\"text\":\"Typed fixture reply\"}"
+        },
+        {
+          "tool_use_id": "tool_9e71f414aff44e9cbd1dc3b3b4a0ee06",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_448e9802\"}"
+        },
+        {
+          "tool_use_id": "tool_ec6a991f3b7245e69dd0e65ea51abce8",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_8e80d78f\",\"status\":\"skipped\"}"
+        },
+        {
+          "tool_use_id": "tool_4812bc3fb5f447d9ad417d5ed6d3c25c",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_5454ac7f\"}"
+        }
+      ]
+    },
+    {
+      "t": 59.39856137498282,
+      "scenario": "closed-say",
+      "step": 1,
+      "tool": null,
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        },
+        {
+          "tool_use_id": "tool_3abc0f52420c472890709dc33d25e397",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_a8625c57\",\"option_id\":\"yes\",\"option_label\":\"Yes\",\"status\":\"answered\"}"
+        },
+        {
+          "tool_use_id": "tool_3b25a5fd94c444889e609e4a2e797939",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_93809322\"}"
+        },
+        {
+          "tool_use_id": "tool_cb7d9de936e7471798db45a4779431fd",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_27b3fce0\",\"status\":\"answered\",\"text\":\"Typed fixture reply\"}"
+        },
+        {
+          "tool_use_id": "tool_9e71f414aff44e9cbd1dc3b3b4a0ee06",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_448e9802\"}"
+        },
+        {
+          "tool_use_id": "tool_ec6a991f3b7245e69dd0e65ea51abce8",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_8e80d78f\",\"status\":\"skipped\"}"
+        },
+        {
+          "tool_use_id": "tool_4812bc3fb5f447d9ad417d5ed6d3c25c",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_5454ac7f\"}"
+        },
+        {
+          "tool_use_id": "tool_20ffe6d16d6b406b83a83433c0f3a8c7",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_fdcca7ed\"}"
+        }
+      ]
+    },
+    {
+      "t": 62.34397987509146,
+      "scenario": "ttl",
+      "step": 0,
+      "tool": "zeus_set_status",
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        },
+        {
+          "tool_use_id": "tool_3abc0f52420c472890709dc33d25e397",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_a8625c57\",\"option_id\":\"yes\",\"option_label\":\"Yes\",\"status\":\"answered\"}"
+        },
+        {
+          "tool_use_id": "tool_3b25a5fd94c444889e609e4a2e797939",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_93809322\"}"
+        },
+        {
+          "tool_use_id": "tool_cb7d9de936e7471798db45a4779431fd",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_27b3fce0\",\"status\":\"answered\",\"text\":\"Typed fixture reply\"}"
+        },
+        {
+          "tool_use_id": "tool_9e71f414aff44e9cbd1dc3b3b4a0ee06",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_448e9802\"}"
+        },
+        {
+          "tool_use_id": "tool_ec6a991f3b7245e69dd0e65ea51abce8",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_8e80d78f\",\"status\":\"skipped\"}"
+        },
+        {
+          "tool_use_id": "tool_4812bc3fb5f447d9ad417d5ed6d3c25c",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_5454ac7f\"}"
+        },
+        {
+          "tool_use_id": "tool_20ffe6d16d6b406b83a83433c0f3a8c7",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_fdcca7ed\"}"
+        }
+      ]
+    },
+    {
+      "t": 62.36356229195371,
+      "scenario": "ttl",
+      "step": 1,
+      "tool": null,
+      "tool_results": [
+        {
+          "tool_use_id": "tool_4bdc312a07124b4c90028060f4704025",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_86492e56\"}"
+        },
+        {
+          "tool_use_id": "tool_43f64518f6eb412683b6d2bbb08800a0",
+          "type": "tool_result",
+          "content": "1\tSA1 private read-only fixture.\n2\t"
+        },
+        {
+          "tool_use_id": "tool_e069c868f4e04870968a2fa00e34d5a1",
+          "type": "tool_result",
+          "content": "Wasted call \u2014 file unchanged since your last Read. Refer to that earlier tool_result instead."
+        },
+        {
+          "tool_use_id": "tool_3abc0f52420c472890709dc33d25e397",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_a8625c57\",\"option_id\":\"yes\",\"option_label\":\"Yes\",\"status\":\"answered\"}"
+        },
+        {
+          "tool_use_id": "tool_3b25a5fd94c444889e609e4a2e797939",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_93809322\"}"
+        },
+        {
+          "tool_use_id": "tool_cb7d9de936e7471798db45a4779431fd",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_27b3fce0\",\"status\":\"answered\",\"text\":\"Typed fixture reply\"}"
+        },
+        {
+          "tool_use_id": "tool_9e71f414aff44e9cbd1dc3b3b4a0ee06",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_448e9802\"}"
+        },
+        {
+          "tool_use_id": "tool_ec6a991f3b7245e69dd0e65ea51abce8",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_8e80d78f\",\"status\":\"skipped\"}"
+        },
+        {
+          "tool_use_id": "tool_4812bc3fb5f447d9ad417d5ed6d3c25c",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_5454ac7f\"}"
+        },
+        {
+          "tool_use_id": "tool_20ffe6d16d6b406b83a83433c0f3a8c7",
+          "type": "tool_result",
+          "content": "{\"card_id\":\"c_fdcca7ed\"}"
+        },
+        {
+          "tool_use_id": "tool_45194fe5d9444e6797df6ac14f56aace",
+          "type": "tool_result",
+          "content": "{\"ok\":true}"
+        }
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": false,
+      "cards": [],
+      "detail": null,
+      "managed": "off",
+      "pane": null,
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": null,
+      "sessions": 0,
+      "t": 0.014619946479797363,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": false,
+      "cards": [],
+      "detail": null,
+      "managed": "starting",
+      "pane": null,
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": null,
+      "sessions": 0,
+      "t": 0.11805391311645508,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": false,
+      "cards": [],
+      "detail": null,
+      "managed": "starting",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": null,
+      "sessions": 0,
+      "t": 0.2756669521331787,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": false,
+      "cards": [],
+      "detail": null,
+      "managed": "starting",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": null,
+      "sessions": 1,
+      "t": 0.9494609832763672,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": false,
+      "cards": [],
+      "detail": null,
+      "managed": "starting",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 3.7224589586257935,
+      "sessions": 1,
+      "t": 3.7396509647369385,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": false,
+      "cards": [],
+      "detail": null,
+      "managed": "starting",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 6.723778963088989,
+      "sessions": 1,
+      "t": 6.764729976654053,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": false,
+      "cards": [],
+      "detail": null,
+      "managed": "starting",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 9.755701899528503,
+      "sessions": 1,
+      "t": 9.771238923072815,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": true,
+      "cards": [],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 12.757202982902527,
+      "sessions": 1,
+      "t": 12.762587904930115,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 313.14519000053406,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 12.757202982902527,
+      "sessions": 1,
+      "t": 13.145620942115784,
+      "trigger": "send",
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 12.757202982902527,
+      "sessions": 1,
+      "t": 13.179313898086548,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 12.757202982902527,
+      "sessions": 1,
+      "t": 15.682828903198242,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 15.790300965309143,
+      "sessions": 1,
+      "t": 15.842724919319153,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 315.94130992889404,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 15.790300965309143,
+      "sessions": 1,
+      "t": 15.941743016242981,
+      "trigger": "send",
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 318.7760409116745,
+      "avatar": "thinking",
+      "can_input": false,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "thinking",
+      "quiet": false,
+      "row": "Claude is thinking\u2026",
+      "sample_t": 18.772310972213745,
+      "sessions": 1,
+      "t": 18.794793963432312,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 21.81476891040802,
+      "sessions": 1,
+      "t": 21.83162295818329,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 322.0954329967499,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 21.81476891040802,
+      "sessions": 1,
+      "t": 22.095953941345215,
+      "trigger": "send",
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 322.0954329967499,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 24.79653298854828,
+      "sessions": 1,
+      "t": 24.844105005264282,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 322.0954329967499,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 27.825020909309387,
+      "sessions": 1,
+      "t": 27.86882495880127,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 322.0954329967499,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 30.809852957725525,
+      "sessions": 1,
+      "t": 30.81401491165161,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 322.0954329967499,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 33.78885900974274,
+      "sessions": 1,
+      "t": 33.80590999126434,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 322.0954329967499,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 36.792340993881226,
+      "sessions": 1,
+      "t": 36.834710001945496,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 322.0954329967499,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 39.81274700164795,
+      "sessions": 1,
+      "t": 39.84203398227692,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 42.809786915779114,
+      "sessions": 1,
+      "t": 42.8449729681015,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 343.10316491127014,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 42.809786915779114,
+      "sessions": 1,
+      "t": 43.10374891757965,
+      "trigger": "send",
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 ask-option"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 42.809786915779114,
+      "sessions": 1,
+      "t": 43.164003014564514,
+      "trigger": null,
+      "waiters": 1
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "waiting",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 ask-option"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 42.809786915779114,
+      "sessions": 1,
+      "t": 45.66674590110779,
+      "trigger": null,
+      "waiters": 1
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 42.809786915779114,
+      "sessions": 1,
+      "t": 45.669641971588135,
+      "trigger": "answer",
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 345.67179691791534,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 42.809786915779114,
+      "sessions": 1,
+      "t": 45.6732839345932,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 42.809786915779114,
+      "sessions": 1,
+      "t": 45.73526895046234,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 45.887515902519226,
+      "sessions": 1,
+      "t": 45.8981249332428,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 45.887515902519226,
+      "sessions": 1,
+      "t": 48.248952984809875,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 348.52817690372467,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 45.887515902519226,
+      "sessions": 1,
+      "t": 48.52884089946747,
+      "trigger": "send",
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 ask-text"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 45.887515902519226,
+      "sessions": 1,
+      "t": 48.56152594089508,
+      "trigger": null,
+      "waiters": 1
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": false,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 ask-text"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 48.85348892211914,
+      "sessions": 1,
+      "t": 48.87477791309357,
+      "trigger": null,
+      "waiters": 1
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "waiting",
+      "can_input": false,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 ask-text"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 48.85348892211914,
+      "sessions": 1,
+      "t": 51.090887904167175,
+      "trigger": null,
+      "waiters": 1
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": false,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 48.85348892211914,
+      "sessions": 1,
+      "t": 51.093441009521484,
+      "trigger": "answer",
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": false,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 48.85348892211914,
+      "sessions": 1,
+      "t": 51.14919197559357,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 51.93389391899109,
+      "sessions": 1,
+      "t": 51.975244998931885,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 51.93389391899109,
+      "sessions": 1,
+      "t": 53.62352895736694,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 353.8838219642639,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 51.93389391899109,
+      "sessions": 1,
+      "t": 53.88463890552521,
+      "trigger": "send",
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 ask-skip"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 51.93389391899109,
+      "sessions": 1,
+      "t": 53.93554997444153,
+      "trigger": null,
+      "waiters": 1
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": false,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 ask-skip"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 54.90430295467377,
+      "sessions": 1,
+      "t": 54.92092299461365,
+      "trigger": null,
+      "waiters": 1
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "waiting",
+      "can_input": false,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 ask-skip"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 54.90430295467377,
+      "sessions": 1,
+      "t": 56.44210994243622,
+      "trigger": null,
+      "waiters": 1
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": false,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 54.90430295467377,
+      "sessions": 1,
+      "t": 56.446934938430786,
+      "trigger": "skip",
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 356.4496359825134,
+      "avatar": "thinking",
+      "can_input": false,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 54.90430295467377,
+      "sessions": 1,
+      "t": 56.460102915763855,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": false,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 54.90430295467377,
+      "sessions": 1,
+      "t": 56.5119389295578,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 57.90977191925049,
+      "sessions": 1,
+      "t": 57.940346002578735,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 57.90977191925049,
+      "sessions": 1,
+      "t": 59.0181759595871,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": false,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 57.90977191925049,
+      "sessions": 1,
+      "t": 59.042168974876404,
+      "trigger": "panel",
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 359.32485592365265,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": false,
+      "phase": "sent",
+      "quiet": false,
+      "row": null,
+      "sample_t": 57.90977191925049,
+      "sessions": 1,
+      "t": 59.32578992843628,
+      "trigger": "send",
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": false,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": false,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 57.90977191925049,
+      "sessions": 1,
+      "t": 59.38694894313812,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "talking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": false,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": false,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 60.92729699611664,
+      "sessions": 1,
+      "t": 60.93964099884033,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "alert",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": false,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": false,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 60.92729699611664,
+      "sessions": 1,
+      "t": 61.867828011512756,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": null,
+      "avatar": "idle",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": null,
+      "quiet": false,
+      "row": null,
+      "sample_t": 60.92729699611664,
+      "sessions": 1,
+      "t": 61.87037491798401,
+      "trigger": "panel",
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 362.28673791885376,
+      "avatar": "thinking",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "sent",
+      "quiet": false,
+      "row": "Sent to Claude\u2026",
+      "sample_t": 60.92729699611664,
+      "sessions": 1,
+      "t": 62.287822008132935,
+      "trigger": "send",
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 92.30657494068146,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 60.92729699611664,
+      "sessions": 1,
+      "t": 62.32968091964722,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": false,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 63.92395901679993,
+      "sessions": 1,
+      "t": 63.96852898597717,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 66.91253197193146,
+      "sessions": 1,
+      "t": 66.91770100593567,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 69.93104898929596,
+      "sessions": 1,
+      "t": 69.93554401397705,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 73.00382399559021,
+      "sessions": 1,
+      "t": 73.03119695186615,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 75.98312294483185,
+      "sessions": 1,
+      "t": 76.02932500839233,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 79.03055095672607,
+      "sessions": 1,
+      "t": 79.06891191005707,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 82.10872399806976,
+      "sessions": 1,
+      "t": 82.1644629240036,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 85.08477199077606,
+      "sessions": 1,
+      "t": 85.10708594322205,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 88.11034893989563,
+      "sessions": 1,
+      "t": 88.12689793109894,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 91.12523400783539,
+      "sessions": 1,
+      "t": 91.15685796737671,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 94.1486029624939,
+      "sessions": 1,
+      "t": 94.17251694202423,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 97.10642099380493,
+      "sessions": 1,
+      "t": 97.11597800254822,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 100.13477301597595,
+      "sessions": 1,
+      "t": 100.13929092884064,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 103.12127697467804,
+      "sessions": 1,
+      "t": 103.12723791599274,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 106.1545979976654,
+      "sessions": 1,
+      "t": 106.18033695220947,
+      "trigger": null,
+      "waiters": 0
+    },
+    {
+      "activity_deadline": 363.9278429746628,
+      "avatar": "working",
+      "can_input": true,
+      "cards": [
+        {
+          "id": "c_86492e56",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: say"
+        },
+        {
+          "id": "c_a8625c57",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-option"
+        },
+        {
+          "id": "c_93809322",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-option"
+        },
+        {
+          "id": "c_27b3fce0",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": false,
+          "status": "answered",
+          "title": "SA1 ask-text"
+        },
+        {
+          "id": "c_448e9802",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-text"
+        },
+        {
+          "id": "c_8e80d78f",
+          "options": [
+            {
+              "id": "yes",
+              "label": "Yes"
+            },
+            {
+              "id": "no",
+              "label": "No"
+            }
+          ],
+          "seen": true,
+          "skipped": true,
+          "status": "answered",
+          "title": "SA1 ask-skip"
+        },
+        {
+          "id": "c_5454ac7f",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 response recorded: ask-skip"
+        },
+        {
+          "id": "c_fdcca7ed",
+          "options": [],
+          "seen": true,
+          "skipped": false,
+          "status": "open",
+          "title": "SA1 reply: closed-say"
+        }
+      ],
+      "detail": "SA1 explicit work",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "panel": true,
+      "phase": "working",
+      "quiet": false,
+      "row": "SA1 explicit work",
+      "sample_t": 109.1696799993515,
+      "sessions": 1,
+      "t": 109.20257997512817,
+      "trigger": null,
+      "waiters": 0
+    }
+  ]
+}
