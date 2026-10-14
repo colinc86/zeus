@@ -59,7 +59,7 @@ struct AgentSettingsView: View {
             SettingsDivider()
             Text("Setup").settingsTitle()
             if let bridge = SetupCommands.embeddedBridgeURL {
-                ForEach(Array(SetupCommands.steps(for: settings.backend).enumerated()), id: \.element.id) { index, step in
+                ForEach(Array(SetupCommands.steps(for: settings.backend, bridgePath: bridge.path).enumerated()), id: \.element.id) { index, step in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(step.title).settingsHeading()
                         Text(step.detail).settingsCaption().textSelection(.enabled)

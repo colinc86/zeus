@@ -1,4 +1,5 @@
 import Foundation
+import ZeusProtocol
 
 /// Copyable commands quote the executable as shell data; OpenCode uses JSON encoding.
 enum SetupCommands {
@@ -27,16 +28,26 @@ enum SetupCommands {
         let command: String?
         var id: String { title }
     }
-    static func steps(for backend: AssistantBackend) -> [Step] {
+    static func steps(for backend: AssistantBackend, bridgePath: String? = nil, socketPath: String = ZeusPaths.bridgeSocket.path) -> [Step] {
         let prerequisite: String = switch backend {
         case .claude: "Install Claude Code and sign in. Then, in Terminal, go to the folder your assistant works in and run this once:"
         case .codex: "Install Codex and tmux, and sign in to Codex. Then, in Terminal, go to the folder your assistant works in and run this once:"
         case .opencode: "Install OpenCode and set up a model provider. Add this block to opencode.json in your assistant's folder (or ~/.config/opencode/opencode.json for every folder), keeping your other settings:"
         }
-        let launch: String = switch backend {
+        var launch: String = switch backend {
         case .claude: claudeLaunch
         case .codex: codexLaunch
         case .opencode: "opencode --port 4096 --hostname 127.0.0.1"
+        }
+        if let bridgePath {
+            switch backend {
+            case .claude:
+                if let json = try? AgentTurnHooks.claudeSettings(bridgePath: bridgePath, socketPath: socketPath) { launch += " --settings " + shellQuote(json) }
+            case .codex:
+                if let json = try? AgentTurnHooks.codexNotify(bridgePath: bridgePath, socketPath: socketPath) { launch += " -c " + shellQuote("notify=" + json) }
+            case .opencode:
+                launch = "OPENCODE_CONFIG_CONTENT=\"$(" + shellQuote(bridgePath) + " --hook-settings --agent opencode --socket " + shellQuote(socketPath) + ")\" " + launch
+            }
         }
         let routing: String = switch backend {
         case .claude: "The --dangerously-load-development-channels flag only lets Claude Code receive your Zeus messages. Claude asks once whether to load Zeus's channel: choose Yes. Then pick the session above, or leave Auto."
@@ -51,7 +62,7 @@ enum SetupCommands {
     static func guide(bridgePath: String) -> String {
         AssistantBackend.allCases.map { backend in
             backend.name + "\n\n" + configuration(for: backend, bridgePath: bridgePath) + "\n\n" +
-                steps(for: backend).map { $0.title + "\n" + $0.detail + ($0.command.map { "\n" + $0 } ?? "") }.joined(separator: "\n\n")
+                steps(for: backend, bridgePath: bridgePath).map { $0.title + "\n" + $0.detail + ($0.command.map { "\n" + $0 } ?? "") }.joined(separator: "\n\n")
         }.joined(separator: "\n\n---\n\n")
     }
 

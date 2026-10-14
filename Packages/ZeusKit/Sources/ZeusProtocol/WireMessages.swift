@@ -274,6 +274,8 @@ public enum WireMessage: Codable, Sendable, Equatable {
     case error(BridgeError)
     case superseded(BridgeSuperseded)
     case learning(BridgeLearning)
+    case turnEnded(TurnEnded)
+    case turnEndedReceipt(TurnEndedReceipt)
     private enum CodingKeys: String, CodingKey { case type }
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -289,6 +291,8 @@ public enum WireMessage: Codable, Sendable, Equatable {
         case "error": self = .error(try BridgeError(from: decoder))
         case "superseded": self = .superseded(try BridgeSuperseded(from: decoder))
         case "learning": self = .learning(try BridgeLearning(from: decoder))
+        case "turnEnded": self = .turnEnded(try TurnEnded(from: decoder))
+        case "turnEndedReceipt": self = .turnEndedReceipt(try TurnEndedReceipt(from: decoder))
         default: throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown wire type: \(type)")
         }
     }
@@ -305,6 +309,8 @@ public enum WireMessage: Codable, Sendable, Equatable {
         case .error(let value): try container.encode("error", forKey: .type); try value.encode(to: encoder)
         case .superseded(let value): try container.encode("superseded", forKey: .type); try value.encode(to: encoder)
         case .learning(let value): try container.encode("learning", forKey: .type); try value.encode(to: encoder)
+        case .turnEnded(let value): try container.encode("turnEnded", forKey: .type); try value.encode(to: encoder)
+        case .turnEndedReceipt(let value): try container.encode("turnEndedReceipt", forKey: .type); try value.encode(to: encoder)
         }
     }
 }

@@ -14,6 +14,10 @@ extension ZeusRuntime {
         var deliveryID: String?
         /// Last completed native Claude turn before this response started. Not persisted or exposed to agents.
         var managedCompletionAtStart: String?
+        /// Distinguishes consecutive responses even when their delivery receipts share an invalidation epoch.
+        var responseToken = UUID()
+        /// Input started before transport/result receipt; a fast Stop hook can precede that receipt.
+        var responseBeganAt: Date
     }
 
     /// Tool traffic advances an existing response; it never starts or revives one.
@@ -33,7 +37,7 @@ extension ZeusRuntime {
 
     /// Called only after a successful connector receipt or an answered synchronous ask.
     /// A retry of the same delivery never resets phase, start ordering or the stale deadline.
-    func noteDeliveredActivity(sessionKey: String, deliveryID: String, token: UUID? = nil, sessionID: UUID? = nil) {
+    func noteDeliveredActivity(sessionKey: String, deliveryID: String, token: UUID? = nil, sessionID: UUID? = nil, inputStartedAt: Date? = nil) {
         let earlyAck = activityEarlyAcknowledgments.removeValue(forKey: deliveryID)
         guard running, let session = sessions.first(where: { $0.sessionKey == sessionKey }),
               sessionID == nil || session.id == sessionID,
@@ -48,7 +52,8 @@ extension ZeusRuntime {
             return
         }
         startActivity(phase: earlyAck == nil ? .sent : .thinking, sessionKey: sessionKey,
-                      deadline: (earlyAck ?? clock.now).addingTimeInterval(300), deliveryID: deliveryID)
+                      deadline: (earlyAck ?? clock.now).addingTimeInterval(300), deliveryID: deliveryID,
+                      inputStartedAt: inputStartedAt ?? ledger?.record(id: deliveryID)?.delivery.lastAttemptAt)
         refreshAssistantActivity()
     }
 
@@ -141,10 +146,10 @@ extension ZeusRuntime {
     }
 
     /// A response post, explicit end, disconnect or discarded source invalidates late receipts.
-    func endAssistantActivity(sessionKey: String) {
+    func endAssistantActivity(sessionKey: String, invalidateReceipts: Bool = true) {
         activityRecords.removeValue(forKey: sessionKey)
         activityWorkingSeen.remove(sessionKey)
-        activityTokens[sessionKey] = UUID()
+        if invalidateReceipts { activityTokens[sessionKey] = UUID() }
         refreshAssistantActivity()
     }
 
@@ -165,13 +170,14 @@ extension ZeusRuntime {
     }
 
     private func startActivity(phase: AssistantActivity.Phase, sessionKey: String, deadline: Date,
-                               detail: String? = nil, progress: Double? = nil, deliveryID: String? = nil) {
+                               detail: String? = nil, progress: Double? = nil, deliveryID: String? = nil, inputStartedAt: Date? = nil) {
         activityOrder += 1
         activityWorkingSeen.remove(sessionKey)
         activityRecords[sessionKey] = ActivityRecord(value: activityValue(phase: phase, sessionKey: sessionKey,
             since: clock.now, detail: detail, progress: progress), deadline: deadline, order: activityOrder, deliveryID: deliveryID,
             managedCompletionAtStart: managedController.sessionKey == sessionKey
-                ? managedController.latestInputSample.flatMap { $0.agent == .claude ? Self.claudeCompletedTurn($0.snapshot) : nil } : nil)
+                ? managedController.latestInputSample.flatMap { $0.agent == .claude ? Self.claudeCompletedTurn($0.snapshot) : nil } : nil,
+            responseBeganAt: inputStartedAt ?? clock.now)
     }
 
     private func activityValue(phase: AssistantActivity.Phase, sessionKey: String, since: Date,

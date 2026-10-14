@@ -1,0 +1,973 @@
+{
+  "wire_hooks": [
+    {
+      "agent": "claude",
+      "ancestors": [
+        {
+          "pid": 64031,
+          "startTime": 1792012249363902
+        },
+        {
+          "pid": 64028,
+          "startTime": 1792012249300410
+        },
+        {
+          "pid": 64024,
+          "startTime": 1792012249246555
+        }
+      ],
+      "cwd": "/FIXTURE/project",
+      "deliveryID": "d_sa3_fast",
+      "firedAt": 1792012251.22309,
+      "nativeSessionID": "0ca9d58d-98dc-4494-af4c-50351a5f285f",
+      "pid": 64101,
+      "ppid": 64031,
+      "reason": "completed",
+      "tmuxPane": "%0",
+      "wireVersion": 1
+    },
+    {
+      "agent": "claude",
+      "ancestors": [
+        {
+          "pid": 64031,
+          "startTime": 1792012249363902
+        },
+        {
+          "pid": 64028,
+          "startTime": 1792012249300410
+        },
+        {
+          "pid": 64024,
+          "startTime": 1792012249246555
+        }
+      ],
+      "cwd": "/FIXTURE/project",
+      "firedAt": 1792012252.294227,
+      "nativeSessionID": "0ca9d58d-98dc-4494-af4c-50351a5f285f",
+      "pid": 64139,
+      "ppid": 64031,
+      "reason": "completed",
+      "tmuxPane": "%0",
+      "wireVersion": 1
+    },
+    {
+      "agent": "claude",
+      "ancestors": [
+        {
+          "pid": 64031,
+          "startTime": 1792012249363902
+        },
+        {
+          "pid": 64028,
+          "startTime": 1792012249300410
+        },
+        {
+          "pid": 64024,
+          "startTime": 1792012249246555
+        }
+      ],
+      "cwd": "/FIXTURE/project",
+      "firedAt": 1792012253.315939,
+      "nativeSessionID": "0ca9d58d-98dc-4494-af4c-50351a5f285f",
+      "pid": 64156,
+      "ppid": 64031,
+      "reason": "error",
+      "tmuxPane": "%0",
+      "wireVersion": 1
+    }
+  ],
+  "hook_inputs": [
+    {
+      "session_id": "0ca9d58d-98dc-4494-af4c-50351a5f285f",
+      "transcript_path": "/FIXTURE/home/.claude/projects/-private-tmp-zsa3-ly6yentr-project/0ca9d58d-98dc-4494-af4c-50351a5f285f.jsonl",
+      "cwd": "/FIXTURE/project",
+      "prompt_id": "0de46ef3-5d8d-4d59-a3f3-63b508fdac2a",
+      "permission_mode": "default",
+      "hook_event_name": "Stop",
+      "stop_hook_active": false,
+      "last_assistant_message": "SA3 native turn complete.",
+      "background_tasks": [],
+      "session_crons": []
+    },
+    {
+      "session_id": "0ca9d58d-98dc-4494-af4c-50351a5f285f",
+      "transcript_path": "/FIXTURE/home/.claude/projects/-private-tmp-zsa3-ly6yentr-project/0ca9d58d-98dc-4494-af4c-50351a5f285f.jsonl",
+      "cwd": "/FIXTURE/project",
+      "prompt_id": "805c351e-0e08-4e4c-ac16-ae76d907254c",
+      "permission_mode": "default",
+      "hook_event_name": "Stop",
+      "stop_hook_active": false,
+      "last_assistant_message": "SA3 native turn complete.",
+      "background_tasks": [],
+      "session_crons": []
+    },
+    {
+      "session_id": "0ca9d58d-98dc-4494-af4c-50351a5f285f",
+      "transcript_path": "/FIXTURE/home/.claude/projects/-private-tmp-zsa3-ly6yentr-project/0ca9d58d-98dc-4494-af4c-50351a5f285f.jsonl",
+      "cwd": "/FIXTURE/project",
+      "prompt_id": "b7817b25-dcce-4d18-ae96-faa620c5a93a",
+      "hook_event_name": "StopFailure",
+      "error": "unknown",
+      "last_assistant_message": "API Error: 400 SA3 synthetic stopped request"
+    }
+  ],
+  "transcript": [
+    {
+      "type": "user",
+      "promptId": "0de46ef3-5d8d-4d59-a3f3-63b508fdac2a",
+      "timestamp": "2026-10-14T21:10:51.128Z",
+      "message": {
+        "role": "user",
+        "content": [
+          {
+            "tool_use_id": "tool_2e6e9e86201247bdb84d37a8618eda77",
+            "type": "tool_result",
+            "content": "{\"acked\":[\"d_sa3_fast\"]}"
+          }
+        ]
+      }
+    },
+    {
+      "type": "user",
+      "promptId": "0de46ef3-5d8d-4d59-a3f3-63b508fdac2a",
+      "timestamp": "2026-10-14T21:10:51.014Z",
+      "message": {
+        "role": "user",
+        "content": "[zeus delivery_id=d_sa3_fast] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)"
+      }
+    },
+    {
+      "type": "user",
+      "promptId": "0de46ef3-5d8d-4d59-a3f3-63b508fdac2a",
+      "timestamp": "2026-10-14T21:10:51.202Z",
+      "message": {
+        "role": "user",
+        "content": [
+          {
+            "tool_use_id": "tool_b09d37460a1b4826adaf3b553c4753ad",
+            "type": "tool_result",
+            "content": "SA3_SHELL_DONE",
+            "is_error": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "user",
+      "promptId": "805c351e-0e08-4e4c-ac16-ae76d907254c",
+      "timestamp": "2026-10-14T21:10:52.252Z",
+      "message": {
+        "role": "user",
+        "content": "[zeus delivery_id=d_sa3_second] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)"
+      }
+    },
+    {
+      "type": "user",
+      "promptId": "805c351e-0e08-4e4c-ac16-ae76d907254c",
+      "timestamp": "2026-10-14T21:10:52.281Z",
+      "message": {
+        "role": "user",
+        "content": [
+          {
+            "tool_use_id": "tool_9f4a5b5fe4364717a66eb61c2552f068",
+            "type": "tool_result",
+            "content": "{\"acked\":[\"d_sa3_second\"]}"
+          }
+        ]
+      }
+    },
+    {
+      "type": "user",
+      "promptId": "b7817b25-dcce-4d18-ae96-faa620c5a93a",
+      "timestamp": "2026-10-14T21:10:53.289Z",
+      "message": {
+        "role": "user",
+        "content": "[zeus delivery_id=d_sa3_error] Message from the user: SA3_ERROR (call zeus_ack with this delivery_id)"
+      }
+    }
+  ],
+  "agent": "claude",
+  "version": "2.1.299 (Claude Code)",
+  "launch_command": "claude --dangerously-load-development-channels server:zeus --settings '{\"hooks\":{\"Notification\":[{\"hooks\":[{\"command\":\"'\\''/BUNDLE/Zeus.app/Contents/MacOS/zeus-mcp'\\'' --turn-ended --agent claude --socket '\\''/FIXTURE/bridge.sock'\\''\",\"timeout\":1.5,\"type\":\"command\"}],\"matcher\":\"idle_prompt\"}],\"SessionEnd\":[{\"hooks\":[{\"command\":\"'\\''/BUNDLE/Zeus.app/Contents/MacOS/zeus-mcp'\\'' --turn-ended --agent claude --socket '\\''/FIXTURE/bridge.sock'\\''\",\"timeout\":1.5,\"type\":\"command\"}]}],\"Stop\":[{\"hooks\":[{\"command\":\"'\\''/BUNDLE/Zeus.app/Contents/MacOS/zeus-mcp'\\'' --turn-ended --agent claude --socket '\\''/FIXTURE/bridge.sock'\\''\",\"timeout\":1.5,\"type\":\"command\"}]}],\"StopFailure\":[{\"hooks\":[{\"command\":\"'\\''/BUNDLE/Zeus.app/Contents/MacOS/zeus-mcp'\\'' --turn-ended --agent claude --socket '\\''/FIXTURE/bridge.sock'\\''\",\"timeout\":1.5,\"type\":\"command\"}]}]}}'",
+  "managed": "off",
+  "private_socket": true,
+  "disposable_home": true,
+  "localhost_model": true,
+  "scenarios": [
+    {
+      "name": "fast",
+      "delivery": "d_sa3_fast",
+      "completion_t": 2.094922916032374,
+      "ended_t": 2.162073874846101,
+      "after_model_completion_s": 0.0671509588137269,
+      "within_2s": true
+    },
+    {
+      "name": "second",
+      "delivery": "d_sa3_second",
+      "completion_t": 3.169647540897131,
+      "ended_t": 3.2361171660013497,
+      "after_model_completion_s": 0.06646962510421872,
+      "within_2s": true
+    },
+    {
+      "name": "error",
+      "ended_t": 4.265112665947527,
+      "activity_ended": true
+    }
+  ],
+  "frames": {
+    "initial-idle": {
+      "screen": "\n\u001b[38;5;174m ▐\u001b[48;5;16m▛███▛█\u001b[39m\u001b[49m   \u001b[1mClaude Code\u001b[0m \u001b[38;5;246mv2.1.299\u001b[39m\n\u001b[38;5;174m▝▜\u001b[48;5;16m█████\u001b[49m█▀\u001b[39m  \u001b[38;5;246mHaiku 4.5 · API Usage Billing\u001b[39m\n\u001b[38;5;174m ▝▝   ▝▝ \u001b[39m  \u001b[38;5;246m/FIXTURE/project\u001b[39m\n\n\u001b[2m▎\u001b[0m \u001b[38;5;220m--dangerously-load-development-channels ignored (server:zeus)\u001b[39m\n\u001b[2m▎\u001b[0m \u001b[38;5;246mChannels are not currently available\u001b[39m\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n                     \u001b[38;5;246mtmux detected · scroll with PgUp/PgDn · or add 'set -g mouse on' to ~/.tmux.conf for wheel scroll\u001b[39m\n\u001b[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\u001b[39m❯ \u001b[7m \u001b[0m\n\u001b[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\u001b[39m  \u001b[38;5;246m⏸ manual mode on · ? for shortcuts · ← for agents\u001b[39m\n",
+      "inputMetadata": "2|37|120|0|0|"
+    },
+    "fast-complete": {
+      "screen": "\n\u001b[38;5;174m ▐\u001b[48;5;16m▛███▛█\u001b[39m\u001b[49m   \u001b[1mClaude Code\u001b[0m \u001b[38;5;246mv2.1.299\u001b[39m\n\u001b[38;5;174m▝▜\u001b[48;5;16m█████\u001b[49m█▀\u001b[39m  \u001b[38;5;246mHaiku 4.5 · API Usage Billing\u001b[39m\n\u001b[38;5;174m ▝▝   ▝▝ \u001b[39m  \u001b[38;5;246m/FIXTURE/project\u001b[39m\n\n\u001b[2m▎\u001b[0m \u001b[38;5;220m--dangerously-load-development-channels ignored (server:zeus)\u001b[39m\n\u001b[2m▎\u001b[0m \u001b[38;5;246mChannels are not currently available\u001b[39m\n\n\u001b[38;5;246m\u001b[48;5;237m❯ \u001b[38;5;231m[zeus delivery_id=d_sa3_fast] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)\u001b[39m\n\n\u001b[49m  \u001b[38;5;246mCalled zeus, ran \u001b[1m1\u001b[0m\u001b[38;5;246m shell command \u001b[39m\n\n\u001b[38;5;231m⏺\u001b[39m SA3 native turn complete.\n\n\u001b[38;5;246m✻\u001b[39m \u001b[38;5;246mBrewed for 0s · done 4:10 PM\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\u001b[39m                     \u001b[38;5;246mtmux detected · scroll with PgUp/PgDn · or add 'set -g mouse on' to ~/.tmux.conf for wheel scroll\u001b[39m\n\u001b[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\u001b[39m❯ \u001b[7m \u001b[0m\n\u001b[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\u001b[39m  \u001b[38;5;246m⏸ manual mode on · ? for shortcuts · ← for agents\u001b[39m\n",
+      "inputMetadata": "2|37|120|0|0|"
+    },
+    "second-complete": {
+      "screen": "\n\u001b[38;5;174m ▐\u001b[48;5;16m▛███▛█\u001b[39m\u001b[49m   \u001b[1mClaude Code\u001b[0m \u001b[38;5;246mv2.1.299\u001b[39m\n\u001b[38;5;174m▝▜\u001b[48;5;16m█████\u001b[49m█▀\u001b[39m  \u001b[38;5;246mHaiku 4.5 · API Usage Billing\u001b[39m\n\u001b[38;5;174m ▝▝   ▝▝ \u001b[39m  \u001b[38;5;246m/FIXTURE/project\u001b[39m\n\n\u001b[2m▎\u001b[0m \u001b[38;5;220m--dangerously-load-development-channels ignored (server:zeus)\u001b[39m\n\u001b[2m▎\u001b[0m \u001b[38;5;246mChannels are not currently available\u001b[39m\n\n\u001b[38;5;246m\u001b[48;5;237m❯ \u001b[38;5;231m[zeus delivery_id=d_sa3_fast] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)\u001b[39m\n\n\u001b[49m  \u001b[38;5;246mCalled zeus, ran \u001b[1m1\u001b[0m\u001b[38;5;246m shell command \u001b[39m\n\n\u001b[38;5;231m⏺\u001b[39m SA3 native turn complete.\n\n\u001b[38;5;246m✻\u001b[39m \u001b[38;5;246mBrewed for 0s · done 4:10 PM\n\n\u001b[48;5;237m❯ \u001b[38;5;231m[zeus delivery_id=d_sa3_second] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)\u001b[39m\n\n\u001b[49m  \u001b[38;5;246mCalled zeus \u001b[39m\n\n\u001b[38;5;231m⏺\u001b[39m SA3 native turn complete.\n\n\u001b[38;5;246m✻\u001b[39m \u001b[38;5;246mWorked for 0s · done 4:10 PM\n\n\n\n\n\n\n\n\n\n\n\n\n\u001b[39m                     \u001b[38;5;246mtmux detected · scroll with PgUp/PgDn · or add 'set -g mouse on' to ~/.tmux.conf for wheel scroll\u001b[39m\n\u001b[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\u001b[39m❯ \u001b[7m \u001b[0m\n\u001b[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\u001b[39m  \u001b[38;5;246m⏸ manual mode on · ? for shortcuts · ← for agents\u001b[39m\n",
+      "inputMetadata": "2|37|120|0|0|"
+    },
+    "error-ended": {
+      "screen": "\n\u001b[38;5;174m ▐\u001b[48;5;16m▛███▛█\u001b[39m\u001b[49m   \u001b[1mClaude Code\u001b[0m \u001b[38;5;246mv2.1.299\u001b[39m\n\u001b[38;5;174m▝▜\u001b[48;5;16m█████\u001b[49m█▀\u001b[39m  \u001b[38;5;246mHaiku 4.5 · API Usage Billing\u001b[39m\n\u001b[38;5;174m ▝▝   ▝▝ \u001b[39m  \u001b[38;5;246m/FIXTURE/project\u001b[39m\n\n\u001b[2m▎\u001b[0m \u001b[38;5;220m--dangerously-load-development-channels ignored (server:zeus)\u001b[39m\n\u001b[2m▎\u001b[0m \u001b[38;5;246mChannels are not currently available\u001b[39m\n\n\u001b[38;5;246m\u001b[48;5;237m❯ \u001b[38;5;231m[zeus delivery_id=d_sa3_fast] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)\u001b[39m\n\n\u001b[49m  \u001b[38;5;246mCalled zeus, ran \u001b[1m1\u001b[0m\u001b[38;5;246m shell command \u001b[39m\n\n\u001b[38;5;231m⏺\u001b[39m SA3 native turn complete.\n\n\u001b[38;5;246m✻\u001b[39m \u001b[38;5;246mBrewed for 0s · done 4:10 PM\n\n\u001b[48;5;237m❯ \u001b[38;5;231m[zeus delivery_id=d_sa3_second] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)\u001b[39m\n\n\u001b[49m  \u001b[38;5;246mCalled zeus \u001b[39m\n\n\u001b[38;5;231m⏺\u001b[39m SA3 native turn complete.\n\n\u001b[38;5;246m✻\u001b[39m \u001b[38;5;246mWorked for 0s · done 4:10 PM\n\n\u001b[48;5;237m❯ \u001b[38;5;231m[zeus delivery_id=d_sa3_error] Message from the user: SA3_ERROR (call zeus_ack with this delivery_id)\u001b[39m\n\n\u001b[38;5;220m\u001b[49m⏺\u001b[39m \u001b[38;5;220mAPI Error: 400 SA3 synthetic stopped request\u001b[39m\n\n\u001b[38;5;246m✻\u001b[39m \u001b[38;5;246mChurned for 0s · done 4:10 PM\u001b[39m\n\n\n\n\n\n\n                     \u001b[38;5;246mtmux detected · scroll with PgUp/PgDn · or add 'set -g mouse on' to ~/.tmux.conf for wheel scroll\u001b[39m\n\u001b[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\u001b[39m❯ \u001b[7m \u001b[0m\n\u001b[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\u001b[39m  \u001b[38;5;246m⏸ manual mode on · ? for shortcuts · ← for agents\u001b[39m\n",
+      "inputMetadata": "2|37|120|0|0|"
+    },
+    "final": {
+      "screen": "\n\u001b[38;5;174m ▐\u001b[48;5;16m▛███▛█\u001b[39m\u001b[49m   \u001b[1mClaude Code\u001b[0m \u001b[38;5;246mv2.1.299\u001b[39m\n\u001b[38;5;174m▝▜\u001b[48;5;16m█████\u001b[49m█▀\u001b[39m  \u001b[38;5;246mHaiku 4.5 · API Usage Billing\u001b[39m\n\u001b[38;5;174m ▝▝   ▝▝ \u001b[39m  \u001b[38;5;246m/FIXTURE/project\u001b[39m\n\n\u001b[2m▎\u001b[0m \u001b[38;5;220m--dangerously-load-development-channels ignored (server:zeus)\u001b[39m\n\u001b[2m▎\u001b[0m \u001b[38;5;246mChannels are not currently available\u001b[39m\n\n\u001b[38;5;246m\u001b[48;5;237m❯ \u001b[38;5;231m[zeus delivery_id=d_sa3_fast] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)\u001b[39m\n\n\u001b[49m  \u001b[38;5;246mCalled zeus, ran \u001b[1m1\u001b[0m\u001b[38;5;246m shell command \u001b[39m\n\n\u001b[38;5;231m⏺\u001b[39m SA3 native turn complete.\n\n\u001b[38;5;246m✻\u001b[39m \u001b[38;5;246mBrewed for 0s · done 4:10 PM\n\n\u001b[48;5;237m❯ \u001b[38;5;231m[zeus delivery_id=d_sa3_second] Message from the user: SA3_FAST (call zeus_ack with this delivery_id)\u001b[39m\n\n\u001b[49m  \u001b[38;5;246mCalled zeus \u001b[39m\n\n\u001b[38;5;231m⏺\u001b[39m SA3 native turn complete.\n\n\u001b[38;5;246m✻\u001b[39m \u001b[38;5;246mWorked for 0s · done 4:10 PM\n\n\u001b[48;5;237m❯ \u001b[38;5;231m[zeus delivery_id=d_sa3_error] Message from the user: SA3_ERROR (call zeus_ack with this delivery_id)\u001b[39m\n\n\u001b[38;5;220m\u001b[49m⏺\u001b[39m \u001b[38;5;220mAPI Error: 400 SA3 synthetic stopped request\u001b[39m\n\n\u001b[38;5;246m✻\u001b[39m \u001b[38;5;246mChurned for 0s · done 4:10 PM\u001b[39m\n\n\n\n\n\n\n                     \u001b[38;5;246mtmux detected · scroll with PgUp/PgDn · or add 'set -g mouse on' to ~/.tmux.conf for wheel scroll\u001b[39m\n\u001b[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\u001b[39m❯ \u001b[7m \u001b[0m\n\u001b[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n\u001b[39m  \u001b[38;5;246m⏸ manual mode on · ? for shortcuts · ← for agents\u001b[39m\n",
+      "inputMetadata": "2|37|120|0|0|"
+    }
+  },
+  "events": [
+    {
+      "name": "compose",
+      "delivery": "d_sa3_fast",
+      "state": {
+        "activity_delivery": "d_sa3_fast",
+        "avatar": "thinking",
+        "cards": [],
+        "deliveries": [
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa3_fast"
+          }
+        ],
+        "managed": "off",
+        "phase": "sent",
+        "row": "Sent to Claude…",
+        "sessions": [
+          {
+            "key": "claude:/FIXTURE/project#64031.1792012249363902",
+            "pane": "%0"
+          }
+        ],
+        "t": 1.8579989671707153
+      }
+    },
+    {
+      "name": "compose",
+      "delivery": "d_sa3_second",
+      "state": {
+        "activity_delivery": "d_sa3_second",
+        "avatar": "thinking",
+        "cards": [],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa3_fast"
+          },
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa3_second"
+          }
+        ],
+        "managed": "off",
+        "phase": "sent",
+        "row": "Sent to Claude…",
+        "sessions": [
+          {
+            "key": "claude:/FIXTURE/project#64031.1792012249363902",
+            "pane": "%0"
+          }
+        ],
+        "t": 3.1107330322265625
+      }
+    }
+  ],
+  "timeline": [
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [],
+      "t": 0.0006920099258422852
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [
+        {
+          "key": "claude:/FIXTURE/project#64031.1792012249363902",
+          "pane": "%0"
+        }
+      ],
+      "t": 1.1833879947662354
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [
+        {
+          "key": "claude:/FIXTURE/project#64031.1792012249363902",
+          "pane": "%0"
+        }
+      ],
+      "t": 1.7331299781799316
+    },
+    {
+      "activity_delivery": "d_sa3_fast",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": "sent",
+      "row": "Sent to Claude…",
+      "sessions": [
+        {
+          "key": "claude:/FIXTURE/project#64031.1792012249363902",
+          "pane": "%0"
+        }
+      ],
+      "t": 1.8764649629592896
+    },
+    {
+      "activity_delivery": "d_sa3_fast",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": "thinking",
+      "row": "Claude is thinking…",
+      "sessions": [
+        {
+          "key": "claude:/FIXTURE/project#64031.1792012249363902",
+          "pane": "%0"
+        }
+      ],
+      "t": 1.9897600412368774
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [
+        {
+          "key": "claude:/FIXTURE/project#64031.1792012249363902",
+          "pane": "%0"
+        }
+      ],
+      "t": 2.1281909942626953
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa3_second"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [
+        {
+          "key": "claude:/FIXTURE/project#64031.1792012249363902",
+          "pane": "%0"
+        }
+      ],
+      "t": 2.97687304019928
+    },
+    {
+      "activity_delivery": "d_sa3_second",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa3_second"
+        }
+      ],
+      "managed": "off",
+      "phase": "sent",
+      "row": "Sent to Claude…",
+      "sessions": [
+        {
+          "key": "claude:/FIXTURE/project#64031.1792012249363902",
+          "pane": "%0"
+        }
+      ],
+      "t": 3.1135849952697754
+    },
+    {
+      "activity_delivery": "d_sa3_second",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_second"
+        }
+      ],
+      "managed": "off",
+      "phase": "thinking",
+      "row": "Claude is thinking…",
+      "sessions": [
+        {
+          "key": "claude:/FIXTURE/project#64031.1792012249363902",
+          "pane": "%0"
+        }
+      ],
+      "t": 3.144163966178894
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_second"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [
+        {
+          "key": "claude:/FIXTURE/project#64031.1792012249363902",
+          "pane": "%0"
+        }
+      ],
+      "t": 3.202971935272217
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_second"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa3_error"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [
+        {
+          "key": "claude:/FIXTURE/project#64031.1792012249363902",
+          "pane": "%0"
+        }
+      ],
+      "t": 4.068652987480164
+    },
+    {
+      "activity_delivery": "d_sa3_error",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_second"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa3_error"
+        }
+      ],
+      "managed": "off",
+      "phase": "sent",
+      "row": "Sent to Claude…",
+      "sessions": [
+        {
+          "key": "claude:/FIXTURE/project#64031.1792012249363902",
+          "pane": "%0"
+        }
+      ],
+      "t": 4.154863953590393
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa3_second"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa3_error"
+        }
+      ],
+      "managed": "off",
+      "phase": null,
+      "row": null,
+      "sessions": [
+        {
+          "key": "claude:/FIXTURE/project#64031.1792012249363902",
+          "pane": "%0"
+        }
+      ],
+      "t": 4.218999028205872
+    }
+  ],
+  "model_calls": [
+    {
+      "tools": [],
+      "results": []
+    },
+    {
+      "tools": [
+        "Agent",
+        "AskUserQuestion",
+        "Bash",
+        "CronCreate",
+        "CronDelete",
+        "CronList",
+        "Edit",
+        "EnterPlanMode",
+        "EnterWorktree",
+        "ExitPlanMode",
+        "ExitWorktree",
+        "ListAgents",
+        "NotebookEdit",
+        "Read",
+        "ReportFindings",
+        "ScheduleWakeup",
+        "SendMessage",
+        "Skill",
+        "TaskCreate",
+        "TaskGet",
+        "TaskList",
+        "TaskStop",
+        "TaskUpdate",
+        "WebFetch",
+        "WebSearch",
+        "Workflow",
+        "Write",
+        "mcp__zeus__zeus_ack",
+        "mcp__zeus__zeus_app_state",
+        "mcp__zeus__zeus_ask",
+        "mcp__zeus__zeus_check_for_updates",
+        "mcp__zeus__zeus_create_character",
+        "mcp__zeus__zeus_create_theme",
+        "mcp__zeus__zeus_dismiss",
+        "mcp__zeus__zeus_get_learnings",
+        "mcp__zeus__zeus_get_responses",
+        "mcp__zeus__zeus_install_update",
+        "mcp__zeus__zeus_list_characters",
+        "mcp__zeus__zeus_move",
+        "mcp__zeus__zeus_present",
+        "mcp__zeus__zeus_say",
+        "mcp__zeus__zeus_set_appearance",
+        "mcp__zeus__zeus_set_character",
+        "mcp__zeus__zeus_set_size",
+        "mcp__zeus__zeus_set_status",
+        "mcp__zeus__zeus_set_theme",
+        "mcp__zeus__zeus_update_card"
+      ],
+      "results": []
+    },
+    {
+      "tools": [
+        "Agent",
+        "AskUserQuestion",
+        "Bash",
+        "CronCreate",
+        "CronDelete",
+        "CronList",
+        "Edit",
+        "EnterPlanMode",
+        "EnterWorktree",
+        "ExitPlanMode",
+        "ExitWorktree",
+        "ListAgents",
+        "NotebookEdit",
+        "Read",
+        "ReportFindings",
+        "ScheduleWakeup",
+        "SendMessage",
+        "Skill",
+        "TaskCreate",
+        "TaskGet",
+        "TaskList",
+        "TaskStop",
+        "TaskUpdate",
+        "WebFetch",
+        "WebSearch",
+        "Workflow",
+        "Write",
+        "mcp__zeus__zeus_ack",
+        "mcp__zeus__zeus_app_state",
+        "mcp__zeus__zeus_ask",
+        "mcp__zeus__zeus_check_for_updates",
+        "mcp__zeus__zeus_create_character",
+        "mcp__zeus__zeus_create_theme",
+        "mcp__zeus__zeus_dismiss",
+        "mcp__zeus__zeus_get_learnings",
+        "mcp__zeus__zeus_get_responses",
+        "mcp__zeus__zeus_install_update",
+        "mcp__zeus__zeus_list_characters",
+        "mcp__zeus__zeus_move",
+        "mcp__zeus__zeus_present",
+        "mcp__zeus__zeus_say",
+        "mcp__zeus__zeus_set_appearance",
+        "mcp__zeus__zeus_set_character",
+        "mcp__zeus__zeus_set_size",
+        "mcp__zeus__zeus_set_status",
+        "mcp__zeus__zeus_set_theme",
+        "mcp__zeus__zeus_update_card"
+      ],
+      "results": [
+        {
+          "tool_use_id": "tool_2e6e9e86201247bdb84d37a8618eda77",
+          "type": "tool_result",
+          "content": "{\"acked\":[\"d_sa3_fast\"]}\n\n<system-reminder>\n<total_tokens>14999998 tokens left</total_tokens>\n</system-reminder>",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ]
+    },
+    {
+      "tools": [
+        "Agent",
+        "AskUserQuestion",
+        "Bash",
+        "CronCreate",
+        "CronDelete",
+        "CronList",
+        "Edit",
+        "EnterPlanMode",
+        "EnterWorktree",
+        "ExitPlanMode",
+        "ExitWorktree",
+        "ListAgents",
+        "NotebookEdit",
+        "Read",
+        "ReportFindings",
+        "ScheduleWakeup",
+        "SendMessage",
+        "Skill",
+        "TaskCreate",
+        "TaskGet",
+        "TaskList",
+        "TaskStop",
+        "TaskUpdate",
+        "WebFetch",
+        "WebSearch",
+        "Workflow",
+        "Write",
+        "mcp__zeus__zeus_ack",
+        "mcp__zeus__zeus_app_state",
+        "mcp__zeus__zeus_ask",
+        "mcp__zeus__zeus_check_for_updates",
+        "mcp__zeus__zeus_create_character",
+        "mcp__zeus__zeus_create_theme",
+        "mcp__zeus__zeus_dismiss",
+        "mcp__zeus__zeus_get_learnings",
+        "mcp__zeus__zeus_get_responses",
+        "mcp__zeus__zeus_install_update",
+        "mcp__zeus__zeus_list_characters",
+        "mcp__zeus__zeus_move",
+        "mcp__zeus__zeus_present",
+        "mcp__zeus__zeus_say",
+        "mcp__zeus__zeus_set_appearance",
+        "mcp__zeus__zeus_set_character",
+        "mcp__zeus__zeus_set_size",
+        "mcp__zeus__zeus_set_status",
+        "mcp__zeus__zeus_set_theme",
+        "mcp__zeus__zeus_update_card"
+      ],
+      "results": [
+        {
+          "tool_use_id": "tool_2e6e9e86201247bdb84d37a8618eda77",
+          "type": "tool_result",
+          "content": "{\"acked\":[\"d_sa3_fast\"]}\n\n<system-reminder>\n<total_tokens>14999998 tokens left</total_tokens>\n</system-reminder>"
+        },
+        {
+          "tool_use_id": "tool_b09d37460a1b4826adaf3b553c4753ad",
+          "type": "tool_result",
+          "content": "SA3_SHELL_DONE\n\n<system-reminder>\n<total_tokens>14999998 tokens left</total_tokens>\n</system-reminder>",
+          "is_error": false,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ]
+    },
+    {
+      "tools": [],
+      "results": []
+    },
+    {
+      "tools": [
+        "Agent",
+        "AskUserQuestion",
+        "Bash",
+        "CronCreate",
+        "CronDelete",
+        "CronList",
+        "Edit",
+        "EnterPlanMode",
+        "EnterWorktree",
+        "ExitPlanMode",
+        "ExitWorktree",
+        "ListAgents",
+        "NotebookEdit",
+        "Read",
+        "ReportFindings",
+        "ScheduleWakeup",
+        "SendMessage",
+        "Skill",
+        "TaskCreate",
+        "TaskGet",
+        "TaskList",
+        "TaskStop",
+        "TaskUpdate",
+        "WebFetch",
+        "WebSearch",
+        "Workflow",
+        "Write",
+        "mcp__zeus__zeus_ack",
+        "mcp__zeus__zeus_app_state",
+        "mcp__zeus__zeus_ask",
+        "mcp__zeus__zeus_check_for_updates",
+        "mcp__zeus__zeus_create_character",
+        "mcp__zeus__zeus_create_theme",
+        "mcp__zeus__zeus_dismiss",
+        "mcp__zeus__zeus_get_learnings",
+        "mcp__zeus__zeus_get_responses",
+        "mcp__zeus__zeus_install_update",
+        "mcp__zeus__zeus_list_characters",
+        "mcp__zeus__zeus_move",
+        "mcp__zeus__zeus_present",
+        "mcp__zeus__zeus_say",
+        "mcp__zeus__zeus_set_appearance",
+        "mcp__zeus__zeus_set_character",
+        "mcp__zeus__zeus_set_size",
+        "mcp__zeus__zeus_set_status",
+        "mcp__zeus__zeus_set_theme",
+        "mcp__zeus__zeus_update_card"
+      ],
+      "results": [
+        {
+          "tool_use_id": "tool_2e6e9e86201247bdb84d37a8618eda77",
+          "type": "tool_result",
+          "content": "{\"acked\":[\"d_sa3_fast\"]}\n\n<system-reminder>\n<total_tokens>14999998 tokens left</total_tokens>\n</system-reminder>"
+        },
+        {
+          "tool_use_id": "tool_b09d37460a1b4826adaf3b553c4753ad",
+          "type": "tool_result",
+          "content": "SA3_SHELL_DONE\n\n<system-reminder>\n<total_tokens>14999998 tokens left</total_tokens>\n</system-reminder>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "tools": [
+        "Agent",
+        "AskUserQuestion",
+        "Bash",
+        "CronCreate",
+        "CronDelete",
+        "CronList",
+        "Edit",
+        "EnterPlanMode",
+        "EnterWorktree",
+        "ExitPlanMode",
+        "ExitWorktree",
+        "ListAgents",
+        "NotebookEdit",
+        "Read",
+        "ReportFindings",
+        "ScheduleWakeup",
+        "SendMessage",
+        "Skill",
+        "TaskCreate",
+        "TaskGet",
+        "TaskList",
+        "TaskStop",
+        "TaskUpdate",
+        "WebFetch",
+        "WebSearch",
+        "Workflow",
+        "Write",
+        "mcp__zeus__zeus_ack",
+        "mcp__zeus__zeus_app_state",
+        "mcp__zeus__zeus_ask",
+        "mcp__zeus__zeus_check_for_updates",
+        "mcp__zeus__zeus_create_character",
+        "mcp__zeus__zeus_create_theme",
+        "mcp__zeus__zeus_dismiss",
+        "mcp__zeus__zeus_get_learnings",
+        "mcp__zeus__zeus_get_responses",
+        "mcp__zeus__zeus_install_update",
+        "mcp__zeus__zeus_list_characters",
+        "mcp__zeus__zeus_move",
+        "mcp__zeus__zeus_present",
+        "mcp__zeus__zeus_say",
+        "mcp__zeus__zeus_set_appearance",
+        "mcp__zeus__zeus_set_character",
+        "mcp__zeus__zeus_set_size",
+        "mcp__zeus__zeus_set_status",
+        "mcp__zeus__zeus_set_theme",
+        "mcp__zeus__zeus_update_card"
+      ],
+      "results": [
+        {
+          "tool_use_id": "tool_2e6e9e86201247bdb84d37a8618eda77",
+          "type": "tool_result",
+          "content": "{\"acked\":[\"d_sa3_fast\"]}\n\n<system-reminder>\n<total_tokens>14999998 tokens left</total_tokens>\n</system-reminder>"
+        },
+        {
+          "tool_use_id": "tool_b09d37460a1b4826adaf3b553c4753ad",
+          "type": "tool_result",
+          "content": "SA3_SHELL_DONE\n\n<system-reminder>\n<total_tokens>14999998 tokens left</total_tokens>\n</system-reminder>",
+          "is_error": false
+        },
+        {
+          "tool_use_id": "tool_9f4a5b5fe4364717a66eb61c2552f068",
+          "type": "tool_result",
+          "content": "{\"acked\":[\"d_sa3_second\"]}\n\n<system-reminder>\n<total_tokens>15000000 tokens left</total_tokens>\n</system-reminder>",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ]
+    }
+  ],
+  "native_tools": [
+    {
+      "name": "mcp__zeus__zeus_ack",
+      "input": {
+        "delivery_ids": [
+          "d_sa3_fast"
+        ]
+      }
+    },
+    {
+      "name": "Bash",
+      "input": {
+        "command": "printf SA3_SHELL_DONE",
+        "description": "Print private fixture marker"
+      }
+    },
+    {
+      "name": "mcp__zeus__zeus_ack",
+      "input": {
+        "delivery_ids": [
+          "d_sa3_second"
+        ]
+      }
+    }
+  ]
+}
