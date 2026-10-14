@@ -402,6 +402,17 @@ Zeus can launch and keep alive **one** assistant session of its own. Connecting 
    - the actual tmux session name and attach command;
    - start, stop, restart, start-new-conversation, open-in-terminal, and `permissionModes(for:)`;
    - optionally `ManagedPromptAnswering`: `managedPrompt` and `answerManagedPrompt(fingerprint:optionID:)` (item 5).
+   - optionally `ManagedSettingsApplying` (user decision 2026-10-13: Settings changes apply to the running session):
+     `managedAppliedConfiguration`, `managedSettingsApplication` (phase waiting/applying), `managedCanResumeSettings`,
+     `supportsInstructionChangesOnResume(for:)`, `applyManagedSettings(_:)`, `switchManagedSettings(_:)`, `cancelManagedSettingsApplication()`.
+     **Permission mode and Instructions** apply automatically by restart-with-resume (same conversation, native ID kept), only when the
+     pane is positively idle with an empty composer, not blocked, not answering a prompt, no delivery in flight; otherwise the request
+     waits (Settings shows the pending note) and the latest edit replaces an earlier waiting one. Instructions are debounced (typing
+     pause or leaving the field). Agents that can't take new instructions on resume (Codex today) get an honest caption: they apply to the
+     next new conversation. Claude needs `--system-prompt-snapshot off`, used only when the installed CLI advertises it.
+     **Agent or folder** can't move a conversation: Settings asks once ("Switch Now" / "Later", Later focused, Esc = Later); Switch Now
+     stops the old session at a safe moment and starts one new conversation. Settings that don't affect the session (Start when Zeus
+     opens) never restart. Unrestricted modes keep their confirmation.
 
    Platform implements it in the runtime; appdev renders it in Settings, the menu and first run. The menu bar shows a status line for every state (MANAGED.md §4), and an alert icon for blocked and failed.
 8. **Requirements.** tmux and the chosen agent CLI must be installed; Settings detects both, with a one-line install hint when missing. The agent must already be logged in; a login screen is just a blocked state (item 5).
