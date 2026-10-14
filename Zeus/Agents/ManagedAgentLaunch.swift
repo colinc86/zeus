@@ -91,18 +91,21 @@ enum ManagedAgentLaunch {
             // configs. Keep this injection local and use the verified tmux route;
             // do not impose a consent warning for a channel that cannot register.
             args += ["--mcp-config", path, "--append-system-prompt", conversation.launchPrompt,
-                     "--allowedTools", allowed] + policy.arguments
+                     "--allowedTools", allowed, "--settings", try AgentTurnHooks.claudeSettings(bridgePath: bridge.path, socketPath: socket)] + policy.arguments
             if systemPromptSnapshotOff { args += ["--system-prompt-snapshot", "off"] }
             if conversation.didLaunch, let id = conversation.nativeID { args += ["--resume", id] } else { args += ["--session-id", conversation.nonce, conversation.firstMessage] }
         case .codex:
             let location = pane.socket + ",\(pane.serverPID),\(pane.sessionNumber)"
             let tools = try ZeusMCP.tools.map { "\(try string($0.name))={approval_mode=\(try string("approve"))}" }.joined(separator: ",")
             let table = "mcp_servers.zeus={command=\(try string(bridge.path)),args=[\(try string("--agent")),\(try string("codex")),\(try string("--socket")),\(try string(socket))],env={TMUX_PANE=\(try string(pane.id)),TMUX=\(try string(location))},tools={\(tools)}}"
-            args += ["--no-daemon", "-c", table, "-c", "developer_instructions=" + (try string(conversation.launchPrompt))] + policy.arguments
+            args += ["--no-daemon", "-c", table, "-c", "developer_instructions=" + (try string(conversation.launchPrompt)),
+                     "-c", "notify=" + (try AgentTurnHooks.codexNotify(bridgePath: bridge.path, socketPath: socket))] + policy.arguments
             if let id = conversation.nativeID { args += ["resume", id] } else { args += [conversation.firstMessage] }
         case .opencode:
             let instructions = try write("opencode-instructions.txt", Data(conversation.launchPrompt.utf8))
             var fields: [String: JSONValue] = ["mcp": ["zeus": ["type": "local", "command": .array([.string(bridge.path), "--agent", "opencode", "--socket", .string(socket)]), "enabled": true]], "instructions": [.string(instructions)], "experimental": ["disable_paste_summary": true]]
+            let hook = try write("opencode-turn-ended.mjs", Data(AgentTurnHooks.openCodePlugin(bridgePath: bridge.path, socketPath: socket).utf8))
+            fields["plugin"] = [.string(URL(fileURLWithPath: hook).absoluteString)]
             var permissions = ZeusMCP.tools.reduce(into: [String: JSONValue]()) { $0["zeus_" + $1.name] = "allow" }
             if let permission = policy.openCodePermission { permissions["*"] = .string(permission) }
             fields["permission"] = .object(permissions)

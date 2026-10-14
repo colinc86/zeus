@@ -65,6 +65,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         let deliveryID: String
         let token: UUID?
         let sessionID: UUID?
+        let receivedAt: Date
     }
     @ObservationIgnored var answerActivityReceipts: [String: AnswerActivityReceipt] = [:]
     @ObservationIgnored var managedBlockedCardID: String?
@@ -271,7 +272,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
                     try responseJournal?.complete(id)
                     if let receipt {
                         noteDeliveredActivity(sessionKey: receipt.sessionKey, deliveryID: receipt.deliveryID,
-                            token: receipt.token, sessionID: receipt.sessionID)
+                            token: receipt.token, sessionID: receipt.sessionID, inputStartedAt: receipt.receivedAt)
                     }
                 } catch { storageProblem = "Couldn't commit the answer receipt: \(error.localizedDescription)" }
             } else {
@@ -379,7 +380,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
             if completedResponseIDs.count > 500 { completedResponseIDs.removeFirst(completedResponseIDs.count - 500) }
             if waiter.deferResultCommit {
                 answerActivityReceipts[id] = .init(sessionKey: waiter.sessionKey, deliveryID: waiter.deliveryID,
-                    token: waiter.activityToken, sessionID: waiter.sessionID)
+                                                 token: waiter.activityToken, sessionID: waiter.sessionID, receivedAt: clock.now)
             } else {
                 noteDeliveredActivity(sessionKey: waiter.sessionKey, deliveryID: waiter.deliveryID,
                     token: waiter.activityToken, sessionID: waiter.sessionID)

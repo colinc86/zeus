@@ -13,11 +13,14 @@ import ZeusProtocol
     /// Result completion at stdout (capable bridges), or socket output (legacy bridges).
     /// Failure means no consumption was committed and durable input must remain pending.
     func bridge(_ session: BridgeSession, finishedTool name: String, result: ToolResult, written: Bool)
+    /// A launch-only native hook; this connection has no hello/session or delivery privileges.
+    func bridgeTurnEnded(_ event: TurnEnded) async
 }
 
 public extension BridgeServerDelegate {
     /// Optional delivery-commit callback for existing delegates.
     func bridge(_ session: BridgeSession, finishedTool name: String, result: ToolResult, written: Bool) {}
+    func bridgeTurnEnded(_ event: TurnEnded) async {}
 }
 
 /// Unix-socket listener used by Zeus.app. start throws synchronously for bind failures.
@@ -98,6 +101,13 @@ public final class BridgeServer: Sendable {
             do {
                 messageLoop: for try await message in channel.messages {
                     if session == nil {
+                        if case .turnEnded(let event) = message {
+                            guard event.wireVersion == wireVersion else { throw BridgeLinkError.protocolViolation("Unsupported hook wireVersion") }
+                            handshakeTimeout.cancel()
+                            await delegate?.bridgeTurnEnded(event)
+                            try await channel.send(.turnEndedReceipt(.init()))
+                            break messageLoop
+                        }
                         guard case .hello(let hello) = message else { throw BridgeLinkError.protocolViolation("First message must be hello") }
                         guard hello.wireVersion == wireVersion else { throw BridgeLinkError.protocolViolation("Unsupported wireVersion \(hello.wireVersion); expected \(wireVersion)") }
                         guard hello.ppid > 0, hello.parentStartTime > 0 else {

@@ -64,8 +64,14 @@ public struct MCPCommandLineOptions: Sendable, Equatable {
     public var socketPath: String = ZeusPaths.bridgeSocket.path
     /// Whether help was requested; usage is printed to stderr to keep stdout protocol-only.
     public var showHelp = false
+    /// One-shot native hook, independent of MCP stdio and hello registration.
+    public var turnEnded = false
+    /// Codex notify/OpenCode event JSON arrives as a final argv item; Claude uses stdin.
+    public var hookPayload: String?
+    /// Print launch-only OpenCode plugin config, generating only a Zeus-owned artifact.
+    public var hookSettings = false
     /// Usage printed for --help and invalid arguments.
-    public static let usage = "Usage: zeus-mcp [--agent claude|codex|opencode|other] [--socket PATH]"
+    public static let usage = "Usage: zeus-mcp [--agent claude|codex|opencode|other] [--socket PATH] [--turn-ended [EVENT_JSON] | --hook-settings]"
 
     /// Parses arguments excluding argv[0]. Invalid or missing flag values throw.
     public static func parse(_ arguments: [String]) throws -> Self {
@@ -75,6 +81,8 @@ public struct MCPCommandLineOptions: Sendable, Equatable {
             let flag = arguments[index]
             switch flag {
             case "--help", "-h": options.showHelp = true
+            case "--turn-ended": options.turnEnded = true
+            case "--hook-settings": options.hookSettings = true
             case "--agent", "--socket":
                 index += 1
                 guard index < arguments.count, !arguments[index].hasPrefix("--"), !arguments[index].isEmpty else {
@@ -88,10 +96,16 @@ public struct MCPCommandLineOptions: Sendable, Equatable {
                     guard !value.utf8.contains(0) else { throw MCPCommandLineError.invalidArgument("Socket path contains NUL") }
                     options.socketPath = (value as NSString).expandingTildeInPath
                 }
-            default: throw MCPCommandLineError.invalidArgument("Unknown argument: \(flag)")
+            default:
+                guard options.turnEnded, options.hookPayload == nil, flag.hasPrefix("{"), index == arguments.count - 1 else {
+                    throw MCPCommandLineError.invalidArgument("Unknown argument: \(flag)")
+                }
+                options.hookPayload = flag
             }
             index += 1
         }
+        guard !options.hookSettings || options.agent == .opencode else { throw MCPCommandLineError.invalidArgument("--hook-settings requires --agent opencode") }
+        guard !(options.turnEnded && options.hookSettings) else { throw MCPCommandLineError.invalidArgument("Choose one hook mode") }
         return options
     }
 }
