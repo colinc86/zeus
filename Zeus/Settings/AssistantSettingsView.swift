@@ -28,17 +28,28 @@ struct AssistantSettingsView: View {
             .disabled(managed.switching)
             if let error = settings.managedSettingsError { Text(error).zeusFont(.caption).foregroundStyle(palette.destructive) }
             if managed.confirmation == .switchToOwn {
-                confirmation("Stop \(managed.agentName) and use your own session instead?", action: "Stop and Switch")
+                confirmation("Stop the Zeus-run agent?", action: "Stop", cancel: "Keep Running",
+                    onCancel: managed.keepRunningAndConnectOwn)
             }
             if managed.switching { caption("Stopping \(managed.agentName)…") }
             if managed.enabled { managedContent }
-            else { AgentSettingsView(settings: settings, messaging: messaging, testMessage: testMessage) }
+            else {
+                if let notice = managed.retainedSessionNotice { caption(notice).textSelection(.enabled) }
+                AgentSettingsView(settings: settings, messaging: messaging, testMessage: testMessage)
+            }
             SettingsDivider()
             QuietHoursSettingsView(settings: settings)
         }
         .onAppear { managed.refreshAvailability() }
         .onChange(of: messaging.runtime.map { ObjectIdentifier($0) }) { managed.refreshAvailability() }
         .onChange(of: active) { _, visible in if visible { managed.refreshAvailability() } }
+        .task(id: active && managed.retainedSessionNotice != nil) {
+            guard active && managed.retainedSessionNotice != nil else { return }
+            while !Task.isCancelled {
+                managed.refreshRetainedSession()
+                do { try await Task.sleep(for: .seconds(3)) } catch { return }
+            }
+        }
     }
 
     @ViewBuilder private var managedContent: some View {
@@ -118,13 +129,13 @@ struct AssistantSettingsView: View {
             })
             .disabled(managed.switching)
     }
-    private func confirmation(_ text: String, action: String, cancel: String = "Cancel") -> some View {
+    private func confirmation(_ text: String, action: String, cancel: String = "Cancel", onCancel: (() -> Void)? = nil) -> some View {
         VStack(alignment: .leading, spacing: ZeusTheme.Spacing.s) {
             Text(text).zeusFont(.caption).foregroundStyle(palette.text).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: ZeusTheme.Spacing.s) {
                 Button(action) { managed.confirm() }.accessibilityLabel(action).buttonStyle(ZeusButtonStyle(.destructive, size: .small))
                     .focusable()
-                Button(cancel) { managed.cancelConfirmation() }.accessibilityLabel(cancel).buttonStyle(ZeusButtonStyle(.secondary, size: .small))
+                Button(cancel) { if let onCancel { onCancel() } else { managed.cancelConfirmation() } }.accessibilityLabel(cancel).buttonStyle(ZeusButtonStyle(.secondary, size: .small))
                     .focusable().focused($confirmationFocused)
                     .keyboardShortcut(.cancelAction)
             }

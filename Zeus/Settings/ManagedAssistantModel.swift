@@ -40,6 +40,7 @@ final class ManagedAssistantModel {
     private(set) var switching = false
     private(set) var actionError: String?
     private(set) var instructionsAreDebouncing = false
+    private(set) var retainedSession: RetainedManagedSession?
     @ObservationIgnored private let instructionDebouncer: ManagedInstructionsDebouncer
     @ObservationIgnored private var observedConfiguration: ManagedSessionConfig?
     @ObservationIgnored private var confirmedSwitchTarget: ManagedSessionConfig?
@@ -96,6 +97,22 @@ final class ManagedAssistantModel {
     }
     var hasActiveSession: Bool {
         switch status { case .starting, .running, .blocked, .restarting: true; default: false }
+    }
+    var retainedSessionNotice: String? {
+        guard !enabled, let retainedSession else { return nil }
+        return "Your Zeus-run agent is still running in tmux (\(retainedSession.attachCommand))"
+    }
+    /// Settings refreshes this inexpensive process-lifetime check while visible.
+    /// A bridge disconnect is not evidence that the agent exited.
+    func refreshRetainedSession() {
+        let next: RetainedManagedSession?
+        if enabled { next = nil }
+        else if let provider = controller as? any RetainedManagedSessionPresenting {
+            next = provider.retainedManagedSession
+        } else if hasActiveSession, let command = controller?.managedAttachCommand {
+            next = .init(attachCommand: command)
+        } else { next = nil }
+        if next != retainedSession { retainedSession = next }
     }
     var needsRestart: Bool {
         guard hasActiveSession, let current = comparisonConfiguration else { return false }
@@ -308,6 +325,13 @@ final class ManagedAssistantModel {
         if confirmation == .switchConversation { confirmedSwitchTarget = nil }
         confirmation = nil
     }
+    /// Keep Running is a mode switch, not a cancellation of the user's choice.
+    func keepRunningAndConnectOwn() {
+        guard confirmation == .switchToOwn, !switching else { return }
+        confirmation = nil; actionError = nil
+        update { $0.enabled = false }
+        refreshRetainedSession()
+    }
     private func offerConversationSwitch() {
         if hasActiveSession && needsNewConversation { confirmation = .switchConversation }
         else if confirmation == .switchConversation { confirmation = nil }
@@ -385,6 +409,7 @@ final class ManagedAssistantModel {
             }
         }
         if launchedConfig == nil, hasActiveSession, let currentConfiguration { launchedConfig = currentConfiguration }
+        refreshRetainedSession()
         if !instructionsAreDebouncing && settingsApplier?.managedSettingsApplication == nil && settingsApplier?.managedSettingsApplicationError == nil {
             submitResumeSettingsIfNeeded()
         }
@@ -392,6 +417,7 @@ final class ManagedAssistantModel {
     private func observeStatus() {
         withObservationTracking {
             _ = status; _ = controller?.managedTmuxSessionName; _ = currentConfiguration; _ = settings.managedSession
+            _ = (controller as? any RetainedManagedSessionPresenting)?.retainedManagedSession
             _ = settingsApplier?.managedSettingsApplication; _ = settingsApplier?.managedSettingsApplicationError; _ = settingsApplier?.managedCanResumeSettings
             _ = supportsInstructionResume
         } onChange: { [weak self] in
