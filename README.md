@@ -69,7 +69,7 @@ Twelve cute characters to choose from, or build your own (see [Make your own cha
 
 - `zeus-mcp` is an MCP server your assistant connects to. Its tools (`zeus_say`, `zeus_ask`, `zeus_present`, `zeus_set_status`, …) drive the character and the conversation panel.
 - Your replies go back into the assistant's terminal session through tmux. Each one is acknowledged, so a message is never lost or delivered twice.
-- Everything stays on your Mac. Zeus never calls model APIs, never edits your agent's settings and never accepts prompts on your behalf.
+- Everything stays on your Mac. Zeus never calls model APIs, never edits your agent's settings and never accepts prompts on your behalf. If you turn on Settings › Privacy › Learn from me, Zeus sends short summaries of when and in what apps you work to your assistant, which passes them to its model provider like any message; the raw activity never leaves your Mac.
 
 The interfaces are documented in [docs/CONTRACT.md](docs/CONTRACT.md).
 

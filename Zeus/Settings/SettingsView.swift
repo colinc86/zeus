@@ -4,7 +4,7 @@ import ZeusProtocol
 import ZeusDesign
 
 enum SettingsTab: String, CaseIterable {
-    case general = "General", appearance = "Appearance", agent = "Assistant", character = "Character", about = "About"
+    case general = "General", appearance = "Appearance", agent = "Assistant", character = "Character", privacy = "Privacy", about = "About"
     #if DEBUG
     case debug = "Debug"
     #endif
@@ -29,6 +29,8 @@ struct SettingsView: View {
     let hotKey: GlobalHotKey
     let activity: SurfaceActivity
     var updater: any AppUpdating = UpdaterService()
+    /// Settings › Privacy's "Learn from me" (L1); nil shows the pane as unavailable.
+    var learn: LearnFromMe?
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
     /// This root's own colors come from the theme directly: the environment it sets applies to its children.
@@ -92,6 +94,9 @@ struct SettingsView: View {
             AssistantSettingsView(settings: settings, managed: managed, messaging: preview, testMessage: testMessage)
         case .character:
             CharacterSettingsView(settings: settings, resetPosition: resetPosition)
+        case .privacy:
+            if let learn { PrivacySettingsView(learn: learn) }
+            else { Text("Learn from me isn't available here.").settingsCaption() }
         case .about:
             AboutSettingsView()
         #if DEBUG
@@ -146,10 +151,20 @@ struct SettingsView: View {
 struct SettingsTabBar: View {
     @Bindable var navigation: SettingsNavigation
     var body: some View {
+        // Whole labels when they fit (L1 made six tabs; equal widths cut "Appearance" at the minimum window width),
+        // otherwise equal widths.
+        ViewThatFits(in: .horizontal) {
+            tabs(equalWidths: false)
+            tabs(equalWidths: true)
+        }
+    }
+
+    private func tabs(equalWidths: Bool) -> some View {
         HStack(spacing: ZeusTheme.Spacing.s) {
             ForEach(SettingsTab.allCases, id: \.self) { tab in
                 Button { navigation.tab = tab } label: {
-                    Text(tab.rawValue).frame(maxWidth: .infinity)
+                    if equalWidths { Text(tab.rawValue).frame(maxWidth: .infinity) }
+                    else { Text(tab.rawValue).lineLimit(1).fixedSize().frame(maxWidth: .infinity) }
                 }
                 .buttonStyle(ZeusButtonStyle(navigation.tab == tab ? .primary : .secondary, size: .small))
                 .accessibilityLabel(tab.rawValue)
