@@ -132,14 +132,14 @@ struct RuntimeFixture {
     let routing: FakeRouting
     let connector: FakeConnector
     let runtime: ZeusRuntime
-    init(channelOnly: Bool = false, directory: URL? = nil, appControl: (any AppControlling)? = nil, learnings: (any LearningsProviding)? = nil) throws {
+    init(channelOnly: Bool = false, directory: URL? = nil, appControl: (any AppControlling)? = nil, learnings: (any LearningsProviding)? = nil, ownScreenReader: (any OwnSessionScreenReading)? = nil) throws {
         self.directory = directory ?? URL(fileURLWithPath: "/tmp/zrun_" + UUID().uuidString.prefix(8))
         clock = TestRuntimeClock(); cards = FakeCards(clock: clock); status = FakeStatus()
         characters = FakeCharacters(); routing = FakeRouting(); connector = FakeConnector()
         runtime = ZeusRuntime(cards: cards, status: status, characters: characters, routing: routing, clock: clock,
                               socketPath: self.directory.appendingPathComponent("bridge.sock").path,
                               ledgerURL: self.directory.appendingPathComponent("deliveries.json"),
-                              connectors: channelOnly ? [ChannelDeliveryConnector()] : [connector], quietHours: { [status] _ in status.quiet }, targetIsDead: { _ in false }, appControl: appControl, learnings: learnings)
+                              connectors: channelOnly ? [ChannelDeliveryConnector()] : [connector], quietHours: { [status] _ in status.quiet }, targetIsDead: { _ in false }, appControl: appControl, learnings: learnings, ownScreenReader: ownScreenReader ?? OwnSessionScreenReader())
         try runtime.start()
     }
     func connect(_ key: String = "claude:/assistant", channel: Bool = true, agent: AgentKind = .claude, id: UUID = UUID()) {

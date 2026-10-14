@@ -90,26 +90,33 @@ extension ZeusRuntime {
     /// before the agent has even started, is not treated as finished.
     static let managedIdleEndsActivityAfter: TimeInterval = 20
     func noteManagedScreenActivity() {
-        guard running, let key = managedController.sessionKey, var record = activityRecords[key] else { return }
+        guard running, let key = managedController.sessionKey, let record = activityRecords[key] else { return }
+        let classification: ManagedPaneClassifier.Classification
         switch managedStatus {
-        case .running(.working):
+        case .running(.working): classification = .working
+        case .running(.idle): classification = .idle
+        default: return
+        }
+        noteScreenActivity(sessionKey: key, classification: classification,
+                           completed: managedTurnCompleted(since: record, sessionKey: key) || managedNativeDeliveryCompleted(record, sessionKey: key))
+    }
+
+    /// Common managed/selected-own evidence rules; never creates activity or changes an explicit TTL.
+    func noteScreenActivity(sessionKey key: String, classification: ManagedPaneClassifier.Classification, completed: Bool, invalidateReceipts: Bool = true) {
+        guard running, var record = activityRecords[key] else { return }
+        switch classification {
+        case .working:
             activityWorkingSeen.insert(key)
-            if record.value.phase == .sent {
-                record.value = activityValue(phase: .thinking, sessionKey: key, since: record.value.since)
-            }
-            // An explicit working status owns its TTL. Screen evidence only refreshes the implicit response lease.
+            if record.value.phase == .sent { record.value = activityValue(phase: .thinking, sessionKey: key, since: record.value.since) }
             if record.value.phase != .working { record.deadline = max(record.deadline, clock.now.addingTimeInterval(300)) }
             activityRecords[key] = record
             refreshAssistantActivity()
-        case .running(.idle):
+        case .idle:
             guard record.value.phase != .working,
-                  activityWorkingSeen.contains(key)
-                    || managedTurnCompleted(since: record, sessionKey: key)
-                    || managedNativeDeliveryCompleted(record, sessionKey: key)
+                  activityWorkingSeen.contains(key) || completed
                     || clock.now.timeIntervalSince(record.value.since) >= Self.managedIdleEndsActivityAfter else { return }
-            endAssistantActivity(sessionKey: key)
-        default:
-            return
+            endAssistantActivity(sessionKey: key, invalidateReceipts: invalidateReceipts)
+        default: return
         }
     }
 
@@ -167,6 +174,7 @@ extension ZeusRuntime {
         activityRecords.removeAll(); activityTokens.removeAll(); activityDeliveryIDs.removeAll()
         activityEarlyAcknowledgments.removeAll(); activityWorkingSeen.removeAll()
         publishAssistantActivity(nil)
+        reconcileOwnScreenSampling()
     }
 
     private func startActivity(phase: AssistantActivity.Phase, sessionKey: String, deadline: Date,
@@ -203,6 +211,7 @@ extension ZeusRuntime {
     private func refreshAssistantActivity() {
         expireActivityRecords()
         publishAssistantActivity(activityRecords.values.max { $0.order < $1.order }?.value)
+        reconcileOwnScreenSampling()
         activityTimer?.cancel(); activityTimer = nil
         guard running, let deadline = activityRecords.values.map(\.deadline).min() else { return }
         let clock = self.clock, token = generation

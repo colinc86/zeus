@@ -19,8 +19,11 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored var activityDeliveryIDs: Set<ActivityDeliveryKey> = []
     @ObservationIgnored var activityEarlyAcknowledgments: [String: Date] = [:]
     @ObservationIgnored var activityOrder = 0
-    /// Sessions whose managed screen showed "working" since their current activity started (a later idle screen ends it).
+    /// Sessions whose managed/selected-own screen showed "working" since their current activity started (a later idle screen ends it).
     @ObservationIgnored var activityWorkingSeen: Set<String> = []
+    @ObservationIgnored let ownScreenReader: any OwnSessionScreenReading
+    @ObservationIgnored var ownScreenTask: Task<Void, Never>?
+    @ObservationIgnored var ownScreenSamplingLease: OwnScreenLease?
     @ObservationIgnored var activityTimer: Task<Void, Never>?
     @ObservationIgnored let quietHours: (Date) -> Bool
     @ObservationIgnored let appControl: any AppControlling
@@ -97,7 +100,9 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
          quietHours: @escaping (Date) -> Bool = { _ in false },
          targetIsDead: @escaping (String) -> Bool = AgentSessionLiveness.isDead,
          managedController: ManagedSessionController? = nil,
-         appControl: (any AppControlling)? = nil, learnings: (any LearningsProviding)? = nil) {
+         appControl: (any AppControlling)? = nil, learnings: (any LearningsProviding)? = nil,
+         ownScreenReader: any OwnSessionScreenReading = OwnSessionScreenReader()) {
+        self.ownScreenReader = ownScreenReader
         self.cards = cards; self.status = status; self.characters = characters; self.routing = routing
         self.appControl = appControl ?? UnavailableAppControl()
         self.learnings = learnings ?? EmptyLearnings()
@@ -150,7 +155,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         managedController.onChange = { [weak self] in
             guard let self, self.running else { return }
             self.managedController.considerSessions(self.sessions)
-            self.noteManagedScreenActivity(); self.updateManagedPresentation(); self.probeManagedChannel()
+            self.noteManagedScreenActivity(); self.reconcileOwnScreenSampling(); self.updateManagedPresentation(); self.probeManagedChannel()
             self.bindWaitingUserMessages(); self.processDueDeliveries()
         }
         managedController.settingsApplicationAllowed = { [weak self] in
@@ -294,6 +299,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         sessions.removeAll { $0.sessionKey == session.sessionKey }
         sessions.insert(session, at: 0)
         bridges[session.sessionKey] = bridge
+        reconcileOwnScreenSampling()
         managedController.considerSessions(sessions)
         probeManagedChannel()
         disconnectedAt.removeValue(forKey: session.sessionKey)
