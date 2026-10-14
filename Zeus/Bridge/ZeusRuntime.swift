@@ -19,6 +19,8 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored var activityDeliveryIDs: Set<ActivityDeliveryKey> = []
     @ObservationIgnored var activityEarlyAcknowledgments: [String: Date] = [:]
     @ObservationIgnored var activityOrder = 0
+    /// Sessions whose managed screen showed "working" since their current activity started (a later idle screen ends it).
+    @ObservationIgnored var activityWorkingSeen: Set<String> = []
     @ObservationIgnored var activityTimer: Task<Void, Never>?
     @ObservationIgnored let quietHours: (Date) -> Bool
     @ObservationIgnored let appControl: any AppControlling

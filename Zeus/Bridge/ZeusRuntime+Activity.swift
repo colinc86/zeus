@@ -77,20 +77,36 @@ extension ZeusRuntime {
 
     /// Screen evidence extends only an existing managed response. It cannot revive
     /// a row ended by zeus_say, an ack race, or a completed/dropped delivery.
+    /// A positive idle screen ends the row once the response has visibly run (a "working" screen was seen) or
+    /// after 20 s, because an agent that finishes its turn without `zeus_say` would otherwise keep Zeus
+    /// "thinking" for the whole five-minute stale window (user report, 2026-10-14). Idle right after delivery,
+    /// before the agent has even started, is not treated as finished.
+    static let managedIdleEndsActivityAfter: TimeInterval = 20
     func noteManagedScreenActivity() {
-        guard running, managedStatus == .running(.working), let key = managedController.sessionKey,
-              var record = activityRecords[key] else { return }
-        if record.value.phase == .sent {
-            record.value = activityValue(phase: .thinking, sessionKey: key, since: record.value.since)
+        guard running, let key = managedController.sessionKey, var record = activityRecords[key] else { return }
+        switch managedStatus {
+        case .running(.working):
+            activityWorkingSeen.insert(key)
+            if record.value.phase == .sent {
+                record.value = activityValue(phase: .thinking, sessionKey: key, since: record.value.since)
+            }
+            record.deadline = max(record.deadline, clock.now.addingTimeInterval(300))
+            activityRecords[key] = record
+            refreshAssistantActivity()
+        case .running(.idle):
+            guard record.value.phase != .working,
+                  activityWorkingSeen.contains(key)
+                    || clock.now.timeIntervalSince(record.value.since) >= Self.managedIdleEndsActivityAfter else { return }
+            endAssistantActivity(sessionKey: key)
+        default:
+            return
         }
-        record.deadline = max(record.deadline, clock.now.addingTimeInterval(300))
-        activityRecords[key] = record
-        refreshAssistantActivity()
     }
 
     /// A response post, explicit end, disconnect or discarded source invalidates late receipts.
     func endAssistantActivity(sessionKey: String) {
         activityRecords.removeValue(forKey: sessionKey)
+        activityWorkingSeen.remove(sessionKey)
         activityTokens[sessionKey] = UUID()
         refreshAssistantActivity()
     }
@@ -107,13 +123,14 @@ extension ZeusRuntime {
     func resetAssistantActivity() {
         activityTimer?.cancel(); activityTimer = nil
         activityRecords.removeAll(); activityTokens.removeAll(); activityDeliveryIDs.removeAll()
-        activityEarlyAcknowledgments.removeAll()
+        activityEarlyAcknowledgments.removeAll(); activityWorkingSeen.removeAll()
         publishAssistantActivity(nil)
     }
 
     private func startActivity(phase: AssistantActivity.Phase, sessionKey: String, deadline: Date,
                                detail: String? = nil, progress: Double? = nil, deliveryID: String? = nil) {
         activityOrder += 1
+        activityWorkingSeen.remove(sessionKey)
         activityRecords[sessionKey] = ActivityRecord(value: activityValue(phase: phase, sessionKey: sessionKey,
             since: clock.now, detail: detail, progress: progress), deadline: deadline, order: activityOrder, deliveryID: deliveryID)
     }
