@@ -418,3 +418,35 @@ Zeus can launch and keep alive **one** assistant session of its own. Connecting 
 
    Platform implements it in the runtime; appdev renders it in Settings, the menu and first run. The menu bar shows a status line for every state (MANAGED.md §4), and an alert icon for blocked and failed.
 8. **Requirements.** tmux and the chosen agent CLI must be installed; Settings detects both, with a one-line install hint when missing. The agent must already be logged in; a login screen is just a blocked state (item 5).
+
+---
+
+## 12. The assistant controls the app (decided 2026-10-13)
+
+**Rule.** The assistant may change anything the user could change in Settings or by clicking Zeus **that does not affect the assistant's own authority**. Every change appears in the conversation as one line with a single undo action.
+
+**Tools** (all on `zeus-mcp`, same session scoping as §4): `zeus_app_state`, `zeus_set_character`, `zeus_create_character`, `zeus_set_theme`, `zeus_create_theme`, `zeus_move`, `zeus_set_size`, `zeus_hide`, `zeus_set_appearance`, `zeus_check_for_updates`, `zeus_install_update`. Their arguments mirror `AppControlling` in `Zeus/Shared/AppSeams.swift`, which is the source of truth for this section, and `ZeusMCP.tools` carries their schemas.
+
+**Never** (enforced in the runtime): answering, dismissing or pre-selecting any prompt; changing its own permission mode, instructions, agent, folder or run mode; starting, stopping or restarting its own session; clearing the conversation; turning on launch at login, "learn from me" or automatic update checks; reading or changing another session's state; touching the user's agent configuration. These have no tools; the runtime also rejects `zeus_set_appearance` patches that switch quiet hours off while a question is pending. Rejections return `isError` with the rule named and post nothing to the chat.
+
+**Switches.** Settings › General: "Let my assistant control Zeus" (default on; off makes every mutating tool return `disabled`) and "Let my assistant install updates" (default on).
+
+**Updates.** `zeus_install_update` needs a prior `zeus_check_for_updates` that reported that version. The runtime posts "Updating to X — back in a few seconds", waits until no delivery is in flight and the assistant is not blocked, then calls `installUpdate`. The managed tmux session survives the relaunch; on relaunch Zeus reconnects to it as after a normal restart.
+
+**Undo.** `CardStoring.recordAppChange` adds a `.appChange` thread item: the summary and one button (`Undo`, or `Show now` for a hide) that runs the change's `undo` closure once and then shows as done. Creating a character or theme and undoing it switches back but keeps the file. Undo is local; nothing is sent to the assistant.
+
+**Instructions** (AssistantTemplate and `ZeusMCP.instructions`): change the look only when the user asks or for something you just made at their request; prefer `near-active-window` over coordinates; don't move Zeus while the user is typing to it; read the formats from `zeus_app_state.formats` before writing a character or theme; install an update only when the user asks or told you to keep Zeus current.
+
+---
+
+## 13. Learn from me, level 1 (decided 2026-10-13)
+
+**Scope.** Off by default. When on, Zeus records on this Mac: frontmost-app changes (bundle id, name, time), app launches and quits, unlock/lock/sleep/wake, idle periods of 5 minutes or more, and display count. Never keystrokes, clipboard, window titles, URLs, file names, screenshots, audio or location. No macOS permission is needed.
+
+**Store.** `~/Library/Application Support/Zeus/Activity/<yyyy-mm-dd>.jsonl`, mode 0600. Raw events kept 30 days (Settings: 7–90); digests kept one year. Excluded apps (default: password managers, Keychain Access, Passwords, System Settings; user-editable) are recorded as `private` with a duration and no name.
+
+**What the assistant receives.** Never raw events. A morning digest (about ten lines summarizing the previous day, sent at the first activity of a new day) and at most four "moments" a day from the kinds the user ticked: first activity, back from a break of 2 h+, unusually late start, day winding down. Delivered as an MCP notification plus `zeus_get_learnings` (returns the digests and moments not yet read, newest last). Each send adds a quiet thread line "Sent your daily summary · View" that shows the exact text.
+
+**UI.** Settings › Privacy: the switch (with a one-time sheet listing the scope and the caveat), "What Zeus has recorded" (today's list), Pause for today, Delete everything, the excluded-apps list, retention. Caption: "Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac."
+
+**Seams.** `LearningsProviding` (appdev/designer implement, runtime reads): `func unreadLearnings() -> [Learning]`, `func markRead(through id: String)`, plus an `onNewLearning` callback the runtime turns into the notification. Defined in `Zeus/Shared/AppSeams.swift` when the first branch lands.

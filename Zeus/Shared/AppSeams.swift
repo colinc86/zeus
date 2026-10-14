@@ -260,3 +260,107 @@ extension AgentRoutingSettings {
     var preferredAgent: AgentKind? { nil }
     func openCodeSessionID(for sessionKey: String) -> String? { nil }
 }
+
+// MARK: - The assistant controls the app (CONTRACT §12)
+
+/// Where the assistant may put Zeus. Coordinates are in screen points on the named display.
+enum AvatarPlacement: Equatable, Sendable {
+    case topLeft, topRight, bottomLeft, bottomRight
+    /// The screen edge nearest the frontmost app's key window.
+    case nearActiveWindow
+    case point(screen: Int, x: Double, y: Double)
+}
+
+/// A look-and-feel patch; nil fields are left alone. Only settings the user could change in Settings.
+struct AppearancePatch: Equatable, Sendable {
+    var ghostMode: Bool?
+    var ghostOpacity: Double?
+    var ghostDelaySeconds: Double?
+    var popupSound: Bool?
+    var popupSoundName: String?
+    var font: String?            // "pixel" | "system"
+    var panelWidth: Double?
+    var quietHours: Bool?
+    var quietStartHour: Int?
+    var quietEndHour: Int?
+}
+
+/// A change the assistant made, shown in the conversation as one line with a single undo action.
+@MainActor
+struct AppChange {
+    /// e.g. "Switched to Wisp", "Zeus hidden for 1 hour".
+    let summary: String
+    /// The undo button's title: "Undo", or "Show now" for a hide.
+    let undoTitle: String
+    let undo: @MainActor () -> Void
+}
+
+/// A read-only snapshot for `zeus_app_state`.
+struct AppControlState: Codable, Equatable, Sendable {
+    var version: String
+    var build: String
+    var updateAvailable: String?      // version string when a newer release is known
+    var characterID: String
+    var themeID: String
+    var size: String                  // small | medium | large
+    var screen: Int                   // index into `screens`
+    var position: [String: Double]    // x, y of the avatar's bottom-left corner on that screen
+    var screens: [[String: Double]]   // each: width, height, scale
+    var panelOpen: Bool
+    var hidden: Bool
+    var hiddenUntil: Date?
+    var quietHoursActive: Bool
+    var ghostMode: Bool
+    var userIdleSeconds: Double
+    var formats: [String: String]     // "character" and "theme" → doc paths
+}
+
+/// Everything in CONTRACT §12 the assistant may change. Implemented by appdev (settings + shell), called by platform's
+/// runtime from the `zeus_app_*` tools. Every mutating call returns an `AppChange` the runtime records through
+/// `CardStoring.recordAppChange`. Throws `AppControlError` for unknown ids, invalid files or a switched-off control.
+@MainActor
+protocol AppControlling: AnyObject {
+    var appControlState: AppControlState { get }
+    /// Settings › General › "Let my assistant control Zeus" (default on). When off, every mutating call throws `.disabled`.
+    var assistantMayControlApp: Bool { get }
+    /// Settings › General › "Let my assistant install updates" (default on).
+    var assistantMayInstallUpdates: Bool { get }
+    func setCharacter(id: String) throws -> AppChange
+    /// Validates with the real loader, writes `<id>.json` to the Characters folder, switches to it.
+    func createCharacter(name: String, json: Data) throws -> AppChange
+    func setTheme(id: String) throws -> AppChange
+    func createTheme(name: String, json: Data) throws -> AppChange
+    func move(to placement: AvatarPlacement) throws -> AppChange
+    func setSize(_ size: AvatarSize) throws -> AppChange
+    /// Hide for a duration (1–720 minutes) or until tomorrow. Never an indefinite hide.
+    func hide(minutes: Int?, untilTomorrow: Bool) throws -> AppChange
+    func setAppearance(_ patch: AppearancePatch) throws -> AppChange
+    /// Runs the Sparkle check and reports what it found. Never installs.
+    func checkForUpdates() async throws -> UpdateCheckResult
+    /// Installs the given version only if `checkForUpdates` reported it. The runtime posts the announcement first
+    /// and calls this only when the assistant is idle (§12.4).
+    func installUpdate(version: String) async throws
+}
+
+struct UpdateCheckResult: Codable, Equatable, Sendable {
+    var available: Bool
+    var version: String?
+    var notes: String?
+}
+
+enum AppControlError: Error, Equatable, Sendable {
+    /// The master switch (or the updates switch) is off.
+    case disabled(setting: String)
+    case unknownID(String)
+    /// The same plain-words message Import shows for a bad character or theme file.
+    case invalidFile(String)
+    case invalidArgument(String)
+    /// `installUpdate` without a prior successful check for that version.
+    case noKnownUpdate
+    case updaterUnavailable(String)
+}
+
+extension CardStoring {
+    /// Records an assistant-made change as one thread line with its undo action (§12.5). Default: nothing, until appdev's store implements it.
+    func recordAppChange(_ change: AppChange) {}
+}
