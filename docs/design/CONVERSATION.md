@@ -35,7 +35,8 @@
  │ ┌ ▪▪▪ Uploading v0.3 ┐                   │ ← ZeusTypingIndicator: last row while an agent works (§11)
  │ └ ▬▬▬▬▬▬▬▬▬░░░░░░ 40% ┘                   │
  │                             [↓ 2 new]    │ ← ZeusJumpToLatest (only when scrolled up)
- ├──────────────────────────────────────────┤ ← 1 px rule, secondary @25%
+ │ ? Waiting for your answer · Skip ▣ ⊞ ▥ ✲ │ ← ZeusStatusStrip (§15), always shown
+ ├──────────────────────────────────────────┤ ← its 1 px rule, palette.divider
  │ ▌↩ Replying to: Ship the build?       ✕  │ ← ZeusReplyChip (inside ZeusComposer)
  │ [ Message Claude…                ] [↑]   │ ← ZeusComposer
  └─────────────────────▼────────────────────┘
@@ -436,3 +437,68 @@ An optional sound when the bubble pops up: Settings › General › Sounds › *
 - **Zeus chime:** three quick 25%-duty square-wave notes, B5 → E6 → B6 (45, 45 and 160 ms, the last one ringing out), at 20% of full scale. It's generated in code (`ZeusChime`), not a recording.
 - **Volume:** System Sound Services, so it follows the Mac's alert volume and output device (System Settings › Sound), like any alert. Zeus has no volume control of its own.
 - **Accessibility:** the sound adds to the VoiceOver announcement (§14.8); it never replaces it. Reduce Motion doesn't silence it: it's a sound, not motion.
+
+## 15. Status strip (TB1)
+
+One line between the thread and the composer, always visible. It says why Zeus shows "?" or "!", jumps to the thing that put it there, and holds the panel's quick actions. Component: `ZeusStatusStrip` over a plain `ZeusStatusStripModel` (`ZeusStatusStrip.swift`); the app maps its state to the model with a pure function and uses the model's factories, so all copy lives in ZeusDesign.
+
+### 15.1 Layout
+
+```
+│ ? Waiting for your answer · Go to question · Skip      ▣ ⊞ ▥ ✲ │  24 pt
+├────────────────────────────────────────────────────────────────┤  1 px, palette.divider
+```
+
+- **Height** 24 pt, **no rule above**, a **1-px rule below** in `palette.divider` (secondary text at 25 %). The strip replaces the 2-px rule that sat between the thread and the composer.
+- **Type:** `.caption` in the pixel font, one line.
+- **Colors** come from the palette only, so every bundled theme works:
+  - glyph and links: `title`
+  - sentence: `text`
+  - idle and quiet hours: `secondaryText`
+  - "·" separators: `secondaryText`
+  - icons: `secondaryText` at rest, `title` on hover or focus, 50 % when disabled.
+- **Left:** glyph, sentence, "·", link, then "·" and **Skip** when a question waits. The sentence and its link are **one button** (the jump), with a 22-pt target and a 1-px `focusRing` underline when focused, like the thread's notice lines (§3).
+- **Too narrow:** when the full line doesn't fit beside the buttons, the link words drop and the sentence itself takes the link color ("? Waiting for your answer · Skip"). Only after that does the sentence truncate with "…". Skip never truncates.
+- **Right:** up to four 12-px pixel icons in 22-pt targets, 2 pt apart, each with a tooltip and the same accessibility label.
+
+### 15.2 States and copy
+
+The sentence always matches the avatar, so the app picks the row in CONTRACT §7's order: unseen, then activity, then an open question, then quiet hours, then idle. Blocked and delivery problems aren't in §7; the app ranks them (TB1-A).
+
+| Avatar state | Factory | Strip | Jump |
+|---|---|---|---|
+| waiting, 1 question | `.waiting(questions: 1)` | `? Waiting for your answer · Go to question · Skip` | scroll to the question, focus its first option (or Reply…), make it the reply target |
+| waiting, several | `.waiting(questions: 2)` | `? 2 questions · Go to oldest · Skip` | the oldest; each further click moves to the next |
+| waiting on a Terminal prompt card | `.waiting(questions:, skippable: false)` | no Skip | as above |
+| alert, unseen | `.unread(1)` / `.unread(3)` | `! Unread · Show` / `! 3 unread · Show` | the first unseen message |
+| blocked (managed) | `.blocked(mirrored: false)` | `! Waiting for you in Terminal · Open` | opens Terminal |
+| blocked, prompt mirrored | `.blocked(mirrored: true)` | `! Waiting for your answer · Go to prompt` | the prompt card |
+| thinking / working | `.activity(text)` | the activity row's text, e.g. `Claude is working on tests`; the sentence is the link | the bottom |
+| delivery problem | `.notDelivered()` | `Message not delivered · Show` | the failed bubble |
+| sleeping (quiet hours) | `.quiet(until: "8:00")` | `Quiet until 8:00`, secondary | none |
+| idle | `.idle()` | `Idle`, secondary | none |
+
+**Skip** marks the oldest open question skipped: the card closes with "Skipped" under it and the assistant is told (CONTRACT §5, TB1-P). It never appears for the agent's own Terminal prompts; Zeus never answers or dismisses those.
+
+VoiceOver reads the glyph as a word: "Question. Waiting for your answer. Go to question", "Alert. 3 unread. Show". The strip is a container labelled "Status".
+
+### 15.3 Buttons
+
+| Icon | Tooltip and label | Shown when | Does |
+|---|---|---|---|
+| ▣ window with `>_` | Open in Terminal | there's a terminal target: a managed session, or a tmux pane in Connect your own | opens it |
+| ⊞ speech bubble with + | Start New Conversation… | managed session only | today's `startNewManagedConversation`, with its confirmation |
+| ▥ trash can | Clear Conversation… | always; disabled when the thread is empty | today's confirmation |
+| ✲ gear | Assistant Settings… | always | Settings › Assistant |
+
+`ZeusStatusStripModel.buttons(hasTerminal:isManaged:canClear:)` builds the list in this order.
+
+### 15.4 Keys and the avatar
+
+- **⌘J** is the jump. **⌘⇧J** is Skip, only while a question is waiting.
+- **Clicking Zeus** while "?" shows opens the panel scrolled to that question, not to the bottom. While "!" shows, it opens at the first unseen message.
+- **Reduce Motion:** jumps land without an animated scroll.
+
+### 15.5 References
+
+`scripts/design-harness/render.sh "statusStrip()"` renders `build/q2-renders/status-strip-<theme>__{light,dark}-pixel.png`: every state, in each of the 7 bundled themes, light and dark.
