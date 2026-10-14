@@ -324,6 +324,16 @@ final class CardStore: CardStoring {
         revealedIDs = next
     }
 
+    /// Skip is an explicit user response, never a native permission choice or navigation action.
+    nonisolated static func canSkip(_ card: Card) -> Bool {
+        card.status == .open && card.kind != .userMessage && !card.id.hasPrefix("managed-block_")
+            && (card.kind == .question || card.input != nil || !card.options.isEmpty)
+    }
+    @discardableResult func skip(id: String) -> Bool {
+        guard let card = card(id: id), Self.canSkip(card) else { return false }
+        return respond(id: id, response: CardResponse(respondedAt: clock(), device: .mac, skipped: true))
+    }
+
     /// Returns false for stale/duplicate responses; persists the answer before notifying the runtime.
     @discardableResult
     func respond(id: String, response: CardResponse) -> Bool {

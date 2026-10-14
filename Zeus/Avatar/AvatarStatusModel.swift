@@ -135,7 +135,7 @@ final class AvatarStatusModel: AvatarStatusControlling, ManagedBlockingPresentin
             return AvatarPresentation(state: activity.phase == .working ? .working : .thinking, detail: activity.detail,
                                       progress: activity.progress.flatMap { $0.isFinite ? min(1, max(0, $0)) : nil })
         }
-        if cards.hasOpenQuestion && !cards.isConversationOpen { return AvatarPresentation(state: .waiting) }
+        if cards.hasOpenQuestion { return AvatarPresentation(state: .waiting) }
         if quietHours(date) { return AvatarPresentation(state: .sleeping) }
         return AvatarPresentation(state: .idle)
     }
@@ -143,7 +143,7 @@ final class AvatarStatusModel: AvatarStatusControlling, ManagedBlockingPresentin
     private func attentionStateAllowed(_ state: AvatarState) -> Bool {
         switch state {
         case .alert: return !cards.isConversationOpen && cards.hasUnseenCards
-        case .waiting: return !cards.isConversationOpen && cards.hasOpenQuestion
+        case .waiting: return cards.hasOpenQuestion
         default: return true
         }
     }

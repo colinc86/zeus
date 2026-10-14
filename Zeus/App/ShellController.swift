@@ -255,7 +255,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             resize: { [weak self] height in
                 guard let self, abs(self.cardPanelState.height - height) > 1 else { return }
                 self.cardPanelState.height = height; self.positionCard()
-            }))
+            }, managed: managed,
+            openTerminal: { [weak self] in try await self?.openConversationTerminal() },
+            newConversation: { [weak self] in self?.performManagedAction(.newConversation) }))
         host.resizeHandle.onResize = { [weak self] width, edge in self?.resizeConversation(to: width, edge: edge) }
         card.contentView = host
     }
@@ -510,7 +512,28 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     }
 
     private func toggleCard() {
-        if cardPanelState.isVisible { closeCard() } else { showTalkPanel() }
+        if cardPanelState.isVisible { closeCard() } else { showAvatarConversation() }
+    }
+
+    /// Capture attention before opening/reading the viewport can clear the alert.
+    func prepareAvatarConversation() -> StatusStripState.Jump? {
+        let target = StatusStripState.avatarTarget(cards: .init(values: cards.cards, seen: cards.seenIDs), status: status.presentation)
+        prepareTalkComposition()
+        if case .question(let id) = target { conversation.rearmReplyTarget(cardID: id) }
+        return target
+    }
+    private func showAvatarConversation() {
+        noteGhostInteraction()
+        let target = prepareAvatarConversation()
+        guard let target else { showTalkPanel(); return }
+        openConversation(at: target.cardID, focusTarget: { if case .question = target { return true }; return false }())
+    }
+    func openConversationTerminal() async throws {
+        if managed.enabled { managed.perform(.openInTerminal); return }
+        let session = settings.selectedAssistant(in: messaging.sessions)
+        guard let target = ConversationTerminalTarget.make(session: session, configuredPane: settings.tmuxTarget, configuredSocket: settings.tmuxTargetSocketPath),
+              let executable = TmuxExecutable.resolve() else { throw ManagedSessionError.command("The selected Terminal pane isn't available.") }
+        try await ConversationTerminal().open(target, executable: executable)
     }
 
     /// Shared by menu, hotkey and avatar entry points, before mounting any native fields.
@@ -525,10 +548,11 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         openConversation(at: nil)
     }
 
-    private func openConversation(at cardID: String?) {
+    private func openConversation(at cardID: String?, focusTarget: Bool = false) {
         hidePeekImmediately()
         peek.panelOpened()
         cardPanelState.scrollTargetCardID = cardID
+        cardPanelState.focusScrollTarget = focusTarget
         cardPanelState.scrollRequest += 1
         closingTask?.cancel()
         showInteractionPanel()
