@@ -371,7 +371,7 @@ Zeus can launch and keep alive **one** assistant session of its own. Connecting 
 1. **Configuration** (Settings, backed by appdev; seam `AgentRoutingSettings.managedSession`): enabled, folder (absolute), agent (Claude Code / Codex / OpenCode), permission mode, launch prompt, and "Start when Zeus opens" (default on once configured).
    - **Launch prompt** is one user-editable text with a good default (designer writes it). It's passed as **additional instructions on every launch** (Claude `--append-system-prompt`, Codex `-c developer_instructions=…`, OpenCode an app-owned `instructions` file). A fresh conversation also gets a short fixed first message from Zeus asking the agent to check in with `zeus_say`. Edits apply to the next **new** conversation; Settings says so and offers "Start a new conversation".
    - **Permission mode** lists the selected agent's own modes (platform supplies them: `permissionModes(for:)`), including its full-auto / "yolo" mode, which is labeled as unrestricted. Default: the agent's normal, asking mode (Claude `default`/manual, Codex `on-request` approvals with `workspace-write`, OpenCode `ask`).
-2. **The user's own setup is kept.** Zeus is **added** for that launch only: no `--strict-mcp-config`, no `--setting-sources ''`, no `--pure`. The user's settings, MCP servers, plugins, permission rules and CLAUDE.md/AGENTS.md all still apply. Zeus never edits agent config files and never auto-accepts a trust, login or permission prompt.
+2. **The user's own setup is kept.** Zeus is **added** for that launch only: no `--strict-mcp-config`, no `--setting-sources ''`, no `--pure`. The user's settings, MCP servers, plugins, permission rules and CLAUDE.md/AGENTS.md all still apply. Zeus never edits agent config files and never answers a trust, login or permission prompt on its own (item 5 covers the user answering from the chat).
 3. **tmux.** Use the user's **default** tmux server, with absolute executable paths, inherited client `TMUX`/`TMUX_PANE` cleared, and explicit UTF-8 locale and PATH for the child. The session is named `zeus`. If a session with that name exists and isn't ours, use `zeus-2`, `zeus-3`, …. Ownership is a session user option `@zeus-owner <token>`, and targets use `=name` and pane IDs. The window has `remain-on-exit on` set before the agent starts; global options are never changed. The agent is the pane's process (`respawn-pane` with argv; no shell wrapper), so the pane PID equals the bridge's parent PID, and the managed session's `sessionKey` (§3.3) is known exactly. Settings and the menu show the session name, `tmux attach -t <name>` with Copy, and **Open in Terminal**.
 4. **Lifecycle.**
    - Persist the agent's **native conversation ID** (Claude: preassigned `--session-id`; Codex thread ID; OpenCode `ses_…`). Restarts **resume** it and omit the first message.
@@ -382,7 +382,8 @@ Zeus can launch and keep alive **one** assistant session of its own. Connecting 
    - **Precedence:** dead or missing → login, onboarding, trust or permission dialog → working → probably idle → unknown.
    - **Debounce:** a 10 s startup grace, and 2 consecutive matching samples before reporting `blocked`.
    - **Blocked** posts one `high`-priority card from the managed session: "<Agent> is waiting for you in Terminal". Its body is the dialog's first lines, and it carries an **Open in Terminal** action. The avatar shows `alert`. The card resolves itself when the block clears.
-   - **Never type into a blocked pane.** User messages queue until it's idle.
+   - **Answering from the chat** (user decision 2026-10-13). When a permission prompt parses into a `ManagedAgentPrompt` (kind, title, clean detail, question, the agent's own options in order, fingerprint), the card shows the question and one button per option, plus **Open in Terminal**. A click calls `answerManagedPrompt(fingerprint:optionID:)`: Zeus re-captures the pane and sends that option's own selection key only if the same prompt (fingerprint) is still showing and the option is still listed in the same live pane; otherwise it sends nothing and says the question changed. Results: answered, changed or unconfirmed. Never a default, a timer, an autonomous answer or free text ("Tab to amend" stays in Terminal). Unparseable prompts keep the Terminal-only card.
+   - **Never type into a blocked pane** other than that one validated choice key. User messages queue until it's idle.
    - Unknown is not idle. Quiet is not dead.
 6. **Delivery to the managed session.**
    - **Codex and OpenCode:** tmux into the managed pane, with §5.4's draft and socket guards.
@@ -390,7 +391,8 @@ Zeus can launch and keep alive **one** assistant session of its own. Connecting 
 7. **State seam.** `ManagedSessionControlling` exposes:
    - `status`: off, starting, running(idle/working/unknown), blocked(reason), stopped, restarting(at), failed(reason);
    - the actual tmux session name and attach command;
-   - start, stop, restart, start-new-conversation, open-in-terminal, and `permissionModes(for:)`.
+   - start, stop, restart, start-new-conversation, open-in-terminal, and `permissionModes(for:)`;
+   - optionally `ManagedPromptAnswering`: `managedPrompt` and `answerManagedPrompt(fingerprint:optionID:)` (item 5).
 
    Platform implements it in the runtime; appdev renders it in Settings, the menu and first run. The menu bar shows a status line for every state (MANAGED.md §4), and an alert icon for blocked and failed.
 8. **Requirements.** tmux and the chosen agent CLI must be installed; Settings detects both, with a one-line install hint when missing. The agent must already be logged in; a login screen is just a blocked state (item 5).

@@ -153,7 +153,7 @@ Hide for 1 Hour
 From `ZeusManagedCopy.blockedCard(agent:dialog:)`, posted by the managed session at `high` priority (gold frame; the avatar shows `alert`).
 
 - **Title:** "<Agent> is waiting for you in Terminal".
-- **Body:** point first: "Answer it in Terminal. Zeus never answers these for you, and holds your messages until it's done." Then the dialog's first 5 non-empty lines as a fenced code block, exactly as the agent printed them.
+- **Body:** point first: "When Zeus can read the question, the card shows it with the agent's own choices as buttons; you pick, Zeus presses exactly that choice. Otherwise: "Answer it in Terminal." Zeus never answers these on its own, and holds your messages until it's done." Then the dialog's first 5 non-empty lines as a fenced code block, exactly as the agent printed them.
 - **One option:** "Open in Terminal", primary, id `open-terminal`. It calls `openManagedSessionInTerminal()` and does **not** answer or close the card. It isn't a reply, so nothing is delivered to the agent.
 - **When the block clears**, the card closes itself: muted, options hidden, body replaced by "Answered in Terminal" (`blockedCardResolved`). A later block posts a new card; one block never posts twice.
 - **As a peek,** the first lines show the instruction and the start of the dialog (`managed-m3-blocked.png`).
