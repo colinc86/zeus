@@ -304,8 +304,10 @@ def lv1_case(executable, case):
         if case != "skip-tmux":
             argv += ["-p", prompt, "--output-format", "stream-json", "--verbose"]
         launcher = root / "launch.py"
-        launcher.write_text("import json,os,subprocess,pathlib\n" + f"argv=json.loads({json.dumps(json.dumps(argv))})\nenv=json.loads({json.dumps(json.dumps(env))})\n" + "env.update({k:os.environ[k] for k in ['TMUX','TMUX_PANE'] if k in os.environ})\n" +
-            (f"result=subprocess.run(argv,env=env)\n" if case == "skip-tmux" else f"with open({str(out / 'claude.jsonl')!r},'w') as log: result=subprocess.run(argv,env=env,stdout=log,stderr=subprocess.STDOUT)\n") + f"pathlib.Path({str(root / 'exit')!r}).write_text(str(result.returncode))\n")
+        launcher.write_text("import json,os,signal,subprocess,pathlib,threading\n" + f"argv=json.loads({json.dumps(json.dumps(argv))})\nenv=json.loads({json.dumps(json.dumps(env))})\n" + "env.update({k:os.environ[k] for k in ['TMUX','TMUX_PANE'] if k in os.environ})\n" +
+            "child=None\ndef stop(*_):\n if child is not None and child.poll() is None:\n  os.killpg(child.pid,signal.SIGTERM)\n  def force():\n   if child.poll() is None: os.killpg(child.pid,signal.SIGKILL)\n  timer=threading.Timer(3,force);timer.daemon=True;timer.start()\nsignal.signal(signal.SIGHUP,stop);signal.signal(signal.SIGTERM,stop)\n" +
+            ("child=subprocess.Popen(argv,env=env,start_new_session=True)\n" if case == "skip-tmux" else f"log=open({str(out / 'claude.jsonl')!r},'w')\nchild=subprocess.Popen(argv,env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)\n") +
+            f"pathlib.Path({str(root / 'agent.pid')!r}).write_text(str(child.pid))\nstatus=child.wait()\npathlib.Path({str(root / 'exit')!r}).write_text(str(status))\n")
         def tm(*args):
             return subprocess.check_output([tmux, "-u", "-S", tmux_socket, "-f", "/dev/null", *args], env=env, text=True, timeout=10)
         tm("new-session", "-d", "-s", "lv1", "-x", "120", "-y", "40", "-c", str(project), "/bin/sleep", "120")
@@ -395,6 +397,8 @@ def lv1_case(executable, case):
         if trace.exists(): (out / "mcp-trace.jsonl").write_text(trace.read_text())
         (out / "model-requests.json").write_text(json.dumps(Model.requests, indent=2))
         subprocess.run([tmux, "-S", tmux_socket, "kill-server"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+        if (root / "agent.pid").exists():
+            eventually(lambda: (root / "exit").exists(), "Probe agent failed to exit after private tmux shutdown", timeout=6)
         if host:
             host.stdin.close()
             try: host.wait(timeout=5)
