@@ -8,8 +8,10 @@ Zeus is a small animated character on your desktop that acts as the face of your
 2. Open Zeus. It lives in the **menu bar** (⚡) and has no Dock icon. The character appears on your desktop:
    - **Click** it to open the conversation (drag the panel's edge to make it wider);
    - **drag** it anywhere (it remembers where you put it);
-   - **right-click** it for quick controls: Talk to Zeus, Settings, Character, Size, Hide.
+   - **right-click** it for the same menu as the menu bar icon: status, Talk to Zeus, Hide, Character, Size, Theme, Settings and Quit.
 3. Open **Settings → Assistant** from the menu bar (⚡ → **Settings…**, or ⌘,).
+
+Don't want the ⚡ in your menu bar? Turn off **Settings → General → Show menu bar icon**; right-clicking Zeus gives you the same menu. If Zeus is hidden and the icon is off, open Zeus again from Spotlight, Launchpad or Finder (it reappears and opens the conversation), or press the Talk shortcut (⌥⌘Z unless you changed it).
 
 **Building from source** needs macOS 26, Xcode 26 and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`):
 
@@ -45,6 +47,8 @@ In **Settings → Assistant**, choose **Zeus runs it**. Zeus starts the agent in
 - **Quitting Zeus leaves the assistant running.** Zeus reconnects to it next time it opens.
 - **Claude Code messages use its Terminal pane.** Zeus's tools are allowed for this launch only, while the permission mode you chose still governs other work. The managed launch skips the development-channel flag: Claude Code 2.1.296 cannot register a channel from the launch-only MCP configuration. Your global and project configuration stays intact.
 - **Start a New Conversation** gives the assistant a fresh start with your current instructions.
+- **When the agent updates itself** (for example a new Claude Code version), the conversation shows *"Claude Code has an update · Restart assistant"* and the status box says *"Claude Code has an update. Restart to use it; the conversation is kept."* Nothing restarts until you press **Restart**. Zeus then waits for a quiet moment, and asks first if the permission mode is Unrestricted.
+- **Zeus knows when a turn ends.** It adds a small hook to the launch it makes, so the "thinking" row stops the moment your assistant finishes, whether or not it posted to Zeus.
 
 ### Let your assistant control Zeus
 
@@ -131,7 +135,7 @@ swift run --package-path Packages/ZeusKit zeus-sprites validate ~/Library/Applic
 
 Use this if you'd rather start the agent yourself, or keep a setup you already have. In **Settings → Assistant**, choose **Connect your own**. The pane shows each step with the commands ready to copy, with your Zeus path already filled in.
 
-Use the **Start your agent** command copied from Settings for prompt completion reporting. It adds a hook for that launch only, so Zeus stops looking busy even when the agent finishes without posting a Zeus message. The short examples below establish the connection but omit that hook. If you launch another way, Zeus may keep looking busy until a Zeus reply arrives or the five-minute activity timeout expires. **Zeus runs it** includes completion reporting automatically.
+Start your agent with the **Start your agent** command copied from Settings. It adds a hook for that launch only that tells Zeus when each turn ends, so Zeus stops "thinking" even when the agent finishes without posting a Zeus message. The short examples below establish the connection but omit that hook. If you launch another way, Zeus may keep looking busy until a Zeus reply arrives or the five-minute activity timeout expires. **Zeus runs it** includes completion reporting automatically.
 
 Claude's hook settings add to your existing hooks. Codex's launch command supplies `notify` for that launch, replacing any custom notification command until Codex exits; omit that override if you need your own notifier instead. OpenCode's command supplies a local Zeus plugin through `OPENCODE_CONFIG_CONTENT`, leaving saved configuration intact. If you already use that environment variable, merge the generated plugin setting with your launch configuration instead of replacing it.
 
@@ -154,6 +158,8 @@ The pane has:
    claude --dangerously-load-development-channels server:zeus
    ```
    The flag only lets Claude Code receive your Zeus messages directly. Each launch shows **WARNING: Loading development channels**: choose **I am using this for local development** (option 1) in Terminal. If you decline, Zeus still works, but your messages wait until Claude checks in with Zeus. The managed **Zeus runs it** path uses its Terminal pane instead and skips this warning.
+
+   **To avoid that warning every launch,** run Claude Code in tmux without the flag (keep the turn-end hook settings from the copied command) and set **How Zeus reaches it** to **Its Terminal pane**, as for Codex below.
 3. Ask Claude: *"Say hi through Zeus."*
 
 On a Team or Enterprise plan, an admin may need to allow channels (the `channelsEnabled` setting).
@@ -240,7 +246,7 @@ On the right: **Open in Terminal** (when there's a terminal to open), **Start Ne
 | **Send Test Message** says it's waiting, for Codex or OpenCode | Choose that session under **Assistant session**, and check **How Zeus reaches it**. |
 | A message appears in the agent twice | That's a retry: the agent didn't confirm it. Make sure it reads the `AGENTS.md` from Zeus's folder template. |
 | A tool says *"Zeus app isn't running"* | Open Zeus. It reconnects by itself. |
-| The character is gone | ⚡ → **Show Zeus**. If it's off screen: Settings → Character → **Reset Avatar Position**. |
+| The character is gone | ⚡ → **Show Zeus**, or open Zeus again from Spotlight or Launchpad (this also works with the menu bar icon off). If it's off screen: Settings → Character → **Reset Avatar Position**. |
 | Zeus looks asleep all day | Settings → Assistant → **Quiet hours**. Equal start and end times mean *all day*. |
 | I want a sound when Zeus pops up (or I don't) | Settings → General → **Sounds**: turn on **Play a sound when Zeus pops up** and pick the Zeus chime or a macOS sound. It plays at your alert volume (System Settings → Sound) and stays quiet while Zeus is hidden, during quiet hours and while the conversation is open. |
 | My own character doesn't show up | Run `zeus-sprites validate` on your folder (§3). Files with errors are skipped. |

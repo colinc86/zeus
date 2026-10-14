@@ -24,7 +24,7 @@
 
 Your assistant works in a terminal you're not watching. Zeus sits on your desktop and keeps you in the loop.
 
-- **Shows what it's doing.** Zeus thinks, works and cheers along with your assistant, with a progress bar when there is one.
+- **Shows what it's doing.** Zeus thinks, works and cheers along with your assistant, with a progress bar when there is one, and knows when your assistant's turn ends.
 - **Asks, and you answer in one click.** When your assistant needs a decision, a speech bubble pops up next to Zeus. Click an answer, or type one.
 - **Hands you finished work.** Files, folders and links, ready to open.
 - **Sends your replies back.** Type to Zeus and your message goes straight to your assistant.
@@ -49,7 +49,7 @@ Your assistant works in a terminal you're not watching. Zeus sits on your deskto
 
 Zeus starts the assistant in its own tmux session, keeps it running, and picks up the same conversation on each launch. Peek in whenever you like with **Open in Terminal**, or copy the `tmux attach` command.
 
-You pick its permission mode. When it asks for permission, you answer right in the chat. Zeus never answers for you.
+You pick its permission mode. When it asks for permission, you answer right in the chat. Zeus never answers for you. When the agent installs an update, Zeus says so in the conversation and restarts it when you're ready, keeping the conversation.
 
 Already run your assistant yourself? Choose **Connect your own** and Zeus joins the session you started.
 
@@ -108,7 +108,7 @@ The interfaces are documented in [docs/CONTRACT.md](docs/CONTRACT.md).
 
 1. Download the latest `Zeus-<version>.dmg` from [Releases](https://github.com/colinc86/zeus/releases/latest).
 2. Open it and drag Zeus into Applications.
-3. Open Zeus. It lives in the menu bar and updates itself.
+3. Open Zeus. It lives in the menu bar and updates itself. Right-clicking Zeus opens the same menu as the menu bar icon, and you can hide the icon in Settings › General.
 
 You need macOS 26 or later, [tmux](https://github.com/tmux/tmux) (`brew install tmux`) and at least one of Claude Code, Codex or OpenCode. Setup takes a minute: see [docs/SETUP.md](docs/SETUP.md).
 
