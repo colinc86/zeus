@@ -187,6 +187,9 @@ struct TmuxInputSnapshot: Equatable, Sendable {
         return row
     }
     private var openCodeComposer: Bool { x == 5 && openCodeBoxStart != nil }
+    /// Cursor-bound conversation editor; history is strictly above its box.
+    /// The centered home editor has no completed conversation to inspect.
+    var openCodeInputStart: Int? { openCodeBoxStart }
     /// OpenCode centers its home-screen editor. Only use its complete native box
     /// and command row to identify drafts; this does not authorize paste or Enter.
     private var centeredOpenCodeDraft: String? {
