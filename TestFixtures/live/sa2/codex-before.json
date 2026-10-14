@@ -1,0 +1,3070 @@
+{
+  "agent": "codex",
+  "version": "codex-cli 0.162.1",
+  "private_socket": true,
+  "disposable_home": true,
+  "localhost_model": true,
+  "events": [
+    {
+      "t": 12.87777387490496,
+      "trigger": "managed ready",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "idle",
+        "cards": [],
+        "deliveries": [],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 12.683190941810608,
+        "sessions": 1,
+        "t": 12.857079029083252
+      }
+    },
+    {
+      "t": 13.114364542067051,
+      "trigger": "user message: SA2_SAY",
+      "state": {
+        "activity_delivery": "d_sa2_say",
+        "avatar": "thinking",
+        "cards": [],
+        "deliveries": [
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": "sent",
+        "row": "Sent to Codex…",
+        "sample_t": 12.683190941810608,
+        "sessions": 1,
+        "t": 13.093678951263428
+      }
+    },
+    {
+      "t": 13.293479291955009,
+      "trigger": "native prompt returned: SA2_SAY",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "talking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 12.683190941810608,
+        "sessions": 1,
+        "t": 13.272771000862122
+      }
+    },
+    {
+      "t": 13.2938139999751,
+      "trigger": "activity ended: SA2_SAY",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "talking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 12.683190941810608,
+        "sessions": 1,
+        "t": 13.273056030273438
+      }
+    },
+    {
+      "t": 13.543538624886423,
+      "trigger": "user message: SA2_SHELL",
+      "state": {
+        "activity_delivery": "d_sa2_shell",
+        "avatar": "talking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": "sent",
+        "row": "Sent to Codex…",
+        "sample_t": 12.683190941810608,
+        "sessions": 1,
+        "t": 13.522835969924927
+      }
+    },
+    {
+      "t": 15.735820374917239,
+      "trigger": "working sampled: SA2_SHELL",
+      "state": {
+        "activity_delivery": "d_sa2_shell",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "Codex is thinking…",
+        "sample_t": 15.671712040901184,
+        "sessions": 1,
+        "t": 15.715077996253967
+      }
+    },
+    {
+      "t": 15.910838874988258,
+      "trigger": "native prompt returned: SA2_SHELL",
+      "state": {
+        "activity_delivery": "d_sa2_shell",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "Codex is thinking…",
+        "sample_t": 15.671712040901184,
+        "sessions": 1,
+        "t": 15.89017903804779
+      }
+    },
+    {
+      "t": 18.7610231670551,
+      "trigger": "activity ended: SA2_SHELL",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "idle",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 18.709789991378784,
+        "sessions": 1,
+        "t": 18.74031400680542
+      }
+    },
+    {
+      "t": 18.99152420903556,
+      "trigger": "user message: SA2_FAST",
+      "state": {
+        "activity_delivery": "d_sa2_fast",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": "sent",
+        "row": "Sent to Codex…",
+        "sample_t": 18.709789991378784,
+        "sessions": 1,
+        "t": 18.97084403038025
+      }
+    },
+    {
+      "t": 19.22309200000018,
+      "trigger": "native prompt returned: SA2_FAST",
+      "state": {
+        "activity_delivery": "d_sa2_fast",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "Codex is thinking…",
+        "sample_t": 18.709789991378784,
+        "sessions": 1,
+        "t": 19.20239794254303
+      }
+    },
+    {
+      "t": 39.89580775005743,
+      "trigger": "activity ended: SA2_FAST",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "idle",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 39.8525869846344,
+        "sessions": 1,
+        "t": 39.875178933143616
+      }
+    },
+    {
+      "t": 40.11731145903468,
+      "trigger": "user message: SA2_BUSY",
+      "state": {
+        "activity_delivery": "d_sa2_busy",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": "sent",
+        "row": "Sent to Codex…",
+        "sample_t": 39.8525869846344,
+        "sessions": 1,
+        "t": 40.096686005592346
+      }
+    },
+    {
+      "t": 42.9015674169641,
+      "trigger": "working sampled: SA2_BUSY",
+      "state": {
+        "activity_delivery": "d_sa2_busy",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "Codex is thinking…",
+        "sample_t": 42.82994294166565,
+        "sessions": 1,
+        "t": 42.8809210062027
+      }
+    },
+    {
+      "t": 46.11004845891148,
+      "trigger": "queued mid-turn input retains thinking",
+      "state": {
+        "activity_delivery": "d_sa2_busy",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": false,
+            "attempts": 0,
+            "id": "d_sa2_followup"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "Codex is thinking…",
+        "sample_t": 45.842710971832275,
+        "sessions": 1,
+        "t": 46.08956301212311
+      }
+    },
+    {
+      "t": 49.346897959010676,
+      "trigger": "native prompt returned: SA2_FOLLOWUP",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "talking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_f0202607"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 48.862017035484314,
+        "sessions": 1,
+        "t": 49.326295018196106
+      }
+    },
+    {
+      "t": 49.34730187500827,
+      "trigger": "activity ended: SA2_FOLLOWUP",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "talking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_f0202607"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 48.862017035484314,
+        "sessions": 1,
+        "t": 49.326658964157104
+      }
+    },
+    {
+      "t": 49.572531667072326,
+      "trigger": "user message: SA2_DRAFT",
+      "state": {
+        "activity_delivery": "d_sa2_draft",
+        "avatar": "talking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_f0202607"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          },
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa2_draft"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": "sent",
+        "row": "Sent to Codex…",
+        "sample_t": 48.862017035484314,
+        "sessions": 1,
+        "t": 49.551936984062195
+      }
+    },
+    {
+      "t": 51.881110166898,
+      "trigger": "working sampled: SA2_DRAFT",
+      "state": {
+        "activity_delivery": "d_sa2_draft",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_f0202607"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_draft"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "Codex is thinking…",
+        "sample_t": 51.83889603614807,
+        "sessions": 1,
+        "t": 51.860463976860046
+      }
+    },
+    {
+      "t": 52.14691387489438,
+      "trigger": "native prompt returned: SA2_DRAFT",
+      "state": {
+        "activity_delivery": "d_sa2_draft",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_f0202607"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_draft"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "Codex is thinking…",
+        "sample_t": 51.83889603614807,
+        "sessions": 1,
+        "t": 52.127182960510254
+      }
+    },
+    {
+      "t": 55.380619124975055,
+      "trigger": "activity ended: SA2_DRAFT",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "idle",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_f0202607"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_draft"
+          }
+        ],
+        "draft": "SA2 deliberately unsent draft.",
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 55.32264792919159,
+        "sessions": 1,
+        "t": 55.36017394065857
+      }
+    },
+    {
+      "t": 55.935105209006,
+      "trigger": "idle with human draft; no activity",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "idle",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_2f546fd3"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_f0202607"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_draft"
+          }
+        ],
+        "draft": "SA2 deliberately unsent draft.",
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 55.32264792919159,
+        "sessions": 1,
+        "t": 55.914750933647156
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "SA2_SAY",
+      "native_prompt_t": 13.293479291955009,
+      "ended_t": 13.2938139999751,
+      "idle_after_prompt_s": 0.0003347080200910568,
+      "within_5s": true,
+      "native_classification": "idle"
+    },
+    {
+      "name": "SA2_SHELL",
+      "native_prompt_t": 15.910838874988258,
+      "ended_t": 18.7610231670551,
+      "idle_after_prompt_s": 2.8501842920668423,
+      "within_5s": true,
+      "native_classification": "idle"
+    },
+    {
+      "name": "SA2_FAST",
+      "native_prompt_t": 19.22309200000018,
+      "ended_t": 39.89580775005743,
+      "idle_after_prompt_s": 20.67271575005725,
+      "within_5s": false,
+      "native_classification": "idle"
+    },
+    {
+      "name": "SA2_FOLLOWUP",
+      "native_prompt_t": 49.346897959010676,
+      "ended_t": 49.34730187500827,
+      "idle_after_prompt_s": 0.00040391599759459496,
+      "within_5s": true,
+      "native_classification": "idle"
+    },
+    {
+      "name": "SA2_DRAFT",
+      "native_prompt_t": 52.14691387489438,
+      "ended_t": 55.380619124975055,
+      "idle_after_prompt_s": 3.233705250080675,
+      "within_5s": true,
+      "native_classification": "idle"
+    }
+  ],
+  "frames": {
+    "initial-idle": {
+      "classification": "idle",
+      "inputMetadata": "2|36|120|0|1",
+      "screen": "\n  \u001b[38;2;99;168;248m>_ \u001b[1m\u001b[39mOpenAI Codex\u001b[0;2m (v0.162.1)\u001b[0m\n     \u001b[2m/FIXTURE/project\u001b[0m\n\n\u001b[2m  To get started, describe a task or try one of these commands:\u001b[0m\n\n  /init\u001b[2m - create an AGENTS.md file with instructions for Codex\u001b[0m\n  /status\u001b[2m - show current session configuration\u001b[0m\n  /permissions\u001b[2m - choose what Codex is allowed to do\u001b[0m\n  /model\u001b[2m - choose what model and reasoning effort to use\u001b[0m\n  /review\u001b[2m - review any changes and find issues\u001b[0m\n\n\n\u001b[1;2m› \u001b[0mCall zeus_say with a short greeting, then wait for the user. Zeus managed conversation: F8A65083-F31F-4DF9-A577-\n  B0165C373DB0 (internal marker; do not include it in your greeting).\n\n\n\u001b[2m• \u001b[0mSA2_READY\n\n\u001b[2m  Worked for <1s • 2:49 PM\n\u001b[0m\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\u001b[1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183msa2 default\u001b[39m · \u001b[38;2;171;223;167m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n"
+    },
+    "sa2_say-idle": {
+      "classification": "idle",
+      "inputMetadata": "2|36|120|0|1",
+      "screen": "     \u001b[2m/FIXTURE/project\u001b[0m\n\n\u001b[2m  To get started, describe a task or try one of these commands:\u001b[0m\n\n  /init\u001b[2m - create an AGENTS.md file with instructions for Codex\u001b[0m\n  /status\u001b[2m - show current session configuration\u001b[0m\n  /permissions\u001b[2m - choose what Codex is allowed to do\u001b[0m\n  /model\u001b[2m - choose what model and reasoning effort to use\u001b[0m\n  /review\u001b[2m - review any changes and find issues\u001b[0m\n\n\n\u001b[1;2m› \u001b[0mCall zeus_say with a short greeting, then wait for the user. Zeus managed conversation: F8A65083-F31F-4DF9-A577-\n  B0165C373DB0 (internal marker; do not include it in your greeting).\n\n\n\u001b[2m• \u001b[0mSA2_READY\n\n\u001b[2m  Worked for <1s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_say] Message from the user: SA2_SAY (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_say\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_say\u001b[39m\n\u001b[2m  └ {\"card_id\":\"c_2f546fd3\"}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[2m• \u001b[0mSA2_SAY native turn complete.\n\n\u001b[2m  Worked for <1s • 2:49 PM\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183msa2 default\u001b[39m · \u001b[38;2;171;223;167m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n"
+    },
+    "sa2_shell-working": {
+      "classification": "working",
+      "inputMetadata": "2|36|120|0|1",
+      "screen": "\n\n\u001b[2m• \u001b[0mSA2_READY\n\n\u001b[2m  Worked for <1s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_say] Message from the user: SA2_SAY (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_say\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_say\u001b[39m\n\u001b[2m  └ {\"card_id\":\"c_2f546fd3\"}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[2m• \u001b[0mSA2_SAY native turn complete.\n\n\u001b[2m  Worked for <1s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_shell] Message from the user: SA2_SHELL (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_shell\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA2_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA2_SHELL_DONE\u001b[0m\n\n\u001b[1m\u001b[38;2;167;167;167m•\u001b[0m \u001b[2mWorking\u001b[0m \u001b[2m(0s • \u001b[0;1mesc\u001b[0;2m to interrupt)\u001b[0m\n\n\n\u001b[1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183msa2 default\u001b[39m · \u001b[38;2;171;223;167m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n"
+    },
+    "sa2_shell-idle": {
+      "classification": "idle",
+      "inputMetadata": "2|36|120|0|1",
+      "screen": "\u001b[1;2m› \u001b[0mCall zeus_say with a short greeting, then wait for the user. Zeus managed conversation: F8A65083-F31F-4DF9-A577-B016…\n\u001b[2m  Worked for <1s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_say] Message from the user: SA2_SAY (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_say\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_say\u001b[39m\n\u001b[2m  └ {\"card_id\":\"c_2f546fd3\"}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[2m• \u001b[0mSA2_SAY native turn complete.\n\n\u001b[2m  Worked for <1s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_shell] Message from the user: SA2_SHELL (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_shell\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA2_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA2_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA2_SHELL native turn complete.\n\u001b[2m  └ \u001b[0;1mTip:\u001b[0m Use \u001b[1m/rename\u001b[0m to rename your threads for easier thread resuming.\n\n\u001b[2m  Worked for 2s • 2:49 PM\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183msa2 default\u001b[39m · \u001b[38;2;171;223;167m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n"
+    },
+    "sa2_fast-idle": {
+      "classification": "idle",
+      "inputMetadata": "2|36|120|0|1",
+      "screen": "\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_say] Message from the user: SA2_SAY (call zeus_ack with this delivery_id)\n\u001b[2m• \u001b[0mSA2_SAY native turn complete.\n\n\u001b[2m  Worked for <1s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_shell] Message from the user: SA2_SHELL (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_shell\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA2_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA2_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA2_SHELL native turn complete.\n\n\u001b[2m  Worked for 2s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_fast] Message from the user: SA2_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_fast\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA2_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA2_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA2_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 2:49 PM\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183msa2 default\u001b[39m · \u001b[38;2;171;223;167m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n"
+    },
+    "sa2_busy-working": {
+      "classification": "working",
+      "inputMetadata": "2|36|120|0|1",
+      "screen": "\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_shell] Message from the user: SA2_SHELL (call zeus_ack with this delivery_id)\n\u001b[2m  └ SA2_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA2_SHELL native turn complete.\n\n\u001b[2m  Worked for 2s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_fast] Message from the user: SA2_FAST (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_fast\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA2_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA2_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA2_FAST native turn complete.\n\n\u001b[2m  Worked for <1s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_busy] Message from the user: SA2_BUSY (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_busy\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA2_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA2_SHELL_DONE\u001b[0m\n\n\u001b[1m\u001b[38;2;167;167;167m•\u001b[0m \u001b[2mWorking\u001b[0m \u001b[2m(0s • \u001b[0;1mesc\u001b[0;2m to interrupt)\u001b[0m\n\n\n\u001b[1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183msa2 default\u001b[39m · \u001b[38;2;171;223;167m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n"
+    },
+    "sa2_followup-idle": {
+      "classification": "idle",
+      "inputMetadata": "2|36|120|0|1",
+      "screen": "\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_fast] Message from the user: SA2_FAST (call zeus_ack with this delivery_id)\n\u001b[2m  Worked for <1s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_busy] Message from the user: SA2_BUSY (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_busy\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA2_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA2_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA2_BUSY native turn complete.\n\n\u001b[2m  Worked for 5s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_followup] Message from the user: SA2_FOLLOWUP (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_followup\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_say\u001b[39m\n\u001b[2m  └ {\"card_id\":\"c_f0202607\"}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[2m• \u001b[0mSA2_FOLLOWUP native turn complete.\n\u001b[2m  └ \u001b[0;1mTip:\u001b[0m Use \u001b[1m/side\u001b[0m to start a side conversation in a temporary fork without polluting the main thread.\n\n\u001b[2m  Worked for <1s • 2:49 PM\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183msa2 default\u001b[39m · \u001b[38;2;171;223;167m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n"
+    },
+    "sa2_draft-working": {
+      "classification": "working",
+      "inputMetadata": "2|36|120|0|1",
+      "screen": "\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_busy] Message from the user: SA2_BUSY (call zeus_ack with this delivery_id)\n\n\u001b[2m• \u001b[0mSA2_BUSY native turn complete.\n\n\u001b[2m  Worked for 5s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_followup] Message from the user: SA2_FOLLOWUP (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_followup\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_say\u001b[39m\n\u001b[2m  └ {\"card_id\":\"c_f0202607\"}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[2m• \u001b[0mSA2_FOLLOWUP native turn complete.\n\n\u001b[2m  Worked for <1s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_draft] Message from the user: SA2_DRAFT (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_draft\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA2_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA2_SHELL_DONE\u001b[0m\n\n\u001b[1m\u001b[38;2;167;167;167m•\u001b[0m \u001b[2mWorking\u001b[0m \u001b[2m(0s • \u001b[0;1mesc\u001b[0;2m to interrupt)\u001b[0m\n\n\n\u001b[1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183msa2 default\u001b[39m · \u001b[38;2;171;223;167m/FIXTURE/project\u001b[39m\n  \u001b[1m?\u001b[0m for shortcuts                                                                              ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n"
+    },
+    "sa2_draft-idle": {
+      "classification": "idle",
+      "inputMetadata": "32|36|120|0|1",
+      "screen": "\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_busy] Message from the user: SA2_BUSY (call zeus_ack with this delivery_id)\n\n\u001b[2m  Worked for 5s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_followup] Message from the user: SA2_FOLLOWUP (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_followup\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_say\u001b[39m\n\u001b[2m  └ {\"card_id\":\"c_f0202607\"}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[2m• \u001b[0mSA2_FOLLOWUP native turn complete.\n\n\u001b[2m  Worked for <1s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_draft] Message from the user: SA2_DRAFT (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_draft\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA2_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA2_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA2_DRAFT native turn complete.\n\n\u001b[2m  Worked for 2s • 2:49 PM\n\n\n\u001b[0;1m›\u001b[0m SA2 deliberately unsent draft.\n\n  \u001b[38;2;246;226;183msa2 default\u001b[39m · \u001b[38;2;171;223;167m/FIXTURE/project\u001b[39m\n                                                                                               ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n"
+    },
+    "typed-draft": {
+      "classification": "idle",
+      "inputMetadata": "32|36|120|0|1",
+      "screen": "\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_busy] Message from the user: SA2_BUSY (call zeus_ack with this delivery_id)\n\n\u001b[2m  Worked for 5s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_followup] Message from the user: SA2_FOLLOWUP (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_followup\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_say\u001b[39m\n\u001b[2m  └ {\"card_id\":\"c_f0202607\"}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[2m• \u001b[0mSA2_FOLLOWUP native turn complete.\n\n\u001b[2m  Worked for <1s • 2:49 PM\n\u001b[0m\n\n\u001b[1;2m› \u001b[0m[zeus delivery_id=d_sa2_draft] Message from the user: SA2_DRAFT (call zeus_ack with this delivery_id)\n\n\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mCalled\u001b[0m \u001b[38;2;99;168;248mzeus.zeus_ack\u001b[39m\n\u001b[2m  └ {\"acked\":[\"d_sa2_draft\"]}\u001b[0m\n\u001b[2m    + Show details\n\u001b[0m\n\u001b[1m\u001b[38;5;2m•\u001b[0m \u001b[1mRan\u001b[0m \u001b[38;2;137;180;250mprintf\u001b[38;2;205;214;244m SA2_SHELL_DONE\u001b[39m\n\u001b[2m  └ SA2_SHELL_DONE\u001b[0m\n\n\u001b[2m• \u001b[0mSA2_DRAFT native turn complete.\n\n\u001b[2m  Worked for 2s • 2:49 PM\n\n\n\u001b[0;1m›\u001b[0m SA2 deliberately unsent draft.\n\n  \u001b[38;2;246;226;183msa2 default\u001b[39m · \u001b[38;2;171;223;167m/FIXTURE/project\u001b[39m\n                                                                                               ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view\n"
+    }
+  },
+  "model_events": [
+    {
+      "t": 1.0367603339254856,
+      "scenario": "bootstrap",
+      "delivery": null,
+      "step": 0,
+      "tool": null,
+      "tool_results": []
+    },
+    {
+      "t": 13.128196917008609,
+      "scenario": "SA2_SAY",
+      "delivery": "d_sa2_say",
+      "step": 0,
+      "tool": "zeus_ack",
+      "tool_results": []
+    },
+    {
+      "t": 13.144122875062749,
+      "scenario": "SA2_SAY",
+      "delivery": "d_sa2_say",
+      "step": 1,
+      "tool": "zeus_say",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        }
+      ]
+    },
+    {
+      "t": 13.155235124984756,
+      "scenario": "SA2_SAY",
+      "delivery": "d_sa2_say",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        }
+      ]
+    },
+    {
+      "t": 13.554258625023067,
+      "scenario": "SA2_SHELL",
+      "delivery": "d_sa2_shell",
+      "step": 0,
+      "tool": "zeus_ack",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        }
+      ]
+    },
+    {
+      "t": 13.563349541975185,
+      "scenario": "SA2_SHELL",
+      "delivery": "d_sa2_shell",
+      "step": 1,
+      "tool": "exec_command",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        }
+      ]
+    },
+    {
+      "t": 13.629352999851108,
+      "scenario": "SA2_SHELL",
+      "delivery": "d_sa2_shell",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-43d0-7861-a65c-729f1f214c3f",
+          "call_id": "call_0ba96a5b274943b88b9a8cea973c9dde",
+          "output": "Chunk ID: 024476\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 19.001699708867818,
+      "scenario": "SA2_FAST",
+      "delivery": "d_sa2_fast",
+      "step": 0,
+      "tool": "zeus_ack",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-43d0-7861-a65c-729f1f214c3f",
+          "call_id": "call_0ba96a5b274943b88b9a8cea973c9dde",
+          "output": "Chunk ID: 024476\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 19.010204291902483,
+      "scenario": "SA2_FAST",
+      "delivery": "d_sa2_fast",
+      "step": 1,
+      "tool": "exec_command",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-43d0-7861-a65c-729f1f214c3f",
+          "call_id": "call_0ba96a5b274943b88b9a8cea973c9dde",
+          "output": "Chunk ID: 024476\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-58d5-7da0-99b4-e67e938510b3",
+          "call_id": "call_fd1cbbf596354069866a8d0f8e206b84",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_fast\"]}"
+        }
+      ]
+    },
+    {
+      "t": 19.062592834001407,
+      "scenario": "SA2_FAST",
+      "delivery": "d_sa2_fast",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-43d0-7861-a65c-729f1f214c3f",
+          "call_id": "call_0ba96a5b274943b88b9a8cea973c9dde",
+          "output": "Chunk ID: 024476\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-58d5-7da0-99b4-e67e938510b3",
+          "call_id": "call_fd1cbbf596354069866a8d0f8e206b84",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-5909-78e1-8277-0ec16eb763ef",
+          "call_id": "call_1a916fa86ae84e3fa75acabea0f467e0",
+          "output": "Chunk ID: 7f0c0a\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 40.13502204185352,
+      "scenario": "SA2_BUSY",
+      "delivery": "d_sa2_busy",
+      "step": 0,
+      "tool": "zeus_ack",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-43d0-7861-a65c-729f1f214c3f",
+          "call_id": "call_0ba96a5b274943b88b9a8cea973c9dde",
+          "output": "Chunk ID: 024476\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-58d5-7da0-99b4-e67e938510b3",
+          "call_id": "call_fd1cbbf596354069866a8d0f8e206b84",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-5909-78e1-8277-0ec16eb763ef",
+          "call_id": "call_1a916fa86ae84e3fa75acabea0f467e0",
+          "output": "Chunk ID: 7f0c0a\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 40.14808916696347,
+      "scenario": "SA2_BUSY",
+      "delivery": "d_sa2_busy",
+      "step": 1,
+      "tool": "exec_command",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-43d0-7861-a65c-729f1f214c3f",
+          "call_id": "call_0ba96a5b274943b88b9a8cea973c9dde",
+          "output": "Chunk ID: 024476\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-58d5-7da0-99b4-e67e938510b3",
+          "call_id": "call_fd1cbbf596354069866a8d0f8e206b84",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-5909-78e1-8277-0ec16eb763ef",
+          "call_id": "call_1a916fa86ae84e3fa75acabea0f467e0",
+          "output": "Chunk ID: 7f0c0a\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab63-7b70-a90a-bb1e4eaa3576",
+          "call_id": "call_705284f6549e49729248357f50cec9eb",
+          "output": "Wall time: 0.0025 seconds\nOutput:\n{\"acked\":[\"d_sa2_busy\"]}"
+        }
+      ]
+    },
+    {
+      "t": 40.201655542012304,
+      "scenario": "SA2_BUSY",
+      "delivery": "d_sa2_busy",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-43d0-7861-a65c-729f1f214c3f",
+          "call_id": "call_0ba96a5b274943b88b9a8cea973c9dde",
+          "output": "Chunk ID: 024476\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-58d5-7da0-99b4-e67e938510b3",
+          "call_id": "call_fd1cbbf596354069866a8d0f8e206b84",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-5909-78e1-8277-0ec16eb763ef",
+          "call_id": "call_1a916fa86ae84e3fa75acabea0f467e0",
+          "output": "Chunk ID: 7f0c0a\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab63-7b70-a90a-bb1e4eaa3576",
+          "call_id": "call_705284f6549e49729248357f50cec9eb",
+          "output": "Wall time: 0.0025 seconds\nOutput:\n{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab9b-7313-bc1b-82d48b854e19",
+          "call_id": "call_b7d2d9694e41486ab8fbc130ea85a483",
+          "output": "Chunk ID: 13ff88\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 49.166926208883524,
+      "scenario": "SA2_FOLLOWUP",
+      "delivery": "d_sa2_followup",
+      "step": 0,
+      "tool": "zeus_ack",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-43d0-7861-a65c-729f1f214c3f",
+          "call_id": "call_0ba96a5b274943b88b9a8cea973c9dde",
+          "output": "Chunk ID: 024476\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-58d5-7da0-99b4-e67e938510b3",
+          "call_id": "call_fd1cbbf596354069866a8d0f8e206b84",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-5909-78e1-8277-0ec16eb763ef",
+          "call_id": "call_1a916fa86ae84e3fa75acabea0f467e0",
+          "output": "Chunk ID: 7f0c0a\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab63-7b70-a90a-bb1e4eaa3576",
+          "call_id": "call_705284f6549e49729248357f50cec9eb",
+          "output": "Wall time: 0.0025 seconds\nOutput:\n{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab9b-7313-bc1b-82d48b854e19",
+          "call_id": "call_b7d2d9694e41486ab8fbc130ea85a483",
+          "output": "Chunk ID: 13ff88\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 49.17678216705099,
+      "scenario": "SA2_FOLLOWUP",
+      "delivery": "d_sa2_followup",
+      "step": 1,
+      "tool": "zeus_say",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-43d0-7861-a65c-729f1f214c3f",
+          "call_id": "call_0ba96a5b274943b88b9a8cea973c9dde",
+          "output": "Chunk ID: 024476\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-58d5-7da0-99b4-e67e938510b3",
+          "call_id": "call_fd1cbbf596354069866a8d0f8e206b84",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-5909-78e1-8277-0ec16eb763ef",
+          "call_id": "call_1a916fa86ae84e3fa75acabea0f467e0",
+          "output": "Chunk ID: 7f0c0a\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab63-7b70-a90a-bb1e4eaa3576",
+          "call_id": "call_705284f6549e49729248357f50cec9eb",
+          "output": "Wall time: 0.0025 seconds\nOutput:\n{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab9b-7313-bc1b-82d48b854e19",
+          "call_id": "call_b7d2d9694e41486ab8fbc130ea85a483",
+          "output": "Chunk ID: 13ff88\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ceac-7e70-bacb-01ca5e905e5e",
+          "call_id": "call_4c12ef1b17b0447c847507a00e5412de",
+          "output": "Wall time: 0.0024 seconds\nOutput:\n{\"acked\":[\"d_sa2_followup\"]}"
+        }
+      ]
+    },
+    {
+      "t": 49.18818970886059,
+      "scenario": "SA2_FOLLOWUP",
+      "delivery": "d_sa2_followup",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-43d0-7861-a65c-729f1f214c3f",
+          "call_id": "call_0ba96a5b274943b88b9a8cea973c9dde",
+          "output": "Chunk ID: 024476\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-58d5-7da0-99b4-e67e938510b3",
+          "call_id": "call_fd1cbbf596354069866a8d0f8e206b84",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-5909-78e1-8277-0ec16eb763ef",
+          "call_id": "call_1a916fa86ae84e3fa75acabea0f467e0",
+          "output": "Chunk ID: 7f0c0a\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab63-7b70-a90a-bb1e4eaa3576",
+          "call_id": "call_705284f6549e49729248357f50cec9eb",
+          "output": "Wall time: 0.0025 seconds\nOutput:\n{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab9b-7313-bc1b-82d48b854e19",
+          "call_id": "call_b7d2d9694e41486ab8fbc130ea85a483",
+          "output": "Chunk ID: 13ff88\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ceac-7e70-bacb-01ca5e905e5e",
+          "call_id": "call_4c12ef1b17b0447c847507a00e5412de",
+          "output": "Wall time: 0.0024 seconds\nOutput:\n{\"acked\":[\"d_sa2_followup\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ceb5-7362-8acc-65a52b30d74b",
+          "call_id": "call_050a6550f2fd4d1da35bc052efe229ab",
+          "output": "Wall time: 0.0022 seconds\nOutput:\n{\"card_id\":\"c_f0202607\"}"
+        }
+      ]
+    },
+    {
+      "t": 49.583509834017605,
+      "scenario": "SA2_DRAFT",
+      "delivery": "d_sa2_draft",
+      "step": 0,
+      "tool": "zeus_ack",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-43d0-7861-a65c-729f1f214c3f",
+          "call_id": "call_0ba96a5b274943b88b9a8cea973c9dde",
+          "output": "Chunk ID: 024476\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-58d5-7da0-99b4-e67e938510b3",
+          "call_id": "call_fd1cbbf596354069866a8d0f8e206b84",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-5909-78e1-8277-0ec16eb763ef",
+          "call_id": "call_1a916fa86ae84e3fa75acabea0f467e0",
+          "output": "Chunk ID: 7f0c0a\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab63-7b70-a90a-bb1e4eaa3576",
+          "call_id": "call_705284f6549e49729248357f50cec9eb",
+          "output": "Wall time: 0.0025 seconds\nOutput:\n{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab9b-7313-bc1b-82d48b854e19",
+          "call_id": "call_b7d2d9694e41486ab8fbc130ea85a483",
+          "output": "Chunk ID: 13ff88\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ceac-7e70-bacb-01ca5e905e5e",
+          "call_id": "call_4c12ef1b17b0447c847507a00e5412de",
+          "output": "Wall time: 0.0024 seconds\nOutput:\n{\"acked\":[\"d_sa2_followup\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ceb5-7362-8acc-65a52b30d74b",
+          "call_id": "call_050a6550f2fd4d1da35bc052efe229ab",
+          "output": "Wall time: 0.0022 seconds\nOutput:\n{\"card_id\":\"c_f0202607\"}"
+        }
+      ]
+    },
+    {
+      "t": 49.59281454188749,
+      "scenario": "SA2_DRAFT",
+      "delivery": "d_sa2_draft",
+      "step": 1,
+      "tool": "exec_command",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-43d0-7861-a65c-729f1f214c3f",
+          "call_id": "call_0ba96a5b274943b88b9a8cea973c9dde",
+          "output": "Chunk ID: 024476\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-58d5-7da0-99b4-e67e938510b3",
+          "call_id": "call_fd1cbbf596354069866a8d0f8e206b84",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-5909-78e1-8277-0ec16eb763ef",
+          "call_id": "call_1a916fa86ae84e3fa75acabea0f467e0",
+          "output": "Chunk ID: 7f0c0a\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab63-7b70-a90a-bb1e4eaa3576",
+          "call_id": "call_705284f6549e49729248357f50cec9eb",
+          "output": "Wall time: 0.0025 seconds\nOutput:\n{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab9b-7313-bc1b-82d48b854e19",
+          "call_id": "call_b7d2d9694e41486ab8fbc130ea85a483",
+          "output": "Chunk ID: 13ff88\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ceac-7e70-bacb-01ca5e905e5e",
+          "call_id": "call_4c12ef1b17b0447c847507a00e5412de",
+          "output": "Wall time: 0.0024 seconds\nOutput:\n{\"acked\":[\"d_sa2_followup\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ceb5-7362-8acc-65a52b30d74b",
+          "call_id": "call_050a6550f2fd4d1da35bc052efe229ab",
+          "output": "Wall time: 0.0022 seconds\nOutput:\n{\"card_id\":\"c_f0202607\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-d04c-74d0-ba0d-38530fb69870",
+          "call_id": "call_f639742a430244d3b573403c62ae6864",
+          "output": "Wall time: 0.0022 seconds\nOutput:\n{\"acked\":[\"d_sa2_draft\"]}"
+        }
+      ]
+    },
+    {
+      "t": 49.64341258397326,
+      "scenario": "SA2_DRAFT",
+      "delivery": "d_sa2_draft",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41eb-7313-9dbb-4e3daaabb7e0",
+          "call_id": "call_a41869f53660412a93218da078c2ad6f",
+          "output": "Wall time: 0.0069 seconds\nOutput:\n{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-41f5-7381-ae0d-848f344e5235",
+          "call_id": "call_10669aa01215472f92a7f02fb046c767",
+          "output": "Wall time: 0.0026 seconds\nOutput:\n{\"card_id\":\"c_2f546fd3\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-438e-7732-80d5-e0124b50a2d0",
+          "call_id": "call_45dd411660a0498682d4495874d7ad8d",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-43d0-7861-a65c-729f1f214c3f",
+          "call_id": "call_0ba96a5b274943b88b9a8cea973c9dde",
+          "output": "Chunk ID: 024476\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-58d5-7da0-99b4-e67e938510b3",
+          "call_id": "call_fd1cbbf596354069866a8d0f8e206b84",
+          "output": "Wall time: 0.0020 seconds\nOutput:\n{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-5909-78e1-8277-0ec16eb763ef",
+          "call_id": "call_1a916fa86ae84e3fa75acabea0f467e0",
+          "output": "Chunk ID: 7f0c0a\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab63-7b70-a90a-bb1e4eaa3576",
+          "call_id": "call_705284f6549e49729248357f50cec9eb",
+          "output": "Wall time: 0.0025 seconds\nOutput:\n{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ab9b-7313-bc1b-82d48b854e19",
+          "call_id": "call_b7d2d9694e41486ab8fbc130ea85a483",
+          "output": "Chunk ID: 13ff88\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ceac-7e70-bacb-01ca5e905e5e",
+          "call_id": "call_4c12ef1b17b0447c847507a00e5412de",
+          "output": "Wall time: 0.0024 seconds\nOutput:\n{\"acked\":[\"d_sa2_followup\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-ceb5-7362-8acc-65a52b30d74b",
+          "call_id": "call_050a6550f2fd4d1da35bc052efe229ab",
+          "output": "Wall time: 0.0022 seconds\nOutput:\n{\"card_id\":\"c_f0202607\"}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-d04c-74d0-ba0d-38530fb69870",
+          "call_id": "call_f639742a430244d3b573403c62ae6864",
+          "output": "Wall time: 0.0022 seconds\nOutput:\n{\"acked\":[\"d_sa2_draft\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "id": "fco_01a13bf6-d07e-7de0-a26f-fb2442d57a8b",
+          "call_id": "call_25a7ffbd201e4556a6c57335cbf5a3d6",
+          "output": "Chunk ID: 679c3a\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4\nOutput:\nSA2_SHELL_DONE"
+        }
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "off",
+      "pane": null,
+      "phase": null,
+      "row": null,
+      "sample_t": null,
+      "sessions": 0,
+      "t": 0.0007489919662475586
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "starting",
+      "pane": null,
+      "phase": null,
+      "row": null,
+      "sample_t": null,
+      "sessions": 0,
+      "t": 0.05129098892211914
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "starting",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": null,
+      "sessions": 0,
+      "t": 0.20674002170562744
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "starting",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": null,
+      "sessions": 1,
+      "t": 1.0141879320144653
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "starting",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 3.6176010370254517,
+      "sessions": 1,
+      "t": 3.6441680192947388
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "starting",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 6.628064036369324,
+      "sessions": 1,
+      "t": 6.657557964324951
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "starting",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 9.653409957885742,
+      "sessions": 1,
+      "t": 9.707893013954163
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 12.683190941810608,
+      "sessions": 1,
+      "t": 12.727829933166504
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 12.683190941810608,
+      "sessions": 1,
+      "t": 12.88312304019928
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "talking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 12.683190941810608,
+      "sessions": 1,
+      "t": 13.151356935501099
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "talking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 12.683190941810608,
+      "sessions": 1,
+      "t": 13.30807900428772
+    },
+    {
+      "activity_delivery": "d_sa2_shell",
+      "avatar": "talking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 12.683190941810608,
+      "sessions": 1,
+      "t": 13.57271695137024
+    },
+    {
+      "activity_delivery": "d_sa2_shell",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 12.683190941810608,
+      "sessions": 1,
+      "t": 15.634766936302185
+    },
+    {
+      "activity_delivery": "d_sa2_shell",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 15.671712040901184,
+      "sessions": 1,
+      "t": 15.685317993164062
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 18.709789991378784,
+      "sessions": 1,
+      "t": 18.72505795955658
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 18.709789991378784,
+      "sessions": 1,
+      "t": 18.78001093864441
+    },
+    {
+      "activity_delivery": "d_sa2_fast",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 18.709789991378784,
+      "sessions": 1,
+      "t": 18.99410092830658
+    },
+    {
+      "activity_delivery": "d_sa2_fast",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 21.700071930885315,
+      "sessions": 1,
+      "t": 21.730366945266724
+    },
+    {
+      "activity_delivery": "d_sa2_fast",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 24.701897978782654,
+      "sessions": 1,
+      "t": 24.72485101222992
+    },
+    {
+      "activity_delivery": "d_sa2_fast",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 27.7190899848938,
+      "sessions": 1,
+      "t": 27.756042957305908
+    },
+    {
+      "activity_delivery": "d_sa2_fast",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 30.775872945785522,
+      "sessions": 1,
+      "t": 30.786824941635132
+    },
+    {
+      "activity_delivery": "d_sa2_fast",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 33.794224977493286,
+      "sessions": 1,
+      "t": 33.82741701602936
+    },
+    {
+      "activity_delivery": "d_sa2_fast",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 36.773998975753784,
+      "sessions": 1,
+      "t": 36.78645396232605
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 39.8525869846344,
+      "sessions": 1,
+      "t": 39.88444495201111
+    },
+    {
+      "activity_delivery": "d_sa2_busy",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 39.8525869846344,
+      "sessions": 1,
+      "t": 40.147573947906494
+    },
+    {
+      "activity_delivery": "d_sa2_busy",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 42.82994294166565,
+      "sessions": 1,
+      "t": 42.88056397438049
+    },
+    {
+      "activity_delivery": "d_sa2_busy",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": false,
+          "attempts": 0,
+          "id": "d_sa2_followup"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 42.82994294166565,
+      "sessions": 1,
+      "t": 42.94097900390625
+    },
+    {
+      "activity_delivery": "d_sa2_busy",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": false,
+          "attempts": 0,
+          "id": "d_sa2_followup"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 45.842710971832275,
+      "sessions": 1,
+      "t": 45.88889300823212
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 48.862017035484314,
+      "sessions": 1,
+      "t": 48.87662196159363
+    },
+    {
+      "activity_delivery": "d_sa2_followup",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "sent",
+      "row": "Sent to Codex…",
+      "sample_t": 48.862017035484314,
+      "sessions": 1,
+      "t": 49.13392102718353
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "talking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        },
+        {
+          "body": "SA2_FOLLOWUP native bridge reply.",
+          "id": "c_f0202607"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 48.862017035484314,
+      "sessions": 1,
+      "t": 49.19246995449066
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "talking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        },
+        {
+          "body": "SA2_FOLLOWUP native bridge reply.",
+          "id": "c_f0202607"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_draft"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 48.862017035484314,
+      "sessions": 1,
+      "t": 49.34953701496124
+    },
+    {
+      "activity_delivery": "d_sa2_draft",
+      "avatar": "talking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        },
+        {
+          "body": "SA2_FOLLOWUP native bridge reply.",
+          "id": "c_f0202607"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_draft"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "sent",
+      "row": "Sent to Codex…",
+      "sample_t": 48.862017035484314,
+      "sessions": 1,
+      "t": 49.560693979263306
+    },
+    {
+      "activity_delivery": "d_sa2_draft",
+      "avatar": "talking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        },
+        {
+          "body": "SA2_FOLLOWUP native bridge reply.",
+          "id": "c_f0202607"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_draft"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 48.862017035484314,
+      "sessions": 1,
+      "t": 49.6135950088501
+    },
+    {
+      "activity_delivery": "d_sa2_draft",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        },
+        {
+          "body": "SA2_FOLLOWUP native bridge reply.",
+          "id": "c_f0202607"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_draft"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 48.862017035484314,
+      "sessions": 1,
+      "t": 51.68008899688721
+    },
+    {
+      "activity_delivery": "d_sa2_draft",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        },
+        {
+          "body": "SA2_FOLLOWUP native bridge reply.",
+          "id": "c_f0202607"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_draft"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "Codex is thinking…",
+      "sample_t": 51.83889603614807,
+      "sessions": 1,
+      "t": 51.89075303077698
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_2f546fd3"
+        },
+        {
+          "body": "SA2_FOLLOWUP native bridge reply.",
+          "id": "c_f0202607"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_draft"
+        }
+      ],
+      "draft": "SA2 deliberately unsent draft.",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 55.32264792919159,
+      "sessions": 1,
+      "t": 55.34523797035217
+    }
+  ]
+}

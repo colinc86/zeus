@@ -1,0 +1,2807 @@
+{
+  "agent": "opencode",
+  "version": "1.18.31",
+  "private_socket": true,
+  "disposable_home": true,
+  "localhost_model": true,
+  "events": [
+    {
+      "t": 12.772220624843612,
+      "trigger": "managed ready",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "idle",
+        "cards": [],
+        "deliveries": [],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 12.601004958152771,
+        "sessions": 1,
+        "t": 12.759585976600647
+      }
+    },
+    {
+      "t": 13.033188374945894,
+      "trigger": "user message: SA2_SAY",
+      "state": {
+        "activity_delivery": "d_sa2_say",
+        "avatar": "thinking",
+        "cards": [],
+        "deliveries": [
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": "sent",
+        "row": "Sent to OpenCode…",
+        "sample_t": 12.601004958152771,
+        "sessions": 1,
+        "t": 13.0205659866333
+      }
+    },
+    {
+      "t": 13.333098375005648,
+      "trigger": "native prompt returned: SA2_SAY",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "talking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 12.601004958152771,
+        "sessions": 1,
+        "t": 13.320467948913574
+      }
+    },
+    {
+      "t": 13.333462500013411,
+      "trigger": "activity ended: SA2_SAY",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "talking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 12.601004958152771,
+        "sessions": 1,
+        "t": 13.320778012275696
+      }
+    },
+    {
+      "t": 13.608867208939046,
+      "trigger": "user message: SA2_SHELL",
+      "state": {
+        "activity_delivery": "d_sa2_shell",
+        "avatar": "talking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": "sent",
+        "row": "Sent to OpenCode…",
+        "sample_t": 12.601004958152771,
+        "sessions": 1,
+        "t": 13.596240997314453
+      }
+    },
+    {
+      "t": 15.67226399993524,
+      "trigger": "working sampled: SA2_SHELL",
+      "state": {
+        "activity_delivery": "d_sa2_shell",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "OpenCode is thinking…",
+        "sample_t": 15.651440024375916,
+        "sessions": 1,
+        "t": 15.659631967544556
+      }
+    },
+    {
+      "t": 15.80760774994269,
+      "trigger": "native prompt returned: SA2_SHELL",
+      "state": {
+        "activity_delivery": "d_sa2_shell",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "OpenCode is thinking…",
+        "sample_t": 15.651440024375916,
+        "sessions": 1,
+        "t": 15.794991970062256
+      }
+    },
+    {
+      "t": 19.244208708871156,
+      "trigger": "activity ended: SA2_SHELL",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "idle",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 19.181450963020325,
+        "sessions": 1,
+        "t": 19.233541011810303
+      }
+    },
+    {
+      "t": 19.788721833843738,
+      "trigger": "user message: SA2_FAST",
+      "state": {
+        "activity_delivery": "d_sa2_fast",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": "sent",
+        "row": "Sent to OpenCode…",
+        "sample_t": 19.181450963020325,
+        "sessions": 1,
+        "t": 19.776121973991394
+      }
+    },
+    {
+      "t": 20.129099083831534,
+      "trigger": "native prompt returned: SA2_FAST",
+      "state": {
+        "activity_delivery": "d_sa2_fast",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "OpenCode is thinking…",
+        "sample_t": 19.181450963020325,
+        "sessions": 1,
+        "t": 20.116495966911316
+      }
+    },
+    {
+      "t": 21.69215429201722,
+      "trigger": "activity ended: SA2_FAST",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "idle",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 21.635530948638916,
+        "sessions": 1,
+        "t": 21.679530024528503
+      }
+    },
+    {
+      "t": 21.94310741685331,
+      "trigger": "user message: SA2_BUSY",
+      "state": {
+        "activity_delivery": "d_sa2_busy",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": "sent",
+        "row": "Sent to OpenCode…",
+        "sample_t": 21.635530948638916,
+        "sessions": 1,
+        "t": 21.930500030517578
+      }
+    },
+    {
+      "t": 24.7126884998288,
+      "trigger": "working sampled: SA2_BUSY",
+      "state": {
+        "activity_delivery": "d_sa2_busy",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "OpenCode is thinking…",
+        "sample_t": 24.66746199131012,
+        "sessions": 1,
+        "t": 24.70004904270172
+      }
+    },
+    {
+      "t": 27.924648416927084,
+      "trigger": "queued mid-turn input retains thinking",
+      "state": {
+        "activity_delivery": "d_sa2_busy",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": false,
+            "attempts": 0,
+            "id": "d_sa2_followup"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "OpenCode is thinking…",
+        "sample_t": 27.676480054855347,
+        "sessions": 1,
+        "t": 27.912523984909058
+      }
+    },
+    {
+      "t": 28.06636512489058,
+      "trigger": "native prompt returned: SA2_BUSY",
+      "state": {
+        "activity_delivery": "d_sa2_busy",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": false,
+            "attempts": 0,
+            "id": "d_sa2_followup"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "OpenCode is thinking…",
+        "sample_t": 27.676480054855347,
+        "sessions": 1,
+        "t": 28.053778052330017
+      }
+    },
+    {
+      "t": 30.746005709050223,
+      "trigger": "original busy activity released",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "idle",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 30.702319025993347,
+        "sessions": 1,
+        "t": 30.733402967453003
+      }
+    },
+    {
+      "t": 31.296257458860055,
+      "trigger": "native prompt returned: SA2_FOLLOWUP",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "talking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_60617b93"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 30.702319025993347,
+        "sessions": 1,
+        "t": 31.283684968948364
+      }
+    },
+    {
+      "t": 31.2966559168417,
+      "trigger": "activity ended: SA2_FOLLOWUP",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "talking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_60617b93"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 30.702319025993347,
+        "sessions": 1,
+        "t": 31.284042954444885
+      }
+    },
+    {
+      "t": 31.5597843748983,
+      "trigger": "user message: SA2_DRAFT",
+      "state": {
+        "activity_delivery": "d_sa2_draft",
+        "avatar": "talking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_60617b93"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          },
+          {
+            "acked": false,
+            "attempts": 1,
+            "id": "d_sa2_draft"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": "sent",
+        "row": "Sent to OpenCode…",
+        "sample_t": 30.702319025993347,
+        "sessions": 1,
+        "t": 31.54720902442932
+      }
+    },
+    {
+      "t": 33.714187083998695,
+      "trigger": "working sampled: SA2_DRAFT",
+      "state": {
+        "activity_delivery": "d_sa2_draft",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_60617b93"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_draft"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "OpenCode is thinking…",
+        "sample_t": 33.69327998161316,
+        "sessions": 1,
+        "t": 33.7016179561615
+      }
+    },
+    {
+      "t": 33.84554066695273,
+      "trigger": "native prompt returned: SA2_DRAFT",
+      "state": {
+        "activity_delivery": "d_sa2_draft",
+        "avatar": "thinking",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_60617b93"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_draft"
+          }
+        ],
+        "draft": null,
+        "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+        "pane": "%0",
+        "phase": "thinking",
+        "row": "OpenCode is thinking…",
+        "sample_t": 33.69327998161316,
+        "sessions": 1,
+        "t": 33.83297097682953
+      }
+    },
+    {
+      "t": 36.88780545885675,
+      "trigger": "activity ended: SA2_DRAFT",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "idle",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_60617b93"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_draft"
+          }
+        ],
+        "draft": "SA2 deliberately unsent draft.",
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 36.82922101020813,
+        "sessions": 1,
+        "t": 36.87524700164795
+      }
+    },
+    {
+      "t": 37.05574766686186,
+      "trigger": "idle with human draft; no activity",
+      "state": {
+        "activity_delivery": null,
+        "avatar": "idle",
+        "cards": [
+          {
+            "body": "SA2_SAY native bridge reply.",
+            "id": "c_7c3e7cc1"
+          },
+          {
+            "body": "SA2_FOLLOWUP native bridge reply.",
+            "id": "c_60617b93"
+          }
+        ],
+        "deliveries": [
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_say"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_shell"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_fast"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_busy"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_followup"
+          },
+          {
+            "acked": true,
+            "attempts": 1,
+            "id": "d_sa2_draft"
+          }
+        ],
+        "draft": "SA2 deliberately unsent draft.",
+        "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+        "pane": "%0",
+        "phase": null,
+        "row": null,
+        "sample_t": 36.82922101020813,
+        "sessions": 1,
+        "t": 37.043331027030945
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "SA2_SAY",
+      "native_prompt_t": 13.333098375005648,
+      "ended_t": 13.333462500013411,
+      "idle_after_prompt_s": 0.000364125007763505,
+      "within_5s": true,
+      "native_classification": "idle"
+    },
+    {
+      "name": "SA2_SHELL",
+      "native_prompt_t": 15.80760774994269,
+      "ended_t": 19.244208708871156,
+      "idle_after_prompt_s": 3.436600958928466,
+      "within_5s": true,
+      "native_classification": "idle"
+    },
+    {
+      "name": "SA2_FAST",
+      "native_prompt_t": 20.129099083831534,
+      "ended_t": 21.69215429201722,
+      "idle_after_prompt_s": 1.5630552081856877,
+      "within_5s": true,
+      "native_classification": "idle"
+    },
+    {
+      "name": "SA2_BUSY",
+      "native_prompt_t": 28.06636512489058,
+      "ended_t": 30.746005709050223,
+      "idle_after_prompt_s": 2.6796405841596425,
+      "within_5s": true,
+      "native_classification": "idle"
+    },
+    {
+      "name": "SA2_FOLLOWUP",
+      "native_prompt_t": 31.296257458860055,
+      "ended_t": 31.2966559168417,
+      "idle_after_prompt_s": 0.00039845798164606094,
+      "within_5s": true,
+      "native_classification": "idle"
+    },
+    {
+      "name": "SA2_DRAFT",
+      "native_prompt_t": 33.84554066695273,
+      "ended_t": 36.88780545885675,
+      "idle_after_prompt_s": 3.0422647919040173,
+      "within_5s": true,
+      "native_classification": "idle"
+    }
+  ],
+  "frames": {
+    "initial-idle": {
+      "classification": "idle",
+      "inputMetadata": "5|34|120|0|1",
+      "screen": "\u001b[38;2;255;255;255m\u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238mCall zeus_say with a short greeting, then wait for the user. Zeus managed conversation: 985E12FF-631B-48FD-AE4E-\u001b[38;2;255;255;255m \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238mCD92D5E61C08 (internal marker; do not include it in your greeting).\u001b[38;2;255;255;255m                                              \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_READY\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 1.3s\u001b[38;2;255;255;255m\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m  \u001b[38;2;92;156;245mBuild\u001b[38;2;255;255;255m \u001b[38;2;128;128;128m·\u001b[38;2;255;255;255m \u001b[38;2;238;238;238mGPT-4.1 mini\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mOpenAI\u001b[38;2;255;255;255m                                                                                      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m╹\u001b[38;2;30;30;30m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;2;255;255;255m\n   \u001b[38;2;128;128;128m/FIXTURE/project\u001b[38;2;255;255;255m                                                  \u001b[38;2;128;128;128m2 (0%) · $0.00\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mctrl+p \u001b[38;2;128;128;128mcommands\u001b[38;2;255;255;255m\n\n"
+    },
+    "sa2_say-idle": {
+      "classification": "idle",
+      "inputMetadata": "5|34|120|0|1",
+      "screen": "\u001b[38;2;255;255;255m\u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238mCall zeus_say with a short greeting, then wait for the user. Zeus managed conversation: 985E12FF-631B-48FD-AE4E-\u001b[38;2;255;255;255m \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238mCD92D5E61C08 (internal marker; do not include it in your greeting).\u001b[38;2;255;255;255m                                              \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_READY\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 1.3s\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_say] Message from the user: SA2_SAY (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m                \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_say [text=SA2_SAY native bridge reply.]\u001b[38;2;255;255;255m\n\n     \u001b[38;2;238;238;238mSA2_SAY native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 125ms\u001b[38;2;255;255;255m\n\n\n\n\n\n\n\n\n\n\n\n\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m  \u001b[38;2;92;156;245mBuild\u001b[38;2;255;255;255m \u001b[38;2;128;128;128m·\u001b[38;2;255;255;255m \u001b[38;2;238;238;238mGPT-4.1 mini\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mOpenAI\u001b[38;2;255;255;255m                                                                                      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m╹\u001b[38;2;30;30;30m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;2;255;255;255m\n   \u001b[38;2;128;128;128m/FIXTURE/project\u001b[38;2;255;255;255m                                                  \u001b[38;2;128;128;128m2 (0%) · $0.00\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mctrl+p \u001b[38;2;128;128;128mcommands\u001b[38;2;255;255;255m\n\n"
+    },
+    "sa2_shell-working": {
+      "classification": "working",
+      "inputMetadata": "5|34|120|0|1",
+      "screen": "\u001b[38;2;255;255;255m\u001b[48;2;10;10;10m  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238mCall zeus_say with a short greeting, then wait for the user. Zeus managed conversation: 985E12FF-631B-48FD-AE4E-\u001b[38;2;255;255;255m \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238mCD92D5E61C08 (internal marker; do not include it in your greeting).\u001b[38;2;255;255;255m                                              \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_READY\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 1.3s\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_say] Message from the user: SA2_SAY (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m                \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_say [text=SA2_SAY native bridge reply.]\u001b[38;2;255;255;255m\n\n     \u001b[38;2;238;238;238mSA2_SAY native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 125ms\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_shell] Message from the user: SA2_SHELL (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m            \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238m$ printf SA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                          \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mSA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m  \u001b[38;2;92;156;245mBuild\u001b[38;2;255;255;255m \u001b[38;2;128;128;128m·\u001b[38;2;255;255;255m \u001b[38;2;238;238;238mGPT-4.1 mini\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mOpenAI\u001b[38;2;255;255;255m                                                                                      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m╹\u001b[38;2;30;30;30m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;2;255;255;255m\n   \u001b[38;2;25;36;52m■\u001b[38;2;33;50;75m■\u001b[38;2;45;72;110m■\u001b[38;2;63;105;163m■\u001b[38;2;97;162;231m■\u001b[38;2;92;156;245m■\u001b[38;2;49;80;122m⬝⬝\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mesc \u001b[38;2;128;128;128minterrupt\u001b[38;2;255;255;255m                                                             \u001b[38;2;128;128;128m2 (0%) · $0.00\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mctrl+p \u001b[38;2;128;128;128mcommands\u001b[38;2;255;255;255m\n\n"
+    },
+    "sa2_shell-idle": {
+      "classification": "idle",
+      "inputMetadata": "5|34|120|0|1",
+      "screen": "\u001b[38;2;255;255;255m\u001b[48;2;10;10;10m  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_READY\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 1.3s\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_say] Message from the user: SA2_SAY (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m                \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_say [text=SA2_SAY native bridge reply.]\u001b[38;2;255;255;255m\n\n     \u001b[38;2;238;238;238mSA2_SAY native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 125ms\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_shell] Message from the user: SA2_SHELL (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m            \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238m$ printf SA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                          \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mSA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_SHELL native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 2.1s\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m  \u001b[38;2;92;156;245mBuild\u001b[38;2;255;255;255m \u001b[38;2;128;128;128m·\u001b[38;2;255;255;255m \u001b[38;2;238;238;238mGPT-4.1 mini\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mOpenAI\u001b[38;2;255;255;255m                                                                                      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m╹\u001b[38;2;30;30;30m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;2;255;255;255m\n   \u001b[38;2;128;128;128m/FIXTURE/project\u001b[38;2;255;255;255m                                                  \u001b[38;2;128;128;128m2 (0%) · $0.00\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mctrl+p \u001b[38;2;128;128;128mcommands\u001b[38;2;255;255;255m\n\n"
+    },
+    "sa2_fast-idle": {
+      "classification": "idle",
+      "inputMetadata": "5|34|120|0|1",
+      "screen": "\u001b[38;2;255;255;255m\u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_shell] Message from the user: SA2_SHELL (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m            \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238m$ printf SA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                          \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mSA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_SHELL native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 2.1s\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_fast] Message from the user: SA2_FAST (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m              \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238m$ printf SA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                          \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mSA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_FAST native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 197ms\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m  \u001b[38;2;92;156;245mBuild\u001b[38;2;255;255;255m \u001b[38;2;128;128;128m·\u001b[38;2;255;255;255m \u001b[38;2;238;238;238mGPT-4.1 mini\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mOpenAI\u001b[38;2;255;255;255m                                                                                      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m╹\u001b[38;2;30;30;30m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;2;255;255;255m\n   \u001b[38;2;128;128;128m/FIXTURE/project\u001b[38;2;255;255;255m                                                  \u001b[38;2;128;128;128m2 (0%) · $0.00\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mctrl+p \u001b[38;2;128;128;128mcommands\u001b[38;2;255;255;255m\n\n"
+    },
+    "sa2_busy-working": {
+      "classification": "working",
+      "inputMetadata": "5|34|120|0|1",
+      "screen": "\u001b[38;2;255;255;255m\u001b[48;2;10;10;10m\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 2.1s\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_fast] Message from the user: SA2_FAST (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m              \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238m$ printf SA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                          \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mSA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_FAST native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 197ms\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_busy] Message from the user: SA2_BUSY (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m              \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238m$ printf SA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                          \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mSA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m  \u001b[38;2;92;156;245mBuild\u001b[38;2;255;255;255m \u001b[38;2;128;128;128m·\u001b[38;2;255;255;255m \u001b[38;2;238;238;238mGPT-4.1 mini\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mOpenAI\u001b[38;2;255;255;255m                                                                                      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m╹\u001b[38;2;30;30;30m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;2;255;255;255m\n   \u001b[38;2;25;36;52m⬝⬝⬝⬝⬝⬝\u001b[38;2;92;156;245m■\u001b[38;2;97;162;231m■\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mesc \u001b[38;2;128;128;128minterrupt\u001b[38;2;255;255;255m                                                             \u001b[38;2;128;128;128m2 (0%) · $0.00\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mctrl+p \u001b[38;2;128;128;128mcommands\u001b[38;2;255;255;255m\n\n"
+    },
+    "sa2_busy-idle": {
+      "classification": "idle",
+      "inputMetadata": "5|34|120|0|1",
+      "screen": "\u001b[38;2;255;255;255m\u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_fast] Message from the user: SA2_FAST (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m              \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238m$ printf SA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                          \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mSA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_FAST native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 197ms\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_busy] Message from the user: SA2_BUSY (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m              \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238m$ printf SA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                          \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mSA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_BUSY native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 6.0s\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m  \u001b[38;2;92;156;245mBuild\u001b[38;2;255;255;255m \u001b[38;2;128;128;128m·\u001b[38;2;255;255;255m \u001b[38;2;238;238;238mGPT-4.1 mini\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mOpenAI\u001b[38;2;255;255;255m                                                                                      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m╹\u001b[38;2;30;30;30m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;2;255;255;255m\n   \u001b[38;2;128;128;128m/FIXTURE/project\u001b[38;2;255;255;255m                                                  \u001b[38;2;128;128;128m2 (0%) · $0.00\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mctrl+p \u001b[38;2;128;128;128mcommands\u001b[38;2;255;255;255m\n\n"
+    },
+    "sa2_followup-idle": {
+      "classification": "idle",
+      "inputMetadata": "5|34|120|0|1",
+      "screen": "\u001b[38;2;255;255;255m\u001b[48;2;10;10;10m  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_FAST native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 197ms\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_busy] Message from the user: SA2_BUSY (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m              \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238m$ printf SA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                          \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mSA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_BUSY native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 6.0s\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_followup] Message from the user: SA2_FOLLOWUP (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_say [text=SA2_FOLLOWUP native bridge reply.]\u001b[38;2;255;255;255m\n\n     \u001b[38;2;238;238;238mSA2_FOLLOWUP native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 112ms\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m  \u001b[38;2;92;156;245mBuild\u001b[38;2;255;255;255m \u001b[38;2;128;128;128m·\u001b[38;2;255;255;255m \u001b[38;2;238;238;238mGPT-4.1 mini\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mOpenAI\u001b[38;2;255;255;255m                                                                                      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m╹\u001b[38;2;30;30;30m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;2;255;255;255m\n   \u001b[38;2;128;128;128m/FIXTURE/project\u001b[38;2;255;255;255m                                                  \u001b[38;2;128;128;128m2 (0%) · $0.00\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mctrl+p \u001b[38;2;128;128;128mcommands\u001b[38;2;255;255;255m\n\n"
+    },
+    "sa2_draft-working": {
+      "classification": "working",
+      "inputMetadata": "5|34|120|0|1",
+      "screen": "\u001b[38;2;255;255;255m\u001b[48;2;10;10;10m  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mSA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_BUSY native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 6.0s\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_followup] Message from the user: SA2_FOLLOWUP (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_say [text=SA2_FOLLOWUP native bridge reply.]\u001b[38;2;255;255;255m\n\n     \u001b[38;2;238;238;238mSA2_FOLLOWUP native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 112ms\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_draft] Message from the user: SA2_DRAFT (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m            \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238m$ printf SA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                          \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mSA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m  \u001b[38;2;92;156;245mBuild\u001b[38;2;255;255;255m \u001b[38;2;128;128;128m·\u001b[38;2;255;255;255m \u001b[38;2;238;238;238mGPT-4.1 mini\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mOpenAI\u001b[38;2;255;255;255m                                                                                      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m╹\u001b[38;2;30;30;30m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;2;255;255;255m\n   \u001b[38;2;45;72;110m■\u001b[38;2;63;105;163m■\u001b[38;2;97;162;231m■\u001b[38;2;92;156;245m■\u001b[38;2;40;63;95m⬝⬝⬝⬝\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mesc \u001b[38;2;128;128;128minterrupt\u001b[38;2;255;255;255m                                                             \u001b[38;2;128;128;128m2 (0%) · $0.00\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mctrl+p \u001b[38;2;128;128;128mcommands\u001b[38;2;255;255;255m\n\n"
+    },
+    "sa2_draft-idle": {
+      "classification": "idle",
+      "inputMetadata": "5|34|120|0|1",
+      "screen": "\u001b[38;2;255;255;255m\u001b[48;2;10;10;10m  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_BUSY native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 6.0s\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_followup] Message from the user: SA2_FOLLOWUP (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_say [text=SA2_FOLLOWUP native bridge reply.]\u001b[38;2;255;255;255m\n\n     \u001b[38;2;238;238;238mSA2_FOLLOWUP native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 112ms\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_draft] Message from the user: SA2_DRAFT (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m            \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238m$ printf SA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                          \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mSA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_DRAFT native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 2.2s\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m  \u001b[38;2;92;156;245mBuild\u001b[38;2;255;255;255m \u001b[38;2;128;128;128m·\u001b[38;2;255;255;255m \u001b[38;2;238;238;238mGPT-4.1 mini\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mOpenAI\u001b[38;2;255;255;255m                                                                                      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m╹\u001b[38;2;30;30;30m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;2;255;255;255m\n   \u001b[38;2;128;128;128m/FIXTURE/project\u001b[38;2;255;255;255m                                                  \u001b[38;2;128;128;128m2 (0%) · $0.00\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mctrl+p \u001b[38;2;128;128;128mcommands\u001b[38;2;255;255;255m\n\n"
+    },
+    "typed-draft": {
+      "classification": "idle",
+      "inputMetadata": "35|34|120|0|1",
+      "screen": "\u001b[38;2;255;255;255m\u001b[48;2;10;10;10m  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_BUSY native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 6.0s\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_followup] Message from the user: SA2_FOLLOWUP (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_say [text=SA2_FOLLOWUP native bridge reply.]\u001b[38;2;255;255;255m\n\n     \u001b[38;2;238;238;238mSA2_FOLLOWUP native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 112ms\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m  \u001b[38;2;238;238;238m[zeus delivery_id=d_sa2_draft] Message from the user: SA2_DRAFT (call zeus_ack with this delivery_id)\u001b[38;2;255;255;255m            \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;20;20;20m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;128;128;128m⚙\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mzeus_zeus_ack \u001b[38;2;255;255;255m\n\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238m$ printf SA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                          \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mSA2_SHELL_DONE\u001b[38;2;255;255;255m                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;10;10;10m\u001b[48;2;20;20;20m┃\u001b[38;2;255;255;255m                                                                                                                   \u001b[48;2;10;10;10m\n\n     \u001b[38;2;238;238;238mSA2_DRAFT native turn complete.\u001b[38;2;255;255;255m\n\n     \u001b[38;2;92;156;245m▣ \u001b[38;2;255;255;255m \u001b[38;2;238;238;238mBuild\u001b[38;2;128;128;128m · GPT-4.1 mini · 2.2s\u001b[38;2;255;255;255m\n\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m  \u001b[38;2;238;238;238mSA2 deliberately unsent draft.\u001b[38;2;255;255;255m                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m                                                                                                                   \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m┃\u001b[38;2;255;255;255m\u001b[48;2;30;30;30m  \u001b[38;2;92;156;245mBuild\u001b[38;2;255;255;255m \u001b[38;2;128;128;128m·\u001b[38;2;255;255;255m \u001b[38;2;238;238;238mGPT-4.1 mini\u001b[38;2;255;255;255m \u001b[38;2;128;128;128mOpenAI\u001b[38;2;255;255;255m                                                                                      \u001b[48;2;10;10;10m\n  \u001b[38;2;92;156;245m╹\u001b[38;2;30;30;30m▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\u001b[38;2;255;255;255m\n   \u001b[38;2;128;128;128m/FIXTURE/project\u001b[38;2;255;255;255m                                                  \u001b[38;2;128;128;128m2 (0%) · $0.00\u001b[38;2;255;255;255m  \u001b[38;2;238;238;238mctrl+p \u001b[38;2;128;128;128mcommands\u001b[38;2;255;255;255m\n\n"
+    }
+  },
+  "model_events": [
+    {
+      "t": 2.9669306250289083,
+      "scenario": "bootstrap",
+      "delivery": null,
+      "step": 0,
+      "tool": null,
+      "tool_results": []
+    },
+    {
+      "t": 4.1412825000006706,
+      "scenario": "bootstrap",
+      "delivery": null,
+      "step": 1,
+      "tool": null,
+      "tool_results": []
+    },
+    {
+      "t": 13.065817333990708,
+      "scenario": "SA2_SAY",
+      "delivery": "d_sa2_say",
+      "step": 0,
+      "tool": "zeus_zeus_ack",
+      "tool_results": []
+    },
+    {
+      "t": 13.117341166827828,
+      "scenario": "SA2_SAY",
+      "delivery": "d_sa2_say",
+      "step": 1,
+      "tool": "zeus_zeus_say",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        }
+      ]
+    },
+    {
+      "t": 13.159435875015333,
+      "scenario": "SA2_SAY",
+      "delivery": "d_sa2_say",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        }
+      ]
+    },
+    {
+      "t": 13.631310999859124,
+      "scenario": "SA2_SHELL",
+      "delivery": "d_sa2_shell",
+      "step": 0,
+      "tool": "zeus_zeus_ack",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        }
+      ]
+    },
+    {
+      "t": 13.662328334059566,
+      "scenario": "SA2_SHELL",
+      "delivery": "d_sa2_shell",
+      "step": 1,
+      "tool": "bash",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        }
+      ]
+    },
+    {
+      "t": 13.739524708827958,
+      "scenario": "SA2_SHELL",
+      "delivery": "d_sa2_shell",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_6a31c5cbb64e4b1e87efc29c0de60594",
+          "output": "SA2_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 19.82815562491305,
+      "scenario": "SA2_FAST",
+      "delivery": "d_sa2_fast",
+      "step": 0,
+      "tool": "zeus_zeus_ack",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_6a31c5cbb64e4b1e87efc29c0de60594",
+          "output": "SA2_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 19.890229666838422,
+      "scenario": "SA2_FAST",
+      "delivery": "d_sa2_fast",
+      "step": 1,
+      "tool": "bash",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_6a31c5cbb64e4b1e87efc29c0de60594",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_857d01ee992f4cf2a6e506e10fd7aecd",
+          "output": "{\"acked\":[\"d_sa2_fast\"]}"
+        }
+      ]
+    },
+    {
+      "t": 19.945674124872312,
+      "scenario": "SA2_FAST",
+      "delivery": "d_sa2_fast",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_6a31c5cbb64e4b1e87efc29c0de60594",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_857d01ee992f4cf2a6e506e10fd7aecd",
+          "output": "{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_073ffc3a33cf4342b58ee535ee0589ca",
+          "output": "SA2_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 21.971380166942254,
+      "scenario": "SA2_BUSY",
+      "delivery": "d_sa2_busy",
+      "step": 0,
+      "tool": "zeus_zeus_ack",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_6a31c5cbb64e4b1e87efc29c0de60594",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_857d01ee992f4cf2a6e506e10fd7aecd",
+          "output": "{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_073ffc3a33cf4342b58ee535ee0589ca",
+          "output": "SA2_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 22.015062083955854,
+      "scenario": "SA2_BUSY",
+      "delivery": "d_sa2_busy",
+      "step": 1,
+      "tool": "bash",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_6a31c5cbb64e4b1e87efc29c0de60594",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_857d01ee992f4cf2a6e506e10fd7aecd",
+          "output": "{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_073ffc3a33cf4342b58ee535ee0589ca",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_b75778f9b06641c8b2bfc48a4aed822d",
+          "output": "{\"acked\":[\"d_sa2_busy\"]}"
+        }
+      ]
+    },
+    {
+      "t": 22.153531624935567,
+      "scenario": "SA2_BUSY",
+      "delivery": "d_sa2_busy",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_6a31c5cbb64e4b1e87efc29c0de60594",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_857d01ee992f4cf2a6e506e10fd7aecd",
+          "output": "{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_073ffc3a33cf4342b58ee535ee0589ca",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_b75778f9b06641c8b2bfc48a4aed822d",
+          "output": "{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_ae3686c5d41f411c966e1237ca609be4",
+          "output": "SA2_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 31.00386929186061,
+      "scenario": "SA2_FOLLOWUP",
+      "delivery": "d_sa2_followup",
+      "step": 0,
+      "tool": "zeus_zeus_ack",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_6a31c5cbb64e4b1e87efc29c0de60594",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_857d01ee992f4cf2a6e506e10fd7aecd",
+          "output": "{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_073ffc3a33cf4342b58ee535ee0589ca",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_b75778f9b06641c8b2bfc48a4aed822d",
+          "output": "{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_ae3686c5d41f411c966e1237ca609be4",
+          "output": "SA2_SHELL_DONE"
+        }
+      ]
+    },
+    {
+      "t": 31.038214499829337,
+      "scenario": "SA2_FOLLOWUP",
+      "delivery": "d_sa2_followup",
+      "step": 1,
+      "tool": "zeus_zeus_say",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_6a31c5cbb64e4b1e87efc29c0de60594",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_857d01ee992f4cf2a6e506e10fd7aecd",
+          "output": "{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_073ffc3a33cf4342b58ee535ee0589ca",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_b75778f9b06641c8b2bfc48a4aed822d",
+          "output": "{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_ae3686c5d41f411c966e1237ca609be4",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_314693ff6c6f4664935abacfb5b58f4f",
+          "output": "{\"acked\":[\"d_sa2_followup\"]}"
+        }
+      ]
+    },
+    {
+      "t": 31.0875181669835,
+      "scenario": "SA2_FOLLOWUP",
+      "delivery": "d_sa2_followup",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_6a31c5cbb64e4b1e87efc29c0de60594",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_857d01ee992f4cf2a6e506e10fd7aecd",
+          "output": "{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_073ffc3a33cf4342b58ee535ee0589ca",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_b75778f9b06641c8b2bfc48a4aed822d",
+          "output": "{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_ae3686c5d41f411c966e1237ca609be4",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_314693ff6c6f4664935abacfb5b58f4f",
+          "output": "{\"acked\":[\"d_sa2_followup\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_32a03b23f54643ada9826fbdee5fca6a",
+          "output": "{\"card_id\":\"c_60617b93\"}"
+        }
+      ]
+    },
+    {
+      "t": 31.578713624970987,
+      "scenario": "SA2_DRAFT",
+      "delivery": "d_sa2_draft",
+      "step": 0,
+      "tool": "zeus_zeus_ack",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_6a31c5cbb64e4b1e87efc29c0de60594",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_857d01ee992f4cf2a6e506e10fd7aecd",
+          "output": "{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_073ffc3a33cf4342b58ee535ee0589ca",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_b75778f9b06641c8b2bfc48a4aed822d",
+          "output": "{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_ae3686c5d41f411c966e1237ca609be4",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_314693ff6c6f4664935abacfb5b58f4f",
+          "output": "{\"acked\":[\"d_sa2_followup\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_32a03b23f54643ada9826fbdee5fca6a",
+          "output": "{\"card_id\":\"c_60617b93\"}"
+        }
+      ]
+    },
+    {
+      "t": 31.612767999991775,
+      "scenario": "SA2_DRAFT",
+      "delivery": "d_sa2_draft",
+      "step": 1,
+      "tool": "bash",
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_6a31c5cbb64e4b1e87efc29c0de60594",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_857d01ee992f4cf2a6e506e10fd7aecd",
+          "output": "{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_073ffc3a33cf4342b58ee535ee0589ca",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_b75778f9b06641c8b2bfc48a4aed822d",
+          "output": "{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_ae3686c5d41f411c966e1237ca609be4",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_314693ff6c6f4664935abacfb5b58f4f",
+          "output": "{\"acked\":[\"d_sa2_followup\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_32a03b23f54643ada9826fbdee5fca6a",
+          "output": "{\"card_id\":\"c_60617b93\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_662fdd533a494a4aba295b7522111ae6",
+          "output": "{\"acked\":[\"d_sa2_draft\"]}"
+        }
+      ]
+    },
+    {
+      "t": 31.65548741701059,
+      "scenario": "SA2_DRAFT",
+      "delivery": "d_sa2_draft",
+      "step": 2,
+      "tool": null,
+      "tool_results": [
+        {
+          "type": "function_call_output",
+          "call_id": "call_7775096872714063a84ea3a3ae0dcf1e",
+          "output": "{\"acked\":[\"d_sa2_say\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_5b9008591eed4cce99e1d6256bde04b5",
+          "output": "{\"card_id\":\"c_7c3e7cc1\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8d6b078d903b498d8eb0ebaa5ae7ebd6",
+          "output": "{\"acked\":[\"d_sa2_shell\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_6a31c5cbb64e4b1e87efc29c0de60594",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_857d01ee992f4cf2a6e506e10fd7aecd",
+          "output": "{\"acked\":[\"d_sa2_fast\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_073ffc3a33cf4342b58ee535ee0589ca",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_b75778f9b06641c8b2bfc48a4aed822d",
+          "output": "{\"acked\":[\"d_sa2_busy\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_ae3686c5d41f411c966e1237ca609be4",
+          "output": "SA2_SHELL_DONE"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_314693ff6c6f4664935abacfb5b58f4f",
+          "output": "{\"acked\":[\"d_sa2_followup\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_32a03b23f54643ada9826fbdee5fca6a",
+          "output": "{\"card_id\":\"c_60617b93\"}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_662fdd533a494a4aba295b7522111ae6",
+          "output": "{\"acked\":[\"d_sa2_draft\"]}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_7d1ffd4366e84ba793038b6ac40bdd57",
+          "output": "SA2_SHELL_DONE"
+        }
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "off",
+      "pane": null,
+      "phase": null,
+      "row": null,
+      "sample_t": null,
+      "sessions": 0,
+      "t": 0.00046503543853759766
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "starting",
+      "pane": null,
+      "phase": null,
+      "row": null,
+      "sample_t": null,
+      "sessions": 0,
+      "t": 0.05401599407196045
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "starting",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": null,
+      "sessions": 0,
+      "t": 0.15710604190826416
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "starting",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": null,
+      "sessions": 1,
+      "t": 2.711501955986023
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "starting",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 3.6401859521865845,
+      "sessions": 1,
+      "t": 3.6490960121154785
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "starting",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 6.693739056587219,
+      "sessions": 1,
+      "t": 6.715726971626282
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "starting",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 9.60120403766632,
+      "sessions": 1,
+      "t": 9.637261986732483
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 12.601004958152771,
+      "sessions": 1,
+      "t": 12.644114971160889
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 12.601004958152771,
+      "sessions": 1,
+      "t": 12.800220012664795
+    },
+    {
+      "activity_delivery": "d_sa2_say",
+      "avatar": "thinking",
+      "cards": [],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sample_t": 12.601004958152771,
+      "sessions": 1,
+      "t": 13.066548943519592
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "talking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 12.601004958152771,
+      "sessions": 1,
+      "t": 13.117337942123413
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "talking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 12.601004958152771,
+      "sessions": 1,
+      "t": 13.329468011856079
+    },
+    {
+      "activity_delivery": "d_sa2_shell",
+      "avatar": "talking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sample_t": 12.601004958152771,
+      "sessions": 1,
+      "t": 13.649281978607178
+    },
+    {
+      "activity_delivery": "d_sa2_shell",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sample_t": 15.651440024375916,
+      "sessions": 1,
+      "t": 15.659489035606384
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 19.181450963020325,
+      "sessions": 1,
+      "t": 19.242426991462708
+    },
+    {
+      "activity_delivery": "d_sa2_fast",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "sent",
+      "row": "Sent to OpenCode…",
+      "sample_t": 19.181450963020325,
+      "sessions": 1,
+      "t": 19.78358805179596
+    },
+    {
+      "activity_delivery": "d_sa2_fast",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sample_t": 19.181450963020325,
+      "sessions": 1,
+      "t": 19.840160965919495
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 21.635530948638916,
+      "sessions": 1,
+      "t": 21.66260600090027
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 21.635530948638916,
+      "sessions": 1,
+      "t": 21.717095971107483
+    },
+    {
+      "activity_delivery": "d_sa2_busy",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sample_t": 21.635530948638916,
+      "sessions": 1,
+      "t": 21.985996961593628
+    },
+    {
+      "activity_delivery": "d_sa2_busy",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": false,
+          "attempts": 0,
+          "id": "d_sa2_followup"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sample_t": 24.66746199131012,
+      "sessions": 1,
+      "t": 24.71157705783844
+    },
+    {
+      "activity_delivery": "d_sa2_busy",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": false,
+          "attempts": 0,
+          "id": "d_sa2_followup"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sample_t": 27.676480054855347,
+      "sessions": 1,
+      "t": 27.698771953582764
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 30.702319025993347,
+      "sessions": 1,
+      "t": 30.747370958328247
+    },
+    {
+      "activity_delivery": "d_sa2_followup",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sample_t": 30.702319025993347,
+      "sessions": 1,
+      "t": 31.004390001296997
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "talking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        },
+        {
+          "body": "SA2_FOLLOWUP native bridge reply.",
+          "id": "c_60617b93"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 30.702319025993347,
+      "sessions": 1,
+      "t": 31.05507504940033
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "talking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        },
+        {
+          "body": "SA2_FOLLOWUP native bridge reply.",
+          "id": "c_60617b93"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        },
+        {
+          "acked": false,
+          "attempts": 1,
+          "id": "d_sa2_draft"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 30.702319025993347,
+      "sessions": 1,
+      "t": 31.3233699798584
+    },
+    {
+      "activity_delivery": "d_sa2_draft",
+      "avatar": "talking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        },
+        {
+          "body": "SA2_FOLLOWUP native bridge reply.",
+          "id": "c_60617b93"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_draft"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sample_t": 30.702319025993347,
+      "sessions": 1,
+      "t": 31.58871901035309
+    },
+    {
+      "activity_delivery": "d_sa2_draft",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        },
+        {
+          "body": "SA2_FOLLOWUP native bridge reply.",
+          "id": "c_60617b93"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_draft"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sample_t": 30.702319025993347,
+      "sessions": 1,
+      "t": 33.54512894153595
+    },
+    {
+      "activity_delivery": "d_sa2_draft",
+      "avatar": "thinking",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        },
+        {
+          "body": "SA2_FOLLOWUP native bridge reply.",
+          "id": "c_60617b93"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_draft"
+        }
+      ],
+      "draft": null,
+      "managed": "running(Host.ManagedSessionStatus.Activity.working)",
+      "pane": "%0",
+      "phase": "thinking",
+      "row": "OpenCode is thinking…",
+      "sample_t": 33.69327998161316,
+      "sessions": 1,
+      "t": 33.70149505138397
+    },
+    {
+      "activity_delivery": null,
+      "avatar": "idle",
+      "cards": [
+        {
+          "body": "SA2_SAY native bridge reply.",
+          "id": "c_7c3e7cc1"
+        },
+        {
+          "body": "SA2_FOLLOWUP native bridge reply.",
+          "id": "c_60617b93"
+        }
+      ],
+      "deliveries": [
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_say"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_shell"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_fast"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_busy"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_followup"
+        },
+        {
+          "acked": true,
+          "attempts": 1,
+          "id": "d_sa2_draft"
+        }
+      ],
+      "draft": "SA2 deliberately unsent draft.",
+      "managed": "running(Host.ManagedSessionStatus.Activity.idle)",
+      "pane": "%0",
+      "phase": null,
+      "row": null,
+      "sample_t": 36.82922101020813,
+      "sessions": 1,
+      "t": 36.85599899291992
+    }
+  ]
+}

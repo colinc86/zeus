@@ -100,6 +100,7 @@ extension ZeusRuntime {
             guard record.value.phase != .working,
                   activityWorkingSeen.contains(key)
                     || managedTurnCompleted(since: record, sessionKey: key)
+                    || managedNativeDeliveryCompleted(record, sessionKey: key)
                     || clock.now.timeIntervalSince(record.value.since) >= Self.managedIdleEndsActivityAfter else { return }
             endAssistantActivity(sessionKey: key)
         default:
@@ -127,6 +128,16 @@ extension ZeusRuntime {
         // an older user delivery (PC1's real scheduled-idle capture). A later user prompt resets this scope.
         guard !lines[start..<end].contains(where: { $0.hasPrefix("✻ Running scheduled task") }) else { return nil }
         return lines[start...end].joined(separator: "\n")
+    }
+
+    /// A complete native turn can fall between monitor samples. Only the same
+    /// delivered ID in history, its native completion and a fresh positive idle
+    /// sample can release it early. Explicit statuses continue to own their TTL.
+    private func managedNativeDeliveryCompleted(_ record: ActivityRecord, sessionKey: String) -> Bool {
+        guard managedController.sessionKey == sessionKey, let id = record.deliveryID,
+              let sample = managedController.latestInputSample, sample.capturedAt >= record.value.since,
+              sample.classification == .idle else { return false }
+        return ManagedTurnCompletion.deliveryID(in: sample.snapshot, agent: sample.agent) == id
     }
 
     /// A response post, explicit end, disconnect or discarded source invalidates late receipts.
