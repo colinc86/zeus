@@ -6,6 +6,27 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.1.6</title>
+      <pubDate>Wed, 14 Oct 2026 03:14:11 GMT</pubDate>
+      <sparkle:version>7</sparkle:version>
+      <sparkle:shortVersionString>0.1.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Answer your assistant's questions in the chat.</strong> When Claude Code, Codex or OpenCode asks for permission, Zeus shows the question with the agent's own choices as buttons. Click one and Zeus presses exactly that choice. It never answers on its own.</li>
+<li><strong>Line breaks come through.</strong> Shift+Return starts a new line, and your assistant receives the message exactly as you wrote it.</li>
+<li><strong>Pop-up sound.</strong> Turn it on in Settings › General › Sounds and pick the Zeus chime or a macOS sound.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.1.6/Zeus-0.1.6.zip" type="application/octet-stream" sparkle:edSignature="GqGQy7q9ucCttl/kL8BlkoJ36X+cxu6fzbeJPIejdPJj+qG7tnq2noJ/DzQFCGTnzyqvxzWJZe6m0fD7nV/TAQ==" length="7220194"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.1.5</title>
       <pubDate>Wed, 14 Oct 2026 01:33:48 GMT</pubDate>
       <sparkle:version>6</sparkle:version>
