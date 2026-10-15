@@ -46,7 +46,7 @@ endpoint is localhost, the HOME/config/project are disposable, tmux uses a priva
 socket, and journal encryption uses a fixture key. No user agent config,
 credentials, default tmux server, or ~/Zeus Assistant was used.
 
-The digest reached the actual model, which called zeus_ack and zeus_say. It took
+The digest reached the actual model, which called zeus_ack. It took
 one delivery attempt, cleared unread state, and recorded the exact summary with
 session label `Claude · Zeus`. The helper removes its owned processes and private
 namespace. The probe can be repeated with:
@@ -71,7 +71,7 @@ passed with no new compiler warnings. Appdev logs are `build/lm4-full.log` and
 `build/lm4-build-final.log` in its worktree. Its native AX/render checks and designer
 review also passed. The platform quick live gate is recorded separately below.
 
-## Merge blocker found during integration review
+## Erasure gap found during integration review (resolved by follow-up)
 
 Delete Everything resets LearningsStore and removes learning notices, but the new
 `.learning` records remain in the durable delivery ledger. Pending presentation
@@ -79,12 +79,10 @@ can therefore recreate Ready lines and delivery can later send the deleted text.
 The existing reflection-evidence reconciliation only covers reflections and
 intentionally excludes journaled native pastes. This is not fixed by hiding UI rows.
 
-Before merge, an explicit runtime erase boundary must cancel queued learning and
-reflection deliveries and suppress late receipts/relaunch replay that could restore
-erased journal rows. Already-pasted native content needs deliberate safe handling:
-neither submit erased content nor discard ownership metadata and classify Zeus's
-paste as a human draft. No erase implementation is included in this checkpoint;
-the issue was reported to PM and appdev as a merge blocker.
+The required resolution was an explicit runtime erase boundary that cancels queued
+learning/reflection deliveries and suppresses late receipts/relaunch replay. PM
+chose to leave already-pasted native text alone, without automatic submission. The initial checkpoint did not implement erasure. PM approved the follow-up
+below on the same branch.
 
 ## Final quick live gate
 
@@ -96,5 +94,48 @@ The bounded gate completed normally and its test/build processes exited.
 
 Artifacts: `build/lm4-quick.log`,
 `build/live/20261015T213751.586149Z/summary.json`, and the adjacent `summary.md`.
-Despite green gates, the erase boundary above remains a merge blocker; these gates
-do not establish Delete Everything correctness for durable learning deliveries.
+These pre-erasure gates did not establish Delete Everything correctness. The
+post-erasure verification below covers the approved follow-up.
+
+
+## Approved erasure follow-up
+
+Commit `e379999` adds optional synchronous deletion callbacks to JournalStore's
+production implementation and LearningsStore. Delete Everything discards all
+learning/reflection records; per-item/group deletion discards deliveries whose
+learning ID or reflection evidence was removed. Read tracking is explicitly
+separate from deletion. App adapters need no changes.
+
+Before a deletion callback returns, the runtime invalidates send tokens, cancels
+in-flight tasks, removes pending presentation, and writes discarded tombstones with
+empty content. A late connector completion, acknowledgment, tool-read receipt, or
+relaunch replay cannot restore a Sent row. Already-pasted native input is left
+untouched and is never automatically submitted after erasure, as directed by PM.
+New unrelated learnings continue to deliver normally.
+
+Five fake-clock/fake-managed regressions cover queued deletion, evidence deletion
+while sending, exhausted native-paste suppression, source reset versus read tracking,
+and deletion after acknowledgment across relaunch. The focused learning/Phase D
+selection passed 38 tests across four suites. The live digest probe now also erases
+the receipt and verifies a late ack does not recreate it. Final post-fix full/live
+results follow.
+
+
+Post-fix `scripts/test.sh` passed on `e379999`: 1,028 app tests across 212 suites
+in 431.101 seconds (1,002 passed, 26 expected opt-in skips, zero failures), all
+249 package tests, and offline gates. Logs: `build/lm4-erase-full.log` and
+`build/lm4-erase-full-summary.json`. Focused result: `build/lm4-erase-focused-final.log`.
+Appdev independently adopted the same history at `4bdf9e0`; its final integrated
+build, 28 focused UI tests, and five glyph tests passed.
+
+`python3 -B Zeus/App/Tests/Runtime/LM4LiveProbe.py --record` passed again against
+real Claude Code 2.1.300. The recorded proof now includes
+`erasure_late_ack_suppressed: true`: after the real model acknowledged the digest,
+the probe deleted the journal and exercised a late ack/receipt; no Sent row returned.
+The digest still took one attempt. This focused live run extends the earlier
+19/19 quick gate; the full quick matrix was not repeated after the erase follow-up.
+Log: `build/lm4-erase-live.log`; recorded evidence: `TestFixtures/live/lm4/digest.json`.
+No probe-owned helpers or test/build processes were left running.
+
+Final `scripts/build.sh` also passed on the post-fix tree, with no new compiler
+warnings (`build/lm4-erase-build-final.log`). The erasure merge blocker is resolved.
