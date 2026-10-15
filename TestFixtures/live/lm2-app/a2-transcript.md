@@ -54,3 +54,10 @@ evidence, but does not substitute for either required real-app check.
 Provide a clean macOS test user/VM with Accessibility and Safari Automation permission granted to the dev fixture; then
 finish the isolated Safari WebDriver title/URL capture and fresh-Xcode AXDocument/email-redaction checks. No real agent
 configuration, credentials, keychain or existing browser/editor contents may be used to make the checks pass.
+
+## Guarded probe verification
+
+On `067ffd9`, `scripts/build.sh --for-testing` and `scripts/check-public.sh` passed. The guarded probe returned exit 1
+with an explicit blocked result, did not launch Xcode, and again recorded Safari preflight -1744 without a prompt.
+`a2-preflight.json` preserves that check separately from the earlier actual fresh-Xcode attempt in `a2-proof.json`.
+The original Xcode and Safari processes remained running; no fixture process was left running.
