@@ -54,6 +54,7 @@ actor LocalRedactor: Redactor {
         let keys = payload.details.keys.sorted()
         var strings = [payload.description]
         if let text = payload.text { strings.append(text) }
+        if let topic = payload.topic { strings.append(topic) }
         for key in keys { strings += [key, payload.details[key] ?? ""] }
         var safe = strings.map { value in
             value.utf8.count <= 128_000 ? Self.firstPass(value) : .init("‹secret›", report: .init(counts: [.secret: 1]))
@@ -61,7 +62,8 @@ actor LocalRedactor: Redactor {
         if !Task.isCancelled, let prose, let spans = await prose.spans(in: safe.map(\.value).joined(separator: "\n")) {
             safe = safe.map { Self.addProse(spans, to: $0) }
         }
-        var offset = payload.text == nil ? 1 : 2, details: [String: String] = [:]
+        let topicIndex = payload.text == nil ? 1 : 2
+        var offset = topicIndex + (payload.topic == nil ? 0 : 1), details: [String: String] = [:]
         for _ in keys { details[safe[offset].value] = safe[offset + 1].value; offset += 2 }
         var report = RedactionReport()
         for value in safe {
@@ -69,7 +71,8 @@ actor LocalRedactor: Redactor {
             if value.report.semanticEngine == .onDeviceModel { report.semanticEngine = .onDeviceModel }
             else if report.semanticEngine == .patternsOnly { report.semanticEngine = value.report.semanticEngine }
         }
-        return .init(.init(description: safe[0].value, text: payload.text == nil ? nil : safe[1].value, details: details), report: report)
+        return .init(.init(description: safe[0].value, text: payload.text == nil ? nil : safe[1].value,
+                           topic: payload.topic == nil ? nil : safe[topicIndex].value, details: details), report: report)
     }
     /// Fast always-available pass, also used for synthetic precision/recall tests.
     nonisolated static func firstPass(_ text: String) -> Redacted<String> {
