@@ -366,6 +366,112 @@ public struct ZeusAttachmentRow: View {
     }
 }
 
+// MARK: - Draft attachment chip
+
+/// An attachment waiting in the composer before it's sent (dropped on Zeus, or added by Ask About This): icon, label,
+/// an optional extra action and a pixel × that removes it. Lay several out with `ZeusChipFlow` so they wrap.
+public struct ZeusAttachmentChip: View {
+    public var attachment: Attachment
+    public var actionTitle: String?
+    public var onAction: (() -> Void)?
+    public var onRemove: () -> Void
+    @Environment(\.zeusPalette) private var palette
+
+    /// - Parameters:
+    ///   - actionTitle: an extra button inside the chip, such as "Work in this folder"; `nil` for none.
+    ///   - onRemove: removes the item from the draft. VoiceOver reads "Remove <label>".
+    public init(_ attachment: Attachment, actionTitle: String? = nil, onAction: (() -> Void)? = nil, onRemove: @escaping () -> Void) {
+        self.attachment = attachment
+        self.actionTitle = actionTitle
+        self.onAction = onAction
+        self.onRemove = onRemove
+    }
+
+    /// What VoiceOver says for the × button.
+    nonisolated public static func removeLabel(_ attachment: Attachment) -> String { "Remove \(attachment.label)" }
+
+    public var body: some View {
+        HStack(spacing: ZeusTheme.Spacing.xs) {
+            Image(systemName: ZeusAttachmentRow.symbol(for: attachment.kind))
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(palette.title)
+                .accessibilityHidden(true)
+            Text(attachment.label).zeusFont(.caption).foregroundStyle(palette.text)
+                .lineLimit(1).truncationMode(.middle).frame(maxWidth: 180, alignment: .leading)
+            if let actionTitle, let onAction {
+                Button(actionTitle, action: onAction).buttonStyle(ZeusButtonStyle(.secondary, size: .small)).fixedSize()
+            }
+            Button(action: onRemove) {
+                ZeusGlyph(.close).frame(width: 20, height: 20).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(palette.secondaryText)
+            .help("Remove")
+            .accessibilityLabel(Self.removeLabel(attachment))
+            .fixedSize()
+        }
+        .padding(.leading, ZeusTheme.Spacing.s).padding(.trailing, ZeusTheme.Spacing.xxs).padding(.vertical, ZeusTheme.Spacing.xxs)
+        .background(PixelFrame(outline: palette.fieldBorder, frame: nil, fill: palette.field, steps: 1))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(attachment.kind.rawValue): \(attachment.label)")
+    }
+}
+
+/// Left-to-right chips that wrap onto new lines instead of scrolling sideways, so every attached item stays visible.
+public struct ZeusChipFlow: Layout {
+    public var spacing: CGFloat
+
+    public init(spacing: CGFloat = ZeusTheme.Spacing.xs) { self.spacing = spacing }
+
+    /// Which item indices go on each row, for item widths and the available width. An item wider than a row gets a
+    /// row of its own.
+    nonisolated public static func rows(widths: [CGFloat], maxWidth: CGFloat, spacing: CGFloat) -> [[Int]] {
+        var rows: [[Int]] = []
+        var current: [Int] = [], used: CGFloat = 0
+        for (index, width) in widths.enumerated() {
+            let needed = current.isEmpty ? width : used + spacing + width
+            if !current.isEmpty && needed > maxWidth {
+                rows.append(current); current = [index]; used = width
+            } else {
+                current.append(index); used = needed
+            }
+        }
+        if !current.isEmpty { rows.append(current) }
+        return rows
+    }
+
+    public func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+        let maxWidth = proposal.width ?? .infinity
+        let rows = Self.rows(widths: sizes.map(\.width), maxWidth: maxWidth, spacing: spacing)
+        var width: CGFloat = 0, height: CGFloat = 0
+        for (number, row) in rows.enumerated() {
+            var rowWidth: CGFloat = 0, rowHeight: CGFloat = 0
+            for (position, index) in row.enumerated() {
+                rowWidth += sizes[index].width + (position > 0 ? spacing : 0)
+                rowHeight = max(rowHeight, sizes[index].height)
+            }
+            width = max(width, rowWidth)
+            height += rowHeight + (number > 0 ? spacing : 0)
+        }
+        return CGSize(width: min(width, maxWidth), height: height)
+    }
+
+    public func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+        var y = bounds.minY
+        for row in Self.rows(widths: sizes.map(\.width), maxWidth: bounds.width, spacing: spacing) {
+            var x = bounds.minX
+            let height = row.map { sizes[$0].height }.max() ?? 0
+            for index in row {
+                subviews[index].place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(width: min(sizes[index].width, bounds.width), height: sizes[index].height))
+                x += sizes[index].width + spacing
+            }
+            y += height + spacing
+        }
+    }
+}
+
 // MARK: - Badge & pager
 
 /// The open-card count badge shown on the avatar (CARDS.md §5).

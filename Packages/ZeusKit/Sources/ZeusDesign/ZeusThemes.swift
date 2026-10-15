@@ -420,3 +420,12 @@ public enum ZeusThemeExample {
         try UserLibraryFolder.writeExample(json, as: fileName, into: directory)
     }
 }
+
+extension View {
+    /// Follows a fixed-appearance theme's light or dark mode for the whole window: Settings, What Zeus Kept and their
+    /// sheets sit on the system window background, so a light-only theme in dark mode (or the reverse) would put
+    /// theme text on the wrong background. Themes that follow the system leave the window alone.
+    public func zeusThemeAppearance(_ theme: ZeusThemeDefinition) -> some View {
+        preferredColorScheme(theme.fixedAppearance)
+    }
+}

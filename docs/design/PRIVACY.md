@@ -108,7 +108,7 @@ Same frame as the L1 sheet.
 `SettingsSegments` labelled "Record in", with two choices:
 
 **1. "Everywhere except my private list"** (default)
-- The list below is the **one private list**, shared by every level. It's the same list as Level 1, and editing it here edits it there.
+- The **one private list** is shared by every level and shown once, under Apps and timing. Higher levels in this mode don't repeat it (LM2-R A3). Their caption reads: "Apps on your private list (above) are never recorded at any level."
 - Caption: "Apps on your private list are never recorded at any level. Time in them counts only as private."
 
 **2. "Only in apps I choose"**
@@ -252,6 +252,7 @@ These are system lines in the thread: the existing notice style, the same as "Cl
 |---|---|---|
 | A passive rule starts | "New rule: Hold Slack messages after 18:00 · Review" | Review opens Settings › Rules at that rule |
 | A rule that acts, first time (shadow) | "I'd have sent “Running late, 10 min” to the team chat · OK next time?" | One action, "OK next time?" → "OK. I'll do that from now on. · Undo". "Not This" is in Settings › Rules. Ignoring the line leaves the rule waiting, and after 24 h it counts as an ignored result |
+| Phase A wording (no outcome text yet) | "I'd have acted on “<rule sentence>” · OK next time?"; after OK: "OK. I'll do that from now on. · Undo"; after Not This: "Got it. I won't."; retired: "Retired: “<rule sentence>” · Review" | as above |
 | Zeus held messages for a rule | "Held 2 messages for your rule “No interruptions while tests fail” · Show" | Show opens the panel at the first held card |
 | A rule retired itself | "Retired a rule you kept skipping: “Prepare PR list at 8:50” · Review" | Review |
 
@@ -300,7 +301,7 @@ Record in   ( Everywhere except my private list | Only in apps I choose )
 <list, §3>
 Up to       ( 4 an hour | 12 an hour | 30 an hour )            [SettingsSegments, default 12]
 Pictures that look the same as the last one don't count.       [caption]
-Keep descriptions for   ( 30 days | 90 days )                  [default 90]
+Keep descriptions for   ( 7 days | 30 days | 90 days )        [default 90]
 Pictures are deleted after 7 days.                             [caption]
 ```
 
@@ -371,6 +372,11 @@ This paragraph is used in the consent sheet and in SETUP.md:
 **Filters:** Level 3 joins the Level filter as "Screen".
 
 ### 9.6 "Ask about this": context chips in the composer
+
+**Talk shortcut caption** (General › Talk shortcut), the second sentence:
+- Normally: "Add ⇧ (⇧⌥⌘Z) to ask about the window in front."
+- If the Talk shortcut already uses ⇧, there's no second shortcut and the sentence reads: "Ask About This is in the Zeus menu, because your shortcut already uses ⇧."
+- With the shortcut off, there's no second sentence.
 
 - **How to open it:**
   - The menu item "Ask About This" (Zeus menu, below "Talk to Zeus…").
