@@ -30,16 +30,19 @@ import ZeusProtocol
                                 height: layout.contentSize.height + (vertical ? ZeusDialogTail.height : 0))
                             #expect(placement.frame.height >= layout.contentSize.height)
                             for fraction in [0.0, 0.5, 1.0] {
-                                let host = NSHostingView(rootView: PeekContent(card: card, layout: layout, moreCount: 2,
-                                    error: nil, answeredOptionID: nil, tail: ZeusDialogTail(edge: edge, offset: 40), reveal: .fraction(fraction))
-                                    .environment(\.zeusFontChoice, font).environment(\.zeusAnimationsActive, true))
-                                let window = NSPanel(contentRect: CGRect(origin: .zero, size: size), styleMask: [.borderless], backing: .buffered, defer: false)
-                                window.isReleasedWhenClosed = false
-                                window.contentView = host
-                                host.layoutSubtreeIfNeeded()
-                                #expect(host.fittingSize.width <= host.bounds.width + 0.01)
-                                #expect(host.fittingSize.height <= host.bounds.height + 0.01)
-                                window.close()
+                                autoreleasepool {
+                                    let host = TestHostingView(rootView: PeekContent(card: card, layout: layout, moreCount: 2,
+                                        error: nil, answeredOptionID: nil, tail: ZeusDialogTail(edge: edge, offset: 40), reveal: .fraction(fraction))
+                                        .environment(\.zeusFontChoice, font), animationsEnabled: true)
+                                    let window = NSPanel(contentRect: CGRect(origin: .zero, size: size), styleMask: [.borderless], backing: .buffered, defer: false)
+                                    window.isReleasedWhenClosed = false
+                                    window.contentView = host
+                                    host.layoutSubtreeIfNeeded()
+                                    #expect(host.fittingSize.width <= host.bounds.width + 0.01)
+                                    #expect(host.fittingSize.height <= host.bounds.height + 0.01)
+                                    window.contentView = nil
+                                    window.close()
+                                }
                             }
                         }
                     }
@@ -78,7 +81,7 @@ import ZeusProtocol
             let placement = PeekPlacement.place(art: CGRect(x: -180, y: 40, width: 80, height: 100), anchorX: -140,
                 contentSize: layout.contentSize, screen: smallScreen)
             #expect(smallScreen.insetBy(dx: 8, dy: 8).contains(placement.frame))
-            let host = NSHostingView(rootView: PeekContent(card: card, layout: layout, moreCount: 12,
+            let host = TestHostingView(rootView: PeekContent(card: card, layout: layout, moreCount: 12,
                 error: "Could not save your reply. Try again.", answeredOptionID: "yes", tail: placement.tail, reveal: .full)
                 .environment(\.zeusFontChoice, font))
             #expect(host.fittingSize.width <= placement.frame.width)
@@ -105,8 +108,8 @@ import ZeusProtocol
     }
 
     private func fitting(card: Card, layout: PeekLayout, font: ZeusFontChoice, reveal: ZeusPeekBubble.Reveal) -> CGSize {
-        NSHostingView(rootView: PeekContent(card: card, layout: layout, moreCount: 0, error: nil,
+        TestHostingView(rootView: PeekContent(card: card, layout: layout, moreCount: 0, error: nil,
             answeredOptionID: nil, tail: ZeusDialogTail(edge: .bottom, offset: 100), reveal: reveal)
-            .environment(\.zeusFontChoice, font).environment(\.zeusAnimationsActive, true)).fittingSize
+            .environment(\.zeusFontChoice, font), animationsEnabled: true).fittingSize
     }
 }

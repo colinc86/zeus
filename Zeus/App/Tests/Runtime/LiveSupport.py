@@ -4,9 +4,30 @@
 Probes retain their scenario decisions/assertions; this module owns isolation,
 localhost SSE transport, headless-host caching, cleanup and path scrubbing.
 """
-import atexit, hashlib, http.server, json, os, pathlib, re, selectors, shutil, signal, subprocess, sys, tempfile, threading, time, uuid
+import atexit, fcntl, hashlib, http.server, json, os, pathlib, re, selectors, shutil, signal, subprocess, sys, tempfile, threading, time, uuid
 REPO=pathlib.Path(__file__).resolve().parents[4]
 _ROOTS=[]
+_HOST_LEASE=None
+_HOST_LEASE_GUARD=threading.Lock()
+
+def serialize_live_hosts():
+    """One live fixture process per worktree, through cleanup (never a user socket).
+
+    The descriptor is close-on-exec: agent/model children cannot keep the lease
+    alive after their probe exits. The stable lock inode must not be unlinked.
+    """
+    global _HOST_LEASE
+    with _HOST_LEASE_GUARD:
+        if _HOST_LEASE is not None:return
+        path=REPO/"build/live-hosts/.fixture.lock"
+        path.parent.mkdir(parents=True,exist_ok=True)
+        lease=path.open("a")
+        try:fcntl.flock(lease,fcntl.LOCK_EX)
+        except BaseException:
+            lease.close()
+            raise
+        _HOST_LEASE=lease
+
 
 def output_dir(legacy):
     value=pathlib.Path(os.environ.get("ZEUS_LIVE_OUTPUT", REPO/"build"/legacy))
@@ -14,6 +35,7 @@ def output_dir(legacy):
     return value
 
 def register_root(root):
+    serialize_live_hosts()
     root=pathlib.Path(root).resolve()
     if root.parent != pathlib.Path("/private/tmp") or not root.name.startswith(("zpc1_","zsa1_","zsa2_","zsa3_","zsa4_","zac1_","zlv1_","zcy1_")):
         raise ValueError("Not an owned private live-fixture root")
@@ -126,7 +148,11 @@ signal.signal(signal.SIGTERM,_terminate)
 
 def finish_host_build(out,package):
     """Build each native host once per source fingerprint, shared across agent rows."""
-    # Runtime learning is optional; headless hosts need its Foundation-only value/protocol seams.
+    # Runtime learning is optional; its Phase D recovery checks also need these
+    # declarations. The host never constructs a key provider or opens a keychain.
+    for name in ["JournalEncryption.swift", "LearningStorageRecovery.swift"]:
+        (package/"Sources/Host"/name).write_text((REPO/"Zeus/Learn/Journal"/name).read_text())
+    # Headless hosts also need the value/protocol seams.
     # App-owned durable explicit-context intents accompany CardStore in every headless host.
     context_intent = REPO/"Zeus/Cards/ContextSendIntent.swift"
     (package/"Sources/Host/ContextSendIntent.swift").write_text(context_intent.read_text())
@@ -150,6 +176,7 @@ def finish_host_build(out,package):
     return executable
 
 def host_package(out,name):
+    serialize_live_hosts()
     package=REPO/"build/live-hosts"/name if "ZEUS_LIVE_OUTPUT" in os.environ else out/"host"
     package.mkdir(parents=True,exist_ok=True)
     # Remove copied sources so a removed production file cannot survive in the cache.

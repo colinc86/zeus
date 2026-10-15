@@ -18,7 +18,7 @@ import Testing
 
     @Test func tabsHaveTitlesSelectionAndPress() async throws {
         let navigation = SettingsNavigation()
-        let host = NSHostingView(rootView: SettingsTabBar(navigation: navigation).frame(width: 640).environment(\.accessibilityEnabled, true))
+        let host = TestHostingView(rootView: SettingsTabBar(navigation: navigation).frame(width: 640).environment(\.accessibilityEnabled, true))
         let window = NSWindow(contentRect: CGRect(x: -20000, y: -20000, width: 640, height: 60), styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = host; window.orderFront(nil)
         defer { window.orderOut(nil); window.contentView = nil; window.close() }

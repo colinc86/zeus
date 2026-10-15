@@ -29,9 +29,9 @@ import ZeusDesign
     return ""
 }
 @Suite(.serialized) @MainActor struct LM2DNativeTests {
-    private func mount<V: View>(_ view: V) async throws -> (NSHostingView<AnyView>, NSWindow) {
+    private func mount<V: View>(_ view: V) async throws -> (TestHostingView, NSWindow) {
         ZeusFonts.registerBundled()
-        let host = NSHostingView(rootView: AnyView(view.environment(\.accessibilityEnabled, true).environment(\.zeusFontChoice, .system)
+        let host = TestHostingView(rootView: AnyView(view.environment(\.accessibilityEnabled, true).environment(\.zeusFontChoice, .system)
             .buttonStyle(ZeusButtonStyle(.secondary, size: .small))))
         let window = DepthTestPanel(contentRect: .init(x: -20000, y: -20000, width: 600, height: 420), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.ignoresMouseEvents = true; window.contentView = host; window.orderFront(nil)

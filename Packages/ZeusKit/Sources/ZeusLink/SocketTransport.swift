@@ -129,6 +129,7 @@ internal final class ListeningSocket: @unchecked Sendable {
     private let path: String
     private let lock = NSLock()
     private var stopped = false
+    private var source: (any DispatchSourceRead)?
     private let inode: ino_t
 
     init(path: String) throws {
@@ -151,21 +152,52 @@ internal final class ListeningSocket: @unchecked Sendable {
         guard chmod(path, 0o600) == 0, Darwin.listen(fd, 16) == 0, lstat(path, &info) == 0 else {
             let code = errno; Darwin.close(fd); unlink(path); throw BridgeLinkError.system(operation: "listen/chmod", code: code)
         }
+        let flags = fcntl(fd, F_GETFL)
+        guard flags >= 0, fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0 else {
+            let code = errno; Darwin.close(fd); unlink(path)
+            throw BridgeLinkError.system(operation: "nonblocking listener", code: code)
+        }
         self.fd = fd; self.path = path; self.inode = info.st_ino
     }
 
     func run(accept: @escaping @Sendable (SocketChannel) -> Void) {
-        DispatchQueue(label: "ZeusLink.accept").async { [self] in
-            defer { stop(); lock.withLock { _ = Darwin.close(fd) } }
-            while !lock.withLock({ stopped }) {
+        lock.withLock {
+            guard !stopped, source == nil else { return }
+            // shutdown(listeningFD) returns ENOTCONN on macOS and cannot wake a
+            // blocking accept. A readiness source needs no idle worker and closes
+            // only after its event handler finishes, avoiding descriptor reuse races.
+            let source = DispatchSource.makeReadSource(fileDescriptor: fd, queue: DispatchQueue(label: "ZeusLink.accept"))
+            let descriptor = fd
+            source.setEventHandler { [weak self] in self?.acceptReady(accept) }
+            source.setCancelHandler { _ = Darwin.close(descriptor) }
+            self.source = source
+            source.resume()
+        }
+    }
+
+    private func acceptReady(_ accept: @escaping @Sendable (SocketChannel) -> Void) {
+        while true {
+            let (client, code) = lock.withLock { () -> (Int32, Int32) in
+                guard !stopped else { return (-1, ECANCELED) }
                 let client = Darwin.accept(fd, nil, nil)
-                if client < 0 && errno == EINTR { continue }
-                guard client >= 0 else { break }
-                do { try configureSocket(client) }
-                catch { Darwin.close(client); continue }
-                let channel = SocketChannel(fd: client)
-                if lock.withLock({ stopped }) { channel.close() } else { accept(channel) }
+                return (client, errno)
             }
+            if client < 0 {
+                if code == EINTR { continue }
+                if code != EAGAIN && code != EWOULDBLOCK && code != ECANCELED { stop() }
+                return
+            }
+            do {
+                // Accepted sockets may inherit O_NONBLOCK; channels retain their
+                // existing blocking-reader / bounded-writer semantics.
+                let flags = fcntl(client, F_GETFL)
+                guard flags >= 0, fcntl(client, F_SETFL, flags & ~O_NONBLOCK) == 0 else {
+                    throw BridgeLinkError.system(operation: "blocking channel", code: errno)
+                }
+                try configureSocket(client)
+            } catch { Darwin.close(client); continue }
+            let channel = SocketChannel(fd: client)
+            if lock.withLock({ stopped }) { channel.close() } else { accept(channel) }
         }
     }
 
@@ -173,9 +205,14 @@ internal final class ListeningSocket: @unchecked Sendable {
         lock.withLock {
             guard !stopped else { return }
             stopped = true
-            _ = Darwin.shutdown(fd, SHUT_RDWR)
+            if let source {
+                source.cancel()
+                self.source = nil
+            } else { _ = Darwin.close(fd) }
             var info = stat()
             if lstat(path, &info) == 0, info.st_ino == inode { _ = unlink(path) }
         }
     }
+
+    deinit { stop() }
 }

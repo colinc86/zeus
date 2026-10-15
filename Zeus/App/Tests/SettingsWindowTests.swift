@@ -72,7 +72,7 @@ import ZeusDesign
         let view = SettingsView(settings: settings, managed: managed, cards: cards, status: status, messaging: hub,
             preview: hub, testMessage: ComposeModel(cards: cards, messaging: hub), injectDemo: { _ in }, resetPosition: {},
             navigation: navigation, login: LoginItemModel(), hotKey: GlobalHotKey(), activity: SurfaceActivity())
-        let host = NSHostingView(rootView: view.background(Color(nsColor: .windowBackgroundColor)))
+        let host = TestHostingView(rootView: view.background(Color(nsColor: .windowBackgroundColor)))
         host.sizingOptions = []
         let window = A11OffscreenPanel(contentRect: CGRect(x: -10000, y: -10000, width: 572, height: 572),
             styleMask: [.titled, .nonactivatingPanel], backing: .buffered, defer: false)

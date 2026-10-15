@@ -68,7 +68,7 @@ import ZeusProtocol
         let view = ConversationView(settings: settings, store: cards, model: model, messaging: runtime,
             status: AvatarStatusModel(cards: cards), panel: panel, activity: activity,
             openSettings: {}, copySetup: {}, resize: { _ in })
-        let host = NSHostingView(rootView: view.padding(16).background(Color.white).environment(\.colorScheme, .light))
+        let host = TestHostingView(rootView: view.padding(16).background(Color.white).environment(\.colorScheme, .light))
         let window = NSWindow(contentRect: CGRect(x: -24000, y: -24000, width: 400, height: 500),
             styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false

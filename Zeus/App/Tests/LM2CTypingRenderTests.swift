@@ -45,7 +45,7 @@ import ZeusDesign
     }
     private func render<V: View>(_ view: V, _ name: String, theme: ZeusThemeDefinition, scheme: ColorScheme, width: CGFloat, height: CGFloat) async throws {
         let appearance = theme.fixedAppearance ?? scheme
-        let host = NSHostingView(rootView: view.frame(width: width, height: height, alignment: .topLeading)
+        let host = TestHostingView(rootView: view.frame(width: width, height: height, alignment: .topLeading)
             .environment(\.zeusTheme, theme).environment(\.zeusFontChoice, .system).zeusThemeAppearance(theme)
             .environment(\.colorScheme, appearance).buttonStyle(ZeusButtonStyle(.secondary, size: .small)).toggleStyle(ZeusCheckboxStyle())
             .background(theme.palette(for: appearance).panel))

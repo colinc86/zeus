@@ -67,8 +67,8 @@ import ZeusProtocol
         learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: root.appendingPathComponent("Activity"),
                             source: { A12NoActivity() })
     }
-    func mount<V: View>(_ view: V, width: CGFloat = 572, height: CGFloat = 1200, referenceColor: Color? = nil) async throws -> NSHostingView<AnyView> {
-        let host = NSHostingView(rootView: AnyView(view.padding(24).frame(width: width)
+    func mount<V: View>(_ view: V, width: CGFloat = 572, height: CGFloat = 1200, referenceColor: Color? = nil) async throws -> TestHostingView {
+        let host = TestHostingView(rootView: AnyView(view.padding(24).frame(width: width)
             .overlay(alignment: .topLeading) {
                 if let referenceColor { Rectangle().fill(referenceColor).frame(width: 4, height: 4).accessibilityHidden(true) }
             }

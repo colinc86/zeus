@@ -208,7 +208,7 @@ import ZeusProtocol
         let f = try UpdateUIFixture(displayFolder: "/FIXTURE/project"); defer { f.cleanup() }
         f.pending()
         let messaging = AgentMessagingHub(); messaging.previewEnabled = true
-        let host = NSHostingView(rootView: AssistantSettingsView(settings: f.settings, managed: f.managed, messaging: messaging,
+        let host = TestHostingView(rootView: AssistantSettingsView(settings: f.settings, managed: f.managed, messaging: messaging,
             testMessage: ComposeModel(cards: f.cards, messaging: messaging)).padding(16).frame(width: 560).background(ZeusPalette.light.panel).environment(\.accessibilityEnabled, true).environment(\.zeusFontChoice, .system))
         let window = NSPanel(contentRect: CGRect(x: -20000, y: -20000, width: 560, height: 1800), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = host

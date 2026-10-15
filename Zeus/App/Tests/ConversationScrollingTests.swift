@@ -66,7 +66,7 @@ import Testing
         scroll.documentView = document
         let driver = ConversationScrollDriver(); driver.scrollView = scroll
         driver.scroll(to: 800)
-        // SwiftUI knows about the next row before NSHostingView's document has grown.
+        // SwiftUI knows about the next row before TestHostingView's document has grown.
         driver.followLatest(newestMessageTop: 950)
         for _ in 0..<10 { await Task.yield() }
         #expect(scroll.contentView.bounds.minY == 800)
