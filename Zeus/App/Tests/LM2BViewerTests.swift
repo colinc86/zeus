@@ -78,11 +78,13 @@ import Testing
     @Test func realPrivateActivityAndAppHeaderHaveDistinctNames() {
         let event = ActivityEvent(t: Date(), kind: .private, seconds: 120)
         let item = JournalItem(time: event.t, level: .activity, kind: .activity, payload: .init(ActivityStore.payload(event)))
-        #expect(item.app == nil); #expect(JournalDisplay.name(item) == "Private")
+        #expect(item.app == nil); #expect(JournalDisplay.name(item) == "Private"); #expect(JournalDisplay.detailLines(item).isEmpty)
         let own = JournalItem(level: .activity, kind: .reflection, payload: .init(.init(description: "Reflection")))
         #expect(JournalDisplay.name(own) == "Zeus")
         let app = JournalItem(level: .focus, app: "test.editor", kind: .focus, payload: .init(.init(description: "test.editor")))
         #expect(!JournalDisplay.showsDescription(app))
+        let details = JournalItem(level: .focus, kind: .focus, payload: .init(.init(description: "Editor", details: ["kind": "internal", "document": "file:///project/Example.swift", "window": "Example.swift"])))
+        #expect(JournalDisplay.detailLines(details) == ["Document: Example.swift — /project", "Window: Example.swift"])
     }
     @Test func scopeCaptionAndRuleTriggersUseApprovedHierarchyAndWords() {
         #expect(ObservationScopeView.scopeCaption(level: 2, scope: .exceptPrivate) == "Apps on your private list (above) are never recorded at any level.")
@@ -91,5 +93,8 @@ import Testing
         #expect(RulesPaneModel.triggerText(.init(time: .init(startMinute: 0, endMinute: 0, weekdays: [1, 7]))) == "Weekends all day")
         #expect(RulesPaneModel.triggerText(.init(apps: ["editor"], state: "tests failing"), appName: { _ in "Xcode" }) == "in Xcode · when tests failing")
         #expect(RulesPaneModel.triggerText(.init()) == "Any time")
+        #expect(JournalPictureDetail.counts(covered: 1, blurred: 0) == "1 covered")
+        #expect(JournalPictureDetail.counts(covered: 0, blurred: 2) == "2 blurred")
+        #expect(JournalPictureDetail.counts(covered: 3, blurred: 1) == "3 covered · 1 blurred")
     }
 }

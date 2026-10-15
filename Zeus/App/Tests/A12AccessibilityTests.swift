@@ -201,9 +201,9 @@ import ZeusProtocol
         #expect(ordered(f.tabLabels(strip), startingAt: "Question. Waiting for your answer. Go to question") == ["Question. Waiting for your answer. Go to question", "Skip"])
         let themeLabels = f.settings.availableThemes.map { $0.name + ". " + ($0.fixedAppearance == .dark ? "Always dark" : $0.fixedAppearance == .light ? "Always light" : "Follows your Mac") }
         #expect(ordered(f.tabLabels(appearance), startingAt: themeLabels[0]) == themeLabels + ["Import Theme…", "Open Example", "Open Themes Folder", "Pixel", "SF Mono"])
-        let privacyLabels = ["Let Zeus learn when and in what I work"] + MomentKind.allCases.map(\.title)
+        let privacyLabels = ["Let Zeus learn when and in what I work"]
             + f.learn.settings.excludedApps.map { "Remove \($0.name)" } + ["Add App…"]
-            + LearnSettings.retentionChoices.map { "\($0) days" } + ["Delete Everything…"]
+            + LearnSettings.retentionChoices.map { "\($0) days" } + MomentKind.allCases.map(\.title) + ["Delete Everything…"]
         #expect(ordered(f.tabLabels(privacy), startingAt: privacyLabels[0]) == privacyLabels)
         let generalLabels = f.tabLabels(general)
         #expect(Set(generalLabels).count == generalLabels.count && !generalLabels.contains { $0.hasPrefix("Unmatched") })

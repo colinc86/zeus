@@ -33,8 +33,10 @@ struct TalkHotKey: Codable, Equatable {
         return nil
     }
     var isValid: Bool { validationError == nil }
+    /// Native modifier symbol, rendered with the system font in shortcut labels and captions.
+    static let shiftSymbol = "\u{21E7}"
     var displayName: String {
-        (control ? "\u{2303}" : "") + (option ? "⌥" : "") + (shift ? "\u{21E7}" : "") + (command ? "⌘" : "") + key
+        (control ? "\u{2303}" : "") + (option ? "⌥" : "") + (shift ? Self.shiftSymbol : "") + (command ? "⌘" : "") + key
     }
     /// Shift is added only when it creates a distinct shortcut. A shifted Talk key keeps its original action.
     var askAboutThis: TalkHotKey? {

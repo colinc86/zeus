@@ -57,7 +57,7 @@ import ZeusDesign
 
         let titles = model.sections.map { $0.map(\.title) }
         #expect(titles.count == 5)
-        #expect(titles[1] == ["Talk to Zeus…", "Hide Zeus", MenuPresentation.hideForHour, MenuPresentation.hideUntilTomorrow])
+        #expect(titles[1] == ["Talk to Zeus…", "Ask About This", "Hide Zeus", MenuPresentation.hideForHour, MenuPresentation.hideUntilTomorrow])
         #expect(titles[2] == ["Character", "Size", "Theme"])
         #expect(titles[3].first == "Settings…" && titles[3].last == "About Zeus")
         #expect(titles[4] == ["Quit Zeus"])
@@ -90,7 +90,7 @@ import ZeusDesign
         f.shell.hide(for: .hour)
         let model = f.shell.menuModel
         #expect(model.sections[0].contains { $0.title.hasPrefix("Hidden until ") })
-        #expect(model.sections[1][1].title == "Show Zeus")
+        #expect(model.sections[1][2].title == "Show Zeus")
     }
 
     @Test func statusLineSaysWhatTheStripSaysAndJumpsThere() throws {

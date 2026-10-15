@@ -90,8 +90,8 @@ struct GeneralSettingsView: View {
     static func shortcutCaption(_ shortcut: TalkHotKey) -> String {
         guard shortcut.enabled, shortcut.isValid else { return "The shortcut is off. Click Zeus or use the menu to talk." }
         let base = "\(shortcut.displayName) opens Talk to Zeus from any app."
-        if let context = shortcut.askAboutThis { return base + " Add ⇧ (\(context.displayName)) to ask about the window in front." }
-        return base + " Ask About This is in the Zeus menu, because your shortcut already uses ⇧."
+        if let context = shortcut.askAboutThis { return base + " Add \(TalkHotKey.shiftSymbol) (\(context.displayName)) to ask about the window in front." }
+        return base + " Ask About This is in the Zeus menu, because your shortcut already uses \(TalkHotKey.shiftSymbol)."
     }
 
     static let soundCaption = "Plays at your Mac's alert volume, set in System Settings → Sound. Zeus stays quiet while it's hidden, during quiet hours and while the conversation is open."

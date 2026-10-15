@@ -15,8 +15,16 @@ import ZeusProtocol
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         defer { try? FileManager.default.removeItem(at: root) }
         let journal = EncryptedJournalStore(root: root.appendingPathComponent("journal"), keyProvider: LM2BPrivateKey()), now = Date()
-        let frame = Redacted(FrameItem(heic: try FrameRedactor.heic(ScreenTestImages.draw()), width: 1000, height: 600,
-            boxes: [.init(x: 0.03, y: 0.08, width: 0.5, height: 0.06, kind: .text)], appName: "Editor", windowTitle: "Example.swift"))
+        let synthetic = try ScreenTestImages.draw()
+        let line = try #require(FrameRedactor.textLines(synthetic).max(by: { $0.1.maxY < $1.1.maxY })).1
+        // Vision returns bottom-left coordinates. Cover the WHOLE OCR line plus the production margin.
+        let paddingX = 5.0 / Double(synthetic.width), paddingY = 5.0 / Double(synthetic.height)
+        let boxes = [FrameBox(x: max(0, line.minX - paddingX), y: max(0, 1 - line.maxY - paddingY),
+            width: min(1 - max(0, line.minX - paddingX), line.width + 2 * paddingX),
+            height: min(1 - max(0, 1 - line.maxY - paddingY), line.height + 2 * paddingY), kind: .text)]
+        let covered = try FrameRedactor.cover(synthetic, boxes: boxes)
+        let frame = Redacted(FrameItem(heic: try FrameRedactor.heic(covered), width: 1000, height: 600,
+            boxes: boxes, appName: "Editor", windowTitle: "Example.swift"))
         try journal.appendFrame(frame, item: .init(id: "picture", time: now, level: .screen, app: "com.example.Editor", kind: .frame,
             payload: .init(.init(description: "Editor · Example.swift", details: ["window": "Example.swift"])) ))
         try journal.append(.init(id: "description", time: now, level: .screen, app: "com.example.Editor", kind: .description,
@@ -41,7 +49,7 @@ import ZeusProtocol
             for scheme in [ColorScheme.light, .dark] {
                 let suffix = theme.id + (scheme == .light ? "-light" : "-dark")
                 try await render(ScreenPrivacyView(model: screen), name: suffix + "-screen", theme: theme, scheme: scheme, width: 820, height: 740)
-                try await render(ScreenConsentSheet(enable: {}, cancel: {}), name: suffix + "-consent", theme: theme, scheme: scheme, width: 540, height: 700)
+                try await render(ScreenConsentSheet(enable: {}, cancel: {}), name: suffix + "-consent", theme: theme, scheme: scheme, width: 540, height: 1120)
                 viewer.pictures.selectedID = nil
                 try await render(JournalWindowView(model: viewer, settings: settings), name: suffix + "-journal", theme: theme, scheme: scheme, width: 840, height: 520)
                 viewer.pictures.selectedID = "picture"
@@ -52,17 +60,34 @@ import ZeusProtocol
                     preview: shell.messaging, testMessage: shell.testMessage, injectDemo: { _ in }, resetPosition: {}, navigation: navigation,
                     login: shell.login, hotKey: shell.hotKey, activity: shell.surfaceActivity, learn: learn, learning: learning),
                     name: suffix + "-privacy", theme: theme, scheme: scheme, width: 980, height: 1600)
-                let attachments = [Attachment(kind: .file, label: "Window · Example.swift", target: "/fixture/window.txt"),
-                    Attachment(kind: .url, label: "Page · docs.example.invalid", target: "https://docs.example.invalid"),
-                    Attachment(kind: .file, label: "Selection · 42 words", target: "/fixture/selection.txt")]
-                try await render(ZeusChipFlow { ForEach(attachments, id: \.id) { item in ZeusAttachmentChip(item, onRemove: {}) } }.padding(16),
-                    name: suffix + "-chips", theme: theme, scheme: scheme, width: 420, height: 140)
+                let composition = ConversationModel(cards: cards, messaging: shell.messaging)
+                let pictureFile = root.appendingPathComponent("covered.heic"); try frame.value.heic.write(to: pictureFile)
+                composition.attachContext(.init(items: [
+                    .init(attachment: .init(kind: .file, label: "Window · Example.swift", target: "/fixture/window.txt"), kind: .window, preview: "Window: Example.swift"),
+                    .init(attachment: .init(kind: .url, label: "Page · docs.example.invalid", target: "https://docs.example.invalid"), kind: .page, preview: "https://docs.example.invalid"),
+                    .init(attachment: .init(kind: .file, label: "Selection · 42 words", target: "/fixture/selection.txt"), kind: .selection, preview: "Covered selection"),
+                    .init(attachment: .init(kind: .file, label: "Picture · Editor", target: pictureFile.path), kind: .picture, preview: "Covered Example.swift")], caption: ContextDraftResult.explanation))
+                try await render(VStack(alignment: .leading, spacing: 8) { ContextDraftAttachments(model: composition) }.padding(16),
+                    name: suffix + "-chips", theme: theme, scheme: scheme, width: 420, height: 220)
+                if theme.id == "classic" && scheme == .light {
+                    policies.edit(2) { $0.scope = .chosenApps; $0.apps = [.init(name: "Safari", bundleIDs: ["com.apple.Safari"])] }
+                    try await render(ObservationLevelView(settings: policies, privacy: learn.settings, hasPermission: { true }, requestPermission: {}),
+                        name: "safari-indent", theme: theme, scheme: scheme, width: 820, height: 420)
+                    policies.edit(2) { $0.scope = .exceptPrivate }
+                    policies.edit(1) { $0.scope = .chosenApps; $0.apps = [.init(name: "Editor", bundleIDs: ["com.example.Editor"])] }
+                    try await render(ObservationScopeView(settings: policies, privacy: learn.settings, level: 1).padding(20),
+                        name: "shared-private-chosen", theme: theme, scheme: scheme, width: 820, height: 600)
+                    policies.edit(1) { $0.scope = .exceptPrivate }
+                    let event = ActivityEvent(t: now, kind: .private, seconds: 120)
+                    try await render(JournalItemView(item: .init(time: now, level: .activity, kind: .activity, payload: .init(ActivityStore.payload(event)))).padding(20),
+                        name: "private-header", theme: theme, scheme: scheme, width: 600, height: 130)
+                }
             }
         }
     }
     private func render<V: View>(_ view: V, name: String, theme: ZeusThemeDefinition, scheme: ColorScheme, width: CGFloat, height: CGFloat) async throws {
         let actual = theme.fixedAppearance ?? scheme
-        let host = NSHostingView(rootView: view.frame(width: width, height: height, alignment: .topLeading)
+        let host = NSHostingView(rootView: view.padding(name.hasSuffix("-screen") || name.hasSuffix("-rules") ? 20 : 0).frame(width: width, height: height, alignment: .topLeading)
             .environment(\.zeusTheme, theme).environment(\.zeusFontChoice, .system).zeusThemeAppearance(theme)
             .environment(\.colorScheme, actual).buttonStyle(ZeusButtonStyle(.secondary, size: .small)).toggleStyle(ZeusCheckboxStyle())
             .background(theme.palette(for: actual).panel))

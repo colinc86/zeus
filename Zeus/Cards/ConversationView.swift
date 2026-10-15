@@ -253,31 +253,7 @@ struct ConversationView: View {
     }
 
     @ViewBuilder private var attachmentDraft: some View {
-        if let caption = model.contextCaption {
-            Text(caption).zeusFont(.caption).foregroundStyle(palette.secondaryText).fixedSize(horizontal: false, vertical: true)
-        }
-        if !model.draftAttachments.isEmpty {
-            ScrollView(.vertical) {
-                ZeusChipFlow(spacing: 6) {
-                    ForEach(model.draftAttachments, id: \.id) { item in
-                        HStack(spacing: 4) {
-                            if let context = model.contextItems[item.id], context.kind == .picture,
-                               let image = NSImage(contentsOfFile: item.target) {
-                                Image(nsImage: image).resizable().scaledToFit().frame(width: 32, height: 20).accessibilityHidden(true)
-                            }
-                            ZeusAttachmentChip(item,
-                                actionTitle: item.kind == .folder && managed?.enabled == true ? "Work in this folder" : nil,
-                                onAction: item.kind == .folder && managed?.enabled == true ? { workInFolder(item.target) } : nil,
-                                onRemove: { model.removeAttachment(id: item.id) })
-                                .disabled(model.isSending)
-                                .help(model.contextItems[item.id]?.preview ?? item.label)
-                        }
-                    }
-                }.frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .defaultScrollAnchor(.top)
-            .frame(height: min(120, CGFloat(max(1, (model.draftAttachments.count + 1) / 2)) * 40))
-        }
+        ContextDraftAttachments(model: model, managed: managed?.enabled == true, workInFolder: workInFolder)
     }
 
     /// The composer delegates draft ownership to the model, including failed sends.

@@ -43,10 +43,16 @@ struct JournalPictureDetail: View {
                 HStack(alignment: .top, spacing: 18) {
                     VStack(alignment: .leading, spacing: 8) {
                         if let frame = model.frame(picture)?.value {
-                            CoveredPictureView(frame: frame).frame(width: 448, height: 280)
+                            CoveredPictureView(frame: frame).frame(width: 448, height: 280).overlay(Rectangle().strokeBorder(palette.outline, lineWidth: 1))
                             let covered = frame.boxes.filter { $0.kind == .text }.count
                             let blurred = frame.boxes.count - covered
-                            Text("▭ Covered text · ▭ Blurred picture · \(covered) covered · \(blurred) blurred").settingsCaption()
+                            HStack(spacing: 4) {
+                                Rectangle().strokeBorder(palette.secondaryText, lineWidth: 1).frame(width: 10, height: 7).accessibilityHidden(true)
+                                Text("Covered text ·").settingsCaption()
+                                Rectangle().strokeBorder(palette.secondaryText, lineWidth: 1).frame(width: 10, height: 7).accessibilityHidden(true)
+                                Text("Blurred picture").settingsCaption()
+                            }
+                            Text(Self.counts(covered: covered, blurred: blurred)).settingsCaption()
                         } else {
                             Text("No picture").settingsCaption().frame(width: 448, height: 280).background(palette.field)
                             Text(model.caption(picture)).settingsCaption()
@@ -86,6 +92,9 @@ struct JournalPictureDetail: View {
             .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
             .onKeyPress(.leftArrow) { guard !model.confirmsDeleteBoth else { return .ignored }; model.step(1); return .handled }
             .onKeyPress(.rightArrow) { guard !model.confirmsDeleteBoth else { return .ignored }; model.step(-1); return .handled }
+    }
+    static func counts(covered: Int, blurred: Int) -> String {
+        [covered > 0 ? "\(covered) covered" : nil, blurred > 0 ? "\(blurred) blurred" : nil].compactMap { $0 }.joined(separator: " · ")
     }
     private func field(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import ZeusDesign
 
@@ -19,15 +20,8 @@ struct ScreenPrivacyView: View {
                     }
                 }
                 Text("macOS may show its screen-recording indicator for a moment when Zeus takes a picture, and may ask now and then whether Zeus can still see your screen.").settingsCaption()
-                if !model.modelAvailable { Text("Apple Intelligence is off, so Zeus keeps the covered pictures without descriptions.").settingsCaption() }
-                HStack {
-                    if model.isPaused() {
-                        Text("Paused until tomorrow.").settingsCaption()
-                        KeyboardButton("Resume") { model.resume() }.accessibilityLabel("Resume recording")
-                    } else {
-                        KeyboardButton("Pause for Today") { model.pause() }.accessibilityLabel("Pause recording for today")
-                    }
-                }
+                if !model.modelAvailable { Text("Apple Intelligence is off, so Zeus writes simpler descriptions.").settingsCaption() }
+
             }
             ScreenPolicyControls(model: model).disabled(!model.policy.enabled)
         }
@@ -57,35 +51,54 @@ struct ScreenConsentSheet: View {
     let cancel: @MainActor @Sendable () -> Void
     @FocusState private var cancelFocused: Bool
     static let timing = "Zeus doesn't record your screen. It takes one picture of the window in front when something has changed: after you've switched to an app or document and stayed for 10 seconds, every 5 minutes if you stay in the same place, when you come back from a break, and when you ask. It skips the picture if the window looks the same as last time. It never takes one during a video call, while your screen is mirrored for a presentation, while a password field is active, or in private windows and apps on your private list."
+    /// A containing window may provide a smaller available height; by default use the display's usable height.
+    var heightLimit: CGFloat? = nil
+    private var maximumHeight: CGFloat { max(420, heightLimit ?? ((NSScreen.main?.visibleFrame.height ?? 1080) - 48)) }
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Screen").settingsTitle()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Zeus takes a picture of the window in front at sensible moments, so your assistant knows what you were looking at. Before anything is kept, Zeus covers private text and blurs pictures and faces, here on this Mac.").settingsBody()
-                    list("Zeus keeps", ["A picture of the window in front, with private text covered and pictures blurred, for 7 days", "A one-line description of what you were doing, for 90 days"])
-                    list("Zeus never keeps", ["The rest of your screen or other windows", "Anything during a video call or while presenting", "Anything while a password field is active", "Private windows and apps on your private list", "Sound"])
-                    Text("When Zeus looks").settingsHeading()
-                    Text(Self.timing).settingsCaption()
-                    Text("An example of what's kept").settingsHeading()
-                    ZeusFieldChrome {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ScreenConsentExample().frame(width: 360, height: 225)
-                            Text("10:12  Safari  Reviewing account information.").font(.system(size: 11, design: .monospaced))
-                        }
-                    }
-                    Text("Grey boxes are text Zeus covered. Pictures and faces are blurred. The picture is kept for 7 days, the description for 90.").settingsCaption()
-                    Text("Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself.").settingsCaption()
-                    Text("Next, macOS asks you to allow Zeus under Screen Recording. Zeus uses it only for these pictures.").settingsCaption()
-                }.frame(maxWidth: .infinity, alignment: .leading)
-            }
+        ViewThatFits(in: .vertical) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Screen").settingsTitle()
+                content
+                footer
+            }.padding(24).fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Screen").settingsTitle()
+                ScrollView { content }.scrollBounceBehavior(.basedOnSize)
+                footer
+            }.padding(24)
+        }.frame(width: 540).frame(maxHeight: maximumHeight).fixedSize(horizontal: false, vertical: true)
+            .environment(\.zeusFontChoice, .system)
+            .onAppear { cancelFocused = true }
+    }
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Zeus takes a picture of the window in front at sensible moments, so your assistant knows what you were looking at. Before anything is kept, Zeus covers private text and blurs pictures and faces, here on this Mac.").settingsBody()
+            list("Zeus keeps", ["A picture of the window in front, with private text covered and pictures blurred, for 7 days", "A one-line description of what you were doing, for 90 days"])
+            list("Zeus never keeps", ["The rest of your screen or other windows", "Anything during a video call or while presenting", "Anything while a password field is active", "Private windows and apps on your private list", "Sound"])
+            Text("When Zeus looks").settingsHeading()
+            Text(Self.timing).settingsCaption()
+            Text("An example of what's kept").settingsHeading()
+            ZeusFieldChrome {
+                VStack(alignment: .leading, spacing: 8) {
+                    ScreenConsentExample().frame(width: 360, height: 225)
+                    Text("10:12  Safari  Reviewing account information.").font(.system(size: 11, design: .monospaced))
+                }
+            }.frame(width: 384)
+            Text("Grey boxes are text Zeus covered. Pictures and faces are blurred. The picture is kept for 7 days, the description for 90.").settingsCaption()
+            Text("Safari: Zeus takes no pictures of Safari unless you add it under Only in apps I choose. Zeus can't tell Safari's private windows apart, so those would be pictured too.").settingsCaption()
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+    /// The disclosure and permission caption remain visible even on a short display.
+    private var footer: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself.").settingsCaption()
+            Text("Next, macOS asks you to allow Zeus under Screen Recording. Zeus uses it only for these pictures.").settingsCaption()
             HStack {
                 Spacer()
                 KeyboardButton("Not Now", focus: $cancelFocused, action: cancel).keyboardShortcut(.cancelAction).accessibilityLabel("Not Now")
                 KeyboardButton("Continue", action: enable).buttonStyle(ZeusButtonStyle(.primary, size: .small)).accessibilityLabel("Continue")
             }
-        }.padding(24).frame(width: 540, height: 700).environment(\.zeusFontChoice, .system)
-            .onAppear { cancelFocused = true }
+        }
     }
     private func list(_ title: String, _ rows: [String]) -> some View {
         VStack(alignment: .leading, spacing: 4) {

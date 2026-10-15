@@ -123,8 +123,10 @@ struct JournalItemView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("\(item.time.formatted(date: .omitted, time: .shortened)) · \(JournalDisplay.name(item))").settingsCaption()
             if JournalDisplay.showsDescription(item) { stored(item.payload.value.description) }
-            if let text = item.payload.value.text { stored(text) }
-            ForEach(item.payload.value.details.keys.sorted(), id: \.self) { key in stored("\(key): \(item.payload.value.details[key] ?? "")") }
+            if item.level == .focus {
+                if let text = item.payload.value.text { stored(text) }
+                ForEach(JournalDisplay.detailLines(item), id: \.self) { stored($0) }
+            }
             if item.payload.report.total > 0 { Text("\(item.payload.report.total) private details removed").settingsCaption() }
         }.fixedSize(horizontal: false, vertical: true)
     }
@@ -165,6 +167,15 @@ struct JournalItemView: View {
         case "digest": "Morning summary"
         case "moment": "Note"
         default: item.payload.value.description
+        }
+    }
+    static func detailLines(_ item: JournalItem) -> [String] {
+        guard item.level == .focus else { return [] }
+        return item.payload.value.details.keys.sorted().compactMap { key in
+            let title: String
+            switch key { case "window", "title": title = "Window"; case "document": title = "Document"; case "address", "url": title = "Address"; default: return nil }
+            guard let value = item.payload.value.details[key], !value.isEmpty else { return nil }
+            return title + ": " + (key == "document" ? FocusRecord.documentCaption(value) : value)
         }
     }
     static func showsDescription(_ item: JournalItem) -> Bool { item.payload.value.description != name(item) }

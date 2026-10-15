@@ -18,7 +18,7 @@ struct ZeusAttachmentChipTests {
         #expect(ZeusAttachmentChip.removeLabel(item) == "Remove Website")
     }
 
-    @Test func pictureChipsShowASmallThumbnail() {
+    @MainActor @Test func pictureChipsShowASmallThumbnail() {
         #expect(ZeusAttachmentChip.thumbnailSize == CGSize(width: 32, height: 20))
         let chip = ZeusAttachmentChip(Attachment(id: "p", kind: .file, label: "Picture · Xcode", target: "/tmp/p.heic"),
                                       thumbnail: Image(systemName: "photo"), onRemove: {})
