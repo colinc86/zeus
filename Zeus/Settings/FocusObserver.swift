@@ -26,6 +26,7 @@ final class FocusObserver {
         self.source = source; self.policies = policies; self.privateApps = privateApps; self.paused = paused; self.prepare = prepare
     }
     private(set) var hasPermission: Bool
+    isolated deinit { task?.cancel() }
     func start() {
         guard task == nil else { return }
         isRunning = true

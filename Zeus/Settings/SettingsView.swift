@@ -85,11 +85,19 @@ struct SettingsView: View {
     }
 
     private func revealManagedConfirmation(_ proxy: ScrollViewProxy) {
-        guard navigation.tab == .agent, managed.confirmation == .newConversation else { return }
+        guard navigation.tab == .agent, let target = Self.managedConfirmationTarget(managed.confirmation) else { return }
         Task { @MainActor in
             await Task.yield()
-            guard navigation.tab == .agent, managed.confirmation == .newConversation else { return }
-            proxy.scrollTo("newConversationConfirmation", anchor: .top)
+            guard navigation.tab == .agent, Self.managedConfirmationTarget(managed.confirmation) == target else { return }
+            proxy.scrollTo(target, anchor: .top)
+        }
+    }
+
+    static func managedConfirmationTarget(_ confirmation: ManagedAssistantModel.Confirmation?) -> String? {
+        switch confirmation {
+        case .newConversation?: "newConversationConfirmation"
+        case .switchConversation?: "switchConversationConfirmation"
+        default: nil
         }
     }
 
@@ -123,12 +131,17 @@ struct SettingsView: View {
                             if learn.isPausedNow { learn.resume() } else { learn.pauseForToday() }
                         }.accessibilityLabel(learn.isPausedNow ? "Resume" : "Pause for Today")
                     }
-                    if let error = learning.error ?? learning.focus?.error { Text(error).settingsError() }
+                    if let error = learning.error ?? learning.focus?.error ?? learning.runtimeProblem() { Text(error).settingsError() }
                 } else if let learn { PrivacySettingsView(learn: learn) }
                 else { Text("Learn from me isn't available here.").settingsCaption() }
             }
         case .rules:
-            if let rules = learning?.rules { RulesSettingsView(model: rules) }
+            if let rules = learning?.rules {
+                VStack(alignment: .leading, spacing: 12) {
+                    RulesSettingsView(model: rules)
+                    if let error = learning?.runtimeProblem() { Text(error).settingsError() }
+                }
+            }
             else { Text("Rules aren't available here.").settingsCaption() }
         case .about:
             AboutSettingsView()

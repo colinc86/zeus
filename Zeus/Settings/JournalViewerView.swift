@@ -6,7 +6,9 @@ import ZeusDesign
 /// A resizable local viewer. It never starts observation and never requests agent data.
 struct JournalWindowView: View {
     @Bindable var model: JournalViewerModel
-    var body: some View {
+    var settings: AppSettings?
+    var body: some View { rootBody.environment(\.zeusTheme, settings?.currentTheme ?? .classic) }
+    private var rootBody: some View {
         VStack(alignment: .leading, spacing: 12) {
             SettingsSegments(label: "", options: [(false, "Kept on this Mac"), (true, "Sent to your assistant")], selection: $model.sentOnly)
             HStack {
@@ -21,7 +23,7 @@ struct JournalWindowView: View {
                 }
             }
             ZeusTextField("Search what Zeus kept", text: $model.search).accessibilityLabel("Search what Zeus kept")
-            ScrollView { JournalViewerView(model: model).frame(maxWidth: .infinity, alignment: .leading) }
+            JournalViewerView(model: model).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }.padding(20).frame(minWidth: 560, minHeight: 340)
             .environment(\.zeusFontChoice, .system)
             .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
@@ -48,11 +50,15 @@ struct JournalViewerView: View {
             if model.items.isEmpty {
                 Text(model.level == 0 && model.app.isEmpty && model.search.isEmpty ? "Nothing kept on this day." : "Nothing matches.").settingsCaption()
             }
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 12) {
             ForEach(model.items) { item in
                 JournalRecordRow(item: item, sent: model.sentOnly, expanded: expanded.contains(item.id), toggle: {
                     if !expanded.insert(item.id).inserted { expanded.remove(item.id) }
                 }, delete: { model.deleteItem(item) })
                 SettingsDivider()
+            }
+                }.frame(maxWidth: .infinity, alignment: .leading)
             }
             HStack {
                 if model.deletedItem != nil {
@@ -142,6 +148,14 @@ struct JournalItemView: View {
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) else { return id }
         return (FileManager.default.displayName(atPath: url.path) as NSString).deletingPathExtension
     }
+    static func ledgerTitle(_ item: JournalItem) -> String {
+        switch item.payload.value.details["kind"] {
+        case "reflection": "Day reflection"
+        case "digest": "Morning summary"
+        case "moment": "Note"
+        default: item.payload.value.description
+        }
+    }
     static func name(_ item: JournalItem) -> String {
         if let app = item.app { return appName(app) }
         return item.payload.value.details["kind"] == "private" ? "Private" : "Zeus"
@@ -160,14 +174,16 @@ private struct JournalRecordRow: View {
             if sent {
                 KeyboardButton(action: toggle) {
                     HStack(spacing: 8) {
-                        ZeusGlyph(expanded ? .up : .right)
-                        Text(item.time.formatted(date: .omitted, time: .shortened))
-                        Text(item.payload.value.description)
-                        Text(item.payload.value.details["sessionLabel"] ?? item.payload.value.details["session"] ?? "Assistant")
+                        Text(expanded ? "\u{25BE}" : "\u{25B8}").settingsCaption()
+                        Text(item.time.formatted(date: .omitted, time: .shortened)).settingsCaption()
+                        Text(JournalDisplay.ledgerTitle(item)).settingsBody()
+                        ZeusSessionLabel(item.payload.value.details["sessionLabel"] ?? item.payload.value.details["session"] ?? "Assistant",
+                            colorIndex: ZeusSessionLabel.colorIndex(for: item.payload.value.details["sessionKey"] ?? item.payload.value.details["sessionLabel"] ?? "assistant"))
                         Spacer()
-                        Text("\((item.payload.value.text ?? "").split(whereSeparator: \.isWhitespace).count) words")
+                        Text("\((item.payload.value.text ?? "").split(whereSeparator: \.isWhitespace).count) words").settingsCaption()
                     }
                 }.buttonStyle(.plain).accessibilityLabel("Show exact sent text: \(item.payload.value.description)")
+                    .accessibilityValue(expanded ? "Expanded" : "Collapsed")
                 if expanded {
                     ZeusFieldChrome { Text(item.payload.value.text ?? item.payload.value.description).settingsBody().textSelection(.enabled) }
                 }
@@ -181,6 +197,15 @@ private struct JournalRecordRow: View {
         }
         .contentShape(Rectangle()).onHover { hovered = $0 }
         .contextMenu { if !sent { Button("Delete", action: delete) } }
-        .accessibilityAction(named: Text("Delete")) { if !sent { delete() } }
+        .modifier(JournalDeleteAccessibility(enabled: !sent, delete: delete))
+    }
+}
+
+private struct JournalDeleteAccessibility: ViewModifier {
+    let enabled: Bool
+    let delete: @MainActor @Sendable () -> Void
+    @ViewBuilder func body(content: Content) -> some View {
+        if enabled { content.accessibilityAction(named: Text("Delete"), delete) }
+        else { content }
     }
 }

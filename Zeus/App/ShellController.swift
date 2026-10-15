@@ -33,6 +33,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     let conversation: ConversationModel
     let testMessage: ComposeModel
     let managed: ManagedAssistantModel
+    @ObservationIgnored private weak var learningRuntime: (any LearningRuntimeControlling)?
     @ObservationIgnored private var managedUpdates: ManagedAgentUpdateModel?
     /// "Learn from me" (L1, CONTRACT §13). Its `learnings` is the runtime's `LearningsProviding`.
     let learn: LearnFromMe
@@ -248,6 +249,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         settings.stopWatchingUserFolders()
         learn.stop()
         learning.stop()
+        learningRuntime?.onReviewRule = nil; learningRuntime?.onLearningHoldCleared = nil
+        learning.contextDidChange = {}; learning.runtimeProblem = { nil }
         journalWindow?.close()
         tickTask?.cancel()
         closingTask?.cancel()
@@ -829,6 +832,20 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         }
     }
 
+    func connectLearningRuntime(_ runtime: any LearningRuntimeControlling) {
+        learningRuntime = runtime
+        learning.contextDidChange = { [weak runtime] in runtime?.learningContextDidChange() }
+        learning.runtimeProblem = { [weak runtime] in runtime?.learningError }
+        runtime.onReviewRule = { [weak self] in self?.showRule($0) }
+        runtime.onLearningHoldCleared = { [weak self] ids in self?.replayHeldCards(ids) }
+    }
+    func replayHeldCards(_ ids: [String]) {
+        let held = Set(ids)
+        guard let newest = cards.cards.filter({ held.contains($0.id) && $0.status == .open && !cards.seenIDs.contains($0.id) })
+            .max(by: { $0.createdAt < $1.createdAt }) else { return }
+        receivedCard(newest)
+    }
+
     private var peekSuppression: PeekModel.Suppression {
         .init(panelOpen: cardPanelState.isVisible, hidden: visibility.isHidden || suspended,
               quiet: settings.isQuiet(at: Date()), focused: FocusStatus.isFocused)
@@ -837,6 +854,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     private func receivedCard(_ newCard: Card) {
         // The local introduction is not assistant speech, a peek or a popup sound.
         guard newCard.id != WelcomeCard.id else { return }
+        if newCard.priority != .high && learningRuntime?.learningInterruptionHold == true { return }
         noteGhostInteraction()
         if messaging.previewEnabled { messaging.previewActivity = .none }
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
@@ -1009,7 +1027,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
                 styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
             window.title = "What Zeus Kept"; window.isReleasedWhenClosed = false
             window.minSize = NSSize(width: 600, height: 400)
-            window.contentView = NSHostingView(rootView: JournalWindowView(model: viewer))
+            window.contentView = NSHostingView(rootView: JournalWindowView(model: viewer, settings: settings))
             window.center(); journalWindow = window
         }
         NSApp.activate(); journalWindow?.makeKeyAndOrderFront(nil)

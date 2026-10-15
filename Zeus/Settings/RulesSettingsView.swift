@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import ZeusDesign
 
 struct RulesSettingsView: View {
@@ -63,7 +64,7 @@ struct RulesSettingsView: View {
                 actions(rule)
             }
             Text(RulesPaneModel.triggerText(rule.trigger)).settingsCaption()
-            if rule.status == .shadow { Text("Seen once: would have \(rule.sentence)").settingsCaption() }
+            if rule.status == .shadow { Text("Seen once. Zeus didn't act.").settingsCaption() }
             HStack(spacing: 6) {
                 RuleConfidence(confidence: rule.confidence)
                 Text("· \(rule.updatedBy == .agent ? "from your assistant" : rule.created == rule.updated ? "added by you" : "edited by you") · \(rule.updated.formatted(.relative(presentation: .named)))").settingsCaption()
@@ -133,6 +134,22 @@ private struct RuleEditorView: View {
     let cancel: @MainActor @Sendable () -> Void
     let saved: @MainActor @Sendable () -> Void
     @FocusState private var cancelFocused: Bool
+    private var chosenApps: [String] { model.appIDs.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty } }
+    private var stateChoices: [ZeusChoice<String>] {
+        var values = [ZeusChoice(id: "tests failing", title: "Tests failing"), ZeusChoice(id: "in a meeting", title: "In a meeting")]
+        if !["", "tests failing", "in a meeting"].contains(model.state) { values.append(ZeusChoice(id: model.state, title: model.state)) }
+        return values
+    }
+    private func chooseApp() {
+        let panel = NSOpenPanel(); panel.allowedContentTypes = [.application]; panel.allowsMultipleSelection = false
+        panel.directoryURL = URL(fileURLWithPath: "/Applications", isDirectory: true); panel.message = "Choose an app for this rule."
+        panel.begin { response in
+            MainActor.assumeIsolated {
+                guard response == .OK, let url = panel.url, let id = Bundle(url: url)?.bundleIdentifier, !chosenApps.contains(id) else { return }
+                model.appIDs = (chosenApps + [id]).joined(separator: ", ")
+            }
+        }
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(model.editingID == nil ? "New Rule" : "Edit Rule").settingsTitle()
@@ -150,11 +167,18 @@ private struct RuleEditorView: View {
                 ZeusTextField("End HH:mm", text: $model.endMinute).accessibilityLabel("Rule end time")
             }
             Text("Leave times and days empty for any time.").settingsCaption()
-            ZeusTextField("Any app (or bundle IDs, comma-separated)", text: $model.appIDs).accessibilityLabel("Rule apps")
-            Picker("State", selection: $model.state) {
-                Text("Any").tag(""); Text("Tests failing").tag("tests failing"); Text("In a meeting").tag("in a meeting")
-                if !["", "tests failing", "in a meeting"].contains(model.state) { Text(model.state).tag(model.state) }
-            }.accessibilityLabel("Rule state")
+            Text("Apps").settingsHeading()
+            if chosenApps.isEmpty { Text("Any app").settingsCaption() }
+            ForEach(chosenApps, id: \.self) { id in
+                HStack {
+                    Text(JournalDisplay.appName(id)).settingsBody(); Spacer()
+                    KeyboardButton("Remove") { model.appIDs = chosenApps.filter { $0 != id }.joined(separator: ", ") }
+                        .accessibilityLabel("Remove \(JournalDisplay.appName(id)) from rule")
+                }
+            }
+            KeyboardButton("Choose App…", action: chooseApp).accessibilityLabel("Choose rule app")
+            ZeusMenuPicker("State", choices: stateChoices,
+                selection: Binding<String?>(get: { model.state.isEmpty ? nil : model.state }, set: { model.state = $0 ?? "" }), noneTitle: "Any")
             Text(model.kind == .passive ? "Changes only when and how Zeus talks to you" : "Acts for you outside Zeus").settingsBody()
             if model.editingID == nil { Text("To have your assistant act for you, ask it. It suggests a rule you can OK.").settingsCaption() }
             if let error = model.error { Text(error).settingsError() }

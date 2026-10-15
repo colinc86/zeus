@@ -2,10 +2,11 @@ import Foundation
 import Testing
 @testable import Zeus
 
-@MainActor private final class FakeFocusSource: FocusCaptureSource {
+@MainActor final class LM2FocusSource: FocusCaptureSource {
     var isTrusted = true
     var isSecure = false
     var isLocked = false
+    var idleSeconds: TimeInterval = 0
     var application: FocusApplication? = .init(pid: 42, bundleID: "test.editor", name: "Editor")
     var record: FocusRecord? = .init(title: "Review for synthetic@example.invalid", document: "file:///project/Example.swift")
     var calls = 0
@@ -16,7 +17,7 @@ import Testing
     @Test func hardStopsRunBeforeAXAndUnknownAppsFailClosed() async throws {
         let suite = "zeus-focus-test-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        let settings = ObservationSettings(defaults: defaults), source = FakeFocusSource()
+        let settings = ObservationSettings(defaults: defaults), source = LM2FocusSource()
         var privateApps: [ExcludedApp] = [], commits = 0
         let observer = FocusObserver(source: source, policies: settings, privateApps: { privateApps }) { _, _ in { commits += 1 } }
         await observer.sample(); #expect(source.calls == 0)
@@ -34,7 +35,7 @@ import Testing
     @Test func dedupAndPrivateBrowserNeverReachRedactor() async throws {
         let suite = "zeus-focus-test-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        let settings = ObservationSettings(defaults: defaults), source = FakeFocusSource()
+        let settings = ObservationSettings(defaults: defaults), source = LM2FocusSource()
         settings.edit(2) { $0.enabled = true; $0.consented = true }
         var commits = 0, redactions = 0
         let observer = FocusObserver(source: source, policies: settings, privateApps: { [] }) { _, _ in
@@ -52,7 +53,7 @@ import Testing
         for change in 0..<4 {
             let suite = "zeus-focus-test-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
             defer { defaults.removePersistentDomain(forName: suite) }
-            let settings = ObservationSettings(defaults: defaults), source = FakeFocusSource()
+            let settings = ObservationSettings(defaults: defaults), source = LM2FocusSource()
             settings.edit(2) { $0.enabled = true; $0.consented = true }
             var commits = 0
             var waiter: CheckedContinuation<Void, Never>?
@@ -78,7 +79,7 @@ import Testing
     @Test func writeFailureRetriesAndDoesNotExposeUnderlyingContent() async throws {
         let suite = "zeus-focus-test-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        let settings = ObservationSettings(defaults: defaults), source = FakeFocusSource()
+        let settings = ObservationSettings(defaults: defaults), source = LM2FocusSource()
         settings.edit(2) { $0.enabled = true; $0.consented = true }
         struct Failure: Error {}
         var attempts = 0

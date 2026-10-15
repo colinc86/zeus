@@ -446,7 +446,8 @@ public struct ZeusComposer: View {
     /// - Parameters:
     ///   - replyingTo: the title of the question that sending will answer, or `nil` for a plain message.
     ///   - focus: bind to the panel's focus state; the app focuses the composer whenever the panel opens.
-    ///   - onSend: called with non-blank text. The app clears `text` once the send is accepted.
+    ///   - hasAttachments: enables Send for an attachment-only draft without changing the composer layout.
+    ///   - onSend: called with text or attachments. The app clears the draft once the send is accepted.
     public init(text: Binding<String>, placeholder: String, replyingTo: String? = nil, isSending: Bool = false, hasAttachments: Bool = false,
                 focus: FocusState<Bool>.Binding, onClearReply: @escaping () -> Void, onSend: @escaping () -> Void) {
         self._text = text
@@ -459,7 +460,7 @@ public struct ZeusComposer: View {
         self.onSend = onSend
     }
 
-    /// Whether `text` can be sent: not blank, and not already sending.
+    /// Whether text or attachments can be sent; never while already sending.
     nonisolated public static func canSend(_ text: String, isSending: Bool, hasAttachments: Bool = false) -> Bool {
         !isSending && (!text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || hasAttachments)
     }
