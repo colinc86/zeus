@@ -617,6 +617,8 @@ What happened since
 Fairly sure
 ```
 
+**Spending rules** (PM decision, LM2-D task): the row shows "Always asks" in place of the confidence meter and word ("Always asks · from your assistant · 3 days ago"); Why? ends with "Always asks · <confidence word>".
+
 The core records each outcome as a category, a source, a date and a confidence change, with no prose and no history of the confidence word. So each entry is `<glyph> <date> · <Label> · <source>`, where the source is the event's category in plain words (held messages read, you pressed Show, prepared list unopened, its question, turned off in Settings, …). The change in confidence is never shown as a number, and the last line is only the current word.
 
 - Glyphs: ✓ accepted, ↶ undone, – ignored, ✕ skipped, ○ turned off, ● turned on, ✎ edited. Each also has a text label in parentheses, and VoiceOver reads the label.
