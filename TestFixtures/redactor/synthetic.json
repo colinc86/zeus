@@ -9,7 +9,7 @@
  {"text":"Verification code: 654321","private":["654321"]},
  {"text":"-----BEGIN PRIVATE KEY-----\nSYNTHETIC-NOT-A-KEY\n-----END PRIVATE KEY-----","private":["-----BEGIN PRIVATE KEY-----\nSYNTHETIC-NOT-A-KEY\n-----END PRIVATE KEY-----"]},
  {"text":"Call +1 (202) 555-0142 after lunch.","private":["+1 (202) 555-0142"]},
- {"text":"Meet at 123 Main Street, Springfield, IL 62704.","private":["123 Main Street, Springfield, IL 62704"]},
+ {"text":"Meet at 123 Main Street, Springfield, IL 62704","private":["123 Main Street, Springfield, IL 62704"]},
  {"text":"Build 42 passed; tests run at 18:00.","private":[]},
  {"text":"Commit deadbeefdeadbeefdeadbeefdeadbeef is green.","private":[]},
  {"text":"Café ☕️: josé@example.test — done.","private":["josé@example.test"]}

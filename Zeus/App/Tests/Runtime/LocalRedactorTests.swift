@@ -15,7 +15,11 @@ struct LocalRedactorTests {
             let spans = LocalRedactor.patternSpans(sample.text)
             let result = LocalRedactor.replace(sample.text, spans: spans)
             for secret in sample.private { expected += 1; if !result.value.contains(secret) { found += 1 } }
-            if sample.private.isEmpty { falsePositive += result.report.total }
+            let expectedMask = sample.private.reduce(sample.text) { $0.replacingOccurrences(of: $1, with: "‹PII›") }
+            let actualMask = result.value.replacingOccurrences(of: "‹[^›]*›", with: "‹PII›", options: .regularExpression)
+            // This catches masking the whole sentence, partial overlaps and deletion of harmless surrounding text.
+            if actualMask != expectedMask { falsePositive += 1 }
+            #expect(actualMask == expectedMask, "Synthetic redaction boundaries differ")
         }
         let recall = Double(found) / Double(expected)
         let precision = Double(found) / Double(found + falsePositive)
@@ -46,6 +50,8 @@ struct LocalRedactorTests {
         #expect(result.report.total >= 4)
         #expect(LocalRedactor.luhn("4111 1111 1111 1111"))
         #expect(!LocalRedactor.luhn("4111 1111 1111 1112"))
+        let iban = LocalRedactor.replace("GB82 WEST 1234 5698 7654 32 FOR TRANSFER", spans: LocalRedactor.patternSpans("GB82 WEST 1234 5698 7654 32 FOR TRANSFER"))
+        #expect(iban.value == "‹iban› FOR TRANSFER")
     }
     @Test func nativeOnDevicePassWhenAvailable() async {
         guard case .available = SystemLanguageModel.default.availability else {
