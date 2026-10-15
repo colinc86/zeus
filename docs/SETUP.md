@@ -73,7 +73,20 @@ The 0.1.8 template also covers ending a turn (one short message when it did what
 
 ### Learn from me
 
-**Settings → Privacy** starts with **Learn from me**, a few levels that are each off until you turn them on. More levels are coming, each with its own switch. The pane's first line says how private details are handled: "Private details are removed on this Mac before anything is kept."
+**Settings → Privacy** starts with **Learn from me**: four levels, each off until you turn it on, each with its own switch. The pane's first line says how private details are handled: "Private details are removed on this Mac before anything is kept." With Apple Intelligence off it adds that only fixed patterns (emails, card numbers, passwords…) are caught, and the Typing level can't be turned on.
+
+Each level is cleaned on this Mac before anything is stored: fixed patterns, Apple's `NSDataDetector` and NaturalLanguage name tagging for every record, and Apple's on-device Foundation Model for health, money and secrets in prose, for screen descriptions and for typing topics. Vision reads the text in pictures and finds faces. Nothing goes to Private Cloud Compute or any other cloud, and the journal is encrypted with a key in your keychain. What was removed shows as a placeholder like ‹name›, for you and your assistant alike.
+
+#### The permissions Zeus asks for
+
+| Level | macOS permission | Why Zeus asks for it |
+|---|---|---|
+| Apps and timing | none | It only watches which app is in front. |
+| Windows and pages | **Accessibility** | To read the title of the window in front, and your selection for Ask About This. |
+| Screen | **Screen Recording** | To take a picture of the window in front. macOS needs Zeus reopened once after you allow it, and may show its own recording indicator for a moment when Zeus takes a picture. |
+| Typing | **Input Monitoring** | To read keys in the apps you choose. A password field turns on secure input, so none of its keys ever reach Zeus. |
+
+Zeus asks for each permission once, from that level's consent sheet after you press **Continue**, never on its own later. Until it's allowed, a line under the level's switch says what's missing, with **Open System Settings** (or **Reopen Zeus**). The other levels keep working, and the level resumes by itself when permission comes back.
 
 #### Apps and timing
 
@@ -90,11 +103,11 @@ Turn on **Let Zeus learn when and in what I work**. The first time, Zeus explain
 > Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac.
 
 Choose **Turn On** or **Not Now**. Then, in the same pane:
+- **Record in:** **Everywhere except my private list** (the default) or **Only in apps I choose**. Every level has this choice; your private list is shared by all of them and always wins.
+- **Private apps** starts with common password managers, Keychain Access, Passwords and System Settings. **Add App…** adds another.
+- **Keep activity for** 7, 14, 30, 60 or 90 days (90 by default). Summaries are kept for a year.
 - **What Zeus has recorded** lists today's events in plain words, newest first.
 - **Notes to your assistant:** besides the morning summary, up to four notes a day: first activity of the day, back from a break of 2 hours or more, a later start than usual, and the day winding down. Untick any you don't want.
-- **Private apps** starts with common password managers, Keychain Access, Passwords and System Settings. **Add App…** adds another.
-- **Keep activity for** 7, 14, 30, 60 or 90 days (30 by default). Summaries are kept for a year.
-- **Pause for Today** stops recording until midnight. **Delete Everything…** removes all activity and summaries, after asking.
 
 Each summary or note also adds a quiet line to the conversation, such as *Sent your daily summary · View*. **View** shows the exact text your assistant got.
 
@@ -110,23 +123,55 @@ Turn on **Let Zeus keep window titles and web addresses**. The first time, Zeus 
 Names, emails, numbers and other private details become placeholders like ‹name› before anything is stored.
 
 - **Accessibility:** press **Continue**, and macOS asks you to allow Zeus under **Privacy & Security › Accessibility**. Zeus uses it only to read window titles. Until you allow it, the pane says *Waiting for Accessibility permission. · Open System Settings*.
-- **Record in:**
-  - **Everywhere except my private list** (the default) records in every app except your private ones. Your private list is the same list as above, and it always wins.
-  - **Only in apps I choose** records only in the apps you add with **Add App…**.
-- **What's kept from browsers:** the web address in Chrome and Edge, never from their private windows.
+- **Record in:** **Everywhere except my private list** or **Only in apps I choose** (the apps you add with **Add App…**).
+- **What's kept from browsers:** the web address in Chrome and Edge, never from their private windows. A browser that can't tell Zeus whether a window is private is treated as private.
   - Safari keeps only that you used it, because Zeus can't tell Safari's private windows apart.
-  - If you add Safari under **Only in apps I choose**, its titles and addresses are kept too, and so are those of its private windows. The pane says so under Safari's row.
+  - If you add Safari under **Only in apps I choose**, its titles and addresses are kept too, and so are those of its private windows. The pane says so under Safari's row. The same goes for Safari at the Screen and Typing levels.
 - **What's never kept:** what's inside a window, anything while a password field is active, private windows in Chrome and Edge, and apps on your private list.
 - **Keep for** 7, 30 or 90 days.
+
+#### Screen
+
+Turn on **Let Zeus look at the window in front now and then**. The consent sheet shows what's kept, when Zeus looks, and an example: a covered page with grey boxes where text was, a blurred picture, and the one-line description under it.
+
+- **When Zeus looks:** it doesn't record your screen. It takes one picture of the window in front when something has changed: after you've switched to an app or document and stayed for 10 seconds, every 5 minutes if you stay in the same place, when you come back from a break, and when you ask. It skips the picture if the window looks the same as last time. It never takes one during a video call, while your screen is mirrored for a presentation, while a password field is active, or in private windows and apps on your private list. While one of those holds, the level's caption says so (*Paused: a video call is on*).
+- **What's kept:** the picture of the window in front with private text covered, every picture in it pixellated and faces blurred, for 7 days; and a one-line description of what you were doing, for 7, 30 or 90 days (**Keep descriptions for**). Never the rest of your screen, other windows, or sound.
+- **Screen Recording:** press **Continue**, and macOS asks you to allow Zeus under **Privacy & Security › Screen & System Audio Recording**. Then the pane says *Allowed. Reopen Zeus to start taking pictures. · Reopen Zeus*; the relaunch keeps your conversation. While the level is on, the pane reminds you that macOS may show its screen-recording indicator for a moment when Zeus takes a picture.
+- **Up to** 4, 12 or 30 pictures an hour (12 by default). Pictures that look the same as the last one don't count.
+- **Let my assistant see the pictures when it asks** (off by default) is the Raw on request switch for this level; see below.
+
+#### Typing
+
+Turn on **Let Zeus keep what I type in apps I choose**. This level needs Apple Intelligence, because the on-device model is what catches names and numbers in casual typing; with it off, the switch is disabled and says why. The consent sheet shows an example: the words as kept, and under them the topic, which is the only part your assistant sees.
+
+- **Only in apps I choose:** there's no "everywhere" here. After the consent sheet, Zeus asks you to choose the apps, and it never records typing in one you haven't added. Apps on your private list can't be added.
+- **Input Monitoring:** macOS asks you to allow Zeus under **Privacy & Security › Input Monitoring**, then needs Zeus reopened once (*Allowed. Reopen Zeus to start. · Reopen Zeus*).
+- **What's never kept:** anything you type into a password field (macOS secure input is on, so the keys never reach Zeus), typing in private windows in Chrome and Edge, what you paste (Zeus notes only that you pasted), and typing made by other apps, such as a password manager filling in a form. While a password field is active, the pane says *Paused: private input.* and the Zeus menu shows *Private input: Zeus isn't noting typing*.
+- **Keep topics** 7, 30 or 90 days (30 by default), and **Keep the words** for 24 hours (the default), 7 days, or **Don't keep**, which keeps topics only. Choosing a shorter time deletes the older ones at once.
+- **Let my assistant see the words when it asks** (off by default) is the Raw on request switch for this level.
+
+#### What your assistant can ask for
+
+Besides the morning summary, your assistant can look in the journal when you ask it about your day ("what was I reading at 3?") or to prepare something you asked for. It gets summaries, window titles, descriptions and topics, as stored. It gets a picture or the words of a stretch of typing only when **Let my assistant see the pictures / the words when it asks** is on for that level, and even then only the covered picture or the redacted words, never the original. Turning either on shows a sheet first, because those go to your assistant's model provider like anything you send.
+
+Every look adds a quiet line to the conversation, such as *Looked at your journal: Tue 14:00–15:30 · View* (or *…including 2 pictures*, or *(descriptions only)* when it asked for more than you allow). **View** opens the answer in **Sent to your assistant**, exactly as sent.
+
+#### Ask About This
+
+Add ⇧ to the Talk shortcut (⇧⌥⌘Z by default; the shortcut's caption in Settings › General says so) or choose **Ask About This** in the Zeus menu. The conversation opens with chips for what's in front, already attached and removable: **Window** and **Selection** (Windows and pages), **Page** (a browser that reports private windows), and **Picture** (Screen). Hover a chip to see exactly what it holds, with private details removed. If a password field or private window is active at that moment, those chips don't appear and the caption says so. With neither level on, the conversation still opens and tells you what to turn on. Sent chips show in the Sent ledger as *Attached: Window, Picture*.
 
 #### What Zeus Kept
 
 **Open What Zeus Kept…** opens a window with two views:
 - **Kept on this Mac:** everything Zeus stored for a day, exactly as stored, with the removed details shown as placeholders.
   - Filter by level or app, and search.
-  - Delete a single record (hover over it or right-click), a whole day, or everything from one app.
+  - Pictures show as thumbnails with *Picture · 6 days left*; click one for the full covered frame with its covered areas outlined, and **Delete Picture** (keeps the description) or **Delete Both…**.
+  - Typing is grouped by app and hour, each stretch with its topic first and the words as kept under it (or *words not kept*).
+  - Delete a single record (hover over it or right-click), a typing group, a whole day, or everything from one app.
   - **Export…** saves what's shown as JSON.
-- **Sent to your assistant:** every morning summary, note and evening reflection Zeus sent, with the exact text. Click a row to expand it.
+- **Sent to your assistant:** every morning summary, note, evening reflection, journal answer and Ask About This attachment Zeus sent, with the exact text. Click a row to expand it.
+
+At the end of the Privacy pane, **Pause for Today** stops every level until midnight, and **Delete Everything…** removes the whole journal and everything sent, after asking. If your keychain is locked, the pane says Zeus can't open its journal and rules; new records wait in memory until it can, and quitting Zeus before then loses them.
 
 #### Rules
 
@@ -136,10 +181,11 @@ Once a day, at your first quiet moment after 18:00, Zeus sends your assistant a 
   - **Ask me first:** every new rule waits under **Suggested**.
   - **Balanced** (the default): rules about timing and tone start at once, and rules that would act for you show what they'd have done once and wait for your OK.
   - **Just do it:** rules start at once, but rules that act for you still show what they'd have done the first time.
-- **Each rule shows** when it applies, how sure Zeus is (*Sure*, *Fairly sure* or *Unsure*), and **Why?**: the records it came from.
-- **Changing rules:** turn a rule off, edit it, delete it (with Undo), or **Add Rule…** to write your own. Rules you write only change when and how Zeus talks to you. To have your assistant act for you, ask it, and it suggests a rule you can OK.
+- **Rules that act for you** (send, post, draft, change a calendar, book) first appear in the conversation as *I'd have sent "Running late, 10 min" to the team chat · OK next time? · Not this*. **OK next time?** turns the rule on; **Not this** retires it (*Got it. I won't.*). Once a rule is on, each time your assistant acts under it you get *Did: … · Undo*, and Undo tells your assistant to reverse it if it can. **Purchases always ask first, every time**, whatever a rule says.
+- **Each rule shows** when it applies, how sure Zeus is (*Sure*, *Fairly sure* or *Unsure*), and **Why?**: the records it came from, and everything that happened since (accepted, undone, skipped, ignored). Confidence moves with those outcomes; it's never shown as a number.
+- **Changing rules:** turn a rule off, edit it, delete it (with Undo), or **Add Rule…** to write your own. Rules you write only change when and how Zeus talks to you, and never retire on their own. To have your assistant act for you, ask it, and it suggests a rule you can OK.
 - **Holding messages:** Zeus enforces timing rules itself. While one applies, routine messages still arrive in the conversation, but with no pop-up and no sound. Urgent ones still pop up.
-- **Retiring:** rules you keep skipping or turning off lose confidence and retire themselves.
+- **Retiring:** rules you keep skipping, undoing or turning off lose confidence and retire themselves, with a line such as *Retired a rule you kept skipping: "…" · Review*. **Turn Back On** under Retired brings one back.
 
 ## 3. Pick a character
 
@@ -303,6 +349,9 @@ On the right: **Open in Terminal** (when there's a terminal to open), **Start Ne
 | I want a sound when Zeus pops up (or I don't) | Settings → General → **Sounds**: turn on **Play a sound when Zeus pops up** and pick the Zeus chime or a macOS sound. It plays at your alert volume (System Settings → Sound) and stays quiet while Zeus is hidden, during quiet hours and while the conversation is open. |
 | My own character doesn't show up | Run `zeus-sprites validate` on your folder (§3). Files with errors are skipped. |
 | Window titles aren't kept | Check that Zeus is switched on in **System Settings › Privacy & Security › Accessibility**. The line under **Windows and pages** in Settings › Privacy says what's missing. |
+| No pictures are taken | Check **System Settings › Privacy & Security › Screen & System Audio Recording**, then reopen Zeus when the line under **Screen** asks you to. Pictures also pause during video calls, presentations and password fields; the caption says so. |
+| Nothing I type is noted | Check **Input Monitoring** in System Settings, reopen Zeus if asked, make sure the app is in the Typing list, and that Apple Intelligence is on. The Zeus menu's *Private input* line means a password field is active; that's normal. |
+| The Privacy pane says Zeus can't open its journal and rules | Your keychain is locked or unavailable. Unlock it (or sign in again); new records wait in memory until then. |
 | Messages arrive without a pop-up | A timing rule is holding them. See Settings › Rules, or the *New rule …* line in the conversation. Urgent messages still pop up. |
 | The assistant posts too often or too rarely | Edit "When to reach out" in your assistant folder's `AGENTS.md`. It's yours to tune. |
 

@@ -91,27 +91,45 @@ It can also check for updates and install one when you ask. Two switches in Sett
 
 ## Zeus learns how you work
 
-Off until you turn it on in **Settings › Privacy**. Learning works in levels, each with its own switch:
-- **Apps and timing:** which app is in front, apps opening and quitting, when you lock, sleep or step away.
-- **Windows and pages:** the title of the window in front, the file it shows, and the web address in Chrome and Edge. It never records what's inside a window, and it needs Accessibility permission.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/readme/privacy-dark.png">
+  <img src="docs/readme/privacy-light.png" align="right" width="380" alt="Settings › Privacy: the four levels Apps and timing, Windows and pages, Screen and Typing, each with its own switch, Record in choice and how long it keeps things.">
+</picture>
 
-More levels are coming, each with its own switch.
+Off until you turn it on in **Settings › Privacy**. Learning works in four levels. Each has its own switch, shows an example of what it keeps before you turn it on, and asks for its own macOS permission:
 
-Each morning your assistant gets a short summary of the day before, so it can pick better moments to help and have the right things ready. The promise:
-1. What Zeus records never leaves your Mac. Your assistant gets summaries.
-2. Private details (names, emails, numbers, passwords) are removed on your Mac **before** anything is stored, using fixed patterns and Apple's on-device model.
-3. Every level is off until you turn it on, and shows an example of what it keeps first.
-4. Password fields, private browser windows, apps on your private list and a locked screen are never recorded. Safari records only that you used it, unless you add it yourself.
-5. **What Zeus Kept** shows every record exactly as stored, and everything Zeus sent your assistant.
-6. Deleting is immediate: one item, a day, an app, or everything.
-7. Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac.
+- **Apps and timing.** Which app is in front, apps opening and quitting, when you lock, sleep or step away. No permission needed.
+- **Windows and pages** (Accessibility). The title of the window in front, the file it shows, and the web address in Chrome and Edge. Never what's inside a window.
+- **Screen** (Screen Recording). One picture of the window in front, never the whole screen, when something has changed: after you've settled on an app or document, every 5 minutes in the same place, when you come back from a break, and when you ask. Never during a video call, while presenting, while a password field is active, or in private windows. On your Mac, Zeus reads the picture's text and covers the private parts, pixellates every picture in it and blurs faces, then writes a one-line description of what you were doing. Pictures are deleted after 7 days and descriptions after 7, 30 or 90, and you cap it at 4, 12 or 30 pictures an hour.
+- **Typing** (Input Monitoring). What you were typing about in the apps you choose, as a one-line topic per stretch of typing. A password field turns on macOS secure input, so none of its characters ever reach Zeus. Pasted text is never read: Zeus notes only that you pasted. Topics are kept for 30 days and the words, with private details removed, for 24 hours, or not at all with **Don't keep**, which keeps topics only. While a password field is active, the Zeus menu says *Private input: Zeus isn't noting typing*.
+
+Each level records **everywhere except my private list** or **only in apps I choose** (Typing is always the second). Safari is the exception: Zeus can't tell its private windows apart, so at every level it records only that you used Safari unless you add it yourself. A browser that can't say whether a window is private is treated as private.
+
+**How the filtering works, on your Mac.** Private details are removed before anything is stored, not just before it's sent. Fixed patterns catch emails, card numbers and passwords, `NSDataDetector` finds phone numbers and addresses, the NaturalLanguage framework tags names, and Apple's on-device Foundation Model handles the rest (health, money and secrets in plain prose) and writes the screen descriptions and typing topics. Vision reads the text in pictures and finds faces. Nothing is sent to Apple's Private Cloud Compute or to any cloud by Zeus: it has no models of its own. What was removed shows as a placeholder like ‹name›, for you and your assistant alike. The journal is encrypted on disk with a key in your keychain.
+
+<br clear="right">
+
+**What your assistant gets.** Each morning, a short summary of the day before, so it can pick better moments to help and have the right things ready. When you ask it about your day ("what was I reading at 3?"), it can look in the journal and gets summaries, descriptions and topics. It gets a picture or the words only if you turn on **Raw on request** for that level, and even then only the covered picture or the redacted words, never the original. Every answer appears in the conversation (*Looked at your journal: Tue 14:00–15:30 · View*) and in the **Sent to your assistant** ledger, exactly as sent. Your assistant sends what it gets to its model provider, like any message.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/readme/rules-dark.png">
-  <img src="docs/readme/rules-light.png" align="right" width="400" alt="Settings › Rules: the New rules dial set to Balanced, one active rule holding routine messages after 18:00, and one rule waiting for your OK.">
+  <img src="docs/readme/rules-light.png" align="left" width="400" alt="Settings › Rules: the New rules dial set to Balanced, one active rule holding routine messages after 18:00, and one rule waiting for your OK that shows what it would have done.">
 </picture>
 
-**Rules.** Once a day, after your work winds down, your assistant looks over the summary and suggests rules about how to help you, like "Hold routine messages after 18:00". Rules about timing and tone start at once, with a quiet line in the conversation. Rules that would act for you first show what they'd have done and wait for your OK. **Settings › Rules** lists every rule with why it exists, and lets you turn it off, edit it, delete it or add your own. Zeus holds messages for timing rules itself, so your assistant can't talk over them.
+**Rules.** Once a day, after your work winds down, your assistant looks over the day and may suggest rules about how to help you, like "Hold routine messages after 18:00". Rules about timing and tone start at once, with a quiet line in the conversation. A rule that would act for you first shows what it would have done (*I'd have sent "Running late, 10 min" to the team chat · OK next time?*) and waits for your OK; after that, each time it acts you get *Did: … · Undo*. A rule gains or loses confidence from what happens next, and one you keep skipping or undoing retires itself. **Why?** in Settings › Rules shows the records it came from and everything that happened since. Purchases always ask first, every time, whatever the rule says. The **New rules** dial (Ask me first, Balanced, Just do it) sets how new rules start. Zeus holds messages for timing rules itself, so your assistant can't talk over them.
+
+**Ask About This.** Add Shift to the Talk shortcut (⇧⌥⌘Z) or choose it in the Zeus menu, and the conversation opens with chips for the window in front, your selection, the page's address or a picture of the window, already attached with private details removed. Remove any you don't want to send.
+
+<br clear="left">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/readme/kept-dark.png">
+  <img src="docs/readme/kept-light.png" align="right" width="400" alt="What Zeus Kept for one day: window titles with ‹name› placeholders, a covered picture with its description and days left, private time, and a stretch of typing in Mail with its topic and the words as kept.">
+</picture>
+
+**Your controls.** **What Zeus Kept** shows every record exactly as stored, with the placeholders visible, and deletes one record, a day, an app or everything at once. **Sent to your assistant** is the ledger of everything it got. Every level shows an example of what it keeps before it asks for anything, **Pause for Today** stops all of it until midnight, and if your keychain is locked, new records wait in memory and the Privacy pane says so.
+
+**Only your assistant may talk to Zeus.** Any other session that has the Zeus server is refused and never reaches the conversation; the first time, a quiet line says which one tried, with *Make it my assistant · Ignore*.
 
 <br clear="right">
 
@@ -119,7 +137,8 @@ Each morning your assistant gets a short summary of the day before, so it can pi
 
 - `zeus-mcp` is an MCP server your assistant connects to. Its tools (`zeus_say`, `zeus_ask`, `zeus_present`, `zeus_set_status`, …) drive the character and the conversation panel.
 - Your replies go back to the session that asked: through its Terminal pane in tmux, Claude Code's channel or OpenCode's local server. Each one is acknowledged, so a message is never lost or delivered twice.
-- Everything stays on your Mac. Zeus uses no cloud models of its own, only Apple's on-device model to remove private details. It never edits your agent's settings and never accepts prompts on your behalf. If you turn on Learn from me, Zeus sends your assistant short summaries with private details removed, which it passes to its model provider like any message; what Zeus records never leaves your Mac.
+- Everything stays on your Mac. Zeus uses no cloud models of its own, only Apple's on-device models to remove private details, describe pictures and name typing topics. It never edits your agent's settings and never accepts prompts on your behalf.
+- With Learn from me on, your assistant gets summaries, descriptions and topics with private details already removed, and covered pictures or redacted words only when you allow that for a level and it asks. It passes them to its model provider like any message. The journal itself is encrypted and never leaves your Mac.
 
 The interfaces are documented in [docs/CONTRACT.md](docs/CONTRACT.md).
 

@@ -1011,6 +1011,8 @@ extension DesignerAuditRenders {
             try await settings(look)
             try await themes(look)
         }
+        NSTimeZone.default = previousZone
+        for look in Readme.looks { try await learning(look) }
     }
 
     /// "Make me a cat character" → the Undo line → the assistant's reply, in two themes side by side (R4).
@@ -2101,5 +2103,151 @@ extension DesignerAuditRenders {
                 .padding(18).frame(width: 400).zeusDialog(tail: nil).environment(\.zeusFontChoice, .pixel)
             }
         }
+    }
+}
+
+// MARK: - README: Learn from me (R6). The real Settings › Privacy pane with all four levels, What Zeus Kept with a
+// picture and typing, and Rules. Synthetic records in a fixture journal under a scratch folder with a fixture key;
+// nothing is captured, no permission is asked for, and no real journal, keychain or app list is read.
+
+@MainActor private final class ReadmeLearning {
+    let f: Fixture
+    let journal: EncryptedJournalStore
+    let policies: ObservationSettings
+    let learn: LearnFromMe
+    let learning: LearningPresentation
+    let rules = LM2DManagedRules()
+    let viewer: JournalViewerModel
+    let nav = SettingsNavigation()
+    /// 15:00 today: the viewer's clock, so the day reads "Today" and "days left" is stable within a day.
+    let now: Date
+
+    init() throws {
+        f = Fixture(font: .pixel)
+        let day = Calendar.current.startOfDay(for: Date())
+        now = day.addingTimeInterval(15 * 3600)
+        journal = EncryptedJournalStore(root: f.root.appendingPathComponent("journal"), keyProvider: LM2BPrivateKey())
+        policies = ObservationSettings(defaults: f.defaults)
+        learn = LearnFromMe(settings: LearnSettings(defaults: f.defaults), root: f.root.appendingPathComponent("activity"), source: { AuditActivitySource() })
+        learn.settings.introShown = true
+        learn.settings.enabled = true
+        policies.edit(2) { $0.enabled = true; $0.consented = true }
+        // Levels 3 and 4 show as on; without consent nothing starts capture or asks macOS.
+        policies.edit(3) { $0.enabled = true; $0.consented = false }
+        policies.edit(4) { $0.enabled = true; $0.consented = false
+            $0.apps = [.init(name: "Mail", bundleIDs: ["com.apple.mail"]), .init(name: "Notes", bundleIDs: ["com.apple.Notes"])] }
+        learning = LearningPresentation(defaults: f.defaults, learn: learn, policies: policies)
+        let focus = LM2FocusSource(); focus.application = nil; focus.record = nil
+        learning.install(journal: journal, rules: rules, redactor: ReviewRedactor(), source: focus)
+        learning.screen?.privacy.permission = .granted
+        learning.screen?.privacy.modelAvailable = true
+        learning.typing?.privacy.permission = .granted
+        learning.typing?.privacy.modelAvailable = true
+        viewer = JournalViewerModel(journal: journal, now: now, clock: { [now] in now })
+        nav.showsRules = true
+        try addRecords(day: day)
+        try addRules()
+    }
+
+    private func addRecords(day: Date) throws {
+        func at(_ hour: Int, _ minute: Int) -> Date { day.addingTimeInterval(TimeInterval(hour * 3600 + minute * 60)) }
+        func item(_ id: String, _ time: Date, _ level: JournalLevel, _ app: String?, _ kind: JournalKind, _ description: String,
+                  text: String? = nil, topic: String? = nil, details: [String: String] = [:]) -> JournalItem {
+            JournalItem(id: id, time: time, level: level, app: app, kind: kind,
+                        payload: Redacted(JournalPayload(description: description, text: text, topic: topic, details: details)))
+        }
+        try journal.append(item("s1", at(8, 2), .activity, nil, .sentToAssistant, "Morning summary",
+                                text: "Mostly Notes and Mail yesterday, with a long break at 12:30. Winding down around 18:00.", details: ["sessionLabel": "Claude · Zeus"]))
+        try journal.append(item("f1", at(9, 41), .focus, "com.apple.mail", .focus, "Mail", text: "Window: Lunch with ‹name› on Friday"))
+        // A covered picture of a drawn window: one text line covered, the photo pixellated.
+        let synthetic = try Self.drawWindow()
+        let boxes = [FrameBox(x: 0.04, y: 0.615, width: 0.50, height: 0.075, kind: .text), FrameBox(x: 0.62, y: 0.20, width: 0.33, height: 0.56, kind: .picture)]
+        let covered = try FrameRedactor.cover(synthetic, boxes: boxes)
+        let frame = Redacted(FrameItem(heic: try FrameRedactor.heic(covered), width: 1000, height: 600, boxes: boxes, appName: "TextEdit", windowTitle: "Q3 planning notes"))
+        try journal.appendFrame(frame, item: item("p1", at(10, 12), .screen, "com.apple.TextEdit", .frame, "TextEdit · Q3 planning notes", details: ["window": "Q3 planning notes"]))
+        try journal.append(item("d1", at(10, 12), .screen, "com.apple.TextEdit", .description, "Editing the Q3 planning notes.", details: ["frame_id": "p1", "window": "Q3 planning notes"]))
+        try journal.append(item("t1", at(14, 5), .typed, "com.apple.mail", .typedText, "Typing",
+                                text: "hi dr ‹name› can we move thursday to 3pm my ‹health› is still sore", topic: "Replying to a doctor about rescheduling an appointment"))
+        try journal.append(item("t2", at(14, 31), .typed, "com.apple.mail", .typedText, "Typing",
+                                topic: "Drafting a project update for a colleague", details: ["words_not_kept": "setting"]))
+    }
+
+    /// A generic document window, drawn here: a title bar, a heading, text lines and a colour-block "photo".
+    private static func drawWindow() throws -> CGImage {
+        let size = NSSize(width: 1000, height: 600)
+        let image = NSImage(size: size, flipped: true) { _ in
+            NSColor.white.setFill(); NSRect(origin: .zero, size: size).fill()
+            NSColor(white: 0.9, alpha: 1).setFill(); NSRect(x: 0, y: 0, width: 1000, height: 44).fill()
+            let title: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 26, weight: .semibold), .foregroundColor: NSColor.black]
+            let body: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 19), .foregroundColor: NSColor(white: 0.2, alpha: 1)]
+            ("Q3 planning notes" as NSString).draw(at: NSPoint(x: 40, y: 80), withAttributes: title)
+            let lines = ["Goals for the quarter and who owns each one", "Budget review with the finance team on Friday",
+                         "Draft the launch timeline before the offsite", "Collect open questions for the design review",
+                         "Share the summary with everyone on Monday", "Follow up on the venue for the team dinner"]
+            for (index, text) in lines.enumerated() { (text as NSString).draw(at: NSPoint(x: 40, y: 140 + CGFloat(index) * 40), withAttributes: body) }
+            let tones = [NSColor(red: 0.93, green: 0.76, blue: 0.35, alpha: 1), NSColor(red: 0.36, green: 0.55, blue: 0.78, alpha: 1),
+                         NSColor(red: 0.47, green: 0.67, blue: 0.42, alpha: 1), NSColor(red: 0.82, green: 0.45, blue: 0.38, alpha: 1)]
+            for row in 0..<6 { for column in 0..<5 {
+                tones[(row * 3 + column * 2 + row * column) % tones.count].setFill()
+                NSRect(x: 640 + column * 62, y: 150 + row * 52, width: 62, height: 52).fill()
+            } }
+            return true
+        }
+        var rect = NSRect(origin: .zero, size: size)
+        guard let native = image.cgImage(forProposedRect: &rect, context: nil, hints: nil),
+              let raster = CGContext(data: nil, width: 1000, height: 600, bitsPerComponent: 8, bytesPerRow: 4000,
+                                     space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { throw CocoaError(.fileReadCorruptFile) }
+        raster.draw(native, in: CGRect(x: 0, y: 0, width: 1000, height: 600))
+        guard let result = raster.makeImage() else { throw CocoaError(.fileReadCorruptFile) }
+        return result
+    }
+
+    private func addRules() throws {
+        let created = Date().addingTimeInterval(-3 * 86_400)
+        let proposed = try rules.propose([
+            RuleProposal(sentence: "Hold routine messages after 18:00", trigger: .init(time: .init(startMinute: 1080, endMinute: 540)), evidence: ["f1"]),
+            RuleProposal(sentence: "Send a short update to the team when I'm late for stand-up", kind: .acts, confidence: 0.55, evidence: ["f1"])], at: created)
+        guard proposed.count == 2 else { return }
+        rules.ruleActions = [.init(id: "shadow", ruleID: proposed[1].id, sessionKey: "fixture", text: "would have sent “Running late, 10 min” to the team chat",
+                                   undo: nil, created: created.addingTimeInterval(86_400), kind: .shadow)]
+        rules.outcomeEvents = [.init(id: "o1", ruleID: proposed[0].id, at: Date().addingTimeInterval(-86_400), outcome: .accepted, source: .explicit, delta: 0.02)]
+    }
+
+    func settings(_ tab: SettingsTab) -> some View {
+        nav.tab = tab
+        let hub = AgentMessagingHub()
+        return SettingsView(settings: f.settings, managed: ManagedAssistantModel(settings: f.settings, controller: { nil }), cards: f.store, status: f.status, messaging: hub, preview: hub,
+                            testMessage: ComposeModel(cards: f.store, messaging: hub), injectDemo: { _ in }, resetPosition: {},
+                            navigation: nav, login: LoginItemModel(), hotKey: GlobalHotKey(), activity: f.activity, learn: learn, learning: learning)
+    }
+    func kept() -> some View { JournalWindowView(model: viewer, settings: f.settings) }
+    func rulesPane() -> some View { learning.rules.map { RulesSettingsView(model: $0) } }
+    func cleanup() { learning.stop(); f.cleanup() }
+}
+
+extension DesignerAuditRenders {
+    /// The "Zeus learns how you work" README art alone (`render.sh "readmeLearning()"`); `readme()` includes it.
+    @Test func readmeLearning() async throws {
+        for look in Readme.looks { try await learning(look) }
+    }
+
+    /// Settings › Privacy (all four levels), What Zeus Kept (a picture and typing) and Rules, framed like `settings()`.
+    fileprivate func learning(_ look: (name: String, appearance: NSAppearance.Name)) async throws {
+        let r = try ReadmeLearning(); defer { r.cleanup() }
+        func framed(_ view: some View, height: CGFloat, top: CGFloat = 0) -> some View {
+            view.frame(width: 792, height: height, alignment: .top).clipped().padding(.top, top).padding(.bottom, 20)
+                .background(Color(nsColor: .windowBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color(nsColor: .separatorColor)))
+        }
+        // The pane without the tab strip above it (`cut`), ending after Typing's "Raw on request" caption.
+        let privacyHeight = CGFloat(ProcessInfo.processInfo.environment["README_PRIVACY_HEIGHT"].flatMap(Double.init) ?? 2216), cut: CGFloat = 92
+        try await Readme.still("privacy-\(look.name)", appearance: look.appearance, size: CGSize(width: 792, height: privacyHeight - cut + 44), settle: 0.8,
+                               framed(r.settings(.privacy).frame(width: 744, height: privacyHeight - 48).padding(24).offset(y: -cut), height: privacyHeight - cut, top: 24))
+        try await Readme.still("kept-\(look.name)", appearance: look.appearance, size: CGSize(width: 792, height: 540), settle: 0.8,
+                               framed(r.kept(), height: 520))
+        try await Readme.still("rules-\(look.name)", appearance: look.appearance, size: CGSize(width: 792, height: 530), settle: 0.8,
+                               framed(r.rulesPane().padding(24).buttonStyle(ZeusButtonStyle(.secondary, size: .small)).toggleStyle(ZeusCheckboxStyle()), height: 510))
     }
 }
