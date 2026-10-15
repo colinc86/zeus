@@ -99,7 +99,7 @@ struct JournalViewerView: View {
                     KeyboardButton("Cancel", focus: $cancelFocused) { pendingDelete = nil; pendingTypingGroup = nil }.keyboardShortcut(.cancelAction).accessibilityLabel("Cancel deletion")
                     KeyboardButton("Delete") {
                         if let group = pendingTypingGroup {
-                            if model.deleteTyping(ids: Set(group.runs.map(\.id))) { pendingTypingGroup = nil }
+                            if model.deleteTypingGroup(group) { pendingTypingGroup = nil }
                         } else if let selection = pendingDelete, model.delete(selection) { pendingDelete = nil }
                     }
                         .buttonStyle(ZeusButtonStyle(.destructive, size: .small)).accessibilityLabel("Confirm journal deletion")

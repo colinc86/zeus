@@ -61,4 +61,17 @@ import Testing
         #expect(!viewer.deleteTyping(ids: ["a", "missing"]))
         #expect(viewer.items.count == 3); #expect(viewer.error != nil)
     }
+    @Test func deletingAFilteredGroupIncludesItsHiddenStretchesButKeepsOtherAppsAndHours() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-typing-search-delete-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = EncryptedJournalStore(root: root, keyProvider: LM2BPrivateKey(), calendar: calendar, clock: { self.now })
+        try store.append(run("match")); try store.append(run("hidden", offset: 10, topic: "Planning changes", words: nil))
+        try store.append(run("other-app", app: "test.other")); try store.append(run("other-hour", offset: -3600))
+        let viewer = JournalViewerModel(journal: store, calendar: calendar, now: now); viewer.search = "appointment"; viewer.app = "test.mail"
+        let groups = viewer.timeline.compactMap { if case .typing(let group) = $0 { group } else { nil } }
+        let group = try #require(groups.first { $0.runs.contains { $0.id == "match" } })
+        #expect(group.runs.count == 1); #expect(viewer.deleteTypingGroup(group))
+        #expect(Set(try store.items(matching: .init()).map(\.id)) == ["other-app", "other-hour"])
+        viewer.undoDelete(); #expect(try store.items(matching: .init()).count == 4)
+    }
 }

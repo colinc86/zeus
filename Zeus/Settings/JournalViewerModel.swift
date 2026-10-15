@@ -91,6 +91,13 @@ final class JournalViewerModel {
             reload(); return true
         } catch { self.error = "Couldn't delete this typing. Nothing was deleted."; return false }
     }
+    /// A group action names the entire app/hour, including stretches hidden by the current text search.
+    @discardableResult func deleteTypingGroup(_ group: JournalTypingGroup) -> Bool {
+        var query = JournalQuery(); query.from = group.hour; query.to = group.end
+        query.apps = [group.app]; query.levels = [.typed]; query.kinds = [.typedText]; query.limit = 100_000
+        do { return deleteTyping(ids: Set(try journal.items(matching: query).map(\.id))) }
+        catch { self.error = "Couldn't delete this typing. Nothing was deleted."; return false }
+    }
     func forgetUndo() { pictures.forgetUndo(); undoExpiry?.cancel(); undoExpiry = nil; undoDeadline = nil; deletedItem = nil; deletedTyping = nil }
 
     func export() -> Data? {
