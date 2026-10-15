@@ -61,3 +61,10 @@ On `067ffd9`, `scripts/build.sh --for-testing` and `scripts/check-public.sh` pas
 with an explicit blocked result, did not launch Xcode, and again recorded Safari preflight -1744 without a prompt.
 `a2-preflight.json` preserves that check separately from the earlier actual fresh-Xcode attempt in `a2-proof.json`.
 The original Xcode and Safari processes remained running; no fixture process was left running.
+
+## README Rules render add-on
+
+`LM2RenderTests` uses the fixed synthetic rule timestamp `2026-10-12T03:00:00Z`. The regenerated light/dark native
+Rules images show “3 days ago”, use a 792-point-wide fitted view, and export at 2× (1584×1034 pixels, 144 dpi):
+`docs/readme/rules-light.png` and `docs/readme/rules-dark.png`. Both were visually inspected with no clipping.
+Production views were not changed. The focused render suite passed with `TEST_RUNNER_LM2_RENDER=1`.
