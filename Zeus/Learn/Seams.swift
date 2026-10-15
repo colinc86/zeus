@@ -237,3 +237,8 @@ extension RuleTrigger {
         return true
     }
 }
+
+/// Runtime subscribes while active. Feedback contains generated categories/IDs only, never card text or raw observations.
+@MainActor protocol LearningRuleOutcomeSource: AnyObject {
+    var onRuleOutcome: ((RuleOutcome, [String], String, Date) -> Void)? { get set }
+}

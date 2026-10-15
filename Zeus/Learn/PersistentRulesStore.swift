@@ -3,7 +3,7 @@ import Observation
 import ZeusProtocol
 
 /// Atomic encrypted rule state; user consent and confidence survive a restart.
-@MainActor @Observable final class PersistentRulesStore: RulesStore, LearningRuleTracking {
+@MainActor @Observable final class PersistentRulesStore: RulesStore, LearningRuleTracking, LearningRuleOutcomeSource {
     private struct State: Codable {
         var rules: [LearnedRule] = []
         var autonomy = 0.5
@@ -23,6 +23,7 @@ import ZeusProtocol
             batches = try c.decodeIfPresent([[String]].self, forKey: .batches) ?? rules.map { [$0.id] }
         }
     }
+    @ObservationIgnored var onRuleOutcome: ((RuleOutcome, [String], String, Date) -> Void)?
     private(set) var rules: [LearnedRule]
     private(set) var revision: UInt64 = 0
     private(set) var lastError: String?
@@ -73,6 +74,7 @@ import ZeusProtocol
         // Explicit user re-enablement is allowed even for a previously retired low-confidence rule.
         if effective == .active { next.rules[index].confidence = max(0.2, next.rules[index].confidence); next.rules[index].status = .active }
         try commit(next)
+        onRuleOutcome?(status == .retired || status == .proposed ? .toggledOff : .toggledOn, [id], "toggle:" + UUID().uuidString, now)
     }
     func edit(id: String, sentence: String, trigger: RuleTrigger, at now: Date) throws {
         var next = state
@@ -82,6 +84,7 @@ import ZeusProtocol
         next.rules[index].trigger = trigger; next.rules[index].updated = now; next.rules[index].updatedBy = .user
         // User corrections preserve evidence/confidence; edited is an observation, not a rejection.
         try commit(next)
+        onRuleOutcome?(.edited, [id], "edit:" + UUID().uuidString, now)
     }
     func restoreDeleted(_ rule: LearnedRule) throws {
         guard !state.rules.contains(where: { $0.id == rule.id }), state.rules.count < 500 else { throw LearningStorageError.invalidRule }
@@ -95,7 +98,7 @@ import ZeusProtocol
         try recordOutcome(outcome, ruleIDs: ruleIDs, eventID: UUID().uuidString, at: now)
     }
     func recordOutcome(_ outcome: RuleOutcome, ruleIDs: [String], eventID: String, at now: Date) throws {
-        guard !state.outcomeIDs.contains(eventID), !ruleIDs.isEmpty else { return }
+        guard !state.outcomeIDs.contains(eventID) else { return }
         var next = state
         for index in next.rules.indices where ruleIDs.contains(next.rules[index].id) {
             adjust(&next.rules[index], outcome: outcome); next.rules[index].updated = now
@@ -104,6 +107,7 @@ import ZeusProtocol
             }
         }
         next.outcomeIDs.insert(eventID); try commit(next)
+        onRuleOutcome?(outcome, ruleIDs, eventID, now)
     }
     func associate(cardID: String, ruleIDs: [String]) throws {
         var next = state; next.cardRules[cardID] = ruleIDs; try commit(next)
@@ -117,6 +121,7 @@ import ZeusProtocol
               next.rules[i].status == .active else { throw LearningStorageError.missingRule }
         next.rules[i].status = .shadow; next.rules[i].updated = now; next.rules[i].updatedBy = .user
         adjust(&next.rules[i], outcome: .undone); try commit(next)
+        onRuleOutcome?(.undone, [id], "undo-approval:" + UUID().uuidString, now)
     }
     func markShadowShown(id: String) throws -> Bool {
         guard !state.shownShadowIDs.contains(id) else { return false }

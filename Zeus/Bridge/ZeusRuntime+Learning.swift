@@ -7,11 +7,15 @@ extension ZeusRuntime: LearningRuntimeControlling {
     func startLearning() {
         learningObservationToken = UUID()
         learningCatchUpPending = true
+        (learningRules as? any LearningRuleOutcomeSource)?.onRuleOutcome = { [weak self] outcome, ids, eventID, at in
+            self?.recordJournalOutcome(outcome, ruleIDs: ids, eventID: eventID, at: at)
+        }
         observeLearning()
         learningContextDidChange()
     }
     func stopLearning() {
         learningObservationToken = UUID()
+        (learningRules as? any LearningRuleOutcomeSource)?.onRuleOutcome = nil
         learningTimer?.cancel(); learningTimer = nil
         reflectionTask?.cancel(); reflectionTask = nil
         learningHeldIDs.removeAll(); learningInterruptionHold = false
@@ -64,9 +68,24 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let ids = applicableLearningRuleIDs()
         if !ids.isEmpty {
             try (rules as? any LearningRuleTracking)?.associate(cardID: card.id, ruleIDs: ids)
-            learningCardRules[card.id] = ids
         }
+        if card.kind == .question || !ids.isEmpty { learningCardRules[card.id] = ids }
         if learningInterruptionHold && card.priority != .high { learningHeldIDs.append(card.id) }
+    }
+    private func recordJournalOutcome(_ outcome: RuleOutcome, ruleIDs: [String], eventID: String, at date: Date) {
+        guard running, reflectionEnabled(), let journal = learningJournal else { return }
+        let description: String = switch outcome {
+        case .accepted: "Accepted an assistant result"
+        case .skipped: "Skipped an assistant question"
+        case .undone: "Undid an assistant change"
+        case .ignored: "An assistant question went unanswered for a day"
+        case .toggledOff: "Turned off or deferred a learned rule"
+        case .toggledOn: "Approved a learned rule"
+        case .edited: "Edited a learned rule"
+        }
+        let payload = JournalPayload(description: description, details: ["outcome": outcome.rawValue, "rule_ids": ruleIDs.joined(separator: ",")])
+        do { try journal.append(.init(id: "outcome:" + eventID, time: date, level: .activity, kind: .outcome, payload: .init(payload))) }
+        catch { learningError = "Zeus couldn't save a learning outcome to the journal." }
     }
     func recordRuleAnswer(_ card: Card, response: CardResponse) {
         let ids = learningCardRules[card.id] ?? (learningRules as? any LearningRuleTracking)?.associatedRuleIDs(cardID: card.id) ?? []
@@ -81,7 +100,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
     }
     func learningTrackedChange(_ change: AppChange) -> AppChange {
         let ids = applicableLearningRuleIDs()
-        guard !ids.isEmpty else { return change }
+        guard !ids.isEmpty || (learningRules != nil && reflectionEnabled()) else { return change }
         let event = "undo:" + UUID().uuidString
         return AppChange(summary: change.summary, undoTitle: change.undoTitle, undo: { [weak self] in
             change.undo()
