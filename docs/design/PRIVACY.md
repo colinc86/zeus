@@ -425,8 +425,9 @@ Record in   Only in apps I choose                              [label settingsBo
 <allow list, §3: rows with icon, name, "–"; "Add App…">
 No apps chosen yet, so nothing is recorded.                    [empty-state caption]
 
+Keep topics      ( 7 days | 30 days | 90 days )              [SettingsSegments, default 30 days]
 Keep the words   ( Don't keep | 24 hours | 7 days )            [SettingsSegments, default 24 hours]
-Topics are kept for 30 days. The words, with private details removed, are kept as you choose here.   [caption]
+Topics are kept for <N> days. The words, with private details removed, are kept as you choose here.   [caption; <N> follows Keep topics]
 ```
 
 - **The coin is fixed.** Level 4 has no "Everywhere" option.
@@ -442,7 +443,7 @@ Topics are kept for 30 days. The words, with private details removed, are kept a
 - **Title:** "Typing"
 - **Body:** "Zeus notes what you were typing about in the apps you choose, so your assistant knows what you're working on and can help with it. Before anything is kept, Zeus removes names, numbers, addresses and secrets, here on this Mac."
 - **"Zeus keeps"**
-  - "What each stretch of typing was about, for 30 days"
+  - "What each stretch of typing was about, for 30 days (you can change this)"
   - "The words, with private details removed, for 24 hours (you can change this, or keep no words at all)"
 - **"Zeus never keeps"**
   - "Anything you type into a password field"
@@ -513,7 +514,9 @@ While secure input is on (a password field is active) and Level 4 is on:
 - **"Keep the words"** (`SettingsSegments`): "Don't keep", "24 hours" (default), "7 days".
   - Changing it to a shorter choice deletes older words at once.
   - There's no confirmation; the caption under it changes to "Deleted words older than 24 hours."
-- **Topics** are kept for 30 days and aren't configurable in v1.
+- **"Keep topics"** (`SettingsSegments`, above Keep the words): "7 days", "30 days" (default), "90 days". This supersedes the earlier fixed 30 days (LM2-C task).
+  - Shortening it deletes older topics at once, with the same caption swap: "Deleted topics older than 7 days."
+  - If the choice would keep words longer than topics, nothing changes: words are always deleted on their own schedule, and a topic's words never outlive it.
 - "Delete Everything…" covers both.
 
 ## 11. Phase D · depth: journal questions, acting rules, outcomes
