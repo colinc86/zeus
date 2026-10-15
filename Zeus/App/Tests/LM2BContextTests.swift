@@ -7,6 +7,7 @@ import ZeusProtocol
 @MainActor private final class QuestionSource: FocusCaptureSource {
     var isTrusted = true, isSecure = false, isLocked = false
     var application: FocusApplication? = .init(pid: 42, bundleID: "test.editor", name: "Editor")
+    var windowIdentity: ScreenCaptureIdentity? = .init(bundleID: "test.editor", processID: 42, windowID: 3)
     var calls = 0
     var record = FocusQuestionRecord(record: .init(title: "Review for sample@example.invalid", document: nil, address: "https://docs.example.invalid/safe"), selection: "Contact sample@example.invalid")
     var afterRead: () -> Void = {}
@@ -66,6 +67,15 @@ private struct ContextRedactor: Redactor {
         #expect(await ask.capture(directory: root).items.isEmpty); #expect(source.calls == 0)
         privacy.excludedApps.removeAll()
         source.afterRead = { source.application = nil }
+        #expect(await ask.capture(directory: root).items.isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: root.path))
+    }
+    @Test func switchingWindowsInsideOneAppInvalidatesTheWholeExplicitCapture() async throws {
+        let (name, defaults, root, settings, privacy, source) = try fixture()
+        defer { defaults.removePersistentDomain(forName: name); try? FileManager.default.removeItem(at: root) }
+        settings.edit(2) { $0.enabled = true; $0.consented = true }
+        let ask = AskAboutThisModel(policies: settings, privacy: privacy, source: source, redactor: ContextRedactor())
+        source.afterRead = { source.windowIdentity = .init(bundleID: "test.editor", processID: 42, windowID: 4) }
         #expect(await ask.capture(directory: root).items.isEmpty)
         #expect(!FileManager.default.fileExists(atPath: root.path))
     }

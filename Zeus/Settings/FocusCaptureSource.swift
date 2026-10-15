@@ -27,6 +27,8 @@ struct FocusQuestionRecord: Equatable, Sendable { let record: FocusRecord; let s
     var isLocked: Bool { get }
     var idleSeconds: TimeInterval { get }
     var application: FocusApplication? { get }
+    /// Opaque front-window identity, for binding one explicit request across asynchronous captures.
+    var windowIdentity: ScreenCaptureIdentity? { get }
     /// Must return nil for a private or unclassifiable browser window, before reading its title or address.
     func capture(_ application: FocusApplication) async throws -> FocusRecord?
     /// Selected text is read only for an explicit Ask About This action, never background observation.
@@ -35,6 +37,7 @@ struct FocusQuestionRecord: Equatable, Sendable { let record: FocusRecord; let s
 
 extension FocusCaptureSource {
     var idleSeconds: TimeInterval { 0 }
+    var windowIdentity: ScreenCaptureIdentity? { nil }
     func captureForQuestion(_ application: FocusApplication) async throws -> FocusQuestionRecord? {
         try await capture(application).map { FocusQuestionRecord(record: $0, selection: nil) }
     }
@@ -118,6 +121,7 @@ extension FocusCaptureSource {
         return record.text.isEmpty ? nil : record
     }
 
+    var windowIdentity: ScreenCaptureIdentity? { application.flatMap { frontWindowIdentity($0) } }
     func frontWindowIdentity(_ application: FocusApplication) -> ScreenCaptureIdentity? {
         guard self.application == application,
               let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]],

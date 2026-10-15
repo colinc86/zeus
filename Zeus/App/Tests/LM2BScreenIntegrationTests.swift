@@ -42,6 +42,33 @@ import Testing
         fake.permissionGrantedRequiresReopen = true; model.syncPresentation(); #expect(model.privacy.permission == .reopenRequired)
         model.privacy.setEnabled(false); #expect(fake.stops > 0); #expect(fake.requests == 1)
     }
+    @Test func pauseDeadlineRestartsWithoutAnyLevelOneTimerOrPreferenceEdit() async throws {
+        let name = "zeus-screen-deadline-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        defer { try? FileManager.default.removeItem(at: root) }
+        var now = Date(timeIntervalSince1970: 1_800_000_000)
+        let deadline = now.addingTimeInterval(600)
+        let policies = ObservationSettings(defaults: defaults), learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil, clock: { now })
+        policies.edit(3) { $0.enabled = true; $0.consented = true }; learn.settings.pausedUntil = deadline
+        var waited: Date?, resume: CheckedContinuation<Void, Never>?
+        let fake = AppScreenObserverFake()
+        let model = ScreenLearningModel(policies: policies, learn: learn,
+            journal: EncryptedJournalStore(root: root, keyProvider: LM2BPrivateKey()), redactor: LocalRedactor(), focus: LM2FocusSource(), injectedObserver: fake,
+            clock: { now }, waitUntil: { at in waited = at; await withCheckedContinuation { resume = $0 } })
+        defer { resume?.resume(); model.stop() }
+        model.settingsChanged(); #expect(fake.starts == 0)
+        for _ in 0..<100 { if waited != nil { break }; await Task.yield() }
+        #expect(waited == deadline)
+        now = deadline; resume?.resume(); resume = nil
+        for _ in 0..<100 { if fake.starts == 1 { break }; await Task.yield() }
+        #expect(fake.starts == 1); #expect(!learn.isPausedNow)
+        let safari = ScreenCaptureIdentity(bundleID: "com.apple.Safari", processID: 42, windowID: 1)
+        #expect(model.browserPrivacy(safari) == .unknown)
+        policies.edit(3) { $0.scope = .chosenApps; $0.apps = [.init(name: "Safari", bundleIDs: ["com.apple.Safari"])] }
+        #expect(model.browserPrivacy(safari) == .normal)
+        #expect(model.browserPrivacy(.init(bundleID: "unclassified.browser", processID: 42, windowID: 1)) == .unknown)
+    }
     @Test func adapterNeverUsesDormantAllowListAsDenyListAndL3KeepsOwnRetention() throws {
         let name = "zeus-screen-policy-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }

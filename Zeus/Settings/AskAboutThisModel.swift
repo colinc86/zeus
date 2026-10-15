@@ -30,13 +30,14 @@ import ZeusProtocol
         guard let app = source.application, !paused(), !source.isSecure, !source.isLocked else {
             result.caption += " " + ContextDraftResult.privateCaption; return result
         }
+        let requestedWindow = source.windowIdentity
         var hidden = false
-        func valid(_ level: Int) -> Bool { token == generation && !Task.isCancelled && allowed(app, level: level) && policies.policy(2) == l2 && policies.policy(3) == l3 }
+        func valid(_ level: Int) -> Bool { (requestedWindow == nil || source.windowIdentity == requestedWindow) && token == generation && !Task.isCancelled && allowed(app, level: level) && policies.policy(2) == l2 && policies.policy(3) == l3 }
         do {
             // Capture pixels first, while the original app still owns focus. No panel is opened during this await.
             if l3.enabled && l3.consented {
                 if valid(3), let screen = await captureScreen(), valid(3), screen.identity.bundleID == app.bundleID,
-                   screen.identity.processID == app.pid, let frame = screen.frame {
+                   screen.identity.processID == app.pid, requestedWindow == nil || screen.identity == requestedWindow, let frame = screen.frame {
                     let file = try save(frame.value.heic, extension: "heic", directory: directory)
                     result.items.append(.init(attachment: .init(kind: .file, label: "Picture · " + frame.value.appName, target: file.path),
                                               kind: .picture, preview: frame.value.windowTitle))
@@ -63,7 +64,7 @@ import ZeusProtocol
                 } else { hidden = true }
             }
         } catch { hidden = true }
-        guard token == generation, !Task.isCancelled, !paused(), !source.isSecure, !source.isLocked, source.application == app else { return discard(result) }
+        guard token == generation, !Task.isCancelled, !paused(), !source.isSecure, !source.isLocked, source.application == app, requestedWindow == nil || source.windowIdentity == requestedWindow else { return discard(result) }
         if hidden { result.caption += " " + ContextDraftResult.privateCaption }
         return result
     }

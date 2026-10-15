@@ -11,20 +11,24 @@ import Observation
     @ObservationIgnored private var windowSource: ScreenWindowContextSource?
     @ObservationIgnored private var observing = false
     @ObservationIgnored private var running = false
+    @ObservationIgnored private var resumeTask: Task<Void, Never>?
+    @ObservationIgnored private let waitUntil: (Date) async throws -> Void
+    @ObservationIgnored private let clock: () -> Date
     @ObservationIgnored private var browserTask: Task<Void, Never>?
     @ObservationIgnored private var normalBrowser: ScreenCaptureIdentity?
     @ObservationIgnored private var previousIdle = false
 
     init(policies: ObservationSettings, learn: LearnFromMe, journal: any FrameJournalStoring,
          redactor: any Redactor, focus: any FocusCaptureSource,
-         injectedObserver: (any ScreenObserving)? = nil) {
+         injectedObserver: (any ScreenObserving)? = nil, clock: @escaping () -> Date = Date.init, waitUntil: ((Date) async throws -> Void)? = nil) {
         privacy = ScreenPrivacyModel(policies: policies, privacy: learn.settings)
-        self.learn = learn; self.focus = focus
+        self.learn = learn; self.focus = focus; self.clock = clock
+        self.waitUntil = waitUntil ?? { deadline in try await Task.sleep(for: .seconds(max(0, deadline.timeIntervalSince(clock())))) }
         if let injectedObserver { observer = injectedObserver }
         else {
             windowSource = ScreenWindowContextSource(policy: { [weak self] in self?.policy ?? ScreenPolicy() },
                 isLocked: { [weak focus] in focus?.isLocked ?? true },
-                browserPrivacy: { [weak self] identity in self?.normalBrowser == identity ? .normal : .unknown })
+                browserPrivacy: { [weak self] identity in self?.browserPrivacy(identity) ?? .unknown })
             observer = ScreenObserver(journal: journal, redactor: redactor,
                 policy: { [weak self] in self?.policy ?? ScreenPolicy() },
                 context: { [weak self] in self?.windowSource?.current() })
@@ -59,6 +63,15 @@ import Observation
         return result
     }
     func settingsChanged() {
+        resumeTask?.cancel(); resumeTask = nil
+        if let deadline = learn.settings.pausedUntil, deadline > clock() {
+            let waitUntil = waitUntil
+            resumeTask = Task { @MainActor [weak self] in
+                do { try await waitUntil(deadline) } catch { return }
+                guard let self, !Task.isCancelled else { return }
+                settingsChanged()
+            }
+        }
         invalidate()
         if policy.enabled && policy.consented {
             if !running {
@@ -74,7 +87,8 @@ import Observation
         if !observing { observing = true; observePresentation() }
     }
     func invalidate() { browserTask?.cancel(); browserTask = nil; observer?.invalidatePendingCapture() }
-    func stop() { running = false; observing = false; invalidate(); windowSource?.stop(); observer?.stop() }
+    isolated deinit { resumeTask?.cancel(); browserTask?.cancel() }
+    func stop() { resumeTask?.cancel(); resumeTask = nil; running = false; observing = false; invalidate(); windowSource?.stop(); observer?.stop() }
     func contextChanged() {
         normalBrowser = nil
         observer?.contextDidChange(returnedFromIdle: previousIdle && focus.idleSeconds < 60)
@@ -89,6 +103,11 @@ import Observation
                   running, source.frontWindowIdentity(app) == identity else { return }
             normalBrowser = identity; observer?.contextDidChange(returnedFromIdle: false)
         }
+    }
+    /// Safari is the explicit PM-approved exception: its allow list includes private windows too.
+    func browserPrivacy(_ identity: ScreenCaptureIdentity) -> BrowserWindowPrivacy {
+        if identity.bundleID == "com.apple.Safari", privacy.policy.permitsSafariDetails { return .normal }
+        return normalBrowser == identity ? .normal : .unknown
     }
     static func chromium(_ id: String) -> Bool { id.hasPrefix("com.google.Chrome") || id == "com.microsoft.edgemac" }
     private func requestPermission() { _ = observer?.requestPermission(); syncPresentation() }

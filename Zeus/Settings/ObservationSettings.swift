@@ -31,8 +31,8 @@ final class ObservationSettings {
     var screenPerHour: Int {
         didSet {
             let bounded = [4, 12, 30].contains(screenPerHour) ? screenPerHour : 12
-            if screenPerHour != bounded { screenPerHour = bounded; return }
-            defaults.set(screenPerHour, forKey: "learn.screenPerHour")
+            if screenPerHour != bounded { screenPerHour = bounded }
+            defaults.set(bounded, forKey: "learn.screenPerHour")
         }
     }
     var screenPermissionRequested: Bool { didSet { defaults.set(screenPermissionRequested, forKey: "learn.screenPermissionRequested") } }
