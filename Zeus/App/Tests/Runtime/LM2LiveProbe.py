@@ -25,8 +25,8 @@ def main():
         match=re.search(r'd_reflection_[0-9]{8}',rendered)
         if not match:return None,{}
         targets=[('zeus_get_rules',{}),('zeus_propose_rules',{'rules':[
-            {'sentence':'Keep routine updates quiet while tests are failing','trigger':{'state':'tests failing'},'kind':'passive','evidence':['synthetic-editor']},
-            {'sentence':'Send a short recap after work','kind':'acts','evidence':['synthetic-editor']}]}),
+            {'sentence':'Keep routine updates quiet while tests are failing','trigger':{'state':'tests failing'},'kind':'passive','evidence':['synthetic-editor','synthetic-editor-yesterday']},
+            {'sentence':'Send a short recap after work','kind':'acts','evidence':['synthetic-editor','synthetic-editor-yesterday']}]}),
             ('zeus_ack',{'delivery_ids':[match.group(0)]}),('zeus_say',{'text':'Reflection fixture processed.'})]
         if len(seen)<len(targets):
             next_call=targets[len(seen)];seen.append(next_call[0]);return next_call
@@ -49,7 +49,7 @@ def main():
         assert [r['status'] for r in state['rules']]==['active','shadow'],state
         assert len(state['receipts'])==1 and state['receipts'][0]['payload']['value']['text']==state['reflectionTexts'][0],state
         assert state['receipts'][0]['payload']['value']['details']['sessionLabel']=='Claude · Assistant',state
-        assert state['deliveries']==[{'kind':'reflection','acked':True,'attempts':1}],state
+        assert len(state['deliveries'])==1 and state['deliveries'][0]['kind']=='reflection' and state['deliveries'][0]['acked'] and state['deliveries'][0]['attempts']==1,state
         control.call('reflect');time.sleep(.25)
         assert len(control.call('state')['deliveries'])==1
         proof={'agent':pane.version,'isolation':'private tmux, disposable HOME/config, localhost synthetic model, fixed test key; no user credentials',

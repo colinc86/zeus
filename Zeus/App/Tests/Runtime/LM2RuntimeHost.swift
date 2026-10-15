@@ -3,11 +3,12 @@ import Foundation
 import ZeusProtocol
 import ZeusSprites
 
-@MainActor private final class LM2Key: JournalKeyProviding {
+@MainActor private final class LM2Key: FixtureLearningKeyProviding {
     func key() throws -> Data { Data(repeating: 21, count: 32) }
 }
 @MainActor private final class LM2Cards: CardStoring, LearningNoticeRecording {
     var values: [Card] = [], notices: [LearningNotice] = []
+    var actions: [String: @MainActor () -> Void] = [:]
     var responseHandler: ((Card, CardResponse) -> Void)?
     func add(_ card: Card) { values.append(card) }
     func card(id: String) -> Card? { values.first { $0.id == id } }
@@ -16,7 +17,9 @@ import ZeusSprites
     }
     func dismiss(id: String) { _ = update(id: id) { $0.status = .dismissed } }
     func recordLearningNotice(_ notice: LearningNotice, action: (@MainActor () -> Void)?) -> Bool {
-        guard !notices.contains(where: { $0.id == notice.id }) else { return false }; notices.append(notice); return true
+        actions[notice.id] = action
+        if let index = notices.firstIndex(where: { $0.id == notice.id }) { notices[index] = notice; return false }
+        notices.append(notice); return true
     }
 }
 @MainActor private final class LM2Status: AvatarStatusControlling {
@@ -56,8 +59,10 @@ private struct LM2Runner: ProcessRunning {
         let socket = root.appendingPathComponent("tmux.sock").path
         let journal = EncryptedJournalStore(root: root.appendingPathComponent("Journal"), keyProvider: LM2Key())
         let rules = try PersistentRulesStore(fileURL: root.appendingPathComponent("rules.zrules"), keyProvider: LM2Key())
-        try journal.append(.init(id: "synthetic-editor", time: clock.now, level: .focus, app: "com.example.Editor", kind: .focus,
+        try journal.append(.init(id: "synthetic-editor", time: clock.now.addingTimeInterval(-1), level: .focus, app: "com.example.Editor", kind: .focus,
             payload: .init(.init(description: "Editing a synthetic test document; a test failed."))))
+        try journal.append(.init(id: "synthetic-editor-yesterday", time: clock.now.addingTimeInterval(-86401), level: .focus, app: "com.example.Editor", kind: .focus,
+            payload: .init(.init(description: "Editing a synthetic test document yesterday."))))
         var enabled = false
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = .gmt
         let live = ZeusRuntime(cards: cards, status: LM2Status(), characters: LM2Characters(), routing: routing,
@@ -66,6 +71,7 @@ private struct LM2Runner: ProcessRunning {
             rules: rules, journal: journal, redactor: LocalRedactor(useOnDeviceModel: false),
             learningContext: { .init(frontmostApp: "com.example.Editor", idleSince: clock.now.addingTimeInterval(-601)) },
             reflectionEnabled: { enabled }, learningCalendar: calendar)
+        live.journalAccessPolicy = { .init(enabledLevels: [.focus]) }
         try live.start(); defer { live.stop() }
         try write(["ready": true])
         await Task.detached {
@@ -78,11 +84,17 @@ private struct LM2Runner: ProcessRunning {
                             routing.assistantSessionKey = session.sessionKey; routing.tmuxTarget = session.tmuxPane; routing.tmuxTargetSocketPath = session.tmuxSocketPath
                             enabled = true; live.learningContextDidChange()
                         }
-                        try write(["ok": true, "sessions": .number(Double(live.sessions.count)), "rules": .array(try rules.rules.map(JSONValue.from)),
+                        if command["command"] == "approvePassive", let rule = rules.rules.first(where: { $0.kind == .passive }) {
+                            try rules.setStatus(.active, id: rule.id, at: clock.now)
+                        }
+                        if command["command"] == "undo", let action = rules.ruleActions.last(where: { $0.kind == .acted }) {
+                            cards.actions["action:" + action.id]?()
+                        }
+                        try write(["actions": .array(try rules.ruleActions.map(JSONValue.from)), "outcomes": .array(try rules.outcomeEvents.map(JSONValue.from)), "ok": true, "sessions": .number(Double(live.sessions.count)), "rules": .array(try rules.rules.map(JSONValue.from)),
                             "notices": .array(cards.notices.map { .string($0.summary) }),
                             "receipts": .array(try journal.items(matching: .init()).filter { $0.kind == .sentToAssistant }.map(JSONValue.from)),
                             "reflectionTexts": .array((live.ledger?.records ?? []).filter { $0.delivery.kind == .reflection }.map { .string($0.delivery.content) }),
-                            "deliveries": .array((live.ledger?.records ?? []).map { ["kind": .string($0.delivery.kind.rawValue), "acked": .bool($0.delivery.ackedAt != nil), "attempts": .number(Double($0.delivery.attempts))] }),
+                            "deliveries": .array((live.ledger?.records ?? []).map { ["id": .string($0.delivery.id), "kind": .string($0.delivery.kind.rawValue), "acked": .bool($0.delivery.ackedAt != nil), "attempts": .number(Double($0.delivery.attempts))] }),
                             "error": live.learningError.map(JSONValue.string) ?? .null])
                     } catch { try? write(["ok": false, "error": .string(String(describing: error))]) }
                 }
