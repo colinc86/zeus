@@ -31,3 +31,7 @@ extension CardStore: LearningNoticeRecording {
         }
     }
 }
+
+extension CardStore: LearningCardReadState {
+    func learningCardWasRead(id: String) -> Bool { seenIDs.contains(id) }
+}

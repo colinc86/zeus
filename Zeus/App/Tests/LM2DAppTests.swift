@@ -105,6 +105,18 @@ import Testing
         }
         #expect(store.unseenCount == 0 && store.cards.isEmpty)
     }
+    @Test func runtimeReadStateUsesDurableSeenIDs() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("depth-read-\(UUID()).json")
+        defer { try? FileManager.default.removeItem(at: file) }
+        let store = CardStore(fileURL: file)
+        let readState: any LearningCardReadState = store
+        store.add(.init(id: "produced", kind: .message, body: "Prepared a list"))
+        #expect(!readState.learningCardWasRead(id: "produced"))
+        store.markSeen(id: "produced")
+        #expect(readState.learningCardWasRead(id: "produced"))
+        #expect(!readState.learningCardWasRead(id: "other"))
+        #expect(CardStore(fileURL: file).learningCardWasRead(id: "produced"))
+    }
     static func answer(time: Date) -> JournalItem {
         .init(id: "journal_answer_fixture", time: time, level: .typed, kind: .sentToAssistant,
             payload: .init(.init(description: "Journal answer", text: #"{"items":[{"id":"typing","time":"2026-10-15T14:00:00Z","kind":"typing","text":"Writing a note","words":"hello ‹name›"}]}"#,
