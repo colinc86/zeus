@@ -72,4 +72,28 @@ import ZeusProtocol
             #expect(host.bounds.insetBy(dx: -1, dy: -1).contains(frame), "Disclosure/control must be visible without scrolling: \(prefix)")
         }
     }
+    @Test func typingConsentKeepsWordsDisclosureAndPermissionButtonsVisibleOnShortDisplays() async throws {
+        let (host, window) = try await mount(TypingConsentSheet(enable: {}, cancel: {}, heightLimit: 540).frame(width: 540, height: 540), width: 540, height: 540)
+        defer { window.contentView = nil; window.close() }
+        let nodes = lm2bNodes(host)
+        for prefix in ["Topics go to your assistant", "Next, macOS asks", "Continue", "Not Now"] {
+            let node = try #require(nodes.first { lm2bLabel($0).hasPrefix(prefix) })
+            let screenFrame = try #require((node as AnyObject).accessibilityFrame?())
+            #expect(host.bounds.insetBy(dx: -1, dy: -1).contains(host.convert(window.convertFromScreen(screenFrame), from: nil)))
+        }
+    }
+    @Test func longTypingWordsWrapFullyAndThePastedChipRemainsAccessible() async throws {
+        let words = String(repeating: "synthetic long stored words ", count: 20) + "‹pasted› final words"
+        let run = JournalTypingRun(item: .init(level: .typed, app: "test.editor", kind: .typedText,
+            payload: .init(.init(description: "Typing", text: words, topic: "Reviewing changes"))))
+        let (host, window) = try await mount(JournalTypingRunView(run: run).padding(12).frame(width: 380, height: 600, alignment: .topLeading), width: 380, height: 600)
+        defer { window.contentView = nil; window.close() }
+        let nodes = lm2bNodes(host)
+        let text = try #require(nodes.first { lm2bLabel($0).hasPrefix("synthetic long stored words") })
+        let frame = try #require((text as AnyObject).accessibilityFrame?())
+        #expect(frame.height > 100, "Stored words must get their full multiline height, rather than one line in a chip layout")
+        let pasted = try #require(nodes.first { lm2bLabel($0) == "pasted" })
+        let chipFrame = try #require((pasted as AnyObject).accessibilityFrame?())
+        #expect(host.bounds.contains(host.convert(window.convertFromScreen(chipFrame), from: nil)))
+    }
 }
