@@ -324,6 +324,7 @@ The protocols live in `Zeus/Shared/AppSeams.swift`, which the PM owns. That file
 Zeus is a **conversation**, not a stack of cards to clear.
 
 1. **One conversation panel.**
+   - Every click target in the conversation panel responds to the first click, whether or not the panel is key.
    - Clicking Zeus, or the global hotkey, toggles a single panel: a scrolling thread with the newest message at the bottom and a **composer that's always there**.
    - Agent cards render inline as message bubbles. Questions keep their option buttons live until answered, and content cards show attachments. A progress card updates in place, and a card dismissed by the agent fades to muted.
    - The user's own messages and answers appear as right-aligned bubbles.

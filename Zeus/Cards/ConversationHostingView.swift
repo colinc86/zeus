@@ -13,6 +13,8 @@ final class ConversationHostingView: NSHostingView<ConversationView> {
         addSubview(resizeHandle)
     }
     @available(*, unavailable) required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    /// The nonactivating panel must deliver its first click, not spend it becoming key.
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func layout() {
         super.layout()
         resizeHandle.edge = resizeEdge
