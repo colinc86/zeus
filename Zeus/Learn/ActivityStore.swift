@@ -182,14 +182,19 @@ final class ActivityStore {
         return .init(t: item.time, kind: kind, app: item.app, name: details["name"],
                      seconds: details["seconds"].flatMap(Double.init), displays: details["displays"].flatMap(Int.init))
     }
+    var hasLegacyActivity: Bool { !rawFiles().isEmpty }
     /// Source files remain until every permitted event has committed. Stable IDs make interrupted migration idempotent.
-    func migrateLegacy(redactor: any Redactor, allowed: (ActivityEvent) -> Bool, stillAllowed: () -> Bool) async throws {
+    func migrateLegacy(redactor: any Redactor, allowed: (ActivityEvent) -> Bool,
+                       excluded: (ActivityEvent) -> Bool = { _ in false }, stillAllowed: () -> Bool) async throws {
         guard journal != nil else { return }
         for file in rawFiles() {
             guard stillAllowed() else { return }
             let data = try Data(contentsOf: file.url)
             for (offset, line) in data.split(separator: 10).enumerated() {
-                guard let event = try? Self.decoder.decode(ActivityEvent.self, from: Data(line)), allowed(event) else { continue }
+                guard let event = try? Self.decoder.decode(ActivityEvent.self, from: Data(line)) else { continue }
+                if excluded(event) { continue }
+                // A temporary hard stop pauses migration; it must not silently drop permitted history.
+                guard allowed(event) else { return }
                 let payload = await redactor.redact(Self.payload(event))
                 guard stillAllowed(), allowed(event) else { return }
                 let hash = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
