@@ -388,7 +388,9 @@ struct TmuxInputSnapshot: Equatable, Sendable {
                 if remaining.first == " " {
                     remaining = remaining.dropFirst()
                     let nextWord = String(remaining.prefix { $0 != " " && $0 != "\n" })
-                    guard 1 + Self.cellWidth(nextWord) > gap else { return false }
+                    // Claude may wrap a next word that exactly reaches the input edge.
+                    // Its bytes still have to match the entire remaining paragraph.
+                    guard 1 + Self.cellWidth(nextWord) >= gap else { return false }
                 } else {
                     // A long word can wrap at a cell boundary instead.
                     guard gap == 0 || (gap == 1 && remaining.first.map { Self.cellWidth(String($0)) == 2 } == true) else { return false }
