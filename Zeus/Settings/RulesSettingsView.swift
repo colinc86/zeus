@@ -223,7 +223,7 @@ private struct RuleOutcomeGlyph: View {
             case .accepted: ZeusGlyph(.check)
             case .undone: ZeusGlyph(.reply)
             case .skipped: ZeusGlyph(.close)
-            case .ignored, .stale: Rectangle().frame(width: 7, height: 1)
+            case .ignored, .stale: Rectangle().frame(width: 7, height: 1).offset(y: -3)
             case .toggledOff: Circle().stroke(lineWidth: 1).frame(width: 6, height: 6)
             case .toggledOn: Circle().frame(width: 6, height: 6)
             case .edited:
