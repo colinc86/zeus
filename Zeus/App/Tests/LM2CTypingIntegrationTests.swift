@@ -112,4 +112,21 @@ import Testing
         #expect(row.payload.value.details["words_not_kept"] == "setting")
         #expect(learning.viewer?.items.allSatisfy { $0.payload.value.text == nil } == true)
     }
+    @Test func returningFromSystemSettingsRefreshesModelAvailabilityWhileTypingIsOff() throws {
+        let name = "zeus-typing-availability-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        defer { try? FileManager.default.removeItem(at: root) }
+        var available = false
+        let observer = AppTypingObserverFake()
+        let model = TypingLearningModel(policies: ObservationSettings(defaults: defaults),
+            learn: LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil),
+            journal: EncryptedJournalStore(root: root, keyProvider: LM2BPrivateKey()), redactor: LocalRedactor(useOnDeviceModel: false),
+            focus: LM2FocusSource(), injectedObserver: observer, modelAvailable: { available })
+        defer { model.stop() }
+        model.settingsChanged(); #expect(!model.privacy.modelAvailable); #expect(observer.starts == 0)
+        available = true; model.contextChanged(); #expect(model.privacy.modelAvailable)
+        model.privacy.setEnabled(true); #expect(model.privacy.showsConsent)
+        #expect(observer.requests == 0); #expect(observer.starts == 0)
+    }
 }

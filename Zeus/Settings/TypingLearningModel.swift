@@ -75,6 +75,8 @@ import Observation
         if !observing { observing = true; observePresentation() }
     }
     func contextChanged() {
+        // Returning from System Settings must also unlock the switch when the model became available while off.
+        syncPresentation()
         normalBrowser = nil; browserTask?.cancel(); observer?.contextDidChange()
         guard running, let source = focus as? MacFocusCaptureSource, let app = focus.application,
               ScreenLearningModel.chromium(app.bundleID), let identity = source.frontWindowIdentity(app),
