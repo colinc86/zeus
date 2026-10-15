@@ -18,6 +18,8 @@ import ImageIO
     @ObservationIgnored private let policy: () -> ScreenPolicy
     @ObservationIgnored private let context: () -> ScreenContext?
     @ObservationIgnored private let clock: () -> Date
+    @ObservationIgnored private let secondsSinceInput: () -> TimeInterval
+    @ObservationIgnored private var wasIdle = false
     @ObservationIgnored private let safety: ScreenSafetyMonitor?
     @ObservationIgnored private var running = false
     @ObservationIgnored private var generation = UUID()
@@ -37,7 +39,8 @@ import ImageIO
          context: @escaping () -> ScreenContext?, source: (any ScreenCapturing)? = nil,
          processor: (any ScreenFrameRedacting)? = nil, describer: (any ScreenDescribing)? = nil,
          coveredTextReader: (any CoveredFrameReading)? = nil,
-         safety: ScreenSafetyMonitor? = nil, clock: @escaping () -> Date = Date.init) {
+         safety: ScreenSafetyMonitor? = nil, clock: @escaping () -> Date = Date.init,
+         secondsSinceInput: (() -> TimeInterval)? = nil) {
         self.journal = journal
         self.policy = {
             var value = policy()
@@ -45,6 +48,10 @@ import ImageIO
             return value
         }
         self.context = context; self.clock = clock
+        self.secondsSinceInput = secondsSinceInput ?? {
+            guard source == nil, let any = CGEventType(rawValue: ~0) else { return 0 }
+            return CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: any)
+        }
         self.source = source ?? WindowScreenCapture(); self.processor = processor ?? FrameRedactor(redactor: redactor)
         self.describer = describer ?? FrameDescriber(redactor: redactor)
         self.coveredReader = coveredTextReader ?? CoveredFrameReader()
@@ -53,6 +60,7 @@ import ImageIO
     isolated deinit { stop() }
     func start() {
         guard !running else { return }; running = true
+        wasIdle = policy().enabled && policy().consented && secondsSinceInput() >= 300
         if policy().enabled, policy().consented, let processor = processor as? FrameRedactor {
             warmup = Task(priority: .utility) { await processor.prewarm() }
         }
@@ -97,6 +105,11 @@ import ImageIO
     /// Public for deterministic fake-clock tests; the production timer only checks deadlines/permission, not pixels.
     func tick() {
         guard running else { return }
+        if policy().enabled, policy().consented {
+            let idle = secondsSinceInput() >= 300
+            if wasIdle && !idle { due = clock() }
+            wasIdle = idle
+        }
         applyRetention(); updatePermission(); pause = blocked(current())
         if let due, clock() >= due { captureNow() }
         else if pendingDescriptions, !policy().deferDescriptions, pause == nil { describePending() }
