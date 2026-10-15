@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import Zeus
 
-@MainActor final class LM2BPrivateKey: JournalKeyProviding {
+@MainActor final class LM2BPrivateKey: FixtureLearningKeyProviding {
     func key() throws -> Data { Data(repeating: 86, count: 32) }
 }
 @MainActor struct LM2BViewerTests {
