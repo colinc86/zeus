@@ -107,6 +107,7 @@ private struct FixtureLearningRedactor: Redactor {
         _ = await f.runtime.callTool("zeus_propose_rules", arguments: ["rules": [["sentence": "Send a recap", "kind": "acts"], ["sentence": "Use short updates"]]], sessionKey: "claude:/fixture#123.1")
         let rule = try #require(f.rules.rules.first), id = "shadow:" + rule.id
         #expect(f.cards.learningNotices.contains { $0.summary == "2 new rules" })
+        #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "I'd have acted on “Send a recap”")
         let staleOK = try #require(f.cards.learningActions[id]); staleOK()
         #expect(f.rules.rules.first?.status == .active)
         #expect(f.cards.learningNotices.first { $0.id == id }?.actionTitle == "Undo")
@@ -115,9 +116,15 @@ private struct FixtureLearningRedactor: Redactor {
         #expect(f.rules.rules.first?.status == .shadow)
         #expect(abs((f.rules.rules.first?.confidence ?? 0) - 0.4) < 0.001)
         try f.rules.setStatus(.active, id: rule.id, at: f.clock.now); f.runtime.learningContextDidChange()
-        #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "OK. I will do that from now on.")
-        try f.rules.setStatus(.retired, id: rule.id, at: f.clock.now); f.runtime.learningContextDidChange()
+        #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "OK. I'll do that from now on.")
+        try f.rules.setStatus(.proposed, id: rule.id, at: f.clock.now); f.runtime.learningContextDidChange()
+        #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "Got it. I won't.")
         #expect(f.cards.learningActions[id] == nil)
+        try f.rules.setStatus(.retired, id: rule.id, at: f.clock.now); f.runtime.learningContextDidChange()
+        #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "Retired: “Send a recap”")
+        #expect(f.cards.learningNotices.first { $0.id == id }?.actionTitle == "Review")
+        var reviewed: String?; f.runtime.onReviewRule = { reviewed = $0 }
+        f.cards.learningActions[id]?(); #expect(reviewed == rule.id)
     }
     @Test func deletingEvidenceErasesPendingReflectionBodyWithoutRepeatingTheDay() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
