@@ -5,7 +5,7 @@ was read. Tests use disposable HOME/CFFIXED_USER_HOME, private UserDefaults suit
 
 ## Native capture
 
-Run `python3 -B Zeus/App/Tests/LM2LiveProbe.py` from the worktree root. The helper builds a native dev app from the production
+Run `python3 -B Zeus/App/Tests/LM2AppLiveProbe.py` from the worktree root. The helper builds a native dev app from the production
 FocusObserver, MacFocusCaptureSource, LocalRedactor and EncryptedJournalStore. It preflights Accessibility without requesting
 permission, and refuses any PID it did not launch. The owned editor exposes a real AX window title and AXDocument URL.
 
