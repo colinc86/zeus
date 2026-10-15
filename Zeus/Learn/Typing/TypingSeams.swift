@@ -17,6 +17,8 @@ struct TypingPolicy: Equatable, Sendable {
     var apps: Set<String> = []
     var privateApps: Set<String> = []
     var words: TypingWordsRetention = .day
+    /// PM task choice: 7/30/90 days, default 30 (the earlier design draft fixed topics at 30).
+    var topicRetentionDays = 30
     /// Low Power Mode or battery under 30%: stage-one results stay in bounded RAM for at most ten minutes.
     var deferProcessing = false
     func permits(_ context: TypingContext) -> Bool {

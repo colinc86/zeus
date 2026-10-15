@@ -78,6 +78,10 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
             var translator = try #require(TypingKeyTranslator(sourceID: id), "Installed recorded layout is missing: \(id)")
             #expect(keys.map { translator.text(code: $0.0, flags: $0.1) }.joined() == expected)
         }
+        var cancelled = try #require(TypingKeyTranslator(sourceID: "com.apple.keylayout.US"))
+        #expect(cancelled.text(code: 14, flags: .maskAlternate).isEmpty)
+        let didCancel = cancelled.cancelPendingDeadKey(); #expect(didCancel)
+        #expect(cancelled.text(code: 14, flags: []) == "e")
     }
     @Test func coalescingGapFocusBackspaceAndPasteMarker() async throws {
         let f = TypingFixture(); defer { f.close() }; f.observer.start()
@@ -217,7 +221,7 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
         #expect(try f.rows().first { $0.id == "young" }?.payload.value.text != nil)
         try f.journal.pruneTyping(words: .week, now: f.now)
         try f.journal.prune(retention: .init(), now: f.now.addingTimeInterval(86400))
-        #expect(try f.rows().first { $0.id == "young" }?.payload.value.text != nil)
+        #expect(try f.rows().first { $0.id == "young" }?.payload.value.text == nil) // Extending never resets the original deadline.
         try f.journal.pruneTyping(words: .none, now: f.now)
         let reopened = EncryptedJournalStore(root: f.root, keyProvider: FixtureJournalKey())
         let rows = try reopened.items(matching: .init())
@@ -246,5 +250,71 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
         journal = nil; #expect(weakJournal == nil)
         let reopened = EncryptedJournalStore(root: root, keyProvider: FixtureJournalKey(), clock: { now })
         #expect(try reopened.items(matching: .init()).first?.payload.value.text == nil)
+    }
+    @Test func topicRetentionChoicesPreserveOtherLevelsAndResumeAfterInitiallyPrivateInput() throws {
+        let f = TypingFixture(); defer { f.close() }
+        try f.journal.append(.init(id: "older-topic", time: f.now.addingTimeInterval(-45*86400), level: .typed, kind: .typedText,
+            payload: .init(.init(description: "Safe topic", topic: "Safe topic"))))
+        try f.journal.append(.init(id: "focus", time: f.now.addingTimeInterval(-45*86400), level: .focus, kind: .focus,
+            payload: .init(.init(description: "Safe focus"))))
+        try f.journal.pruneTyping(words: .none, topicsDays: 90, now: f.now); #expect(try f.rows().count == 2)
+        try f.journal.pruneTyping(words: .none, topicsDays: 7, now: f.now); #expect(try f.rows().map(\.id) == ["focus"])
+        f.secure = true; f.observer.start(); #expect(f.source.starts == 0)
+        f.secure = false; f.observer.tick(); #expect(f.source.starts == 1 && f.observer.isRecording)
+    }
+    @Test func atomicGroupDeletionUndoRejectsConflictsAndCannotRestoreDisallowedWords() throws {
+        let f = TypingFixture(); defer { f.close() }
+        let rows = (0..<2).map { index in JournalItem(id: "group-\(index)", time: f.now, level: .typed, kind: .typedText,
+            payload: .init(.init(description: "Safe topic", text: "safe synthetic words", topic: "Safe topic"))) }
+        for row in rows { try f.journal.append(row) }
+        let ids = Set(rows.map(\.id)), revision = f.journal.revision
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: f.root.path)
+        #expect(throws: (any Error).self) { try f.journal.deleteTyping(ids: ids) }
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: f.root.path)
+        #expect(try f.rows() == rows); #expect(f.journal.revision == revision)
+        let receipt = try f.journal.deleteTyping(ids: ids); #expect(try f.rows().isEmpty)
+        try f.journal.append(rows[0]); #expect(throws: TypingJournalError.self) { try f.journal.restoreTyping(receipt) }
+        try f.journal.delete(.item(rows[0].id)); try f.journal.restoreTyping(receipt)
+        #expect(try f.rows() == rows)
+        let preferenceReceipt = try f.journal.deleteTyping(ids: ids)
+        try f.journal.pruneTyping(words: .none, topicsDays: 30, now: f.now)
+        #expect(throws: TypingJournalError.self) { try f.journal.restoreTyping(preferenceReceipt) }
+        // Single-run UI Undo through append obeys the new preference as well.
+        try f.journal.append(rows[0]); #expect(try f.rows().first?.payload.value.text == nil)
+        let forgotten = try f.journal.deleteTyping(ids: [rows[0].id]); try f.journal.delete(.all)
+        #expect(throws: TypingJournalError.self) { try f.journal.restoreTyping(forgotten) }
+    }
+    @Test func groupUndoStripsExpiredWordsAndCrossDayOrMissingSelectionChangesNothing() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("lm2c_group_" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        var now = Date(timeIntervalSince1970: 1_800_000_000)
+        let journal = EncryptedJournalStore(root: root, keyProvider: FixtureJournalKey(), clock: { now })
+        let row = JournalItem(id: "old", time: now.addingTimeInterval(-86399), level: .typed, kind: .typedText,
+            payload: .init(.init(description: "Safe topic", text: "synthetic words", topic: "Safe topic")))
+        let fresh = JournalItem(id: "new", time: now, level: .typed, kind: .typedText,
+            payload: .init(.init(description: "New topic", text: "other synthetic words", topic: "New topic")))
+        try journal.append(row); try journal.append(fresh)
+        let before = try journal.items(matching: .init())
+        #expect(throws: TypingJournalError.self) { try journal.deleteTyping(ids: ["old", "new"]) }
+        #expect(throws: TypingJournalError.self) { try journal.deleteTyping(ids: ["old", "missing"]) }
+        #expect(try journal.items(matching: .init()) == before)
+        let receipt = try journal.deleteTyping(ids: ["old"]); now += 2; try journal.restoreTyping(receipt)
+        let restored = try #require(journal.items(matching: .init()).first { $0.id == "old" })
+        #expect(restored.payload.value.text == nil && restored.payload.value.topic == "Safe topic")
+        let expired = try journal.deleteTyping(ids: ["old"]); now += 31 * 86400
+        #expect(throws: TypingJournalError.self) { try journal.restoreTyping(expired) }
+    }
+    @Test func failedShorteningCannotExposeWordsOrResurrectThemOnUndo() throws {
+        let f = TypingFixture(); defer { f.close() }
+        let row = JournalItem(id: "words", time: f.now, level: .typed, kind: .typedText,
+            payload: .init(.init(description: "A safe topic", text: "safe synthetic words", topic: "A safe topic")))
+        try f.journal.append(row)
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: f.root.path)
+        #expect(throws: (any Error).self) { try f.journal.pruneTyping(words: .none, topicsDays: 30, now: f.now) }
+        #expect(throws: (any Error).self) { try f.journal.items(matching: .init()) }
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: f.root.path)
+        #expect(try f.rows().first?.payload.value.text == nil)
+        try f.journal.delete(.item(row.id)); try f.journal.append(row)
+        #expect(try f.rows().first?.payload.value.text == nil)
     }
 }
