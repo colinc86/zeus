@@ -375,13 +375,21 @@ public struct ZeusAttachmentChip: View {
     public var actionTitle: String?
     public var onAction: (() -> Void)?
     public var onRemove: () -> Void
+    /// A small preview drawn in place of the kind icon (Ask About This's Picture chip), at 32×20 pt.
+    public var thumbnail: Image?
     @Environment(\.zeusPalette) private var palette
 
+    /// The thumbnail's size, in points.
+    public static let thumbnailSize = CGSize(width: 32, height: 20)
+
     /// - Parameters:
+    ///   - thumbnail: a preview shown instead of the kind icon, for example the covered picture; `nil` for the icon.
     ///   - actionTitle: an extra button inside the chip, such as "Work in this folder"; `nil` for none.
     ///   - onRemove: removes the item from the draft. VoiceOver reads "Remove <label>".
-    public init(_ attachment: Attachment, actionTitle: String? = nil, onAction: (() -> Void)? = nil, onRemove: @escaping () -> Void) {
+    public init(_ attachment: Attachment, thumbnail: Image? = nil, actionTitle: String? = nil, onAction: (() -> Void)? = nil,
+                onRemove: @escaping () -> Void) {
         self.attachment = attachment
+        self.thumbnail = thumbnail
         self.actionTitle = actionTitle
         self.onAction = onAction
         self.onRemove = onRemove
@@ -392,10 +400,17 @@ public struct ZeusAttachmentChip: View {
 
     public var body: some View {
         HStack(spacing: ZeusTheme.Spacing.xs) {
-            Image(systemName: ZeusAttachmentRow.symbol(for: attachment.kind))
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(palette.title)
-                .accessibilityHidden(true)
+            if let thumbnail {
+                thumbnail.resizable().interpolation(.medium).aspectRatio(contentMode: .fill)
+                    .frame(width: Self.thumbnailSize.width, height: Self.thumbnailSize.height).clipped()
+                    .overlay(Rectangle().strokeBorder(palette.outline, lineWidth: ZeusTheme.pixel))
+                    .accessibilityHidden(true)
+            } else {
+                Image(systemName: ZeusAttachmentRow.symbol(for: attachment.kind))
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(palette.title)
+                    .accessibilityHidden(true)
+            }
             Text(attachment.label).zeusFont(.caption).foregroundStyle(palette.text)
                 .lineLimit(1).truncationMode(.middle).frame(maxWidth: 180, alignment: .leading)
             if let actionTitle, let onAction {
