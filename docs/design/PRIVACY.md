@@ -35,6 +35,7 @@ Top to bottom:
 1. **Status line** (caption). Shown only when at least one level is on. Exact wording:
    - Apple Intelligence on: "Private details are removed on this Mac before anything is kept."
    - Apple Intelligence off: "Private details are removed on this Mac before anything is kept. Apple Intelligence is off, so only fixed patterns (emails, card numbers, passwords…) are caught."
+1b. **Storage problem** (`settingsError`, under the status line, only while the journal or rules store can't be opened): "Zeus can't open its journal and rules right now. New records are kept only in memory until it can; quitting Zeus before then loses them." It clears by itself.
 2. **Level 1 · "Apps and timing"**: the existing L1 section (switch "Let Zeus learn when and in what I work", private list, notes, retention). Its title changes from "Learn from me" to "Apps and timing", and the pane's first title is now "Learn from me" above all levels.
 3. **Level 2 · "Windows and pages"**: §2.1.
 4. **What Zeus kept**: §4.
