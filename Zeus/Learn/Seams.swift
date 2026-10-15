@@ -435,3 +435,8 @@ struct RuleActionRecord: Codable, Equatable, Identifiable, Sendable {
     func advanceOutcomes(at: Date) throws
     var nextOutcomeBoundary: Date? { get }
 }
+
+/// Optional read-state adapter. Absence means unknown, never "unread" for confidence penalties.
+@MainActor protocol LearningCardReadState: AnyObject {
+    func learningCardWasRead(id: String) -> Bool
+}
