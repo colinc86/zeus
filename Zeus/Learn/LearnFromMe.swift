@@ -187,6 +187,9 @@ final class LearnFromMe {
                 let descriptions = try journal.items(matching: query)
                 let sample = Self.screenSummary(descriptions)
                 if !sample.isEmpty { text += "\n- On screen: " + sample }
+                query.levels = [.typed]; query.kinds = [.typedText]
+                let topics = Self.typingSummary(try journal.items(matching: query))
+                if !topics.isEmpty { text += "\n- Typing: " + topics }
             } catch { writeError = "Zeus couldn't read the screen descriptions for its summary." }
         }
         learnings.add(.digest, text: text, at: now)
@@ -197,6 +200,12 @@ final class LearnFromMe {
         let rows = descriptions.filter { $0.level == .screen && $0.kind == .description }
         let indices = rows.count <= 4 ? Array(rows.indices) : (0..<4).map { $0 * (rows.count - 1) / 3 }
         return indices.map { String(rows[$0].payload.value.description.prefix(240)) }.joined(separator: " · ")
+    }
+    /// Never substitute text/description for a missing topic: IME counts and local words stay on the Mac.
+    static func typingSummary(_ items: [JournalItem]) -> String {
+        let topics = items.filter { $0.level == .typed && $0.kind == .typedText }.compactMap { $0.payload.value.topic }
+        let indices = topics.count <= 4 ? Array(topics.indices) : (0..<4).map { $0 * (topics.count - 1) / 3 }
+        return indices.map { String(topics[$0].prefix(240)) }.joined(separator: " · ")
     }
 
     private func send(_ moments: [Moment], at date: Date) {

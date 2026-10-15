@@ -45,12 +45,18 @@ private struct FixtureLearningRedactor: Redactor {
             try f.journal.append(.init(id: "screen-description-\(index)", time: f.clock.now.addingTimeInterval(Double(index - 10)), level: .screen,
                 kind: .description, payload: .init(.init(description: "Reviewing synthetic screen work sample-\(index)", details: ["frame_id": "frame"]))))
         }
+        try f.journal.append(.init(id: "typed", time: f.clock.now, level: .typed, kind: .typedText,
+            payload: .init(.init(description: "NEVER_TYPED_DESCRIPTION", text: "NEVER_TYPED_WORDS", topic: "Typing a synthetic project update"))))
+        try f.journal.append(.init(id: "ime", time: f.clock.now, level: .typed, kind: .typedText,
+            payload: .init(.init(description: "NEVER_IME_DESCRIPTION", text: "NEVER_IME_WORDS"))))
         f.box.enabled = true; f.box.context.idleSince = f.clock.now.addingTimeInterval(-601)
         f.runtime.learningContextDidChange()
         try await eventually { !f.connector.deliveries.isEmpty }
         let sent = try #require(f.connector.deliveries.first)
         #expect(sent.kind == .reflection); #expect(sent.content.contains("Reviewing synthetic screen work"))
         #expect(!sent.content.contains("NEVER_FRAME_METADATA")); #expect(!sent.content.contains("heic"))
+        #expect(sent.content.contains("Typing a synthetic project update"))
+        #expect(!sent.content.contains("NEVER_TYPED") && !sent.content.contains("NEVER_IME"))
         for index in [0, 3, 6, 9] { #expect(sent.content.contains("sample-\(index)")) }
         for index in [1, 2, 4, 5, 7, 8] { #expect(!sent.content.contains("sample-\(index)")) }
     }

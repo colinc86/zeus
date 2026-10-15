@@ -4,18 +4,24 @@ import Observation
 import ZeusProtocol
 
 /// Per-day AES-GCM storage. Full-text matching is indexed in memory only; no plaintext index is written.
-@MainActor @Observable final class EncryptedJournalStore: JournalStore, FrameJournalStoring {
+@MainActor @Observable final class EncryptedJournalStore: JournalStore, FrameJournalStoring, TypingJournalStoring {
     private(set) var revision: UInt64 = 0
     private(set) var lastError: String?
     let root: URL
     @ObservationIgnored private let keyProvider: any JournalKeyProviding
     @ObservationIgnored private let calendar: Calendar
+    @ObservationIgnored private let retentionClock: () -> Date
+    @ObservationIgnored private var typingExpiryTask: Task<Void, Never>?
+    @ObservationIgnored private var nextTypingExpiry: Date?
+    @ObservationIgnored private var typingExpiryInitialized = false
     @ObservationIgnored private var index: [String: String] = [:]
     @ObservationIgnored private var forgetEpoch = UUID()
     init(root: URL = ZeusPaths.appSupport.appendingPathComponent("Journal", isDirectory: true),
-         keyProvider: any JournalKeyProviding = KeychainJournalKeyProvider(), calendar: Calendar = .current) {
-        self.root = root; self.keyProvider = keyProvider; self.calendar = calendar
+         keyProvider: any JournalKeyProviding = KeychainJournalKeyProvider(), calendar: Calendar = .current,
+         clock: @escaping () -> Date = Date.init) {
+        self.root = root; self.keyProvider = keyProvider; self.calendar = calendar; retentionClock = clock
     }
+    isolated deinit { typingExpiryTask?.cancel() }
     func append(_ item: JournalItem) throws { try append(item, allowFrame: false) }
     private func append(_ item: JournalItem, allowFrame: Bool) throws {
         try perform {
@@ -32,6 +38,10 @@ import ZeusProtocol
             day.append(item)
             try LearningEncryption.write(day, to: url, key: keyProvider)
             index[item.id] = searchable(item); revision &+= 1
+            if item.level == .typed, item.kind == .typedText, item.payload.value.text != nil {
+                let expiry = Self.wordsExpiry(item)
+                if nextTypingExpiry.map({ expiry < $0 }) ?? true { scheduleTypingExpiry(expiry) }
+            }
         }
     }
     /// Image ciphertext is written first. Metadata is its commit marker; an interrupted orphan is never visible.
@@ -122,6 +132,8 @@ import ZeusProtocol
     }
     func items(matching query: JournalQuery) throws -> [JournalItem] {
         try perform {
+            // Enforce expired words before search/export even if the app slept through its timer or capture is off.
+            try expireTypingWords(now: retentionClock())
             let needle = query.text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
             return try all().filter { item in
                 if let from = query.from, item.time < from { return false }
@@ -146,7 +158,8 @@ import ZeusProtocol
             if case .all = selection {
                 // Forget works even with an unavailable key or damaged ciphertext.
                 for url in try files() + frameFiles() { try FileManager.default.removeItem(at: url); revision &+= 1 }
-                index.removeAll(); return
+                index.removeAll(); typingExpiryTask?.cancel(); typingExpiryTask = nil
+                nextTypingExpiry = nil; typingExpiryInitialized = true; return
             }
             for url in try files() {
                 let old = try read(url)
@@ -178,6 +191,70 @@ import ZeusProtocol
         }
     }
     func prune(retention: JournalRetention, now: Date) throws { try prune(retention: retention, now: now, onlyScreen: false) }
+    /// Words expire at a precise duration, not at a civil-day boundary; topics and their IDs remain unchanged.
+    func pruneTyping(words: TypingWordsRetention, now: Date) throws {
+        try perform {
+            for url in try files() {
+                let old = try read(url)
+                let kept = old.compactMap { item -> JournalItem? in
+                    guard item.level == .typed, item.kind != .sentToAssistant else { return item }
+                    guard item.time > now.addingTimeInterval(-30 * 86400) else { return nil }
+                    guard item.kind == .typedText, item.payload.value.text != nil else { return item }
+                    var value = item.payload.value
+                    let expiry = item.time.addingTimeInterval(Double(words.hours) * 3600)
+                    value.details["words_expires"] = String(expiry.timeIntervalSince1970)
+                    if words == .none || expiry <= now {
+                        value.text = nil; value.details["words_not_kept"] = words == .none ? "setting" : (words == .week ? "expired7Days" : "expired24Hours")
+                    }
+                    return .init(id: item.id, time: item.time, level: item.level, app: item.app, kind: item.kind,
+                                 payload: .init(value, report: item.payload.report))
+                }
+                guard kept != old else { continue }
+                if kept.isEmpty { try FileManager.default.removeItem(at: url) }
+                else { try LearningEncryption.write(kept, to: url, key: keyProvider) }
+                index.removeAll(); revision &+= 1
+            }
+            typingExpiryInitialized = false; try expireTypingWords(now: now)
+        }
+    }
+    private static func wordsExpiry(_ item: JournalItem) -> Date {
+        let declared = item.payload.value.details["words_expires"].flatMap(Double.init)
+        let fallback = item.time.addingTimeInterval(86400)
+        guard let declared, declared.isFinite else { return fallback }
+        return min(Date(timeIntervalSince1970: declared), item.time.addingTimeInterval(7 * 86400))
+    }
+    private func expireTypingWords(now: Date) throws {
+        guard !typingExpiryInitialized || nextTypingExpiry.map({ $0 <= now }) == true else { return }
+        var next: Date?
+        for url in try files() {
+            let old = try read(url)
+            let kept = old.map { item -> JournalItem in
+                guard item.level == .typed, item.kind == .typedText, item.payload.value.text != nil else { return item }
+                let expiry = Self.wordsExpiry(item)
+                if expiry > now { next = min(next ?? expiry, expiry); return item }
+                var value = item.payload.value; value.text = nil
+                value.details["words_not_kept"] = expiry.timeIntervalSince(item.time) > 86400 ? "expired7Days" : "expired24Hours"
+                return .init(id: item.id, time: item.time, level: item.level, app: item.app, kind: item.kind,
+                             payload: .init(value, report: item.payload.report))
+            }
+            if kept != old {
+                try LearningEncryption.write(kept, to: url, key: keyProvider); index.removeAll(); revision &+= 1
+            }
+        }
+        typingExpiryInitialized = true; scheduleTypingExpiry(next)
+    }
+    private func scheduleTypingExpiry(_ date: Date?) {
+        typingExpiryTask?.cancel(); nextTypingExpiry = date
+        guard let date else { typingExpiryTask = nil; return }
+        let delay = max(0, date.timeIntervalSince(retentionClock()))
+        typingExpiryTask = Task { @MainActor [weak self] in
+            do { try await Task.sleep(for: .seconds(delay)) } catch { return }
+            guard let self else { return }
+            typingExpiryInitialized = false
+            do { try expireTypingWords(now: retentionClock()) }
+            catch { lastError = "Zeus couldn't remove expired typing words." }
+        }
+    }
     func pruneScreens(descriptionDays: Int, now: Date) throws {
         var retention = JournalRetention(); retention.frameDays = 7
         retention.descriptionDays = [7, 30, 90].contains(descriptionDays) ? descriptionDays : 90
@@ -198,6 +275,15 @@ import ZeusProtocol
                     }
                     let cutoff = calendar.date(byAdding: .day, value: -max(0, days), to: calendar.startOfDay(for: now)) ?? now
                     return item.time >= cutoff
+                }
+                kept = kept.map { item in
+                    guard !onlyScreen, item.level == .typed, item.kind == .typedText, item.payload.value.text != nil else { return item }
+                    let expiry = Self.wordsExpiry(item)
+                    guard expiry <= now else { return item }
+                    var value = item.payload.value; value.text = nil
+                    value.details["words_not_kept"] = expiry.timeIntervalSince(item.time) > 86400 ? "expired7Days" : "expired24Hours"
+                    return .init(id: item.id, time: item.time, level: item.level, app: item.app, kind: item.kind,
+                                 payload: .init(value, report: item.payload.report))
                 }
                 let expired = Set(old.filter { $0.kind == .frame && !kept.contains($0) }.map(\.id))
                 kept = kept.map { item in
@@ -232,7 +318,7 @@ import ZeusProtocol
         return items
     }
     private func searchable(_ item: JournalItem) -> String {
-        (item.payload.value.description + "\n" + (item.payload.value.text ?? ""))
+        (item.payload.value.description + "\n" + (item.payload.value.topic ?? "") + "\n" + (item.payload.value.text ?? ""))
             .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
     private func perform<T>(_ body: () throws -> T) throws -> T {
