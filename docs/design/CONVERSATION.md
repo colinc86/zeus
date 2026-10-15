@@ -518,5 +518,5 @@ The full copy and the reasons behind it are in `PRIVACY.md` §6–7. This sectio
 - **Drop on Zeus:**
   - The avatar shows `alert` and a peek-style "Drop to attach" while something is dragged over it.
   - The panel opens with the composer focused and the dropped items as removable chips. Send works with no text.
-  - Nothing dropped is journalled until it's sent, and then only the ledger records that it was sent.
+  - Nothing dropped is journalled. It goes to the assistant only when you press Send, like any attachment.
 - **Reflection** is never shown as a user message. The ledger in What Zeus Kept lists it as "Day reflection". If the agent replies in the thread, the reply is an ordinary agent card.
