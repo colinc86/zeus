@@ -5,7 +5,7 @@ import Carbon
 import Foundation
 import ZeusProtocol
 
-@MainActor private final class ProbeKey: JournalKeyProviding { func key() throws -> Data { Data(repeating: 86, count: 32) } }
+@MainActor private final class ProbeKey: FixtureLearningKeyProviding { func key() throws -> Data { Data(repeating: 86, count: 32) } }
 @main private struct LM2BNativeHost {
     @MainActor static func main() {
         let app = NSApplication.shared; app.setActivationPolicy(.accessory)

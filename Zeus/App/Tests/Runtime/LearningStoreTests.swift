@@ -5,7 +5,7 @@ import Testing
 import Synchronization
 @testable import Zeus
 
-@MainActor final class FixtureJournalKey: JournalKeyProviding {
+@MainActor final class FixtureJournalKey: FixtureLearningKeyProviding {
     var bytes = Data(repeating: 42, count: 32)
     func key() throws -> Data { bytes }
 }

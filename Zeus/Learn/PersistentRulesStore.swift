@@ -4,7 +4,7 @@ import CryptoKit
 import ZeusProtocol
 
 /// Atomic encrypted rule state; user consent and confidence survive a restart.
-@MainActor @Observable final class PersistentRulesStore: RulesStore, LearningRuleTracking, LearningRuleOutcomeSource, RuleLifecycleStoring {
+@MainActor @Observable final class PersistentRulesStore: RulesStore, LearningRuleTracking, LearningRuleOutcomeSource, RuleLifecycleStoring, LearningStorageRecovering {
     struct State: Codable {
         var rules: [LearnedRule] = []
         var autonomy = 0.5
@@ -40,6 +40,12 @@ import ZeusProtocol
     private(set) var rules: [LearnedRule]
     private(set) var revision: UInt64 = 0
     private(set) var lastError: String?
+    private(set) var storageWaitingForUnlock = false
+    var pendingStorageWrites: Int { pendingState == nil ? 0 : 1 }
+    @ObservationIgnored private var pendingState: State?
+    @ObservationIgnored private var awaitingInitialRead = false
+    @ObservationIgnored private var durableOutcomeIDs: Set<String> = []
+    @ObservationIgnored private var recoveryTask: Task<Void, Never>?
     var autonomy: Double {
         get { _ = revision; return state.autonomy }
         set {
@@ -54,8 +60,37 @@ import ZeusProtocol
     init(fileURL: URL = ZeusPaths.appSupport.appendingPathComponent("Rules/rules.zrules"),
          keyProvider: any JournalKeyProviding = KeychainJournalKeyProvider(account: "rules-v1")) throws {
         self.fileURL = fileURL; self.keyProvider = keyProvider
-        let loaded = try LearningEncryption.read(State.self, at: fileURL, key: keyProvider) ?? State()
-        state = loaded; rules = loaded.rules
+        state = State(); rules = []
+        do {
+            let loaded = try LearningEncryption.read(State.self, at: fileURL, key: keyProvider) ?? State()
+            state = loaded; rules = loaded.rules; durableOutcomeIDs = Set(loaded.outcomes.map(\.id))
+        } catch where LearningStorageAvailability.isUnavailable(error) {
+            awaitingInitialRead = true; storageWaitingForUnlock = true
+            lastError = LearningStorageAvailability.waitingMessage; scheduleRecovery()
+        }
+    }
+    isolated deinit { recoveryTask?.cancel() }
+    private func scheduleRecovery() {
+        guard recoveryTask == nil else { return }
+        recoveryTask = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(3)) } catch { return }
+            guard let self else { return }; self.recoveryTask = nil; self.retryPendingWrites()
+        }
+    }
+    func retryPendingWrites() {
+        do {
+            if awaitingInitialRead {
+                let loaded = try LearningEncryption.read(State.self, at: fileURL, key: keyProvider) ?? State()
+                state = loaded; rules = loaded.rules; durableOutcomeIDs = Set(loaded.outcomes.map(\.id))
+                awaitingInitialRead = false; revision &+= 1
+            }
+            if let next = pendingState { try LearningEncryption.write(next, to: fileURL, key: keyProvider); didPersist(next) }
+            storageWaitingForUnlock = false; lastError = nil
+        } catch {
+            storageWaitingForUnlock = LearningStorageAvailability.isUnavailable(error)
+            lastError = storageWaitingForUnlock ? LearningStorageAvailability.waitingMessage : "Zeus couldn't recover your rules. Existing files have not been replaced."
+            if storageWaitingForUnlock { scheduleRecovery() }
+        }
     }
     func propose(_ proposals: [RuleProposal], at now: Date) throws -> [LearnedRule] {
         try create(proposals, author: .agent, at: now)
@@ -175,11 +210,20 @@ import ZeusProtocol
         }
     }
     func commit(_ next: State) throws {
+        // Never replace unknown encrypted state with an empty launch snapshot.
+        guard !awaitingInitialRead else { throw LearningStorageError.keyUnavailable }
         do {
             try LearningEncryption.write(next, to: fileURL, key: keyProvider)
-            let previous = Set(state.outcomes.map(\.id))
-            state = next; rules = next.rules; revision &+= 1; lastError = nil
-            for event in next.outcomes where !previous.contains(event.id) { onRuleOutcome?(event.outcome, [event.ruleID], event.id, event.at) }
+            didPersist(next)
+        } catch where LearningStorageAvailability.isUnavailable(error) {
+            pendingState = next; state = next; rules = next.rules; revision &+= 1
+            storageWaitingForUnlock = true; lastError = LearningStorageAvailability.waitingMessage; scheduleRecovery()
         } catch { lastError = "Zeus couldn't save your rules. Your previous rules are unchanged."; throw error }
+    }
+    private func didPersist(_ next: State) {
+        let events = next.outcomes.filter { !durableOutcomeIDs.contains($0.id) }
+        durableOutcomeIDs = Set(next.outcomes.map(\.id)); pendingState = nil
+        state = next; rules = next.rules; revision &+= 1; lastError = nil; storageWaitingForUnlock = false
+        for event in events { onRuleOutcome?(event.outcome, [event.ruleID], event.id, event.at) }
     }
 }

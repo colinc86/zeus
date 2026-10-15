@@ -5,7 +5,7 @@ import Carbon
 import Foundation
 import ZeusProtocol
 
-@MainActor private final class LM2PrivateKey: JournalKeyProviding {
+@MainActor private final class LM2PrivateKey: FixtureLearningKeyProviding {
     func key() throws -> Data { Data(repeating: 71, count: 32) }
 }
 /// Captures only a PID launched by the private fixture. It refuses every other frontmost app before calling AX.
