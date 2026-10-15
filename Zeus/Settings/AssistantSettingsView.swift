@@ -42,6 +42,10 @@ struct AssistantSettingsView: View {
             SettingsDivider()
             QuietHoursSettingsView(settings: settings)
         }
+        .sheet(isPresented: Binding(get: { managed.templateReplacement != nil }, set: { if !$0 { managed.templateReplacement = nil } })) {
+            ManagedTemplateReplacementSheet(replace: managed.confirmTemplateReplacement, cancel: { managed.templateReplacement = nil })
+                .environment(\.zeusTheme, settings.currentTheme).zeusThemeAppearance(settings.currentTheme)
+        }
         .onAppear { managed.refreshAvailability() }
         .onChange(of: messaging.runtime.map { ObjectIdentifier($0) }) { managed.refreshAvailability() }
         .onChange(of: active) { _, visible in if visible { managed.refreshAvailability() } }
@@ -59,6 +63,16 @@ struct AssistantSettingsView: View {
         if case .restarting = managed.status, active {
             TimelineView(.periodic(from: .now, by: 1)) { context in statusPanel(now: context.date) }
         } else { statusPanel(now: Date()) }
+        if case .restartForSetup(let mode) = managed.confirmation {
+            confirmation("Restart \(managed.agentName) in \(mode.title) mode? It can run any command and change any file you can, without asking. The conversation is kept.", action: "Restart Assistant", cancel: "Later")
+                .id("setupRestartConfirmation")
+        }
+        if managed.setupStale.template && managed.setupStale.templateEdited {
+            HStack {
+                KeyboardButton("Open Folder") { openTemplateFolder() }.accessibilityLabel("Open assistant instructions folder")
+                KeyboardButton("Use the new template", action: managed.requestTemplateReplacement).disabled(!managed.setupCanRestart).accessibilityLabel("Use the new assistant template")
+            }
+        }
         if case .restartForUpdate(let mode) = managed.confirmation {
             confirmation("Restart \(managed.agentName) in \(mode.title) mode? It can run any command and change any file you can, without asking. The conversation is kept.", action: "Restart Assistant", cancel: "Later")
                 .id("agentUpdateConfirmation")
@@ -148,6 +162,10 @@ struct AssistantSettingsView: View {
     }
     private func title(_ text: String) -> some View { Text(text).zeusFont(.title).foregroundStyle(palette.title) }
     private func caption(_ text: String) -> some View { Text(text).zeusFont(.caption).foregroundStyle(palette.secondaryText).fixedSize(horizontal: false, vertical: true) }
+    private func openTemplateFolder() {
+        guard let path = managed.setupProvider?.managedTemplateReplacement?.folder, path.hasPrefix("/") else { return }
+        NSWorkspace.shared.open(URL(fileURLWithPath: path, isDirectory: true))
+    }
     private func chooseFolder() {
         guard !choosingFolder else { return }
         choosingFolder = true
