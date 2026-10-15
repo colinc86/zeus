@@ -192,7 +192,7 @@ Each section is a `settingsTitle` with a count. Empty sections are hidden, excep
 | Section | Holds | Row extras |
 |---|---|---|
 | "Active" | status active | toggle (on) |
-| "Waiting for your OK" | shadow | "Seen once: <what it would have done>" caption, buttons "OK" and "Not This" |
+| "Waiting for your OK" | shadow | "Seen once: would have <outcome>" caption (fallback when there is no outcome text: "Seen once. Zeus didn't act."), buttons "OK" and "Not This" |
 | "Suggested" | proposed | buttons "Turn On" and "Dismiss" |
 | "Retired" (collapsed by default, "Show 3 retired") | retired | "Retired <date>: you skipped it often" or "…turned off", and "Turn Back On" |
 
