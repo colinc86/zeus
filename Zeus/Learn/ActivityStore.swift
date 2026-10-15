@@ -186,19 +186,23 @@ final class ActivityStore {
     /// Source files remain until every permitted event has committed. Stable IDs make interrupted migration idempotent.
     func migrateLegacy(redactor: any Redactor, allowed: (ActivityEvent) -> Bool,
                        excluded: (ActivityEvent) -> Bool = { _ in false }, stillAllowed: () -> Bool) async throws {
-        guard journal != nil else { return }
+        guard let journal else { return }
+        var query = JournalQuery(); query.levels = [.activity]; query.kinds = [.activity]; query.limit = 100_000
+        var importedIDs = Set(try journal.items(matching: query).map(\.id))
         for file in rawFiles() {
             guard stillAllowed() else { return }
             let data = try Data(contentsOf: file.url)
+            let hash = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
             for (offset, line) in data.split(separator: 10).enumerated() {
                 guard let event = try? Self.decoder.decode(ActivityEvent.self, from: Data(line)) else { continue }
-                if excluded(event) { continue }
+                let id = "l1_\(hash)_\(offset)"
+                if importedIDs.contains(id) || excluded(event) { continue }
                 // A temporary hard stop pauses migration; it must not silently drop permitted history.
                 guard allowed(event) else { return }
                 let payload = await redactor.redact(Self.payload(event))
                 guard stillAllowed(), allowed(event) else { return }
-                let hash = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-                try appendRedacted(payload, event: event, id: "l1_\(hash)_\(offset)")
+                try appendRedacted(payload, event: event, id: id)
+                importedIDs.insert(id)
             }
             guard stillAllowed() else { return }
             try FileManager.default.removeItem(at: file.url)
