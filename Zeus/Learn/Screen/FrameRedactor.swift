@@ -51,6 +51,14 @@ actor FrameRedactor: ScreenFrameRedacting {
         try Task.checkCancellation()
         var boxes: [FrameBox] = [], coveredText: [String] = []
         var report = safe.report
+        // Titles are stored beside the preview and may contain the same account hints as pixels.
+        func coveredMetadata(_ value: String) -> String {
+            guard Self.hasAccountHint(value) else { return value }
+            report.counts[.finance, default: 0] += 1
+            return "‹finance›"
+        }
+        let appName = coveredMetadata(safe.value.details["app"] ?? "App")
+        let windowTitle = coveredMetadata(safe.value.details["window"] ?? "")
         let width = Double(image.width), height = Double(image.height)
         for (index, line) in lines.enumerated() {
             let result = safe.value.details["line_\(index)"] ?? "‹redacted›"
@@ -78,7 +86,7 @@ actor FrameRedactor: ScreenFrameRedacting {
         let covered = try Self.cover(image, boxes: boxes)
         let bytes = try Self.heic(covered)
         return CoveredScreenFrame(frame: .init(FrameItem(heic: bytes, width: image.width, height: image.height, boxes: boxes,
-            appName: safe.value.details["app"] ?? "App", windowTitle: safe.value.details["window"] ?? ""), report: report),
+            appName: appName, windowTitle: windowTitle), report: report),
             text: coveredText.joined(separator: "\n"), lineCount: lines.count)
     }
     static func isSensitiveDialog(title: String, text: String) -> Bool {
