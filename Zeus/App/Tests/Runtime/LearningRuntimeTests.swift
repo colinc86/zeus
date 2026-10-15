@@ -24,7 +24,8 @@ struct FixtureLearningRedactor: Redactor {
         clock.now = ISO8601DateFormatter().date(from: "2026-10-14T18:15:00Z") ?? clock.now
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = .gmt
         cards = FakeCards(clock: clock)
-        journal = EncryptedJournalStore(root: root.appendingPathComponent("Journal"), keyProvider: FixtureJournalKey(), calendar: calendar)
+        let clock = self.clock
+        journal = EncryptedJournalStore(root: root.appendingPathComponent("Journal"), keyProvider: FixtureJournalKey(), calendar: calendar, clock: { clock.now })
         rules = try PersistentRulesStore(fileURL: root.appendingPathComponent("rules.zrules"), keyProvider: FixtureJournalKey())
         let box = box
         runtime = ZeusRuntime(cards: cards, status: FakeStatus(), characters: FakeCharacters(), routing: FakeRouting(),
