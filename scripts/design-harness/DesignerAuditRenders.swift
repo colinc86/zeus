@@ -1960,3 +1960,144 @@ extension DesignerAuditRenders {
         }
     }
 }
+
+// MARK: - LM2-R: review renders of the shipped Phase A screens (real views, fakes for stores and capture)
+
+private struct ReviewRedactor: Redactor {
+    func redact(_ text: String) async -> Redacted<String> { Redacted(text) }
+}
+
+@MainActor private final class LM2ReviewFixture {
+    let f: Fixture
+    let learn: LearnFromMe
+    let learning: LearningPresentation
+    let journal = LM2JournalFake()
+    let rules = LM2RulesFake()
+    let nav = SettingsNavigation()
+
+    init(theme: String, font: ZeusFontChoice) {
+        f = Fixture(font: font)
+        f.settings.setTheme(id: theme)
+        learn = LearnFromMe(settings: LearnSettings(defaults: f.defaults), root: f.root.appendingPathComponent("Activity"), source: { AuditActivitySource() })
+        learn.settings.introShown = true
+        learn.setEnabled(true)
+        learning = LearningPresentation(defaults: f.defaults, learn: learn)
+        learning.policies.edit(2) { $0.enabled = true; $0.consented = true }
+        let now = Date(), morning = Calendar.current.startOfDay(for: now).addingTimeInterval(9 * 3600)
+        func item(_ id: String, _ minutes: Double, _ level: JournalLevel, _ app: String?, _ kind: JournalKind, _ description: String, _ text: String? = nil, _ details: [String: String] = [:]) -> JournalItem {
+            JournalItem(id: id, time: min(now, morning.addingTimeInterval(minutes * 60)), level: level, app: app, kind: kind,
+                        payload: Redacted(JournalPayload(description: description, text: text, details: details)))
+        }
+        journal.records = [
+            item("e1", 52, .focus, "com.apple.dt.Xcode", .focus, "Xcode", "Window: ManagedSessionController.swift — Zeus\nDocument: ManagedSessionController.swift — /Projects/Zeus"),
+            item("e2", 44, .focus, "com.google.Chrome", .focus, "Chrome", "Window: Q3 planning – Docs\nAddress: docs.example.com/d/‹id›"),
+            item("e3", 41, .focus, "com.apple.mail", .focus, "Mail", "Window: Lunch with ‹name› on Friday"),
+            item("e4", 30, .activity, nil, .activity, "Private time · 12 min"),
+            item("e5", 12, .focus, "com.apple.Safari", .focus, "Safari", "Safari · details not kept"),
+            item("s1", 0, .activity, nil, .sentToAssistant, "Morning summary", "Mostly Xcode (4 h 10 min) and Chrome. Away 12:30–13:15. A private app for 12 min.", ["sessionLabel": "Claude · Zeus"]),
+            item("s2", -900, .activity, nil, .sentToAssistant, "Day reflection", "Monday: Xcode in the afternoon, Mail at 09:41. You skipped one question.", ["sessionLabel": "Claude · Zeus"]),
+        ]
+        learning.install(journal: journal, rules: rules, redactor: ReviewRedactor(), source: LM2FocusSource())
+        nav.showsRules = true
+    }
+    func addRules() throws {
+        let created = Date().addingTimeInterval(-3 * 86400)
+        _ = try rules.propose([RuleProposal(sentence: "Hold routine messages after 18:00 on weekdays", trigger: .init(time: .init(startMinute: 1080, endMinute: 540, weekdays: [2, 3, 4, 5, 6])), confidence: 0.6, evidence: ["e1", "e2"]),
+                               RuleProposal(sentence: "Send a short update to the team when I'm late for stand-up", trigger: .init(time: .init(startMinute: 595, endMinute: 605)), kind: .acts, confidence: 0.55, evidence: ["e3"]),
+                               RuleProposal(sentence: "Have the open pull requests ready at 8:50 on Mondays", trigger: .init(time: .init(startMinute: 530, endMinute: 540, weekdays: [2])), confidence: 0.35, evidence: ["e1"]),
+                               RuleProposal(sentence: "Prepare a summary of Slack threads at 17:00", confidence: 0.15)], at: created)
+        try rules.setStatus(.proposed, id: rules.rules[2].id, at: created)
+        try rules.setStatus(.retired, id: rules.rules[3].id, at: created)
+        _ = try rules.addOwn(RuleProposal(sentence: "Don't interrupt while tests are failing in Xcode", trigger: .init(apps: ["com.apple.dt.Xcode"], state: "tests failing"), confidence: 0.75), at: created)
+    }
+    func settings(_ tab: SettingsTab) -> some View {
+        nav.tab = tab
+        let hub = AgentMessagingHub()
+        return SettingsView(settings: f.settings, managed: ManagedAssistantModel(settings: f.settings, controller: { nil }), cards: f.store, status: f.status, messaging: hub, preview: hub,
+                            testMessage: ComposeModel(cards: f.store, messaging: hub), injectDemo: { _ in }, resetPosition: {},
+                            navigation: nav, login: LoginItemModel(), hotKey: GlobalHotKey(), activity: f.activity, learn: learn, learning: learning)
+            .background(Color(nsColor: .windowBackgroundColor))
+    }
+    func cleanup() { learning.stop(); f.cleanup() }
+}
+
+extension DesignerAuditRenders {
+    /// LM2-R: the shipped Phase A screens in every bundled theme, light and dark.
+    @Test func lm2Review() async throws {
+        for look in Snap.Look.basic {
+            for theme in ZeusThemeLibrary.load(userDirectory: nil).themes {
+                let r = LM2ReviewFixture(theme: theme.id, font: look.font); defer { r.cleanup() }
+                let id = theme.id
+                try await Snap.render("lm2r-\(id)-privacy-everywhere", look: look, padding: 0, settle: 0.6) { r.settings(.privacy) }
+                r.learning.policies.edit(2) { $0.scope = .chosenApps; $0.apps = [.init(name: "Xcode", bundleIDs: ["com.apple.dt.Xcode"]), .init(name: "Safari", bundleIDs: ["com.apple.Safari"])] }
+                try await Snap.render("lm2r-\(id)-privacy-chosen", look: look, padding: 0, settle: 0.6) { r.settings(.privacy) }
+                try await Snap.render("lm2r-\(id)-consent", look: look, padding: 0, settle: 0.5) {
+                    ObservationConsentSheet(enable: {}, cancel: {}).environment(\.zeusTheme, r.f.settings.currentTheme).environment(\.zeusFontChoice, .system)
+                        .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).background(Color(nsColor: .windowBackgroundColor))
+                }
+                if let viewer = r.learning.viewer {
+                    viewer.sentOnly = false
+                    try await Snap.render("lm2r-\(id)-kept", look: look, padding: 0, size: CGSize(width: 720, height: 620), settle: 0.6) {
+                        JournalWindowView(model: viewer, settings: r.f.settings).background(Color(nsColor: .windowBackgroundColor))
+                    }
+                    viewer.sentOnly = true
+                    try await Snap.render("lm2r-\(id)-sent", look: look, padding: 0, size: CGSize(width: 720, height: 420), settle: 0.6) {
+                        JournalWindowView(model: viewer, settings: r.f.settings).background(Color(nsColor: .windowBackgroundColor))
+                    }
+                }
+                try await Snap.render("lm2r-\(id)-rules-empty", look: look, padding: 0, settle: 0.6) { r.settings(.rules) }
+                try r.addRules()
+                try await Snap.render("lm2r-\(id)-rules", look: look, padding: 0, settle: 0.6) { r.settings(.rules) }
+                r.rules.autonomy = 0
+                try await Snap.render("lm2r-\(id)-rules-askfirst", look: look, padding: 0, settle: 0.6) { r.settings(.rules) }
+                r.rules.autonomy = 1
+                try await Snap.render("lm2r-\(id)-rules-justdoit", look: look, padding: 0, settle: 0.6) { r.settings(.rules) }
+                // The thread: the runtime's own notice wording (ZeusRuntime+Learning), recorded through CardStore's adapter.
+                let s = AuditMessaging.claude.sessionKey
+                r.f.store.add(Card(id: "c_m1", kind: .message, body: "Tests passed. I'll hold the release notes until tomorrow morning.", sessionKey: s, createdAt: t0, updatedAt: t0))
+                r.f.messaging.sessions = [AuditMessaging.claude]
+                let rule = r.rules.rules[0], shadow = r.rules.rules[1]
+                r.f.store.recordLearningNotice(.init(id: "rule:" + rule.id, kind: .newRule, createdAt: t0.addingTimeInterval(60), summary: "New rule: \(rule.sentence)", actionTitle: "Review", detail: rule.sentence, ruleID: rule.id), action: {})
+                r.f.store.recordLearningNotice(.init(id: "rule:group", kind: .newRule, createdAt: t0.addingTimeInterval(120), summary: "3 new rules", actionTitle: "Review", detail: nil, ruleID: nil), action: {})
+                r.f.store.recordLearningNotice(.init(id: "shadow:" + shadow.id, kind: .shadow, createdAt: t0.addingTimeInterval(180), summary: "I'd have: \(shadow.sentence)", actionTitle: "OK next time?", detail: shadow.sentence, ruleID: shadow.id), action: {})
+                r.f.store.recordLearningNotice(.init(id: "shadow:ok", kind: .shadow, createdAt: t0.addingTimeInterval(240), summary: "OK. I will do that from now on.", actionTitle: "Undo", detail: nil, ruleID: nil), action: {})
+                r.f.store.recordLearningNotice(.init(id: "shadow:retired", kind: .shadow, createdAt: t0.addingTimeInterval(300), summary: "Rule retired: Prepare a summary of Slack threads at 17:00", actionTitle: nil, detail: "Prepare a summary of Slack threads at 17:00", ruleID: nil), action: nil)
+                // Dropped items waiting in the composer.
+                r.f.model.attach([Attachment(kind: .file, label: "Q3 review.key", target: "/Users/alex/Documents/Q3 review.key"),
+                                  Attachment(kind: .folder, label: "Website", target: "/Users/alex/Projects/Website"),
+                                  Attachment(kind: .url, label: "docs.example.com", target: "https://docs.example.com/d/abc")])
+                try await Snap.render("lm2r-\(id)-thread", look: look, settle: 0.6) { r.f.conversation() }
+            }
+        }
+    }
+}
+
+extension DesignerAuditRenders {
+    /// LM2-R: the proposed fixes. Settings following a fixed-appearance theme, and draft chips that wrap.
+    @Test func lm2ReviewFixes() async throws {
+        for look in Snap.Look.basic {
+            for themeID in ["parchment", "midnight", "phosphor", "pocket"] {
+                let r = LM2ReviewFixture(theme: themeID, font: look.font); defer { r.cleanup() }
+                try r.addRules()
+                let theme = r.f.settings.currentTheme
+                try await Snap.render("lm2r-fix-\(themeID)-rules", look: look, padding: 0, settle: 0.6) { r.settings(.rules).zeusThemeAppearance(theme) }
+            }
+            let f = Fixture(font: look.font); defer { f.cleanup() }
+            let items = [Attachment(kind: .file, label: "Q3 review.key", target: "/Users/alex/Documents/Q3 review.key"),
+                         Attachment(kind: .folder, label: "Website", target: "/Users/alex/Projects/Website"),
+                         Attachment(kind: .url, label: "docs.example.com", target: "https://docs.example.com/d/abc"),
+                         Attachment(kind: .file, label: "Release notes draft with a long name.md", target: "/Users/alex/Documents/notes.md")]
+            try await Snap.render("lm2r-fix-chips", look: look, settle: 0.5) {
+                VStack(alignment: .leading, spacing: 8) {
+                    ZeusChipFlow {
+                        ForEach(items, id: \.id) { item in
+                            ZeusAttachmentChip(item, actionTitle: item.kind == .folder ? "Work in this folder" : nil, onAction: {}, onRemove: {})
+                        }
+                    }
+                    ZeusFieldChrome(isFocused: true) { Text("Message your assistant…").zeusFont(.body) }
+                }
+                .padding(18).frame(width: 400).zeusDialog(tail: nil).environment(\.zeusFontChoice, .pixel)
+            }
+        }
+    }
+}
