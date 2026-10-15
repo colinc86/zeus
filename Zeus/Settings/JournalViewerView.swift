@@ -16,7 +16,7 @@ struct JournalWindowView: View {
                 KeyboardButton(dayTitle) { model.day = Date() }.accessibilityLabel("Journal day: \(dayTitle); show today")
                 KeyboardButton("›") { step(1) }.accessibilityLabel("Next day")
                 if !model.sentOnly {
-                    ZeusMenuPicker("Level", choices: [ZeusChoice(id: 1, title: "Apps and timing"), ZeusChoice(id: 2, title: "Windows and pages"), ZeusChoice(id: 3, title: "Screen")],
+                    ZeusMenuPicker("Level", choices: [ZeusChoice(id: 1, title: "Apps and timing"), ZeusChoice(id: 2, title: "Windows and pages"), ZeusChoice(id: 3, title: "Screen"), ZeusChoice(id: 4, title: "Typing")],
                         selection: Binding<Int?>(get: { model.level == 0 ? nil : model.level }, set: { model.level = $0 ?? 0 }), noneTitle: "All levels")
                     ZeusMenuPicker("App", choices: model.applications.map { ZeusChoice(id: $0, title: JournalDisplay.appName($0)) },
                         selection: Binding<String?>(get: { model.app.isEmpty ? nil : model.app }, set: { model.app = $0 ?? "" }), noneTitle: "All apps")
@@ -55,6 +55,9 @@ struct JournalViewerView: View {
             ForEach(model.timeline) { row in
                 if case .picture(let picture) = row {
                     JournalPictureRow(picture: picture, model: model.pictures)
+                } else if case .typing(let group) = row {
+                    JournalTypingGroupView(group: group, initiallyExpanded: Calendar.current.isDateInToday(model.day), search: model.search,
+                        deleteRun: { model.deleteItem($0.item) })
                 } else if case .record(let item) = row {
                 JournalRecordRow(item: item, sent: model.sentOnly, expanded: expanded.contains(item.id), toggle: {
                     if !expanded.insert(item.id).inserted { expanded.remove(item.id) }

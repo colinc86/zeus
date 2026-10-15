@@ -5,8 +5,8 @@ struct JournalTypingGroupView: View {
     let group: JournalTypingGroup
     let initiallyExpanded: Bool
     var search = ""
-    var deleteRun: (JournalTypingRun) -> Void = { _ in }
-    var deleteGroup: (JournalTypingGroup) -> Void = { _ in }
+    var deleteRun: @MainActor @Sendable (JournalTypingRun) -> Void = { _ in }
+    var deleteGroup: @MainActor @Sendable (JournalTypingGroup) -> Void = { _ in }
     @State private var manuallyExpanded: Bool?
     private var expanded: Bool { !search.isEmpty || (manuallyExpanded ?? initiallyExpanded) }
     var body: some View {
@@ -35,7 +35,7 @@ struct JournalTypingGroupView: View {
 
 struct JournalTypingRunView: View {
     let run: JournalTypingRun
-    var delete: () -> Void = {}
+    var delete: @MainActor @Sendable () -> Void = {}
     @State private var hovered = false
     @Environment(\.zeusPalette) private var palette
     var body: some View {
@@ -56,7 +56,7 @@ struct JournalTypingRunView: View {
                             }
                         }
                     }
-                } else { Text(run.missingWordsCaption).settingsCaption() }
+                } else if !run.missingWordsCaption.isEmpty { Text(run.missingWordsCaption).settingsCaption() }
             }.frame(maxWidth: .infinity, alignment: .leading)
         }.padding(.trailing, 60).fixedSize(horizontal: false, vertical: true)
             .overlay(alignment: .topTrailing) {

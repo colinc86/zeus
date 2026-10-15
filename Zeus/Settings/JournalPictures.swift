@@ -26,21 +26,25 @@ struct JournalPicture: Identifiable, Equatable {
 }
 
 enum JournalTimelineRow: Identifiable {
-    case record(JournalItem), picture(JournalPicture)
-    var id: String { switch self { case .record(let item): "record:" + item.id; case .picture(let item): "picture:" + item.id } }
-    var time: Date { switch self { case .record(let item): item.time; case .picture(let item): item.time } }
-    static func grouped(_ shown: [JournalItem], catalog: [JournalItem]) -> [Self] {
+    case record(JournalItem), picture(JournalPicture), typing(JournalTypingGroup)
+    var id: String { switch self { case .record(let item): "record:" + item.id; case .picture(let item): "picture:" + item.id; case .typing(let group): group.id } }
+    var time: Date { switch self { case .record(let item): item.time; case .picture(let item): item.time; case .typing(let group): group.time } }
+    static func grouped(_ shown: [JournalItem], catalog: [JournalItem], calendar: Calendar = .current) -> [Self] {
         let frames = Dictionary(catalog.filter { $0.kind == .frame }.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
         let descriptions = Dictionary(catalog.filter { $0.kind == .description && $0.payload.value.details["frame_id"] != nil }
             .map { ($0.payload.value.details["frame_id"] ?? $0.id, $0) }, uniquingKeysWith: { _, last in last })
         var result: [Self] = [], added: Set<String> = []
         for item in shown {
+            if item.level == .typed && item.kind == .typedText { continue }
             let frameID = item.kind == .frame ? item.id : item.kind == .description ? item.payload.value.details["frame_id"] : nil
             if item.level == .screen, let frameID {
                 if added.insert(frameID).inserted { result.append(.picture(.init(id: frameID, frameRecord: frames[frameID], descriptionRecord: descriptions[frameID]))) }
             } else { result.append(.record(item)) }
         }
-        return result.sorted { $0.time == $1.time ? $0.id < $1.id : $0.time > $1.time }
+        result.sort { $0.time == $1.time ? $0.id < $1.id : $0.time > $1.time }
+        // Typing is grouped by app, then hour, rather than interleaving stretches from different apps.
+        result += JournalTypingGroup.grouped(shown.filter { $0.level == .typed && $0.kind == .typedText }.map(JournalTypingRun.init), calendar: calendar).map(Self.typing)
+        return result
     }
 }
 

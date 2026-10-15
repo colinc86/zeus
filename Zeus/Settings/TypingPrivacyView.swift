@@ -63,8 +63,8 @@ struct TypingPrivacyView: View {
 }
 
 struct TypingConsentSheet: View {
-    let enable: () -> Void
-    let cancel: () -> Void
+    let enable: @MainActor @Sendable () -> Void
+    let cancel: @MainActor @Sendable () -> Void
     var heightLimit: CGFloat? = nil
     @FocusState private var cancelFocused: Bool
     private var maximumHeight: CGFloat { max(420, heightLimit ?? ((NSScreen.main?.visibleFrame.height ?? 1080) - 48)) }

@@ -9,6 +9,16 @@ struct JournalTypingRun: Identifiable, Equatable {
     var id: String { item.id }
     var time: Date { item.time }
     var app: String { item.app ?? "" }
+    init(item: JournalItem) {
+        self.item = item; topic = item.payload.value.topic ?? ""
+        words = item.payload.value.text
+        missingWordsCaption = switch item.payload.value.details["words_not_kept"] {
+        case "expired24Hours": "words deleted after 24 hours"
+        case "expired7Days": "words deleted after 7 days"
+        case "inputMethod": ""
+        default: "words not kept"
+        }
+    }
     var segments: [TypingWordsSegment] { TypingWordsSegment.parse(words ?? "") }
 }
 

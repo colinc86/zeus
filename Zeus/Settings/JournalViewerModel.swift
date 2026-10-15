@@ -47,7 +47,7 @@ final class JournalViewerModel {
             var all = query; all.apps = []; all.levels = []; all.text = ""
             applications = Array(Set(try journal.items(matching: all).compactMap(\.app))).sorted()
             var catalogQuery = query; catalogQuery.text = ""
-            timeline = JournalTimelineRow.grouped(items, catalog: try journal.items(matching: catalogQuery))
+            timeline = JournalTimelineRow.grouped(items, catalog: try journal.items(matching: catalogQuery), calendar: calendar)
             pictures.update(timeline)
             error = nil
         } catch { self.error = "Couldn't read the journal. Nothing was deleted."; items = []; timeline = []; pictures.update([]) }
