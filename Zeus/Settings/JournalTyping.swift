@@ -9,6 +9,7 @@ struct JournalTypingRun: Identifiable, Equatable {
     var id: String { item.id }
     var time: Date { item.time }
     var app: String { item.app ?? "" }
+    var clockLabel: String { let formatter = DateFormatter(); formatter.dateFormat = "HH:mm"; return formatter.string(from: time) }
     init(item: JournalItem) {
         self.item = item; topic = item.payload.value.topic ?? ""
         words = item.payload.value.text

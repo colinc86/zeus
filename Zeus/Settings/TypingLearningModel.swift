@@ -54,6 +54,7 @@ import Observation
             result.privateApps.insert(app.bundleID)
         }
         result.words = switch privacy.policies.typingWordsHours { case 0: .none; case 168: .week; default: .day }
+        result.topicRetentionDays = value.retentionDays
         return result
     }
     func settingsChanged() {

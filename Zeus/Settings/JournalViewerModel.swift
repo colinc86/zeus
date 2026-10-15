@@ -19,6 +19,7 @@ final class JournalViewerModel {
     private(set) var error: String?
     private var observing = true
     private(set) var deletedItem: JournalItem?
+    private(set) var deletedTyping: TypingDeletionReceipt?
     @ObservationIgnored private var undoExpiry: Task<Void, Never>?
     @ObservationIgnored private let clock: () -> Date
     @ObservationIgnored private var undoDeadline: Date?
@@ -58,6 +59,7 @@ final class JournalViewerModel {
         catch { self.error = "Couldn't delete these records. Try again."; return false }
     }
     func deleteItem(_ item: JournalItem) {
+        if item.level == .typed && item.kind == .typedText { _ = deleteTyping(ids: [item.id]); return }
         guard item.kind != .sentToAssistant, delete(.item(item.id)) else { return }
         deletedItem = item; undoDeadline = clock().addingTimeInterval(5)
         undoExpiry = Task { @MainActor [weak self] in
@@ -66,11 +68,30 @@ final class JournalViewerModel {
         }
     }
     func undoDelete() {
+        if let receipt = deletedTyping {
+            guard let deadline = undoDeadline, clock() < deadline else { forgetUndo(); return }
+            do {
+                guard let store = journal as? any TypingJournalStoring else { throw TypingJournalError.unsupported }
+                try store.restoreTyping(receipt); forgetUndo(); reload()
+            } catch { self.error = "Couldn't restore this typing. It may have changed or expired." }
+            return
+        }
         guard let item = deletedItem, let deadline = undoDeadline, clock() < deadline else { forgetUndo(); return }
         do { try journal.append(item); forgetUndo(); reload() }
         catch { self.error = "Couldn't restore this record. Try again." }
     }
-    func forgetUndo() { pictures.forgetUndo(); undoExpiry?.cancel(); undoExpiry = nil; undoDeadline = nil; deletedItem = nil }
+    @discardableResult func deleteTyping(ids: Set<String>) -> Bool {
+        beforeDelete(); forgetUndo()
+        do {
+            guard let store = journal as? any TypingJournalStoring else { throw TypingJournalError.unsupported }
+            deletedTyping = try store.deleteTyping(ids: ids); undoDeadline = clock().addingTimeInterval(5)
+            undoExpiry = Task { @MainActor [weak self] in
+                do { try await Task.sleep(for: .seconds(5)) } catch { return }; self?.forgetUndo()
+            }
+            reload(); return true
+        } catch { self.error = "Couldn't delete this typing. Nothing was deleted."; return false }
+    }
+    func forgetUndo() { pictures.forgetUndo(); undoExpiry?.cancel(); undoExpiry = nil; undoDeadline = nil; deletedItem = nil; deletedTyping = nil }
 
     func export() -> Data? {
         do { let data = try journal.export(matching: query); error = nil; return data }

@@ -86,4 +86,28 @@ import Testing
         #expect(shell.cards.cards.isEmpty); #expect(shell.cards.notices.isEmpty)
         source.isSecure = false; #expect(!shell.menuModel.outline.contains(line + " (disabled)"))
     }
+    @Test func selectedTopicRetentionAndWordsSplitReachTheEncryptedStoreEvenWhenCaptureIsOff() throws {
+        let name = "zeus-typing-retention-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let now = Date(), store = EncryptedJournalStore(root: root, keyProvider: LM2BPrivateKey(), clock: { now })
+        for (id, age) in [("old", 45.0), ("week", 8.0), ("today", 0.1)] {
+            try store.append(.init(id: id, time: now.addingTimeInterval(-age * 86400), level: .typed, app: "test.editor", kind: .typedText,
+                payload: .init(.init(description: "Typing", text: "safe synthetic words", topic: "Planning source changes",
+                    details: ["topic_expires": String(now.addingTimeInterval((90 - age) * 86400).timeIntervalSince1970)]))))
+        }
+        let policies = ObservationSettings(defaults: defaults); policies.edit(4) { $0.retentionDays = 90 }
+        let learning = LearningPresentation(defaults: defaults, learn: LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil), policies: policies)
+        learning.install(journal: store, rules: LM2RulesFake(), redactor: LocalRedactor(useOnDeviceModel: false), source: LM2FocusSource())
+        defer { learning.stop() }
+        #expect(try store.items(matching: .init()).count == 3)
+        let privacy = try #require(learning.typing?.privacy)
+        privacy.setTopics(7)
+        #expect(try store.items(matching: .init()).map(\.id) == ["today"])
+        privacy.setWords(0)
+        let row = try #require(store.items(matching: .init()).first)
+        #expect(row.payload.value.text == nil); #expect(row.payload.value.topic == "Planning source changes")
+        #expect(row.payload.value.details["words_not_kept"] == "setting")
+    }
 }

@@ -48,4 +48,17 @@ import Testing
         #expect(viewer.items[0].payload.value.text == "hi ‹name› here ‹pasted› thanks")
         viewer.search = ""; #expect(viewer.items.count == 2)
     }
+    @Test func groupDeletionAndUndoOnlyAffectTheSelectedStretches() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-typing-group-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = EncryptedJournalStore(root: root, keyProvider: LM2BPrivateKey(), calendar: calendar, clock: { self.now })
+        try store.append(run("a")); try store.append(run("b", offset: 10)); try store.append(run("other", app: "test.other"))
+        let viewer = JournalViewerModel(journal: store, calendar: calendar, now: now)
+        #expect(viewer.deleteTyping(ids: ["a", "b"]))
+        #expect(viewer.items.map(\.id) == ["other"]); #expect(viewer.deletedTyping?.items.count == 2)
+        viewer.undoDelete(); #expect(Set(viewer.items.map(\.id)) == ["a", "b", "other"])
+        #expect(viewer.items.allSatisfy { $0.payload.value.topic != nil && $0.payload.value.text != nil })
+        #expect(!viewer.deleteTyping(ids: ["a", "missing"]))
+        #expect(viewer.items.count == 3); #expect(viewer.error != nil)
+    }
 }

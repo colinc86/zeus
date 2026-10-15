@@ -125,7 +125,7 @@ final class LearningPresentation {
         do {
             try journal?.prune(retention: retention, now: now)
             let words: TypingWordsRetention = switch policies.typingWordsHours { case 0: .none; case 168: .week; default: .day }
-            try (journal as? any TypingJournalStoring)?.pruneTyping(words: words, now: now)
+            try (journal as? any TypingJournalStoring)?.pruneTyping(words: words, topicsDays: policies.policy(4).retentionDays, now: now)
             error = nil; return true
         } catch { self.error = "Couldn't remove expired journal records. Try again."; return false }
     }

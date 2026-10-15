@@ -40,6 +40,7 @@ struct JournalWindowView: View {
 struct JournalViewerView: View {
     @Bindable var model: JournalViewerModel
     @State private var pendingDelete: JournalDeletion?
+    @State private var pendingTypingGroup: JournalTypingGroup?
     @State private var deleteTitle = ""
     @State private var exportError: String?
     @State private var expanded: Set<String> = []
@@ -57,7 +58,11 @@ struct JournalViewerView: View {
                     JournalPictureRow(picture: picture, model: model.pictures)
                 } else if case .typing(let group) = row {
                     JournalTypingGroupView(group: group, initiallyExpanded: Calendar.current.isDateInToday(model.day), search: model.search,
-                        deleteRun: { model.deleteItem($0.item) })
+                        deleteRun: { model.deleteItem($0.item) }, deleteGroup: { group in
+                            pendingDelete = nil; pendingTypingGroup = group
+                            let times = group.rangeLabel().components(separatedBy: "–")
+                            deleteTitle = "Delete what Zeus kept from your typing in \(JournalDisplay.appName(group.app)) between \(times.first ?? "") and \(times.last ?? "")?"
+                        })
                 } else if case .record(let item) = row {
                 JournalRecordRow(item: item, sent: model.sentOnly, expanded: expanded.contains(item.id), toggle: {
                     if !expanded.insert(item.id).inserted { expanded.remove(item.id) }
@@ -68,7 +73,7 @@ struct JournalViewerView: View {
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }
             HStack {
-                if model.deletedItem != nil {
+                if model.deletedItem != nil || model.deletedTyping != nil {
                     Text("Deleted.").settingsCaption()
                     KeyboardButton("Undo") { model.undoDelete() }.accessibilityLabel("Undo journal deletion")
                 }
@@ -88,11 +93,15 @@ struct JournalViewerView: View {
                 KeyboardButton("Export…", action: export).accessibilityLabel("Export journal selection").disabled(model.items.isEmpty)
             }
             Text("Exports what's shown, as stored.").settingsCaption()
-            if pendingDelete != nil {
+            if pendingDelete != nil || pendingTypingGroup != nil {
                 Text(deleteTitle).settingsBody()
                 HStack {
-                    KeyboardButton("Cancel", focus: $cancelFocused) { pendingDelete = nil }.keyboardShortcut(.cancelAction).accessibilityLabel("Cancel deletion")
-                    KeyboardButton("Delete") { if let selection = pendingDelete, model.delete(selection) { pendingDelete = nil } }
+                    KeyboardButton("Cancel", focus: $cancelFocused) { pendingDelete = nil; pendingTypingGroup = nil }.keyboardShortcut(.cancelAction).accessibilityLabel("Cancel deletion")
+                    KeyboardButton("Delete") {
+                        if let group = pendingTypingGroup {
+                            if model.deleteTyping(ids: Set(group.runs.map(\.id))) { pendingTypingGroup = nil }
+                        } else if let selection = pendingDelete, model.delete(selection) { pendingDelete = nil }
+                    }
                         .buttonStyle(ZeusButtonStyle(.destructive, size: .small)).accessibilityLabel("Confirm journal deletion")
                 }.onAppear { cancelFocused = true }
             }
@@ -102,7 +111,7 @@ struct JournalViewerView: View {
             _ in JournalPictureDetail(model: model.pictures)
         }
     }
-    private func requestDelete(_ selection: JournalDeletion, _ title: String) { deleteTitle = title; pendingDelete = selection }
+    private func requestDelete(_ selection: JournalDeletion, _ title: String) { pendingTypingGroup = nil; deleteTitle = title; pendingDelete = selection }
     private func export() {
         guard let data = model.export() else { return }
         let panel = NSSavePanel(); panel.allowedContentTypes = [.json]

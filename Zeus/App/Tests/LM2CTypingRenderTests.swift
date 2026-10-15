@@ -6,7 +6,7 @@ import ZeusDesign
 
 /// In-process cacheDisplay renders of synthetic records; no tap, automation, screen or clipboard access.
 @Suite(.serialized) @MainActor struct LM2CTypingRenderTests {
-    @Test(.enabled(if: ProcessInfo.processInfo.environment["TEST_RUNNER_LM2C_RENDER"] == "1"))
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["TEST_RUNNER_LM2C_RENDER"] == "1" || ProcessInfo.processInfo.environment["LM2C_RENDER"] == "1"))
     func allThemesAndSystemAppearances() async throws {
         ZeusFonts.registerBundled()
         let name = "zeus-typing-renders-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
@@ -31,7 +31,7 @@ import ZeusDesign
                 let prefix = theme.id + (scheme == .light ? "-light" : "-dark")
                 model.permission = .granted; model.secureInput = false; model.modelAvailable = true
                 try await render(TypingPrivacyView(model: model).padding(20), prefix + "-typing", theme: theme, scheme: scheme, width: 820, height: 690)
-                try await render(TypingConsentSheet(enable: {}, cancel: {}), prefix + "-consent", theme: theme, scheme: scheme, width: 540, height: 820)
+                try await render(TypingConsentSheet(enable: {}, cancel: {}, heightLimit: 820), prefix + "-consent", theme: theme, scheme: scheme, width: 540, height: 820)
                 try await render(TypingConsentSheet(enable: {}, cancel: {}, heightLimit: 540), prefix + "-consent-short", theme: theme, scheme: scheme, width: 540, height: 540)
                 try await render(JournalWindowView(model: viewer, settings: settings), prefix + "-journal", theme: theme, scheme: scheme, width: 840, height: 560)
                 model.secureInput = true
