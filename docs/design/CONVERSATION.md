@@ -522,3 +522,10 @@ The full copy and the reasons behind it are in `PRIVACY.md` §6–7. This sectio
 - **Reflection** is never shown as a user message. The ledger in What Zeus Kept lists it as "Day reflection". If the agent replies in the thread, the reply is an ordinary agent card.
 - **Ask About This (Phase B):** "Ask About This" (Zeus menu, or the Talk shortcut with Shift added) opens the conversation with context chips already attached: Window, Selection, Page and Picture. Each is removable, and the full copy is in `PRIVACY.md` §9.6. The chips use the attachment-chip style above the composer, and Send works with chips alone. Render: `lm2/lm2b-ask-chips__*.png`.
 - **Typing (Phase C):** Level 4 adds nothing to the thread or the avatar. While a password field is active, the Zeus menu's status section shows the disabled line "Private input: Zeus isn't noting typing" (`PRIVACY.md` §10.5).
+- **Phase D lines** (quiet notice lines, `PRIVACY.md` §11):
+  - "Looked at your journal: Tue 14:00–15:30 · View"
+  - The acting-rule shadow lines ("I'd have sent / posted / drafted / changed / bought / booked … · OK next time?")
+  - The acted lines ("Sent … · Undo" / "· Not again")
+  - "Retired a rule …"
+
+  None peeks, sounds or counts as unread. Several journal looks within 10 minutes collapse into one line. The assistant's reply to an Undo is an ordinary agent card.

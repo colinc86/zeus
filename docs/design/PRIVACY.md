@@ -479,3 +479,101 @@ While secure input is on (a password field is active) and Level 4 is on:
   - There's no confirmation; the caption under it changes to "Deleted words older than 24 hours."
 - **Topics** are kept for 30 days and aren't configurable in v1.
 - "Delete Everything…" covers both.
+
+## 11. Phase D · depth: journal questions, acting rules, outcomes
+
+The assistant's side of all this is `docs/design/AGENT_LEARNING.md`. Renders: `scripts/design-harness/render.sh "depthMockups()"` → `docs/design/lm2/lm2d-*.png`.
+
+### 11.1 "Raw on request" (per level)
+
+- **Which levels:** only Level 3 (pictures) and Level 4 (words) have anything rawer than what the assistant already gets.
+  - Level 1 and 2 records are already the stored form, so they have no switch.
+  - Even "raw" is the **stored** form: covered pictures and redacted words. It's never the original screen or keystrokes.
+- **The switch:** in each level's section, after retention, a checkbox. Off by default.
+  - Level 3: "Let my assistant see the pictures when it asks"
+  - Level 4: "Let my assistant see the words when it asks"
+  - Caption: "Otherwise it gets only descriptions. Each time it looks, you'll see a line in the conversation."
+  - Level 4's caption says "topics" instead of "descriptions".
+- **The sheet on first turning it on**, titled "Let your assistant see pictures?" (Level 4: "…see the words?"):
+  - **Body:** "When your assistant asks about a moment, it can get the picture Zeus kept (with private text covered and pictures blurred), not just the description. That picture goes to your assistant's model provider, like anything you send."
+  - Level 4 body: "…it can get the words Zeus kept (with names, numbers and secrets removed), not just the topic. Those words go to your assistant's model provider, like anything you send."
+  - **Caption:** "Every time it looks, the conversation says so, and What Zeus Kept › Sent to your assistant shows exactly what it got."
+  - **Buttons:** "Cancel" and "Allow".
+- **Turning it off** takes effect at once. There's no sheet.
+
+### 11.2 The journal-answer line
+
+When the assistant calls `zeus_get_journal`, the thread gets a quiet notice line (§6 style): no peek, no sound, not unread.
+
+| Case | Line |
+|---|---|
+| Descriptions, titles and topics only | "Looked at your journal: Tue 14:00–15:30 · View" |
+| It also got pictures or words | "Looked at your journal, including 2 pictures: Tue 14:00–15:30 · View" (or "including your words") |
+| It asked for raw and was refused | "Looked at your journal: Tue 14:00–15:30 (descriptions only) · View" |
+| Nothing matched | "Looked at your journal: nothing for Tue 14:00–15:30" (no action) |
+
+- **View** opens What Zeus Kept › Sent to your assistant at that answer.
+- **Several looks in 10 minutes** collapse to one line: "Looked at your journal 3 times · View".
+
+### 11.3 Ledger rows for journal answers
+
+A new kind in Sent to your assistant: "Journal answer". The row reads "▸ 14:32  Journal answer  ■ Claude · Zeus  … 3 items".
+- Expanding it shows the range, the query in quotes if there was one, and each item exactly as sent. Pictures show as thumbnails, and clicking one opens the picture detail (§9.5).
+- A refused raw request reads "Asked for pictures; not allowed".
+
+### 11.4 Lines for acting rules
+
+The shadow line first. One action, "OK next time?" (§6). The verb follows what the rule would have done:
+
+| Verb | Shadow line |
+|---|---|
+| sent | "I'd have sent “Running late, 10 min” to the team chat · OK next time?" |
+| posted | "I'd have posted the weekly summary to the project channel · OK next time?" |
+| drafted | "I'd have drafted a reply to the scheduling email · OK next time?" |
+| changed | "I'd have moved your 15:00 meeting to 15:30 · OK next time?" |
+| bought | "I'd have bought the usual coffee beans for €14 · OK next time?" |
+| booked | "I'd have booked the 8:10 train to the office · OK next time?" |
+
+- After **OK:** "OK. I'll do that from now on. · Undo". Undo puts the rule back in shadow.
+- **The acted line** appears once a rule is active and the assistant has acted, as a quiet line:
+  - Reversible: "Sent “Running late, 10 min” to the team chat · Undo"
+  - Not reversible: "Sent “Running late, 10 min” to the team chat · Not again"
+  - After Undo: "Undoing…", then the assistant's own one-line reply ("Done: message deleted." / "Couldn't unsend it; it was delivered.").
+  - After Not again: "Rule turned off · Review".
+- **Spending** (`bought`, `booked`) always shows the amount in the line ("for €14"). An amount above the rule's or the last time's arrives as a normal question (`zeus_ask`), not a line.
+- **The rule name** shows on hover over every acting-rule line ("Your rule: Tell the team chat when I'm late for stand-up").
+
+### 11.5 "Rule retired" lines
+
+| Why | Line |
+|---|---|
+| Kept skipping or undoing | "Retired a rule you kept skipping: “Prepare PR list at 8:50” · Review" |
+| Turned off | "Retired a rule you turned off: “…” · Review" (only for agent rules the user toggled off twice) |
+| Never applied (the stale signal, §7 of AGENT_LEARNING.md) | "Retired a rule that never applied: “…” · Review" |
+
+- **Review** opens Settings › Rules › Retired at that rule.
+- **Retired rows** show the same reason ("Retired 14 Oct: you kept skipping it") and "Turn Back On".
+
+### 11.6 "Why?" with outcomes
+
+The Why? popover (§5.3) gains a second part.
+
+```
+Why this rule
+Based on:
+  Mon 12 Oct · 18:20 · Slack · #design-review …
+  Tue 13 Oct · 18:42 · Slack · #general …
+Proposed by your assistant on Wed 14 Oct
+
+What happened since
+  ✓ Wed 15 Oct 18:05 · Held 2 messages; you read them at 19:10   (accepted)
+  ↶ Thu 16 Oct 18:30 · You pressed Show before 19:00             (undone)
+  – Fri 17 Oct · The prepared list wasn't opened                  (ignored)
+  ✕ Sat 18 Oct · You pressed Skip on its question                 (skipped)
+Fairly sure · was Sure on 15 Oct
+```
+
+- Glyphs: ✓ accepted, ↶ undone, – ignored, ✕ skipped, ○ turned off, ● turned on, ✎ edited. Each also has a text label in parentheses, and VoiceOver reads the label.
+- Newest first, at most 10 entries, then "and 6 earlier".
+- The last line is the current confidence word and its most recent change ("was Sure on 15 Oct"). It's never a number.
+- With no outcomes yet: "Nothing has happened with this rule yet."
