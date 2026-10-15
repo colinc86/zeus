@@ -1,9 +1,10 @@
 import Foundation
+import CryptoKit
 import Observation
 import ZeusProtocol
 
 /// Per-day AES-GCM storage. Full-text matching is indexed in memory only; no plaintext index is written.
-@MainActor @Observable final class EncryptedJournalStore: JournalStore {
+@MainActor @Observable final class EncryptedJournalStore: JournalStore, FrameJournalStoring {
     private(set) var revision: UInt64 = 0
     private(set) var lastError: String?
     let root: URL
@@ -14,9 +15,10 @@ import ZeusProtocol
          keyProvider: any JournalKeyProviding = KeychainJournalKeyProvider(), calendar: Calendar = .current) {
         self.root = root; self.keyProvider = keyProvider; self.calendar = calendar
     }
-    func append(_ item: JournalItem) throws {
+    func append(_ item: JournalItem) throws { try append(item, allowFrame: false) }
+    private func append(_ item: JournalItem, allowFrame: Bool) throws {
         try perform {
-            guard item.kind != .frame, !item.id.isEmpty, item.id.utf8.count <= 200,
+            guard (item.kind != .frame || allowFrame), !item.id.isEmpty, item.id.utf8.count <= 200,
                   item.time.timeIntervalSince1970.isFinite,
                   item.app.map(Self.isBundleID) ?? true,
                   try JSONEncoder().encode(item).count <= 1_048_576 else { throw LearningStorageError.invalidItem }
@@ -30,6 +32,43 @@ import ZeusProtocol
             try LearningEncryption.write(day, to: url, key: keyProvider)
             index[item.id] = searchable(item); revision &+= 1
         }
+    }
+    /// Image ciphertext is written first. Metadata is its commit marker; an interrupted orphan is never visible.
+    func appendFrame(_ frame: Redacted<FrameItem>, item: JournalItem) throws {
+        try perform {
+            let value = frame.value
+            guard item.kind == .frame, item.level == .screen, value.width > 0, value.height > 0,
+                  value.width <= 1600, value.height <= 1600, !value.heic.isEmpty, value.heic.count <= 4_000_000,
+                  value.boxes.count <= 1_000, value.boxes.allSatisfy({ box in
+                      [box.x, box.y, box.width, box.height].allSatisfy { $0.isFinite && $0 >= 0 && $0 <= 1 } &&
+                      box.x + box.width <= 1.000001 && box.y + box.height <= 1.000001
+                  }) else { throw LearningStorageError.invalidItem }
+            let url = frameFile(item.id)
+            if let existing = try all().first(where: { $0.id == item.id }) {
+                guard existing == item, try self.frame(id: item.id) == frame else { throw LearningStorageError.invalidItem }; return
+            }
+            try LearningEncryption.write(frame, to: url, key: keyProvider)
+            do { try append(item, allowFrame: true) }
+            catch { try? FileManager.default.removeItem(at: url); throw error }
+        }
+    }
+    func frame(id: String) throws -> Redacted<FrameItem>? {
+        try perform {
+            guard try all().contains(where: { $0.id == id && $0.kind == .frame }) else { return nil }
+            return try LearningEncryption.read(Redacted<FrameItem>.self, at: frameFile(id), key: keyProvider)
+        }
+    }
+    private func frameFile(_ id: String) -> URL {
+        // IDs never become path components; no raw title, app name or user-controlled slash reaches disk.
+        root.appendingPathComponent(SHA256.hash(data: Data(id.utf8)).map { String(format: "%02x", $0) }.joined() + ".zframe")
+    }
+    private func removeOrphanFrames() throws {
+        let live = Set(try all().filter { $0.kind == .frame }.map { frameFile($0.id).lastPathComponent })
+        for url in try frameFiles() where !live.contains(url.lastPathComponent) { try FileManager.default.removeItem(at: url) }
+    }
+    private func frameFiles() throws -> [URL] {
+        guard FileManager.default.fileExists(atPath: root.path) else { return [] }
+        return try FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil).filter { $0.pathExtension == "zframe" }
     }
     func items(matching query: JournalQuery) throws -> [JournalItem] {
         try perform {
@@ -49,7 +88,7 @@ import ZeusProtocol
         try perform {
             if case .all = selection {
                 // Forget works even with an unavailable key or damaged ciphertext.
-                for url in try files() { try FileManager.default.removeItem(at: url); revision &+= 1 }
+                for url in try files() + frameFiles() { try FileManager.default.removeItem(at: url); revision &+= 1 }
                 index.removeAll(); return
             }
             for url in try files() {
@@ -71,6 +110,7 @@ import ZeusProtocol
                 for item in old where !kept.contains(where: { $0.id == item.id }) { index.removeValue(forKey: item.id) }
                 revision &+= 1
             }
+            try removeOrphanFrames()
         }
     }
     func export(matching query: JournalQuery) throws -> Data {
@@ -101,6 +141,7 @@ import ZeusProtocol
                 else { try LearningEncryption.write(kept, to: url, key: keyProvider) }
                 index.removeAll(); revision &+= 1
             }
+            try removeOrphanFrames()
         }
     }
     private func file(_ date: Date) -> URL {
