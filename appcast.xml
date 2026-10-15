@@ -6,6 +6,31 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.2.3</title>
+      <pubDate>Thu, 15 Oct 2026 13:41:45 GMT</pubDate>
+      <sparkle:version>16</sparkle:version>
+      <sparkle:shortVersionString>0.2.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Level 4: Zeus can learn from what you type, privately.</strong> Settings › Privacy › Typing, off by default, per app. Zeus groups what you type into short runs, removes private details on your Mac, and turns each run into a one-line topic with Apple's on-device model ("drafting a reply about Thursday"). Password fields are never seen: macOS switches to secure input the moment one takes focus. Pasted text is marked as pasted and never read. Topics are kept for 30 days and the redacted words for 24 hours by default; "topics only" is one switch away. The menu says "Private input" while a password field has focus.</li>
+<li><strong>Your assistant can ask the journal.</strong> "What was I doing at three?" gets an answer from what Zeus kept: summaries, descriptions and topics, never pictures or words unless you turned on "Raw on request" for that level. Every answer shows in the conversation as "Looked at your journal · View" and in the Sent ledger, exactly as sent.</li>
+<li><strong>Rules that act for you.</strong> A rule that would do something first shows "I'd have … · OK next time? · Not this". One OK makes it hands-off, with "Did: … · Undo" each time; "Not this" retires it. Purchases always ask, every time, with the amount.</li>
+<li><strong>Rules learn from what you do.</strong> Accepting, undoing, skipping, ignoring, turning off and editing all move a rule's confidence; rules that stop working retire themselves and won't be proposed again for a month. "Why?" in Settings › Rules lists each outcome with its date.</li>
+<li><strong>What Zeus Kept</strong> shows typing grouped by app and hour, with the topic first and the redacted words beneath when kept; delete any run.</li>
+<li><strong>Journal when the keychain is locked.</strong> If Zeus starts while your keychain is unavailable, it keeps new records in memory, says so in Settings › Privacy, and saves them once you unlock.</li>
+<li><strong>Fixes.</strong> An idle connection listener no longer leaks; shadow lines read naturally; amounts show as money; the Privacy pane previews include every level.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.2.3/Zeus-0.2.3.zip" type="application/octet-stream" sparkle:edSignature="gQ67g2/50Gh9yiVV8ru+RhwmV3gPqQ8shsmxWhQA00vG6U35wu31zbaALZ/aXIokdwKEQNEjVKN0kd0WuhYDBA==" length="12031030"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.2.1</title>
       <pubDate>Thu, 15 Oct 2026 05:09:15 GMT</pubDate>
       <sparkle:version>14</sparkle:version>
