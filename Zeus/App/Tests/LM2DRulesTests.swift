@@ -41,6 +41,10 @@ import Testing
         #expect(model.shadowCaption(rule) == "Seen once. Zeus didn't act.")
         try store.recordAction(.init(id: "shadow", ruleID: rule.id, sessionKey: "synthetic", text: "would have bought coffee for €14", undo: nil, created: now, kind: .shadow))
         #expect(model.shadowCaption(rule) == "Seen once: would have bought coffee for €14")
+        model.selectedRuleID = rule.id
+        let revision = model.selectionRevision
+        model.selectedRuleID = rule.id
+        #expect(model.selectionRevision > revision)
         model.dismiss(rule); #expect(store.rules.first?.status == .retired)
         model.autonomy = 1; #expect(store.autonomy == 1)
         model.autonomy = 0; #expect(store.autonomy == 0)

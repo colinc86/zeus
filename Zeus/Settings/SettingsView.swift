@@ -69,8 +69,8 @@ struct SettingsView: View {
                 }
                 .onChange(of: managed.confirmation, initial: true) { revealManagedConfirmation(proxy) }
                 .onChange(of: navigation.tab) { revealManagedConfirmation(proxy) }
-                .onChange(of: learning?.rules?.selectedRuleID) { _, id in
-                    guard navigation.tab == .rules, let id else { return }
+                .onChange(of: learning?.rules?.selectionRevision, initial: true) { _, _ in
+                    guard navigation.tab == .rules, let id = learning?.rules?.selectedRuleID else { return }
                     Task { @MainActor in await Task.yield(); proxy.scrollTo(id, anchor: .center) }
                 }
             }

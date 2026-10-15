@@ -7,7 +7,8 @@ final class RulesPaneModel {
     @ObservationIgnored let store: any RulesStore
     @ObservationIgnored let journal: JournalViewerModel
     @ObservationIgnored private let clock: () -> Date
-    var selectedRuleID: String?
+    private(set) var selectionRevision: UInt64 = 0
+    var selectedRuleID: String? { didSet { selectionRevision &+= 1 } }
     var editingID: String?
     var sentence = ""
     var appIDs = ""
