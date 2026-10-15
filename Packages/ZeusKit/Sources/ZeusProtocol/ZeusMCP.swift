@@ -44,7 +44,7 @@ public enum ZeusMCP {
     - Use wait_seconds 0 when you don't need the answer now; use more than 45 seconds only when you can wait for a decision the user is actively considering.
     
     DELIVERIES (answers and messages that arrive later)
-    - Claude Code: a <channel source="zeus"> event. Its meta has kind (reply | skipped | userMessage | reflection), delivery_id, and card_id/option_id for replies. A skipped delivery says which question the user skipped and has no option_id. earlier_session means this answer was rerouted from an older session; handle it normally, and its card_id can acknowledge it in this receiving session.
+    - Claude Code: a <channel source="zeus"> event. Its meta has kind (reply | skipped | userMessage | reflection | learning), delivery_id, and card_id/option_id for replies. A skipped delivery says which question the user skipped and has no option_id. earlier_session means this answer was rerouted from an older session; handle it normally, and its card_id can acknowledge it in this receiving session.
     - Other agents: a line starting [zeus delivery_id=d_… card_id=c_…], or items from zeus_get_responses.
     - Recipe: handle it, reply through Zeus (not just the terminal), then call zeus_ack with its delivery_id. Acking after your reply doesn't restart the activity indicator.
       The target session is the agent process receiving this delivery, not necessarily the session that created the card. A later tool call from this receiving session with that card_id also counts as the ack. zeus_say has no card_id, so replying with it still requires zeus_ack.
@@ -59,6 +59,7 @@ public enum ZeusMCP {
     - If Zeus refuses you as not its assistant, stop using Zeus tools in this session; only the session the user picked may talk to Zeus.
 
     REFLECTION AND RULES
+    - A learning delivery is a local redacted digest or note, not a new user request. Read it as context, do not repeat private details, and call zeus_ack with its delivery_id. zeus_get_learnings remains available for unread summaries.
     - A reflection delivery is a local, redacted daily summary, not a new user request. Read zeus_get_rules, propose only useful supported rules with zeus_propose_rules, and ack the delivery. Do not narrate the user's habits or repeat private details. Active rules guide you; shadow rules do not authorize external actions.
 
     - Use zeus_get_journal only for a relevant journal question. Respect disabled levels and raw-on-request limits; never infer missing private details. Results are bounded and every sent answer is recorded for the user.

@@ -289,7 +289,14 @@ extension ZeusRuntime: LearningRuntimeControlling {
             sessionLabel: name + (managedController.sessionKey == sessionKey ? " · Zeus" : " · Assistant"), sessionID: identity))
     }
     func recordReflectionReceipt(id: String) {
-        guard let record = ledger?.record(id: id), record.delivery.kind == .reflection, !record.delivery.content.isEmpty else { return }
+        guard let record = ledger?.record(id: id), record.delivery.ackedAt != nil,
+              [.reflection, .learning].contains(record.delivery.kind), !record.delivery.content.isEmpty else { return }
+        if record.delivery.kind == .learning {
+            recordSentLearning(id: id, kind: record.delivery.meta["learning_kind"] ?? "moment", text: .init(record.delivery.content), sessionKey: record.delivery.meta["learning_consumed_by"] ?? record.delivery.sessionKey)
+            if let exact = learnings as? any LearningReadRecording { exact.markLearningRead(id: id) }
+            else { markAcknowledgedLearningsRead() }
+            return
+        }
         if let journal = learningJournal {
             var query = JournalQuery(); query.limit = 100_000
             guard let items = try? journal.items(matching: query) else { return }
@@ -300,22 +307,25 @@ extension ZeusRuntime: LearningRuntimeControlling {
         }
         recordSentLearning(id: id, kind: "reflection", text: .init(record.delivery.content), sessionKey: record.delivery.sessionKey)
     }
-    /// Only callers holding the actual successful notification/tool-result bytes use this receipt path.
+    /// Only an acknowledgment or successful tool-result consumption uses this receipt path.
     func recordSentLearning(id: String, kind: String, text: Redacted<String>, sessionKey: String) {
         guard let journal = learningJournal else { return }
         let identity = SHA256.hash(data: Data(sessionKey.utf8)).map { String(format: "%02x", $0) }.joined()
         let receiptID = "sent:" + id + ":" + identity.prefix(24)
         do {
             var query = JournalQuery(); query.kinds = [.sentToAssistant]; query.limit = 100_000
-            guard try !journal.items(matching: query).contains(where: { $0.id == receiptID }) else { return }
+            let existing = try journal.items(matching: query).first(where: { $0.id == receiptID })
             let agent = sessions.first(where: { $0.sessionKey == sessionKey })?.agent.rawValue ?? sessionKey.split(separator: ":").first.map(String.init) ?? "other"
             let agentLabel = ["claude": "Claude", "codex": "Codex", "opencode": "OpenCode"][agent] ?? "Assistant"
             let label = agentLabel + (managedController.sessionKey == sessionKey ? " · Zeus" : " · Assistant")
             let summary = kind == "reflection" ? "Sent a daily reflection" : (kind == "digest" ? "Sent your daily summary" : "Sent a note")
             let payload = JournalPayload(description: summary, text: text.value,
                 details: ["kind": kind, "delivery_id": id, "agent": agent, "sessionLabel": label, "sessionID": identity])
-            try journal.append(.init(id: receiptID, time: clock.now, level: .activity, kind: .sentToAssistant,
-                payload: .init(payload, report: text.report)))
+            if existing == nil {
+                try journal.append(.init(id: receiptID, time: clock.now, level: .activity, kind: .sentToAssistant,
+                    payload: .init(payload, report: text.report)))
+            }
+            (cards as? any LearningNoticeRecording)?.recordLearningNotice(.init(id: "n_" + id, kind: .reflection, createdAt: existing?.time ?? clock.now, summary: summary, actionTitle: nil, detail: text.value, ruleID: nil), action: nil)
         } catch { learningError = "Zeus couldn't record this learning receipt." }
     }
     func learningForSending(_ learning: Learning) async -> Learning {
@@ -328,6 +338,11 @@ extension ZeusRuntime: LearningRuntimeControlling {
             guard let data = try? ZeusJSON.encoder().encode(value), let learning = try? ZeusJSON.decoder().decode(Learning.self, from: data) else { continue }
             // The tool result contains learningForSending output, never a newly reconstructed summary.
             recordSentLearning(id: learning.id, kind: learning.kind.rawValue, text: .init(learning.text), sessionKey: sessionKey)
+            if ledger?.record(id: learning.id)?.isPending == true {
+                // The actual tool consumer may differ from the originally pinned assistant.
+                // Consume the queue without inventing a receipt for that original target.
+                try? ledger?.update(id: learning.id) { $0.ackedAt = clock.now; $0.meta["learning_consumed_by"] = sessionKey }
+            }
         }
     }
     /// Erasing source evidence also erases any retained reflection body and stops its retry, while preserving the daily tombstone.

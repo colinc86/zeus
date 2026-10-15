@@ -36,6 +36,9 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored let learningCalendar: Calendar
     var learningInterruptionHold = false
     var learningError: String?
+    var pendingLearningDeliveries: [PendingLearningDelivery] = []
+    var deliveryHolds: [DeliveryHold] = []
+    @ObservationIgnored var deliveryHoldEpisodes: [String: DeliveryHold] = [:]
     @ObservationIgnored var journalAccessPolicy: () -> JournalAccessPolicy = { .init() }
     @ObservationIgnored var onViewJournalAnswer: ((String) -> Void)?
     @ObservationIgnored var journalCalls: [Date] = []
@@ -170,16 +173,18 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         let recoveredBlocks = localCards.filter { !$0.id.hasPrefix(Self.managedDraftPrefix) }
         managedBlockedCardID = recoveredBlocks.last?.id
         for card in recoveredBlocks.dropLast() { resolveManagedCard(card.id) }
-        loaded.onChange = { [weak self] records in self?.publishUserMessageDeliveries(records) }
+        loaded.onChange = { [weak self] records in self?.publishUserMessageDeliveries(records); self?.publishPendingLearnings(records) }
         ledger = loaded; responseJournal = journal; server = listener; running = true; generation = UUID()
         appQuestionIDs = Set(((cards as? any CardPersistenceReporting)?.persistedCards ?? [])
             .filter { $0.kind == .question && $0.status == .open }.map(\.id))
         learnings.onNewLearning = { [weak self] learning in self?.notifyLearning(learning) }
         startLearning()
+        observeLearningAvailability()
         publishUserMessageDeliveries(loaded.records)
         contextReceiptIDs.removeAll()
         for record in loaded.records where record.transportDeliveredAt != nil || record.delivery.ackedAt != nil {
             recordContextDeliveryReceipt(id: record.delivery.id)
+            recordReflectionReceipt(id: record.delivery.id)
         }
         handledResponses.formUnion(loaded.records.compactMap { $0.delivery.cardID })
         (cards as? any LocalCardActionHandling)?.localActionHandler = { [weak self] card, response in
@@ -270,6 +275,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
             return .failed(reason: "Zeus couldn't save your message. Check that your Mac has free disk space, then try again.")
         }
         refreshManagedDraftAlert()
+        refreshLearningDeliveryPresentation()
         guard let task = beginSend(id: delivery.id) else {
             refreshQueueReasons(); refreshProblem(); scheduleRetry()
             return .queued(reason: ledger.record(id: delivery.id)?.queueReason ?? "Waiting for your assistant to connect.")

@@ -5,13 +5,14 @@ import Observation
 /// the raw events. The runtime reads it through `LearningsProviding`; it never sees raw events.
 @MainActor
 @Observable
-final class LearningsStore: LearningsProviding {
+final class LearningsStore: LearningsProviding, LearningReadRecording {
     static let fileName = "learnings.json"
     static let keepDays = 365
 
     private struct State: Codable {
         var learnings: [Learning] = []
         var lastReadID: String?
+        var readIDs: Set<String>?
         var lastReadAt: Date?
         /// Days (`yyyy-mm-dd`) already summarized, so each digest is made once.
         var digestedDays: Set<String> = []
@@ -41,10 +42,14 @@ final class LearningsStore: LearningsProviding {
     func unreadLearnings() -> [Learning] {
         guard isEnabled() else { return [] }
         if let id = state.lastReadID, let index = state.learnings.firstIndex(where: { $0.id == id }) {
-            return Array(state.learnings[(index + 1)...])
+            return Array(state.learnings[(index + 1)...]).filter { !(state.readIDs ?? []).contains($0.id) }
         }
-        if let date = state.lastReadAt { return state.learnings.filter { $0.createdAt > date } }
-        return state.learnings
+        if let date = state.lastReadAt { return state.learnings.filter { $0.createdAt > date && !(state.readIDs ?? []).contains($0.id) } }
+        return state.learnings.filter { !(state.readIDs ?? []).contains($0.id) }
+    }
+
+    func markLearningRead(id: String) {
+        state.readIDs = (state.readIDs ?? []).union([id]); save()
     }
 
     func markLearningsRead(through id: String) {

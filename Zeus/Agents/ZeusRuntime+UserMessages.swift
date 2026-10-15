@@ -33,7 +33,7 @@ extension ZeusRuntime {
     /// A successful write isn't an ack. Never overwrite an ack/discard that raced
     /// with transport, and never publish a lifecycle transition before it is durable.
     func recordUserMessageOutcome(id: String, outcome: MessageSendResult) {
-        guard let ledger, let record = ledger.record(id: id), record.delivery.kind == .userMessage, record.isPending else { return }
+        guard let ledger, let record = ledger.record(id: id), [.userMessage, .reflection, .learning].contains(record.delivery.kind), record.isPending else { return }
         do {
             try ledger.updateRecord(id: id) {
                 switch outcome {

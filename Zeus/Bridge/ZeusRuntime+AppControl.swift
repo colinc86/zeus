@@ -137,6 +137,7 @@ extension ZeusRuntime {
             let safe = await self.learningForSending(learning)
             guard self.running, self.generation == token, self.learnings.learningsEnabled,
                   self.learnings.unreadLearnings().contains(where: { $0.id == learning.id }) else { return }
+            self.enqueueLearning(safe)
             let payload = BridgeLearning(id: safe.id, kind: safe.kind == .digest ? .digest : .moment, text: safe.text)
             for session in self.bridges.values where session.hello.capabilities.channel && session.hello.capabilities.learningNotifications {
                 Task { [weak self] in
@@ -146,7 +147,7 @@ extension ZeusRuntime {
                     do {
                         try await session.notifyLearning(payload)
                         guard self.running, self.generation == token else { return }
-                        self.recordSentLearning(id: safe.id, kind: safe.kind.rawValue, text: .init(safe.text), sessionKey: session.sessionKey)
+                        // A notification write is not evidence that the model read it.
                     } catch { /* No fabricated receipt for an unsuccessful notification. */ }
                 }
             }
