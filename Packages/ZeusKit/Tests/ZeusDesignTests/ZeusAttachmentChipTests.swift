@@ -18,6 +18,13 @@ struct ZeusAttachmentChipTests {
         #expect(ZeusAttachmentChip.removeLabel(item) == "Remove Website")
     }
 
+    @Test func pictureChipsShowASmallThumbnail() {
+        #expect(ZeusAttachmentChip.thumbnailSize == CGSize(width: 32, height: 20))
+        let chip = ZeusAttachmentChip(Attachment(id: "p", kind: .file, label: "Picture · Xcode", target: "/tmp/p.heic"),
+                                      thumbnail: Image(systemName: "photo"), onRemove: {})
+        #expect(chip.thumbnail != nil && chip.actionTitle == nil)
+    }
+
     @Test func fixedAppearanceThemesPickTheirOwnScheme() {
         let themes = ZeusThemeLibrary.load(userDirectory: nil).themes
         let fixed = Dictionary(uniqueKeysWithValues: themes.map { ($0.id, $0.fixedAppearance) })
