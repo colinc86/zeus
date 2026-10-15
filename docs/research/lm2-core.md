@@ -52,6 +52,8 @@ redacts sentences, revalidates session/evidence after suspension, and cannot ena
 Trigger dimensions combine with AND, weekdays are Calendar 1...7, wrapping windows belong to their start weekday.
 Unconstrained rules guide the assistant and receive outcome feedback, but never hold notifications. Card feedback applies
 to the active rules in scope when the card arrived; this is contextual feedback, not a claim of causal attribution.
+While L1 or L2 is explicitly enabled, synchronous rule-outcome hooks append generated feedback categories (no question text)
+to the journal, including user toggles/edits, so reflection includes outcomes. Existing feedback is not replayed after deletion.
 
 The cards object optionally conforms to `LearningNoticeRecording`:
 - Reconnect/update the same notice ID without a new badge, peek or sound; changed nil actions clear stale actions.

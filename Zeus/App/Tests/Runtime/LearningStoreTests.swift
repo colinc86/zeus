@@ -132,6 +132,9 @@ import Synchronization
         var context = LearningContext(frontmostApp: "com.example.Editor", states: ["tests failing"])
         #expect(trigger.matches(context, at: date, calendar: calendar))
         context.isPrivate = true; #expect(!trigger.matches(context, at: date, calendar: calendar))
+        let clockOnly = RuleTrigger(time: .init(startMinute: 0, endMinute: 120))
+        #expect(clockOnly.matches(context, at: date, calendar: calendar))
+        context.isLocked = true; #expect(clockOnly.matches(context, at: date, calendar: calendar))
         #expect(!RuleTrigger().matches(.init(), at: date))
     }
 }

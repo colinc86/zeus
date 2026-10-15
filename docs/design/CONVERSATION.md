@@ -502,3 +502,23 @@ VoiceOver reads the glyph as a word: "Question. Waiting for your answer. Go to q
 ### 15.5 References
 
 `scripts/design-harness/render.sh "statusStrip()"` renders `build/q2-renders/status-strip-<theme>__{light,dark}-pixel.png`: every state, in each of the 7 bundled themes, light and dark.
+
+## 16. Learn from me in the thread (LM2)
+
+The full copy and the reasons behind it are in `PRIVACY.md` §6–7. This section covers what the conversation itself shows.
+
+- **Rule lines** are notice lines (§3, kind `learning`): secondary text, one action link, no peek, no sound, never counted as unread.
+  - "New rule: <sentence> · Review"
+  - "I'd have sent “<text>” to <where> · OK next time?" (one action; after it: "OK. I'll do that from now on. · Undo")
+  - "Held 2 messages for your rule “<sentence>” · Show"
+  - "Retired a rule you kept skipping: “<sentence>” · Review"
+  - Several new rules from one reflection collapse to "3 new rules · Review".
+  - Render: `lm2/lm2-thread-lines__*.png`.
+- **Held messages:** while a passive rule holds non-urgent deliveries, cards still land in the thread, but there's no peek and no sound, and the badge counts them. `high` priority still peeks. The status strip (§15) doesn't change for held cards. Its sentence stays whatever CONTRACT §7 gives.
+- **Drop on Zeus:**
+  - The avatar shows `alert` and a peek-style "Drop to attach" while something is dragged over it.
+  - The panel opens with the composer focused and the dropped items as removable chips. Send works with no text.
+  - Nothing dropped is journalled. It goes to the assistant only when you press Send, like any attachment.
+- **Reflection** is never shown as a user message. The ledger in What Zeus Kept lists it as "Day reflection". If the agent replies in the thread, the reply is an ordinary agent card.
+- **Ask About This (Phase B):** "Ask About This" (Zeus menu, or the Talk shortcut with Shift added) opens the conversation with context chips already attached: Window, Selection, Page and Picture. Each is removable, and the full copy is in `PRIVACY.md` §9.6. The chips use the attachment-chip style above the composer, and Send works with chips alone. Render: `lm2/lm2b-ask-chips__*.png`.
+- **Typing (Phase C):** Level 4 adds nothing to the thread or the avatar. While a password field is active, the Zeus menu's status section shows the disabled line "Private input: Zeus isn't noting typing" (`PRIVACY.md` §10.5).

@@ -156,6 +156,26 @@ private struct FixtureLearningRedactor: Redactor {
             await client.stop()
         } catch { await client.stop(); throw error }
     }
+    @Test func outcomeFeedbackEntersJournalOnlyWithCaptureConsent() async throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        let own = try f.rules.addOwn(.init(sentence: "Short updates"), at: f.clock.now)
+        try f.rules.edit(id: own.id, sentence: "Concise updates", trigger: .init(), at: f.clock.now)
+        #expect(try f.journal.items(matching: .init()).isEmpty)
+        f.box.enabled = true
+        try f.rules.setStatus(.retired, id: own.id, at: f.clock.now)
+        try f.rules.edit(id: own.id, sentence: "Brief updates", trigger: .init(), at: f.clock.now)
+        _ = await f.runtime.callTool("zeus_ask", arguments: ["text": "Synthetic private question text", "wait_seconds": 0], sessionKey: "claude:/fixture#123.1")
+        let card = try #require(f.cards.values.last)
+        f.runtime.receivedResponse(card, response: .init(respondedAt: f.clock.now, device: .mac, skipped: true))
+        f.runtime.learningTrackedChange(AppChange(summary: "A synthetic change", undoTitle: "Undo", undo: {})).undo()
+        var query = JournalQuery(); query.kinds = [.outcome]
+        let feedback = try f.journal.items(matching: query)
+        #expect(feedback.count == 4)
+        #expect(!String(decoding: try JSONEncoder().encode(feedback), as: UTF8.self).contains("Synthetic private question text"))
+        try f.journal.delete(.all); f.runtime.learningContextDidChange()
+        for _ in 0..<20 { await Task.yield() }
+        #expect(try f.journal.items(matching: .init()).isEmpty)
+    }
     @Test func launchCatchupAfterEveningUsesLatestRecordedDayAndStillSendsOnlyOnceToday() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
         try f.journal.append(.init(id: "earlier", time: f.clock.now.addingTimeInterval(-3*86400), level: .focus, kind: .focus, payload: .init(.init(description: "Earlier synthetic activity"))))
