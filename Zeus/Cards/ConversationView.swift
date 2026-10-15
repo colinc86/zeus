@@ -494,7 +494,9 @@ struct ConversationView: View {
             }
             if let notice = entry.threadNotice {
                 ConversationNoticeLine(notice: notice, maxWidth: ConversationWidth.bubble(panelWidth: panel.width, user: false),
-                                       hasAction: store.hasNoticeAction(id: notice.id), perform: { store.performNoticeAction(id: notice.id) })
+                                       hasAction: store.hasNoticeAction(id: notice.id), perform: { store.performNoticeAction(id: notice.id) },
+                                       hasSecondaryAction: store.hasSecondaryNoticeAction(id: notice.id),
+                                       performSecondary: { store.performSecondaryNoticeAction(id: notice.id) })
                     .background(GeometryReader { geometry in
                         let frame = geometry.frame(in: .named("threadContent"))
                         Color.clear.preference(key: ThreadFrames.self,

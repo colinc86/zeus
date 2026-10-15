@@ -10,9 +10,13 @@ struct ConversationNoticeLine: View {
     /// The store still holds this line's in-memory action.
     let hasAction: Bool
     let perform: () -> Void
+    /// ST1: an admission line's second action ("Ignore"), while the store still holds it.
+    var hasSecondaryAction = false
+    var performSecondary: () -> Void = {}
     var announce: @MainActor (String) -> Void = AccessibilityFeedback.announce
     @State private var showsDetail = false
     @FocusState private var actionFocused: Bool
+    @FocusState private var secondaryFocused: Bool
     @Environment(\.zeusPalette) private var palette
 
     var body: some View {
@@ -43,6 +47,24 @@ struct ConversationNoticeLine: View {
                     Text(title).foregroundStyle(palette.secondaryText)
                 case nil:
                     EmptyView()
+                }
+                if hasSecondaryAction, notice.resolvedTitle == nil, let secondary = notice.secondaryTitle {
+                    Text("·").foregroundStyle(palette.secondaryText).accessibilityHidden(true)
+                    Button(action: performSecondary) {
+                        Text(secondary).foregroundStyle(palette.title)
+                            .overlay(alignment: .bottom) {
+                                Rectangle().fill(secondaryFocused ? palette.focusRing : .clear).frame(height: ZeusTheme.pixel).offset(y: ZeusTheme.pixel)
+                            }
+                            .frame(minHeight: 22).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .focusable(false)
+                    .focusable().focusEffectDisabled().focused($secondaryFocused)
+                    .onKeyPress(keys: [.space, .return]) { press in
+                        guard press.modifiers.intersection([.command, .option, .control]).isEmpty else { return .ignored }
+                        performSecondary(); return .handled
+                    }
+                    .accessibilityLabel("\(secondary): \(notice.summary)")
                 }
             }
             .zeusFont(.caption)

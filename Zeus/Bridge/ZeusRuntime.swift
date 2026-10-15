@@ -37,6 +37,10 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     var learningInterruptionHold = false
     var learningError: String?
     @ObservationIgnored var onReviewRule: ((String) -> Void)?
+    /// ST1: opens Settings › Assistant ("Change" / "Open Settings" on admission lines).
+    @ObservationIgnored var onOpenAssistantSettings: (() -> Void)?
+    /// ST1: refused-session lines already posted, one per session per day.
+    @ObservationIgnored var admissionNoticeIDs: Set<String> = []
     @ObservationIgnored var onLearningHoldCleared: (([String]) -> Void)?
     @ObservationIgnored var learningHeldIDs: [String] = []
     @ObservationIgnored var learningCardRules: [String: [String]] = [:]
@@ -335,6 +339,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         probeManagedChannel()
         disconnectedAt.removeValue(forKey: session.sessionKey)
         updateDisconnectedTargets()
+        adoptAutoAssistantIfNeeded()
         bindWaitingUserMessages()
         for record in ledger?.records ?? [] where record.delivery.sessionKey == session.sessionKey && record.isPending
             && (record.delivery.failedAt == nil || record.delivery.meta["tmux_paste_destination"] != nil) {

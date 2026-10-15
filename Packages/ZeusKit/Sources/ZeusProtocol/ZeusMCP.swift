@@ -56,6 +56,7 @@ public enum ZeusMCP {
     - Ask before big or irreversible actions.
     - Respect quiet hours: when a tool result includes quiet: true, hold non-urgent cards.
     - If a tool says Zeus isn't running, tell the user in the terminal once and carry on.
+    - If Zeus refuses you as not its assistant, stop using Zeus tools in this session; only the session the user picked may talk to Zeus.
 
     REFLECTION AND RULES
     - A reflection delivery is a local, redacted daily summary, not a new user request. Read zeus_get_rules, propose only useful supported rules with zeus_propose_rules, and ack the delivery. Do not narrate the user's habits or repeat private details. Active rules guide you; shadow rules do not authorize external actions.

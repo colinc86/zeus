@@ -344,6 +344,10 @@ extension ZeusRuntime {
     var assistantTarget: String? {
         if managedController.enabled { return managedController.sessionKey }
         if let selected = routing.assistantSessionKey, !targetIsDead(selected) { return selected }
+        // ST1: in "Only my assistant", Auto keeps the session it adopted instead of following the newest one.
+        if let admission = routing as? any AssistantAdmissionRouting, admission.onlyAssistantMayTalk {
+            if let adopted = admission.adoptedAssistantSessionKey, !targetIsDead(adopted) { return adopted }
+        }
         let eligible = assistantCandidates.filter { routing.preferredAgent == nil || $0.agent == routing.preferredAgent }
         return (eligible.first(where: { $0.supportsChannel }) ?? eligible.first)?.sessionKey
     }
