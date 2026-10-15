@@ -435,6 +435,8 @@ public struct ZeusComposer: View {
     public var placeholder: String
     public var replyingTo: String?
     public var isSending: Bool
+    /// Allows an attachment-only draft; text and attachments share the same Send action.
+    public var hasAttachments: Bool
     var focus: FocusState<Bool>.Binding
     public var onClearReply: () -> Void
     public var onSend: () -> Void
@@ -445,20 +447,21 @@ public struct ZeusComposer: View {
     ///   - replyingTo: the title of the question that sending will answer, or `nil` for a plain message.
     ///   - focus: bind to the panel's focus state; the app focuses the composer whenever the panel opens.
     ///   - onSend: called with non-blank text. The app clears `text` once the send is accepted.
-    public init(text: Binding<String>, placeholder: String, replyingTo: String? = nil, isSending: Bool = false,
+    public init(text: Binding<String>, placeholder: String, replyingTo: String? = nil, isSending: Bool = false, hasAttachments: Bool = false,
                 focus: FocusState<Bool>.Binding, onClearReply: @escaping () -> Void, onSend: @escaping () -> Void) {
         self._text = text
         self.placeholder = placeholder
         self.replyingTo = replyingTo
         self.isSending = isSending
+        self.hasAttachments = hasAttachments
         self.focus = focus
         self.onClearReply = onClearReply
         self.onSend = onSend
     }
 
     /// Whether `text` can be sent: not blank, and not already sending.
-    nonisolated public static func canSend(_ text: String, isSending: Bool) -> Bool {
-        !isSending && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    nonisolated public static func canSend(_ text: String, isSending: Bool, hasAttachments: Bool = false) -> Bool {
+        !isSending && (!text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || hasAttachments)
     }
 
     /// Inserts a newline at `selection` (or at the end), returning the new text and caret position.
@@ -511,7 +514,7 @@ public struct ZeusComposer: View {
                     ZeusGlyph(.up).padding(.vertical, ZeusTheme.Spacing.xxs)
                 }
                 .buttonStyle(ZeusButtonStyle(.primary))
-                .disabled(!Self.canSend(text, isSending: isSending))
+                .disabled(!Self.canSend(text, isSending: isSending, hasAttachments: hasAttachments))
                 .help("Send (Return)")
                 .accessibilityLabel("Send")
             }
@@ -538,7 +541,7 @@ public struct ZeusComposer: View {
     }
 
     private func send() {
-        guard Self.canSend(text, isSending: isSending) else { return }
+        guard Self.canSend(text, isSending: isSending, hasAttachments: hasAttachments) else { return }
         onSend()
     }
 }

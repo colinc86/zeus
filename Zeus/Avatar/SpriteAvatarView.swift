@@ -69,6 +69,7 @@ struct SpriteAvatarView: View {
 /// Handles a click versus a drag without ever making the avatar panel key.
 @MainActor
 final class AvatarInteractionView: NSHostingView<SpriteAvatarView> {
+    var onDrop: ((NSPasteboard) -> Bool)?
     var onWarning: (() -> Void)?
     var onShowDeliveryProblem: (() -> Void)?
     var hasWarning: (() -> Bool)?
@@ -83,6 +84,18 @@ final class AvatarInteractionView: NSHostingView<SpriteAvatarView> {
     private var startMouse = CGPoint.zero
     private var startOrigin = CGPoint.zero
     private var dragged = false
+
+    required init(rootView: SpriteAvatarView) {
+        super.init(rootView: rootView)
+        registerForDraggedTypes(AvatarDrop.types)
+    }
+    @available(*, unavailable) required init?(coder: NSCoder) { fatalError("Use init(rootView:)") }
+    override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
+        AvatarDrop.accepts(sender.draggingPasteboard) ? .copy : []
+    }
+    override func draggingUpdated(_ sender: any NSDraggingInfo) -> NSDragOperation { draggingEntered(sender) }
+    override func prepareForDragOperation(_ sender: any NSDraggingInfo) -> Bool { AvatarDrop.accepts(sender.draggingPasteboard) }
+    override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool { onDrop?(sender.draggingPasteboard) ?? false }
 
     override func hitTest(_ point: NSPoint) -> NSView? { bounds.contains(point) ? self : nil }
     override func updateTrackingAreas() {

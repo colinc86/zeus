@@ -163,6 +163,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             return self.artLayout.rect.warningFrame(in: view.bounds, flipped: view.isFlipped)
         }
         view.hasWarning = { [weak self] in self?.messaging.deliveryIssue != nil }
+        view.onDrop = { [weak self] in self?.acceptDrop($0) ?? false }
         view.onClick = { [weak self] in self?.toggleCard() }
         view.onMove = { [weak self] point in self?.moveAvatar(to: point) }
         view.onDragEnd = { [weak self] in self?.savePosition() }
@@ -267,7 +268,11 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             }, managed: managed,
             openTerminal: { [weak self] in try await self?.openConversationTerminal() },
             newConversation: { [weak self] in self?.performManagedAction(.newConversation) },
-            resetWidth: { [weak self] in self?.resetConversationWidth() }))
+            resetWidth: { [weak self] in self?.resetConversationWidth() },
+            workInFolder: { [weak self] path in
+                self?.managed.chooseFolder(path)
+                self?.showSettings(tab: .agent)
+            }))
         host.resizeHandle.onResize = { [weak self] width, edge in self?.resizeConversation(to: width, edge: edge) }
         host.resizeHandle.onReset = { [weak self] in self?.resetConversationWidth() }
         card.contentView = host
@@ -550,6 +555,19 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     /// Shared by menu, hotkey and avatar entry points, before mounting any native fields.
     func prepareTalkComposition() {
         if managed.enabled { conversation.beginPlainMessage() }
+    }
+
+    /// Drop handling never starts a session or changes its folder until the user selects the folder action.
+    @discardableResult func acceptDrop(_ pasteboard: NSPasteboard) -> Bool {
+        let root = settings.userCharacterDirectory?.deletingLastPathComponent().appendingPathComponent("Attachments", isDirectory: true)
+        guard let root else { return false }
+        let dropped = AvatarDrop.read(pasteboard, directory: root)
+        conversation.attachmentError = dropped.error
+        guard !dropped.attachments.isEmpty else { return false }
+        conversation.attach(dropped.attachments)
+        conversation.beginPlainMessage()
+        showTalkPanel()
+        return true
     }
 
     func showTalkPanel() {

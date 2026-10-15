@@ -24,6 +24,7 @@ struct ConversationView: View {
     var openTerminal: () async throws -> Void = {}
     var newConversation: () -> Void = {}
     var resetWidth: () -> Void = {}
+    var workInFolder: (String) -> Void = { _ in }
     @FocusState private var composerFocused: Bool
     @FocusState private var focusedControl: ConversationControlTarget?
     @State private var pageCount = ConversationLayout.pageSize
@@ -127,10 +128,11 @@ struct ConversationView: View {
                     onSkip: canSkipFromStrip ? { skipFromStrip() } : nil,
                     onButton: stripButton)
                 VStack(spacing: 8) {
+                    attachmentDraft
                     ZeusComposer(text: $model.draft, placeholder: Self.composerPlaceholder(managed: currentManagedConfiguration,
                         status: managedController?.managedStatus,
                         assistantLabel: Self.composerAssistantName(assistant)),
-                                 replyingTo: replyTitle, isSending: model.isSending, focus: $composerFocused,
+                                 replyingTo: replyTitle, isSending: model.isSending, hasAttachments: !model.draftAttachments.isEmpty, focus: $composerFocused,
                                  onClearReply: { model.clearReplyTarget(); composerFocused = true },
                                  onSend: {
                                      Task {
@@ -140,6 +142,7 @@ struct ConversationView: View {
                                          if model.draft.isEmpty { latest(proxy) }
                                      }
                                  })
+                    if let error = model.attachmentError { Text(error).zeusFont(.caption).foregroundStyle(palette.destructive) }
                     if let hub = messaging as? AgentMessagingHub { AgentLinkStatusView(hub: hub) }
                     if let terminalError { Text(terminalError).zeusFont(.caption).foregroundStyle(palette.destructive) }
                     if case .rejected(let reason) = model.result { Text(reason).zeusFont(.caption).foregroundStyle(palette.destructive) }
@@ -246,6 +249,32 @@ struct ConversationView: View {
             .background {
                 ConversationSeenTracker(visibility: visibility, entries: entries, store: store, panel: panel, activity: activity)
             }
+        }
+    }
+
+    @ViewBuilder private var attachmentDraft: some View {
+        if !model.draftAttachments.isEmpty {
+            ScrollView(.horizontal) {
+                HStack(spacing: 8) {
+                    ForEach(model.draftAttachments, id: \.id) { item in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 8) {
+                                Text(item.label).lineLimit(1).frame(maxWidth: 160)
+                                KeyboardButton("Remove") { model.removeAttachment(id: item.id) }
+                                    .accessibilityLabel("Remove \(item.label)")
+                            }
+                            if item.kind == .folder {
+                                KeyboardButton("Work in this folder") { workInFolder(item.target) }
+                                    .accessibilityLabel("Work in \(item.label)")
+                            }
+                        }
+                        .zeusFont(.caption).foregroundStyle(palette.text)
+                        .padding(8).background(palette.field)
+                        .overlay(Rectangle().strokeBorder(palette.fieldBorder, lineWidth: ZeusTheme.pixel))
+                    }
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
         }
     }
 

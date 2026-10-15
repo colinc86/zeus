@@ -63,6 +63,8 @@ enum ConversationSendResult: Equatable, Sendable {
 @Observable
 final class ConversationModel {
     var draft = ""
+    var draftAttachments: [Attachment] = []
+    var attachmentError: String?
     private(set) var isSending = false
     private(set) var result: ConversationSendResult?
     private var clearedReplyCardIDs: Set<String> = []
@@ -123,7 +125,7 @@ final class ConversationModel {
 
     var unseenCount: Int { cards.unseenCount }
     var isPanelOpen: Bool { cards.isConversationOpen }
-    var canSend: Bool { !isSending && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    var canSend: Bool { !isSending && (!draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !draftAttachments.isEmpty) }
 
     /// Priority never changes conversational chronology or which question the keyboard targets.
     var newestOpenQuestion: Card? {
@@ -228,7 +230,9 @@ final class ConversationModel {
 
     /// Captures routing before an async send. A newly arriving question cannot consume an older send.
     @discardableResult func send(_ text: String) async -> ConversationSendResult? {
-        let text = MessageText.submitted(text)
+        let submittedDraft = MessageText.submitted(text)
+        let attachments = draftAttachments
+        let text = Self.message(text, attaching: attachments)
         guard !isSending, !text.isEmpty else { return nil }
         isSending = true
         result = nil
@@ -237,14 +241,14 @@ final class ConversationModel {
             let accepted = cards.respond(id: target.id, response: CardResponse(text: text, respondedAt: clock(), device: .mac))
             if accepted {
                 result = .answered(cardID: target.id)
-                clearMatchingDraft(text)
+                clearMatchingDraft(submittedDraft, attachments: attachments)
             } else {
                 result = .rejected(reason: cards.persistenceError.map { "Could not save your reply. \($0) Try again." }
                     ?? "This question is no longer open. Review the reply target and try again.")
             }
         } else {
             let now = clock()
-            let card = Card(kind: .userMessage, body: text, createdAt: now, updatedAt: now, status: .answered)
+            let card = Card(kind: .userMessage, body: text, attachments: attachments, createdAt: now, updatedAt: now, status: .answered)
             let deliveryID = UserMessageDelivery.makeID()
             guard cards.addOutgoing(card, deliveryID: deliveryID) else {
                 result = .rejected(reason: "Could not save your message. \(cards.persistenceError ?? "Try again.")")
@@ -256,7 +260,7 @@ final class ConversationModel {
             _ = cards.reconcileOutgoingDeliveries(messaging.userMessageDeliveries)
             sendingIDs.remove(card.id)
             result = .message(cardID: card.id, outcome: outcome)
-            if case .failed = outcome {} else { clearMatchingDraft(text) }
+            if case .failed = outcome {} else { clearMatchingDraft(submittedDraft, attachments: attachments) }
         }
         return result
     }
@@ -285,9 +289,17 @@ final class ConversationModel {
         if let id = explicitReplyCardID, !ids.contains(id) { explicitReplyCardID = nil }
     }
 
-    private func clearMatchingDraft(_ submitted: String) {
+    private func clearMatchingDraft(_ submitted: String, attachments: [Attachment] = []) {
         if MessageText.submitted(draft) == submitted { draft = "" }
+        let sent = Set(attachments.map(\.id))
+        draftAttachments.removeAll { sent.contains($0.id) }
     }
+
+    func attach(_ items: [Attachment]) {
+        let existing = Set(draftAttachments.map(\.target))
+        draftAttachments.append(contentsOf: items.filter { !existing.contains($0.target) }.prefix(max(0, AvatarDrop.maximumItems - draftAttachments.count)))
+    }
+    func removeAttachment(id: String) { draftAttachments.removeAll { $0.id == id } }
     private static func cardEntryID(_ id: String) -> String { "card:\(id)" }
     private static func answerEntryID(_ id: String) -> String { "answer:\(id)" }
 }
