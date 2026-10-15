@@ -225,6 +225,20 @@ extension ZeusRuntime: LearningRuntimeControlling {
             } catch { self.learningError = "Zeus couldn't save its reflection delivery." }
         }
     }
+    func recordContextDeliveryReceipt(id: String) {
+        guard let record = ledger?.record(id: id), record.delivery.kind != .reflection,
+              let at = record.transportDeliveredAt ?? record.delivery.ackedAt else { return }
+        emitContextDeliveryReceipt(deliveryID: id, cardID: record.delivery.cardID, sessionKey: record.delivery.sessionKey, at: at)
+    }
+    func emitContextDeliveryReceipt(deliveryID: String, cardID: String?, sessionKey: String, at date: Date) {
+        guard running, let recorder = cards as? any LearningContextReceiptRecording,
+              contextReceiptIDs.insert(cardID.map { "card:" + $0 } ?? "delivery:" + deliveryID).inserted else { return }
+        let agent = sessions.first { $0.sessionKey == sessionKey }?.agent.rawValue ?? String(sessionKey.split(separator: ":").first ?? "other")
+        let name = ["claude": "Claude", "codex": "Codex", "opencode": "OpenCode"][agent] ?? "Assistant"
+        let identity = SHA256.hash(data: Data(sessionKey.utf8)).map { String(format: "%02x", $0) }.joined()
+        recorder.recordLearningContextReceipt(.init(deliveryID: deliveryID, cardID: cardID, deliveredAt: date, agent: agent,
+            sessionLabel: name + (managedController.sessionKey == sessionKey ? " · Zeus" : " · Assistant"), sessionID: identity))
+    }
     func recordReflectionReceipt(id: String) {
         guard let record = ledger?.record(id: id), record.delivery.kind == .reflection, !record.delivery.content.isEmpty else { return }
         if let journal = learningJournal {
