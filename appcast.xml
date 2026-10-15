@@ -6,6 +6,28 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.2.4</title>
+      <pubDate>Thu, 15 Oct 2026 21:25:14 GMT</pubDate>
+      <sparkle:version>17</sparkle:version>
+      <sparkle:shortVersionString>0.2.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Choice buttons answer on the first click.</strong> Clicking an option in a question used to move keyboard focus to it, and the thread then scrolled to centre that option while the mouse button was still down, so the click landed on nothing. The thread no longer scrolls for a focus change that came from the pointer; Tab, the arrow keys and the strip's jumps still reveal what they focus. The same goes for every click target in the conversation, and for the peek bubble's inline choices while it's still typing.</li>
+<li><strong>README and setup guide cover all of Learn from me.</strong> The four levels and the permission each needs, how private details are removed on your Mac (fixed patterns, Apple's data detectors and name tagging, the on-device Foundation Model, Vision for text and faces, nothing to any cloud), what your assistant gets, Raw on request, rules that act for you, Ask About This, What Zeus Kept and the Sent ledger.</li>
+<li><strong>Your assistant knows the newer tools.</strong> The assistant template Zeus writes for a new assistant now explains when to ask the journal, how shadow and hands-off rules report what they did, and that purchases always ask first.</li>
+<li><strong>Copy.</strong> The Screen level says "pixellated" everywhere, matching what Zeus does to pictures and faces. The apps-and-timing retention default reads 90 days, as it is.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.2.4/Zeus-0.2.4.zip" type="application/octet-stream" sparkle:edSignature="Vm3XRfHcKVSdVxCaYq7Ffyyme+90KLCtX0LWNBymIE2+8RfBK+VB46dzf3glD1ZwmLekLvfR8ozQO0OrIacFDw==" length="12034535"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.2.3</title>
       <pubDate>Thu, 15 Oct 2026 13:41:45 GMT</pubDate>
       <sparkle:version>16</sparkle:version>
