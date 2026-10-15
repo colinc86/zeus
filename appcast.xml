@@ -6,6 +6,30 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.2.0</title>
+      <pubDate>Thu, 15 Oct 2026 03:27:13 GMT</pubDate>
+      <sparkle:version>13</sparkle:version>
+      <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Drop anything on Zeus.</strong> Drag files, folders, text, images or links onto Zeus and the conversation opens with them attached, ready for your message. If Zeus runs your assistant, a dropped folder can become its working folder.</li>
+<li><strong>Zeus learns how you work, in levels.</strong> Settings › Privacy now has levels, each its own switch, off by default. Level 1 is what you had: apps and timing. Level 2, new, keeps the title of the window in front, the file it shows and the web address, so your assistant knows what you were working on. It needs Accessibility permission and shows an example of what it keeps before it starts. Pick "everywhere except my private list" or "only in apps I choose".</li>
+<li><strong>Private details are removed on your Mac before anything is kept.</strong> Names, emails, phone numbers, cards, addresses, passwords and keys are replaced with placeholders by fixed patterns and Apple's on-device model. Password fields, private browser windows, your private list and a locked screen are never recorded. Nothing raw leaves the Mac.</li>
+<li><strong>What Zeus Kept.</strong> See every record exactly as stored, redactions visible, and everything sent to your assistant. Delete one item, a day, an app, or everything. Records are encrypted on disk.</li>
+<li><strong>Rules.</strong> Once a day your assistant looks over a short summary of your day and suggests rules about how to help you. Rules about timing and tone start at once, with a quiet line in the conversation; rules that would act for you first show what they'd have done and wait for one OK. Settings › Rules shows every rule with its evidence, lets you edit, add or turn off, and has one dial from "Ask me first" to "Just do it". Rules that stop working retire themselves. Purchases always ask.</li>
+<li><strong>Zeus holds back when a rule says so.</strong> A rule like "hold routine messages after 18:00" keeps the badge and the thread but skips the pop-up and sound until the rule clears.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.2.0/Zeus-0.2.0.zip" type="application/octet-stream" sparkle:edSignature="gkb6MqHrWbjJvW+5PvhIerAxBDUVclThLm393x6EZUB3cmyit7aKiV7FCKHISrvI92yZmADkQNDGWBCL2EaWBA==" length="10346932"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.1.11</title>
       <pubDate>Thu, 15 Oct 2026 00:12:33 GMT</pubDate>
       <sparkle:version>12</sparkle:version>
