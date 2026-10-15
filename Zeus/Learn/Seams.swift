@@ -306,3 +306,18 @@ extension FrameJournalStoring {
     func deleteFrame(id: String, includingDescription: Bool) throws -> FrameDeletionReceipt { throw FrameJournalError.unsupported }
     func restoreFrame(_ receipt: FrameDeletionReceipt) throws { throw FrameJournalError.unsupported }
 }
+
+/// Actual consumed/write receipt, never an attempt. App filters for explicit context chips before journaling.
+/// No raw session key/path is exposed; body/attachment labels come from the app's already-saved Send intent.
+struct LearningContextDeliveryReceipt: Sendable {
+    let deliveryID: String
+    let cardID: String?
+    let deliveredAt: Date
+    let agent: String
+    let sessionLabel: String
+    let sessionID: String
+}
+@MainActor protocol LearningContextReceiptRecording: AnyObject {
+    /// May replay after relaunch. Deduplicate by the app's stable context/card/delivery ID, never current routing settings.
+    func recordLearningContextReceipt(_ receipt: LearningContextDeliveryReceipt)
+}

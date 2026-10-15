@@ -76,6 +76,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored var recoveredDraftCardID: String?
     @ObservationIgnored var handledResponses: Set<String> = []
     @ObservationIgnored var completedResponseIDs: [String] = []
+    @ObservationIgnored var contextReceiptIDs: Set<String> = []
     @ObservationIgnored var unsaved: [DeliveryRecord] = []
     @ObservationIgnored var responseJournal: ResponseJournal?
     @ObservationIgnored var awaitingAnswerReceipt: Set<String> = []
@@ -167,6 +168,10 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         learnings.onNewLearning = { [weak self] learning in self?.notifyLearning(learning) }
         startLearning()
         publishUserMessageDeliveries(loaded.records)
+        contextReceiptIDs.removeAll()
+        for record in loaded.records where record.transportDeliveredAt != nil || record.delivery.ackedAt != nil {
+            recordContextDeliveryReceipt(id: record.delivery.id)
+        }
         handledResponses.formUnion(loaded.records.compactMap { $0.delivery.cardID })
         (cards as? any LocalCardActionHandling)?.localActionHandler = { [weak self] card, response in
             self?.handleManagedAction(card, response: response) ?? false
@@ -299,6 +304,8 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
             if written {
                 do {
                     try responseJournal?.complete(id)
+                    emitContextDeliveryReceipt(deliveryID: receipt?.deliveryID ?? "answer_" + id, cardID: id,
+                        sessionKey: session.sessionKey, at: clock.now)
                     if let receipt {
                         noteDeliveredActivity(sessionKey: receipt.sessionKey, deliveryID: receipt.deliveryID,
                             token: receipt.token, sessionID: receipt.sessionID, inputStartedAt: receipt.receivedAt)

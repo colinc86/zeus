@@ -34,8 +34,10 @@ final class TestRuntimeClock: RuntimeClock {
 }
 
 @MainActor
-final class FakeCards: CardStoring, LocalCardActionHandling, AppChangeRecording, LearningNoticeRecording {
+final class FakeCards: CardStoring, LocalCardActionHandling, AppChangeRecording, LearningNoticeRecording, LearningContextReceiptRecording {
     var learningNotices: [LearningNotice] = []
+    var learningContextReceipts: [LearningContextDeliveryReceipt] = []
+    func recordLearningContextReceipt(_ receipt: LearningContextDeliveryReceipt) { learningContextReceipts.append(receipt) }
     var learningActions: [String: @MainActor () -> Void] = [:]
     func recordLearningNotice(_ notice: LearningNotice, action: (@MainActor () -> Void)?) -> Bool {
         learningActions[notice.id] = action
