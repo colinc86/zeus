@@ -550,6 +550,7 @@ When the assistant calls `zeus_get_journal`, the thread gets a quiet notice line
 | Case | Line |
 |---|---|
 | Descriptions, titles and topics only | "Looked at your journal: Tue 14:00–15:30 · View" |
+| | "View" opens Sent to your assistant at that answer's row (the sent-answer callback), never a journal date range. |
 | It also got pictures or words | "Looked at your journal, including 2 pictures: Tue 14:00–15:30 · View" (or "including your words") |
 | It asked for raw and was refused | "Looked at your journal: Tue 14:00–15:30 (descriptions only) · View" |
 | Nothing matched | "Looked at your journal: nothing for Tue 14:00–15:30" (no action) |
@@ -565,7 +566,7 @@ A new kind in Sent to your assistant: "Journal answer". The row reads "▸ 14:32
 
 ### 11.4 Lines for acting rules
 
-The shadow line first. One action, "OK next time?" (§6). The verb follows what the rule would have done:
+The shadow line first. Two plain actions once the thread line supports a second one (ST1 added `ThreadNotice.secondaryTitle`): "OK next time?" and "Not this". Until then, one action, with "Not This" in Settings › Rules (§6). The verb follows what the rule would have done:
 
 | Verb | Shadow line |
 |---|---|
@@ -577,6 +578,7 @@ The shadow line first. One action, "OK next time?" (§6). The verb follows what 
 | booked | "I'd have booked the 8:10 train to the office · OK next time?" |
 
 - After **OK:** "OK. I'll do that from now on. · Undo". Undo puts the rule back in shadow.
+- After **Not this:** the line resolves to "Got it. I won't." with no action; the rule moves to Suggested.
 - **The acted line** appears once a rule is active and the assistant has acted, as a quiet line:
   - Reversible: "Sent “Running late, 10 min” to the team chat · Undo"
   - Not reversible: "Sent “Running late, 10 min” to the team chat · Not again"
