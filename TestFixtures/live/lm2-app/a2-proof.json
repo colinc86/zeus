@@ -1,0 +1,39 @@
+{
+  "revision": "21b4d18",
+  "launch": {
+    "ax_trusted": true,
+    "private_home": true,
+    "ready": true,
+    "safari_automation_status": -1744
+  },
+  "xcode_launch": {
+    "document_event_sent": true,
+    "ok": true
+  },
+  "xcode": {
+    "captured": false,
+    "document_read_from_ax": false,
+    "email_redacted": false,
+    "engine": "none",
+    "front_owned": false,
+    "locked": false,
+    "ok": true,
+    "owned_process_terminated": true,
+    "safari_app_only": false,
+    "secure_input": false,
+    "stored_count": 0,
+    "synthetic_email_in_ax_title": false,
+    "status": "blocked",
+    "diagnostic": {
+      "default_keychain_unavailable": true,
+      "error_code": -25307,
+      "startup_assertion": "DVTDeveloperAccount.m:253"
+    }
+  },
+  "safari": {
+    "status": "blocked",
+    "automation_status": -1744,
+    "reason": "Automation would require user consent; no prompt or browser data read"
+  },
+  "required_native_gate": "blocked"
+}

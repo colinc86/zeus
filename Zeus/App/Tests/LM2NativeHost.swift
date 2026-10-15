@@ -1,6 +1,7 @@
 #if LM2_PROBE_HOST
 import AppKit
 import ApplicationServices
+import Carbon
 import Foundation
 import ZeusProtocol
 
@@ -24,8 +25,15 @@ import ZeusProtocol
                 let store = EncryptedJournalStore(root: root.appendingPathComponent("Journal"), keyProvider: LM2PrivateKey())
                 let redactor = LocalRedactor()
                 var owned: [NSRunningApplication] = []
-                defer { for application in owned { application.terminate() } }
-                try write(["ready": true, "ax_trusted": .bool(source.isTrusted), "private_home": true])
+                var processes: [Process] = []
+                defer {
+                    for application in owned {
+                        application.terminate()
+                        if !application.isTerminated { application.forceTerminate() }
+                    }
+                    for process in processes where process.isRunning { process.terminate() }
+                }
+                try write(["ready": true, "ax_trusted": .bool(source.isTrusted), "private_home": true, "safari_automation_status": .number(Double(automationStatus("com.apple.Safari")))])
                 while let line = await Task.detached(operation: { readLine() }).value {
                     let value = try ZeusJSON.decoder().decode(JSONValue.self, from: Data(line.utf8))
                     if value["command"] == .string("launchEditor") {
@@ -38,16 +46,42 @@ import ZeusProtocol
                         try write(["ok": true, "pid": .number(Double(launched.processIdentifier))]); continue
                     }
                     if value["command"] == .string("launchXcode") {
+                        // HOME does not isolate Xcode's account preferences served by system services.
+                        guard ProcessInfo.processInfo.environment["LM2_XCODE_CLEAN_USER_FIXTURE"] == "1" else {
+                            try write(["ok": false, "reason": "Requires a clean macOS test user or VM"]); continue
+                        }
                         let document = root.appendingPathComponent("review-synthetic@example.invalid.swift")
                         try "// LM2 synthetic focus fixture\nlet example = 1\n".write(to: document, atomically: true, encoding: .utf8)
-                        let configuration = NSWorkspace.OpenConfiguration()
-                        configuration.createsNewApplicationInstance = true
-                        configuration.environment = ["HOME": root.path, "CFFIXED_USER_HOME": root.path]
-                        let existing = Set(NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dt.Xcode").map(\.processIdentifier))
-                        let launched = try await NSWorkspace.shared.open([document], withApplicationAt: URL(fileURLWithPath: "/Applications/Xcode.app"), configuration: configuration)
-                        guard !existing.contains(launched.processIdentifier) else { try write(["ok": false, "reason": "New isolated Xcode instance unavailable"]); continue }
+                        // Direct launch captures a new process's diagnostics and cannot reuse the user's running Xcode.
+                        let process = Process()
+                        process.executableURL = URL(fileURLWithPath: "/Applications/Xcode.app/Contents/MacOS/Xcode")
+                        process.arguments = ["-ApplePersistenceIgnoreState", "YES", "-NSQuitAlwaysKeepsWindows", "NO"]
+                        process.environment = ["HOME": root.path, "CFFIXED_USER_HOME": root.path, "PATH": "/usr/bin:/bin", "TMPDIR": root.path]
+                        process.currentDirectoryURL = root
+                        let log = root.appendingPathComponent("xcode-launch.log")
+                        FileManager.default.createFile(atPath: log.path, contents: nil)
+                        let output = try FileHandle(forWritingTo: log)
+                        process.standardOutput = output; process.standardError = output
+                        try process.run(); processes.append(process)
+                        for _ in 0..<100 {
+                            if !process.isRunning || NSRunningApplication(processIdentifier: process.processIdentifier)?.isFinishedLaunching == true { break }
+                            try await Task.sleep(for: .milliseconds(100))
+                        }
+                        guard process.isRunning, let launched = NSRunningApplication(processIdentifier: process.processIdentifier),
+                              launched.bundleIdentifier == "com.apple.dt.Xcode" else {
+                            try write(["ok": false, "owned_process_terminated": .bool(!process.isRunning),
+                                       "exit_status": .number(Double(process.isRunning ? -1 : process.terminationStatus))]); continue
+                        }
                         owned.append(launched)
-                        try write(["ok": true, "pid": .number(Double(launched.processIdentifier))]); continue
+                        let event = NSAppleEventDescriptor(eventClass: kCoreEventClass, eventID: kAEOpenDocuments,
+                            targetDescriptor: NSAppleEventDescriptor(processIdentifier: launched.processIdentifier),
+                            returnID: AEReturnID(kAutoGenerateReturnID), transactionID: AETransactionID(kAnyTransactionID))
+                        let files = NSAppleEventDescriptor.list()
+                        files.insert(NSAppleEventDescriptor(fileURL: document), at: 1)
+                        event.setParam(files, forKeyword: keyDirectObject)
+                        var sent = true
+                        do { _ = try event.sendEvent(options: [.noReply, .neverInteract], timeout: 2) } catch { sent = false }
+                        try write(["ok": true, "pid": .number(Double(launched.processIdentifier)), "document_event_sent": .bool(sent)]); continue
                     }
                     guard case .number(let pidNumber) = value["pid"], case .string(let bundle) = value["bundle"],
                           ["com.apple.dt.Xcode", "com.apple.Safari", "com.example.LM2Editor"].contains(bundle), let target = NSRunningApplication(processIdentifier: pid_t(pidNumber)),
@@ -102,6 +136,10 @@ import ZeusProtocol
         window.contentView = NSTextField(labelWithString: "LM2 synthetic AX document fixture")
         window.isReleasedWhenClosed = false; editorWindow = window
         NSApp.activate(); window.makeKeyAndOrderFront(nil)
+    }
+    private static func automationStatus(_ bundleID: String) -> OSStatus {
+        let target = NSAppleEventDescriptor(bundleIdentifier: bundleID)
+        return AEDeterminePermissionToAutomateTarget(target.aeDesc, typeWildCard, typeWildCard, false)
     }
     private static func write(_ value: [String: JSONValue]) throws {
         var data = try ZeusJSON.encoder().encode(JSONValue.object(value)); data.append(10)

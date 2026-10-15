@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """LM2 native AX -> redactor -> encrypted journal, disposable HOME and owned app instances only."""
+import argparse
 import json
 import os
 import pathlib
@@ -7,7 +8,17 @@ import plistlib
 import shutil
 import subprocess
 import tempfile
-from OB1LiveProbe import Control
+from OB1LiveProbe import Control as BaseControl
+class Control(BaseControl):
+    """Negative permission/launch results are evidence, rather than assertion failures."""
+    def read(self):
+        if not self.selector.select(timeout=45):
+            raise TimeoutError("LM2 native host stalled")
+        line = self.process.stdout.readline()
+        if not line:
+            raise RuntimeError("LM2 native host exited: " + str(self.process.poll()))
+        return json.loads(line)
+
 REPO = pathlib.Path(__file__).resolve().parents[3]
 OUT = REPO / "build/lm2-live"
 
@@ -39,10 +50,14 @@ def build_host():
     return macos / "LM2Fixture"
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--xcode-clean-user", action="store_true", help="Run only from a clean macOS test user/VM; HOME alone does not isolate Xcode accounts")
+    args = parser.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     executable = build_host()
     with tempfile.TemporaryDirectory(prefix="zlm2_", dir="/tmp") as root:
         env = dict(HOME=root, CFFIXED_USER_HOME=root, PATH="/usr/bin:/bin")
+        if args.xcode_clean_user: env["LM2_XCODE_CLEAN_USER_FIXTURE"] = "1"
         process = subprocess.Popen([str(executable), root], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=(OUT / "host.log").open("w"), text=True, bufsize=1, env=env)
         owned = []
@@ -53,13 +68,16 @@ def main():
                 proof["native_capture"] = {"status": "SKIP", "reason": "Accessibility unavailable for private dev app. No permission prompted."}
             else:
                 launched = control.call("launchXcode")
-                process.stdin.write(json.dumps({"pid": launched["pid"], "bundle": "com.apple.dt.Xcode"}) + "\n"); process.stdin.flush()
-                proof["xcode"] = control.read()
+                if launched.get("ok"):
+                    process.stdin.write(json.dumps({"pid": launched["pid"], "bundle": "com.apple.dt.Xcode"}) + "\n"); process.stdin.flush()
+                    proof["xcode"] = control.read()
+                else:
+                    proof["xcode"] = launched
                 editor = control.call("launchEditor")
                 process.stdin.write(json.dumps({"pid": editor["pid"], "bundle": "com.example.LM2Editor"}) + "\n"); process.stdin.flush()
                 proof["native_editor"] = control.read()
             if "xcode" in proof:
-                proof["xcode"]["status"] = "passed" if proof["xcode"].get("captured") else "blocked_existing_instance" if proof["xcode"].get("owned_process_terminated") else "failed"
+                proof["xcode"]["status"] = "passed" if proof["xcode"].get("captured") else "fresh_process_exited" if proof["xcode"].get("owned_process_terminated") else "failed"
             if "native_editor" in proof:
                 proof["native_editor"]["status"] = "passed" if all(proof["native_editor"].get(k) for k in ("captured", "document_read_from_ax", "synthetic_email_in_ax_title", "email_redacted")) else "failed"
             proof["safari"] = {"status": "not_run", "reason": "No verified disposable Safari profile; no user browser or history accessed."}
