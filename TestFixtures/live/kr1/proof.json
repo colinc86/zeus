@@ -1,0 +1,21 @@
+{
+  "launch": {
+    "initial_error": null,
+    "post_access": true,
+    "private_home": true,
+    "ready": true
+  },
+  "record": {
+    "error": null,
+    "ok": true,
+    "saved": true,
+    "shortcut": "\u2303\u2325Space",
+    "tab_reached_field": true
+  },
+  "fire": {
+    "mounted": true,
+    "ok": true,
+    "opened": true,
+    "route": "real Carbon global hotkey"
+  }
+}

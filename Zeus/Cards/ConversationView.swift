@@ -590,6 +590,10 @@ private struct ConversationBubble: View, Equatable {
                             .modifier(ConversationControlFocus(focus: focus, target: .init(entryID: entry.id, controlID: "settings")))
                         Button("Copy Setup Commands", action: copySetup).accessibilityLabel("Copy Setup Commands").buttonStyle(ZeusButtonStyle(.secondary)).focusable()
                             .modifier(ConversationControlFocus(focus: focus, target: .init(entryID: entry.id, controlID: "copySetup")))
+                        if settings.talkHotKey.enabled, settings.talkHotKey.isValid {
+                            Text("Press \(settings.talkHotKey.displayName) to talk to Zeus from any app.")
+                                .zeusFont(.caption).environment(\.zeusFontChoice, .system).foregroundStyle(palette.secondaryText)
+                        }
                     }
                 } else { bodyText }
             }

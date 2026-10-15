@@ -11,8 +11,8 @@ struct DesignFollowupTests {
         #expect(view.accessibilityText.contains("Summary") && view.accessibilityText.contains("Quoted content"))
         #expect(!view.accessibilityText.contains("▌") && !view.accessibilityText.contains("•"))
     }
-    @Test func shortcutDescriptionUsesModifierNamesInMacOrder() {
+    @Test func shortcutDescriptionUsesModifierGlyphsInMacOrder() {
         var key = TalkHotKey(); key.control = true; key.shift = true
-        #expect(key.displayName == "Control + Option + Shift + Command + Z")
+        #expect(key.displayName == "⌃⌥⇧⌘Z")
     }
 }

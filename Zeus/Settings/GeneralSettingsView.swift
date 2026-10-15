@@ -40,23 +40,13 @@ struct GeneralSettingsView: View {
             SettingsDivider()
             Text("Talk shortcut").settingsTitle().id(GeneralSettingsSection.shortcut)
                 .accessibilityFocused($focusedSection, equals: .shortcut)
-            Toggle("Enable global shortcut", isOn: $settings.talkHotKey.enabled)
+            Toggle("Enable global shortcut", isOn: Binding(get: { settings.talkHotKey.enabled }, set: { enabled in
+                if enabled && !settings.talkHotKey.isValid { settings.talkHotKey = TalkHotKey() }
+                else { settings.talkHotKey.enabled = enabled }
+            }))
                 .accessibilityLabel("Enable global shortcut")
-            HStack {
-                Picker("Key", selection: $settings.talkHotKey.key) { ForEach(TalkHotKey.letters, id: \.self) { Text($0).tag($0) } }
-                    .accessibilityLabel("Shortcut key")
-                Toggle("Control", isOn: $settings.talkHotKey.control)
-                    .accessibilityLabel("Control")
-                Toggle("Option", isOn: $settings.talkHotKey.option)
-                    .accessibilityLabel("Option")
-                Toggle("Shift", isOn: $settings.talkHotKey.shift)
-                    .accessibilityLabel("Shift")
-                Toggle("Command", isOn: $settings.talkHotKey.command)
-                    .accessibilityLabel("Command")
-            }.disabled(!settings.talkHotKey.enabled)
-            Text("\(settings.talkHotKey.displayName) opens Talk to Zeus from any app.").settingsCaption()
-            if let error = hotKey.error { Text(error).settingsError() }
-            Button("Reset Shortcut") { settings.talkHotKey = TalkHotKey() }.accessibilityLabel("Reset Shortcut")
+            ZeusShortcutRecorder(settings: settings, hotKey: hotKey)
+            Text(Self.shortcutCaption(settings.talkHotKey)).settingsCaption()
             SettingsDivider()
             Text("Sounds").settingsTitle().id(GeneralSettingsSection.sounds)
                 .accessibilityFocused($focusedSection, equals: .sounds)
@@ -96,14 +86,16 @@ struct GeneralSettingsView: View {
             .onChange(of: focusRequest) { focusedSection = focusRequest }
     }
 
+    static func shortcutCaption(_ shortcut: TalkHotKey) -> String {
+        shortcut.enabled && shortcut.isValid ? "\(shortcut.displayName) opens Talk to Zeus from any app." : "The shortcut is off. Click Zeus or use the menu to talk."
+    }
+
     static let soundCaption = "Plays at your Mac's alert volume, set in System Settings → Sound. Zeus stays quiet while it's hidden, during quiet hours and while the conversation is open."
     /// MB1. The shortcut follows the user's Talk shortcut (⌥⌘Z by default) and is left out when it's off.
     static func menuBarIconCaption(hotKey: TalkHotKey) -> String {
         let base = "Right-click Zeus for the same menu. If Zeus is hidden and the icon is off, open Zeus again from Spotlight or Launchpad"
         guard hotKey.enabled, hotKey.isValid else { return base + "." }
-        // Settings is set in the system font, which has ⌃ and ⇧ (the pixel font doesn't), so they're escaped for the glyph audit.
-        let symbols = (hotKey.control ? "\u{2303}" : "") + (hotKey.option ? "⌥" : "") + (hotKey.shift ? "\u{21E7}" : "") + (hotKey.command ? "⌘" : "")
-        return base + ", or press " + symbols + hotKey.key.uppercased() + "."
+        return base + ", or press " + hotKey.displayName + "."
     }
     static let assistantControlCaption = "Your assistant can change how Zeus looks and where it sits. Every change shows in the conversation with Undo. It can never answer its own questions or change its own settings."
 

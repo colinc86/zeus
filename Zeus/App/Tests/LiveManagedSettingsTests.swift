@@ -274,7 +274,7 @@ import ZeusProtocol
             .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).toggleStyle(ZeusCheckboxStyle()))
         try await f.settle(generalHost)
         let general = liveAXNodes(generalHost).map(liveAXDescription)
-        for name in ["Control", "Option", "Shift", "Command", "Typewriter reveal", "Retro blip sound", "Reset Shortcut"] {
+        for name in ["Talk to Zeus shortcut", "Typewriter reveal", "Retro blip sound", "Reset to Option-Command-Z"] {
             #expect(general.contains { $0.contains(name) })
         }
     }

@@ -202,7 +202,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             if ConversationLayout.hotKeyCloses(isVisible: self.cardPanelState.isVisible, isKey: self.card.isKeyWindow) { self.closeCard() }
             else { self.showTalkPanel() }
         }
-        hotKey.configure(settings.talkHotKey)
+        hotKey.start(settings.talkHotKey)
         observeHotKeySettings()
         observeMenuBarIconSetting()
         observeAssistantSessionSelection()
@@ -1052,7 +1052,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     private var talkShortcut: ZeusMenuModel.Shortcut? {
         let hotKey = settings.talkHotKey
-        guard hotKey.enabled, hotKey.isValid, let key = hotKey.key.lowercased().first else { return nil }
+        guard hotKey.enabled, hotKey.isValid, let key = hotKey.menuKey else { return nil }
         return .init(key: key, command: hotKey.command, option: hotKey.option, control: hotKey.control, shift: hotKey.shift)
     }
 
