@@ -10,6 +10,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         (learningRules as? any LearningRuleOutcomeSource)?.onRuleOutcome = { [weak self] outcome, ids, eventID, at in
             self?.recordJournalOutcome(outcome, ruleIDs: ids, eventID: eventID, at: at)
         }
+        reconnectJournalAnswerNotices()
         observeLearning()
         learningContextDidChange()
     }
@@ -34,6 +35,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
     /// Frontmost app/state and consent are supplied by the app, never inferred from raw journal text.
     func learningContextDidChange() {
         guard running else { return }
+        for pending in Array(journalAnswerReceipts.values) where pending.3 { recordJournalAnswerReceipt(pending.0, sessionKey: pending.1) }
         reconcileReflectionEvidence()
         let context = learningContext(), now = clock.now
         if !reflectionEnabled() || context.isLocked || context.isPrivate { reflectionTask?.cancel() }
@@ -44,6 +46,11 @@ extension ZeusRuntime: LearningRuntimeControlling {
             learningInterruptionHold = false; onLearningHoldCleared?(ids)
         } else { learningInterruptionHold = hold }
         do {
+            if let lifecycle = learningRules as? any RuleLifecycleStoring {
+                try lifecycle.noteMatches(ids: matching.map(\.id), at: now)
+                try lifecycle.advanceOutcomes(at: now)
+                reconnectPhaseDNotices()
+            }
             try reconnectRuleNotices(matching: matching)
             try recordIgnoredQuestions()
         } catch { learningError = "Zeus couldn't save a learning outcome. It will try again." }
@@ -89,14 +96,22 @@ extension ZeusRuntime: LearningRuntimeControlling {
         catch { learningError = "Zeus couldn't save a learning outcome to the journal." }
     }
     func recordRuleAnswer(_ card: Card, response: CardResponse) {
+        if recordSpendAnswer(card, response: response) { return }
         let ids = learningCardRules[card.id] ?? (learningRules as? any LearningRuleTracking)?.associatedRuleIDs(cardID: card.id) ?? []
         do {
-            try learningRules?.recordOutcome(response.skipped ? .skipped : .accepted, ruleIDs: ids,
-                eventID: "answer:" + card.id, at: response.respondedAt)
+            if let lifecycle = learningRules as? any RuleLifecycleStoring {
+                try lifecycle.recordSignal(response.skipped ? .skipped : .accepted, source: response.skipped ? .timedQuestion : .explicit,
+                    ruleIDs: ids, eventID: "answer:" + card.id, at: response.respondedAt)
+            } else { try learningRules?.recordOutcome(response.skipped ? .skipped : .accepted, ruleIDs: ids, eventID: "answer:" + card.id, at: response.respondedAt) }
         } catch { learningError = "Zeus couldn't save this rule outcome." }
     }
     func recordLearningOutcome(_ outcome: RuleOutcome, ruleIDs: [String]) {
-        do { try learningRules?.recordOutcome(outcome, ruleIDs: ruleIDs, at: clock.now) }
+        do {
+            if let lifecycle = learningRules as? any RuleLifecycleStoring {
+                try lifecycle.recordSignal(outcome, source: outcome == .accepted ? .heldRead : (outcome == .undone ? .holdShown : .explicit),
+                    ruleIDs: ruleIDs, eventID: UUID().uuidString, at: clock.now)
+            } else { try learningRules?.recordOutcome(outcome, ruleIDs: ruleIDs, at: clock.now) }
+        }
         catch { learningError = "Zeus couldn't save this rule outcome." }
     }
     func learningTrackedChange(_ change: AppChange) -> AppChange {
@@ -113,10 +128,15 @@ extension ZeusRuntime: LearningRuntimeControlling {
     private func recordIgnoredQuestions() throws {
         let knownIDs = Set(learningCardRules.keys).union((cards as? any CardPersistenceReporting)?.persistedCards.map(\.id) ?? [])
         for id in knownIDs {
-            guard let card = cards.card(id: id), card.kind == .question, card.status == .open, !handledResponses.contains(id),
+            guard let card = cards.card(id: id), card.status == .open, !handledResponses.contains(id),
                   card.createdAt.addingTimeInterval(86400) < clock.now else { continue }
             let ids = learningCardRules[id] ?? (learningRules as? any LearningRuleTracking)?.associatedRuleIDs(cardID: id) ?? []
-            try learningRules?.recordOutcome(.ignored, ruleIDs: ids, eventID: "ignored:" + id, at: clock.now)
+            if card.kind != .question {
+                guard let reads = cards as? any LearningCardReadState, !reads.learningCardWasRead(id: id), !ids.isEmpty else { continue }
+            }
+            if let lifecycle = learningRules as? any RuleLifecycleStoring {
+                try lifecycle.recordSignal(.ignored, source: .resultIgnored, ruleIDs: ids, eventID: "ignored:" + id, at: clock.now)
+            } else { try learningRules?.recordOutcome(.ignored, ruleIDs: ids, eventID: "ignored:" + id, at: clock.now) }
         }
     }
     private func reconnectRuleNotices(matching: [LearnedRule]) throws {
@@ -132,6 +152,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
                 summary: summary, actionTitle: "Review", detail: members.map(\.sentence).joined(separator: "\n"), ruleID: members.count == 1 ? first.id : nil),
                 action: { [weak self] in self?.onReviewRule?(first.id) })
         }
+        // Phase D notices represent an actual shadow report, not an inferred action at proposal time.
+        guard !(learningRules is any RuleLifecycleStoring) else { return }
         for rule in allRules where rule.kind == .acts {
             if rule.status == .shadow {
                 guard !rule.trigger.isEvaluable || matching.contains(where: { $0.id == rule.id }) else { continue }
@@ -186,6 +208,12 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let dayKey = reflectionDayKey(day), id = "d_reflection_" + dayKey
         guard ledger?.record(id: id) == nil else { learningCatchUpPending = false; return }
         let dayItems = available.filter { calendar.isDate($0.time, inSameDayAs: day) }
+        let lastReflection = (ledger?.records ?? []).filter { $0.delivery.kind == .reflection }.map { $0.delivery.createdAt }.max() ?? .distantPast
+        let lifecycle = learningRules as? any RuleLifecycleStoring
+        let recentOutcomes = (lifecycle?.outcomeEvents ?? []).filter { $0.at > lastReflection }
+        let suppressed = (lifecycle?.suppressedRules ?? []).filter { $0.until > now }
+        // Include a small previous-day evidence sample so cross-day proposals can cite records actually received.
+        let olderEvidence = available.filter { $0.time < day && $0.time >= day.addingTimeInterval(-6 * 86400) && $0.kind != .outcome && ($0.level != .typed || $0.payload.value.topic != nil) }.suffix(6)
         let descriptions = dayItems.filter { $0.level == .screen && $0.kind == .description }
         let indices = descriptions.count <= 4 ? Array(descriptions.indices) : (0..<4).map { $0 * (descriptions.count - 1) / 3 }
         let sampled = Set(indices.map { descriptions[$0].id })
@@ -199,16 +227,25 @@ extension ZeusRuntime: LearningRuntimeControlling {
         guard !items.isEmpty else { return }
         // Bound the summary and include only evidence actually presented to the model.
         var lines: [String] = [], evidence: [String] = [], bytes = 0
-        for item in items.reversed() {
+        for item in (items + olderEvidence).reversed() {
             let summary = item.level == .typed ? (item.payload.value.topic ?? "") : item.payload.value.description
-            let line = "\(item.time.ISO8601Format()) \(summary)"
+            let line = "\(item.time.ISO8601Format()) id=\(item.id) app=\(item.app ?? "unknown") \(summary)"
             guard bytes + line.utf8.count <= 8000 else { break }
             lines.append(line); evidence.append(item.id); bytes += line.utf8.count
         }
         guard !lines.isEmpty else { return }
+        var feedback: [String] = []; var feedbackBytes = 0
+        for event in recentOutcomes.suffix(100) {
+            let line = "Outcome rule=\(event.ruleID) event=\(event.id) date=\(event.at.ISO8601Format()) signal=\(event.outcome.rawValue) source=\(event.source.rawValue) delta=\(event.delta)"
+            if feedbackBytes + line.utf8.count > 6000 { break }; feedback.append(line); feedbackBytes += line.utf8.count
+        }
+        for blocked in suppressed.suffix(50) {
+            let line = "Do not re-propose fingerprint=\(blocked.fingerprint) until=\(blocked.until.ISO8601Format()) reason=\(blocked.reason): \(blocked.sentence)"
+            if feedbackBytes + line.utf8.count > 12000 { break }; feedback.append(line); feedbackBytes += line.utf8.count
+        }
         let token = generation, observationToken = learningObservationToken, revision = journal.revision
         reflectionTask = Task { [weak self] in
-            let safe = await redactor.redact(lines.reversed().joined(separator: "\n"))
+            let safe = await redactor.redact(lines.reversed().joined(separator: "\n") + "\n" + feedback.joined(separator: "\n"))
             guard let self, self.generation == token, self.learningObservationToken == observationToken else { return }
             defer {
                 self.reflectionTask = nil; self.scheduleLearningBoundary()
@@ -222,7 +259,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
             }
             let content = """
             Zeus reflection for \(dayKey). This is a redacted local summary, not a new user request.
-            Read zeus_get_rules. Propose at most two useful rules with zeus_propose_rules; evidence must use IDs below.
+            Read zeus_get_rules. Propose at most three useful rules with zeus_propose_rules; evidence must use IDs below. Evaluable rules require two IDs from different days; respect suppression fingerprints. Every purchase always asks with its amount, including amounts higher than the rule or last purchase.
             Prefer timing/tone/preparation rules. External acts start in shadow; do not execute them. Do not repeat habits or private details to the user.
             \(safe.value)
             Evidence IDs (already-redacted journal records): \(evidence.joined(separator: ", "))
@@ -327,6 +364,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let now = clock.now
         // Minute boundaries are needed only while a timed rule exists; otherwise schedule exact idle/evening deadlines.
         var dates: [Date] = []
+        if journalAnswerReceipts.values.contains(where: { $0.3 }) { dates.append(now.addingTimeInterval(60)) }
+        if let boundary = (learningRules as? any RuleLifecycleStoring)?.nextOutcomeBoundary, boundary > now { dates.append(boundary) }
         if learningRules?.rules.contains(where: { $0.trigger.time != nil && ($0.status == .active || $0.status == .shadow) }) == true {
             dates.append(Date(timeIntervalSince1970: (floor(now.timeIntervalSince1970 / 60) + 1) * 60))
         }
@@ -337,7 +376,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
             if let tomorrow = learningCalendar.date(byAdding: .day, value: 1, to: learningCalendar.startOfDay(for: now)) { dates.append(tomorrow) }
         }
         for id in learningCardRules.keys {
-            if let card = cards.card(id: id), card.status == .open, card.kind == .question {
+            if let card = cards.card(id: id), card.status == .open {
                 let date = card.createdAt.addingTimeInterval(86400.001); if date > now { dates.append(date) }
             }
         }
@@ -352,25 +391,36 @@ extension ZeusRuntime: LearningRuntimeControlling {
     func callRuleTool(_ name: String, args: ToolArguments, sessionKey: String) async throws -> ToolResult {
         guard let rules = learningRules else { throw ToolArgumentError("Rules aren't available in this Zeus instance.") }
         if name == "zeus_get_rules" {
-            return result(["rules": .array(try rules.rules.filter { $0.status == .active || $0.status == .shadow }.map(JSONValue.from)),
+            return result(["rules": .array(rules.rules.filter { $0.status == .active || $0.status == .shadow }.map(ruleForAgent)),
                            "autonomy": .number(rules.autonomy)])
         }
-        guard let journal = learningJournal, let redactor = learningRedactor,
-              case .array(let array) = args.values["rules"], !array.isEmpty, array.count <= 20 else {
-            throw ToolArgumentError("rules must contain 1–20 rule proposals; local learning must be configured.")
+        guard reflectionEnabled(), let journal = learningJournal, let redactor = learningRedactor,
+              case .array(let array) = args.values["rules"], !array.isEmpty, array.count <= 3 else {
+            throw ToolArgumentError("rules must contain 1–3 rule proposals; local learning must be configured.")
         }
         let token = generation, sessionID = sessions.first { $0.sessionKey == sessionKey }?.id
         var query = JournalQuery(); query.limit = 100_000
-        let existingEvidence = Set(try journal.items(matching: query).map(\.id))
+        let evidenceItems = try journal.items(matching: query)
+        let existingEvidence = Set(evidenceItems.map(\.id))
+        guard let reflection = (ledger?.records ?? []).last(where: { $0.delivery.kind == .reflection && $0.delivery.sessionKey == sessionKey && $0.discardedAt == nil && clock.now.timeIntervalSince($0.delivery.createdAt) < 86400 }) else {
+            throw ToolArgumentError("Propose rules only in response to a recent reflection delivered to this session.")
+        }
+        let reflectedEvidence = Set(reflection.delivery.meta["evidence", default: ""].split(separator: ",").map(String.init))
         var proposals: [RuleProposal] = []
         for value in array {
             let normalized = try normalizedRule(value)
             var proposal = try JSONDecoder().decode(RuleProposal.self, from: JSONEncoder().encode(normalized))
-            guard proposal.evidence.allSatisfy(existingEvidence.contains) else { throw ToolArgumentError("Rule evidence must reference retained journal item IDs.") }
+            guard proposal.evidence.allSatisfy({ existingEvidence.contains($0) && reflectedEvidence.contains($0) }) else { throw ToolArgumentError("Rule evidence must reference retained journal item IDs.") }
             guard !proposal.sentence.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, proposal.sentence.count <= 500 else { throw ToolArgumentError("Rule sentence must contain 1–500 characters.") }
+            if proposal.trigger.isEvaluable || proposal.trigger.kind == "spend" {
+                let days = Set(evidenceItems.filter { proposal.evidence.contains($0.id) }.map { learningCalendar.startOfDay(for: $0.time) })
+                guard proposal.evidence.count >= 2, days.count >= 2 else { throw ToolArgumentError("An evaluable rule needs two evidence IDs from two different days of the reflection.") }
+            }
+            if proposal.trigger.kind == "spend" { proposal.kind = .acts }
+            proposal.confidence = min(0.7, max(0.4, proposal.confidence))
             proposal.sentence = await redactor.redact(proposal.sentence).value
             guard running, generation == token, sessions.first(where: { $0.sessionKey == sessionKey })?.id == sessionID,
-                  sessionID != nil else { throw CancellationError() }
+                  sessionID != nil, isAdmitted(sessionKey), reflectionEnabled() else { throw CancellationError() }
             proposals.append(proposal)
         }
         // Revalidate evidence after async redaction: Delete Everything must not be undone by a late proposal.
@@ -378,7 +428,13 @@ extension ZeusRuntime: LearningRuntimeControlling {
         guard proposals.allSatisfy({ $0.evidence.allSatisfy(retained.contains) }) else { throw ToolArgumentError("Rule evidence was deleted while processing the proposal.") }
         let added = try rules.propose(proposals, at: clock.now)
         learningContextDidChange()
-        return result(["rules": .array(try rules.rules.filter { rule in added.contains { $0.id == rule.id } }.map(JSONValue.from))])
+        return result(["rules": .array(rules.rules.filter { rule in added.contains { $0.id == rule.id } }.map(ruleForAgent))])
+    }
+    private func ruleForAgent(_ rule: LearnedRule) -> JSONValue {
+        guard case .object(var fields) = try? JSONValue.from(rule) else { return .null }
+        fields["confidence"] = .string(rule.confidence >= 0.75 ? "Sure" : (rule.confidence >= 0.45 ? "Fairly sure" : "Unsure"))
+        if rule.trigger.kind == "spend" { fields["purchase_policy"] = "Ask with the amount every time. A higher amount always needs a new question; standing rule approval never authorizes payment." }
+        return .object(fields)
     }
     private func normalizedRule(_ value: JSONValue) throws -> JSONValue {
         guard case .object(var fields) = value, Set(fields.keys).isSubset(of: ["sentence", "trigger", "kind", "confidence", "evidence"]), fields["sentence"] != nil else { throw ToolArgumentError("Invalid rule proposal fields.") }
@@ -387,7 +443,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         if fields["evidence"] == nil { fields["evidence"] = [] }
         var trigger: [String: JSONValue] = [:]
         if let raw = fields["trigger"] {
-            guard case .object(let object) = raw, Set(object.keys).isSubset(of: ["time", "apps", "state"]) else { throw ToolArgumentError("Invalid rule trigger.") }
+            guard case .object(let object) = raw, Set(object.keys).isSubset(of: ["time", "apps", "state", "kind"]) else { throw ToolArgumentError("Invalid rule trigger.") }
             trigger = object
         }
         if trigger["apps"] == nil { trigger["apps"] = [] }
