@@ -5,6 +5,9 @@ extension ZeusRuntime {
     static let ruleSpendPrefix = "zeus_rule_spend_"
     func callRuleActionTool(_ name: String, args: ToolArguments, sessionKey: String) async throws -> ToolResult {
         guard let store = learningRules as? any RuleLifecycleStoring, let redactor = learningRedactor else { throw ToolArgumentError("Rule actions aren't available.") }
+        guard (store as? any LearningStorageRecovering)?.storageWaitingForUnlock != true else {
+            throw ToolArgumentError("Learning storage is locked. Wait for it to unlock before acting on a rule.")
+        }
         let id = try args.requiredString("ruleID")
         guard let original = store.rules.first(where: { $0.id == id }) else { throw ToolArgumentError("That rule no longer exists.") }
         let rawText = try args.requiredString(name == "zeus_rule_shadow" ? "wouldHave" : "did"), rawUndo = try args.string("undo")

@@ -4,9 +4,13 @@ import Observation
 import ZeusProtocol
 
 /// Per-day AES-GCM storage. Full-text matching is indexed in memory only; no plaintext index is written.
-@MainActor @Observable final class EncryptedJournalStore: JournalStore, FrameJournalStoring, TypingJournalStoring {
+@MainActor @Observable final class EncryptedJournalStore: JournalStore, FrameJournalStoring, TypingJournalStoring, LearningStorageRecovering {
     private(set) var revision: UInt64 = 0
     private(set) var lastError: String?
+    private(set) var storageWaitingForUnlock = false
+    var pendingStorageWrites: Int { pendingEntries.count }
+    @ObservationIgnored private var pendingEntries: [(JournalItem, Redacted<FrameItem>?)] = []
+    @ObservationIgnored private var recoveryTask: Task<Void, Never>?
     let root: URL
     @ObservationIgnored private let keyProvider: any JournalKeyProviding
     @ObservationIgnored private let calendar: Calendar
@@ -24,8 +28,42 @@ import ZeusProtocol
          clock: @escaping () -> Date = Date.init) {
         self.root = root; self.keyProvider = keyProvider; self.calendar = calendar; retentionClock = clock
     }
-    isolated deinit { typingExpiryTask?.cancel() }
-    func append(_ item: JournalItem) throws { try append(item, allowFrame: false) }
+    isolated deinit { typingExpiryTask?.cancel(); recoveryTask?.cancel() }
+    func append(_ item: JournalItem) throws {
+        do { try append(item, allowFrame: false) }
+        catch where LearningStorageAvailability.isUnavailable(error) { try queue(item, frame: nil) }
+    }
+    private func queue(_ item: JournalItem, frame: Redacted<FrameItem>?) throws {
+        if let existing = pendingEntries.first(where: { $0.0.id == item.id }) {
+            guard existing.0 == item, existing.1 == frame else { throw LearningStorageError.invalidItem }
+            lastError = LearningStorageAvailability.waitingMessage; return
+        }
+        guard pendingEntries.count < 100,
+              pendingEntries.reduce(0, { $0 + ($1.1?.value.heic.count ?? 0) }) + (frame?.value.heic.count ?? 0) <= 24_000_000 else { throw LearningStorageError.keyUnavailable }
+        pendingEntries.append((item, frame)); storageWaitingForUnlock = true
+        lastError = LearningStorageAvailability.waitingMessage; scheduleRecovery()
+    }
+    private func scheduleRecovery() {
+        guard recoveryTask == nil else { return }
+        recoveryTask = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(3)) } catch { return }
+            guard let self else { return }; self.recoveryTask = nil; self.retryPendingWrites()
+        }
+    }
+    func retryPendingWrites() {
+        while let entry = pendingEntries.first {
+            do {
+                if let frame = entry.1 { try persistFrame(frame, item: entry.0) }
+                else { try append(entry.0, allowFrame: false) }
+                pendingEntries.removeFirst()
+            } catch {
+                storageWaitingForUnlock = LearningStorageAvailability.isUnavailable(error)
+                lastError = storageWaitingForUnlock ? LearningStorageAvailability.waitingMessage : "Zeus couldn't save a queued learning entry."
+                if storageWaitingForUnlock { scheduleRecovery() }; return
+            }
+        }
+        storageWaitingForUnlock = false; lastError = nil
+    }
     private func append(_ item: JournalItem, allowFrame: Bool) throws {
         try perform {
             let item = try applyingTypingRetention(to: item)
@@ -50,6 +88,10 @@ import ZeusProtocol
     }
     /// Image ciphertext is written first. Metadata is its commit marker; an interrupted orphan is never visible.
     func appendFrame(_ frame: Redacted<FrameItem>, item: JournalItem) throws {
+        do { try persistFrame(frame, item: item) }
+        catch where LearningStorageAvailability.isUnavailable(error) { try queue(item, frame: frame) }
+    }
+    private func persistFrame(_ frame: Redacted<FrameItem>, item: JournalItem) throws {
         try perform {
             let value = frame.value
             guard item.kind == .frame, item.level == .screen, value.width > 0, value.height > 0,
@@ -151,6 +193,17 @@ import ZeusProtocol
         }
     }
     func delete(_ selection: JournalDeletion) throws {
+        // Forget is authoritative over queued data even when protected files cannot yet be read.
+        pendingEntries.removeAll { entry in
+            let item = entry.0
+            switch selection {
+            case .all: return true
+            case .item(let id): return item.kind != .sentToAssistant && item.id == id
+            case .app(let app): return item.kind != .sentToAssistant && item.app == app
+            case .day(let day): return item.kind != .sentToAssistant && calendar.isDate(item.time, inSameDayAs: day)
+            }
+        }
+        if pendingEntries.isEmpty { recoveryTask?.cancel(); recoveryTask = nil; storageWaitingForUnlock = false }
         try perform {
             if case .item(let id) = selection, try all().contains(where: { $0.id == id && $0.kind == .frame }) {
                 _ = try deleteFrame(id: id, includingDescription: false); return
@@ -391,7 +444,7 @@ import ZeusProtocol
             .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
     private func perform<T>(_ body: () throws -> T) throws -> T {
-        do { let result = try body(); lastError = nil; return result }
+        do { let result = try body(); lastError = pendingEntries.isEmpty ? nil : LearningStorageAvailability.waitingMessage; return result }
         catch { lastError = "Zeus couldn't read or save its local journal."; throw error }
     }
     static func isBundleID(_ string: String) -> Bool {

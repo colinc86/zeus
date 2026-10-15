@@ -238,7 +238,7 @@ struct FixtureLearningRedactor: Redactor {
         f.runtime.learningTrackedChange(AppChange(summary: "A synthetic change", undoTitle: "Undo", undo: {})).undo()
         var query = JournalQuery(); query.kinds = [.outcome]
         let feedback = try f.journal.items(matching: query)
-        #expect(feedback.count == 4)
+        #expect(feedback.count == 2) // Only toggle/edit belong to this rule; the retired rule cannot receive unrelated skip/Undo signals.
         #expect(!String(decoding: try JSONEncoder().encode(feedback), as: UTF8.self).contains("Synthetic private question text"))
         try f.journal.delete(.all); f.runtime.learningContextDidChange()
         for _ in 0..<20 { await Task.yield() }

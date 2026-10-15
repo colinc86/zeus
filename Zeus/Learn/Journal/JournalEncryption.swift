@@ -1,17 +1,22 @@
 import CryptoKit
 import Foundation
 import Security
+import LocalAuthentication
 
 /// Synchronous so the guarded capture-to-commit main-actor turn cannot yield. Tests inject fixed bytes.
 @MainActor protocol JournalKeyProviding: AnyObject {
     func key() throws -> Data
+    var requiresProtectedFiles: Bool { get }
 }
+extension JournalKeyProviding { var requiresProtectedFiles: Bool { true } }
 @MainActor final class KeychainJournalKeyProvider: JournalKeyProviding {
     private let account: String
     init(account: String = "journal-v1") { self.account = account }
     func key() throws -> Data {
+        let authentication = LAContext(); authentication.interactionNotAllowed = true
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "Zeus Journal", kSecAttrAccount as String: account]
+            kSecAttrService as String: "Zeus Journal", kSecAttrAccount as String: account,
+            kSecUseAuthenticationContext as String: authentication]
         var result: CFTypeRef?
         let status = SecItemCopyMatching(query.merging([kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne]) { _, new in new } as CFDictionary, &result)
@@ -60,7 +65,7 @@ enum LearningStorageError: Error, LocalizedError {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true,
                                                 attributes: [.posixPermissions: 0o700])
         // No plaintext staging file. Atomic encrypted replacement also preserves old contents on failure.
-        try bytes.write(to: url, options: [.atomic, .completeFileProtection])
+        try bytes.write(to: url, options: key.requiresProtectedFiles ? [.atomic, .completeFileProtection] : [.atomic])
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
     }
     private static func identity(_ url: URL) -> Data { Data(("Zeus learning v1/" + url.lastPathComponent).utf8) }
