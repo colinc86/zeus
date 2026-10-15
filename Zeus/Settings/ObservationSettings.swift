@@ -28,8 +28,19 @@ struct ObservationPolicy: Codable, Equatable, Sendable {
 final class ObservationSettings {
     @ObservationIgnored private let defaults: UserDefaults
     private var policies: [Int: ObservationPolicy]
+    var screenPerHour: Int {
+        didSet {
+            let bounded = [4, 12, 30].contains(screenPerHour) ? screenPerHour : 12
+            if screenPerHour != bounded { screenPerHour = bounded }
+            defaults.set(bounded, forKey: "learn.screenPerHour")
+        }
+    }
+    var screenPermissionRequested: Bool { didSet { defaults.set(screenPermissionRequested, forKey: "learn.screenPermissionRequested") } }
     init(defaults: UserDefaults) {
         self.defaults = defaults
+        let cap = defaults.object(forKey: "learn.screenPerHour") as? Int ?? 12
+        screenPerHour = [4, 12, 30].contains(cap) ? cap : 12
+        screenPermissionRequested = defaults.bool(forKey: "learn.screenPermissionRequested")
         policies = defaults.data(forKey: "learn.levelPolicies").flatMap { try? JSONDecoder().decode([Int: ObservationPolicy].self, from: $0) } ?? [:]
     }
     func policy(_ level: Int) -> ObservationPolicy { policies[level] ?? ObservationPolicy() }
@@ -37,7 +48,8 @@ final class ObservationSettings {
         var policy = policy
         policy.retentionDays = min(365, max(1, policy.retentionDays))
         // Future levels cannot be enabled by imported defaults or a generic control.
-        if level > 2 { policy.enabled = false }
+        if level > 3 { policy.enabled = false }
+        if level == 3 && ![7, 30, 90].contains(policy.retentionDays) { policy.retentionDays = 90 }
         policies[level] = policy
         if let data = try? JSONEncoder().encode(policies) { defaults.set(data, forKey: "learn.levelPolicies") }
     }

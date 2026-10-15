@@ -13,7 +13,7 @@ struct ZeusMenuModel: Equatable {
         case managed(ZeusManagedPresentation.Action)
         /// nil is Auto.
         case selectAssistantSession(String?)
-        case talk, toggleVisibility, hideForHour, hideUntilTomorrow, deliveryProblem
+        case talk, askAboutThis, toggleVisibility, hideForHour, hideUntilTomorrow, deliveryProblem
         case character(String), size(AvatarSize), theme(String)
         case settings, checkForUpdates, about, quit
     }

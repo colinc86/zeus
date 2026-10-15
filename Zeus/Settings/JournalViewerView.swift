@@ -7,7 +7,7 @@ import ZeusDesign
 struct JournalWindowView: View {
     @Bindable var model: JournalViewerModel
     var settings: AppSettings?
-    var body: some View { rootBody.environment(\.zeusTheme, settings?.currentTheme ?? .classic) }
+    var body: some View { rootBody.environment(\.zeusTheme, settings?.currentTheme ?? .classic).zeusThemeAppearance(settings?.currentTheme ?? .classic) }
     private var rootBody: some View {
         VStack(alignment: .leading, spacing: 12) {
             SettingsSegments(label: "", options: [(false, "Kept on this Mac"), (true, "Sent to your assistant")], selection: $model.sentOnly)
@@ -16,7 +16,7 @@ struct JournalWindowView: View {
                 KeyboardButton(dayTitle) { model.day = Date() }.accessibilityLabel("Journal day: \(dayTitle); show today")
                 KeyboardButton("›") { step(1) }.accessibilityLabel("Next day")
                 if !model.sentOnly {
-                    ZeusMenuPicker("Level", choices: [ZeusChoice(id: 1, title: "Apps and timing"), ZeusChoice(id: 2, title: "Windows and pages")],
+                    ZeusMenuPicker("Level", choices: [ZeusChoice(id: 1, title: "Apps and timing"), ZeusChoice(id: 2, title: "Windows and pages"), ZeusChoice(id: 3, title: "Screen")],
                         selection: Binding<Int?>(get: { model.level == 0 ? nil : model.level }, set: { model.level = $0 ?? 0 }), noneTitle: "All levels")
                     ZeusMenuPicker("App", choices: model.applications.map { ZeusChoice(id: $0, title: JournalDisplay.appName($0)) },
                         selection: Binding<String?>(get: { model.app.isEmpty ? nil : model.app }, set: { model.app = $0 ?? "" }), noneTitle: "All apps")
@@ -52,10 +52,14 @@ struct JournalViewerView: View {
             }
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
-            ForEach(model.items) { item in
+            ForEach(model.timeline) { row in
+                if case .picture(let picture) = row {
+                    JournalPictureRow(picture: picture, model: model.pictures)
+                } else if case .record(let item) = row {
                 JournalRecordRow(item: item, sent: model.sentOnly, expanded: expanded.contains(item.id), toggle: {
                     if !expanded.insert(item.id).inserted { expanded.remove(item.id) }
                 }, delete: { model.deleteItem(item) })
+                }
                 SettingsDivider()
             }
                 }.frame(maxWidth: .infinity, alignment: .leading)
@@ -64,6 +68,10 @@ struct JournalViewerView: View {
                 if model.deletedItem != nil {
                     Text("Deleted.").settingsCaption()
                     KeyboardButton("Undo") { model.undoDelete() }.accessibilityLabel("Undo journal deletion")
+                }
+                if model.pictures.deleted != nil {
+                    Text("Deleted.").settingsCaption()
+                    KeyboardButton("Undo") { model.pictures.undoDelete() }.accessibilityLabel("Undo picture deletion")
                 }
                 Spacer()
                 if !model.sentOnly {
@@ -85,7 +93,10 @@ struct JournalViewerView: View {
                         .buttonStyle(ZeusButtonStyle(.destructive, size: .small)).accessibilityLabel("Confirm journal deletion")
                 }.onAppear { cancelFocused = true }
             }
-            if let error = model.error ?? exportError { Text(error).settingsError() }
+            if let error = model.error ?? model.pictures.error ?? exportError { Text(error).settingsError() }
+        }
+        .sheet(item: Binding(get: { model.pictures.selected }, set: { model.pictures.selectedID = $0?.id })) {
+            _ in JournalPictureDetail(model: model.pictures)
         }
     }
     private func requestDelete(_ selection: JournalDeletion, _ title: String) { deleteTitle = title; pendingDelete = selection }
@@ -111,9 +122,11 @@ struct JournalItemView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("\(item.time.formatted(date: .omitted, time: .shortened)) · \(JournalDisplay.name(item))").settingsCaption()
-            stored(item.payload.value.description)
-            if let text = item.payload.value.text { stored(text) }
-            ForEach(item.payload.value.details.keys.sorted(), id: \.self) { key in stored("\(key): \(item.payload.value.details[key] ?? "")") }
+            if JournalDisplay.showsDescription(item) { stored(item.payload.value.description) }
+            if item.level == .focus {
+                if let text = item.payload.value.text { stored(text) }
+                ForEach(JournalDisplay.detailLines(item), id: \.self) { stored($0) }
+            }
             if item.payload.report.total > 0 { Text("\(item.payload.report.total) private details removed").settingsCaption() }
         }.fixedSize(horizontal: false, vertical: true)
     }
@@ -156,7 +169,18 @@ struct JournalItemView: View {
         default: item.payload.value.description
         }
     }
+    static func detailLines(_ item: JournalItem) -> [String] {
+        guard item.level == .focus else { return [] }
+        return item.payload.value.details.keys.sorted().compactMap { key in
+            let title: String
+            switch key { case "window", "title": title = "Window"; case "document": title = "Document"; case "address", "url": title = "Address"; default: return nil }
+            guard let value = item.payload.value.details[key], !value.isEmpty else { return nil }
+            return title + ": " + (key == "document" ? FocusRecord.documentCaption(value) : value)
+        }
+    }
+    static func showsDescription(_ item: JournalItem) -> Bool { item.payload.value.description != name(item) }
     static func name(_ item: JournalItem) -> String {
+        if item.kind == .activity && item.payload.value.details["kind"] == "private" { return "Private" }
         if let app = item.app { return appName(app) }
         return item.payload.value.details["kind"] == "private" ? "Private" : "Zeus"
     }

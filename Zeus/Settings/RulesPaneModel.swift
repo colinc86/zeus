@@ -81,12 +81,18 @@ final class RulesPaneModel {
     static func triggerText(_ trigger: RuleTrigger, appName: (String) -> String = { $0 }) -> String {
         var pieces: [String] = []
         if let time = trigger.time {
-            let days = time.weekdays.sorted().map { Calendar.current.weekdaySymbols[max(0, min(6, $0 - 1))] }.joined(separator: ", ")
-            pieces.append((time.startMinute == time.endMinute ? "All day" : "\(clockText(time.startMinute))–\(clockText(time.endMinute))") + (days.isEmpty ? " every day" : " on " + days))
+            let days: String
+            switch time.weekdays {
+            case Set(2...6): days = "Weekdays"
+            case Set([1, 7]): days = "Weekends"
+            case [], Set(1...7): days = "Every day"
+            default: days = time.weekdays.sorted().map { Calendar.current.shortWeekdaySymbols[max(0, min(6, $0 - 1))] }.joined(separator: ", ")
+            }
+            pieces.append(days + " " + (time.startMinute == time.endMinute ? "all day" : "\(clockText(time.startMinute))–\(clockText(time.endMinute))"))
         }
         if !trigger.apps.isEmpty { pieces.append("in " + trigger.apps.sorted().map(appName).joined(separator: ", ")) }
         if let state = trigger.state { pieces.append("when " + state) }
-        return pieces.isEmpty ? "Any time" : pieces.joined(separator: "; ")
+        return pieces.isEmpty ? "Any time" : pieces.joined(separator: " · ")
     }
     private static func clockText(_ minute: Int) -> String { String(format: "%02d:%02d", minute / 60, minute % 60) }
     private static func minute(_ text: String) -> Int? {

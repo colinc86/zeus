@@ -19,17 +19,29 @@ struct FocusRecord: Equatable, Sendable {
 }
 struct FocusApplication: Equatable, Sendable { var pid: pid_t; var bundleID: String; var name: String }
 
+struct FocusQuestionRecord: Equatable, Sendable { let record: FocusRecord; let selection: String? }
+
 @MainActor protocol FocusCaptureSource: AnyObject {
     var isTrusted: Bool { get }
     var isSecure: Bool { get }
     var isLocked: Bool { get }
     var idleSeconds: TimeInterval { get }
     var application: FocusApplication? { get }
+    /// Opaque front-window identity, for binding one explicit request across asynchronous captures.
+    var windowIdentity: ScreenCaptureIdentity? { get }
     /// Must return nil for a private or unclassifiable browser window, before reading its title or address.
     func capture(_ application: FocusApplication) async throws -> FocusRecord?
+    /// Selected text is read only for an explicit Ask About This action, never background observation.
+    func captureForQuestion(_ application: FocusApplication) async throws -> FocusQuestionRecord?
 }
 
-extension FocusCaptureSource { var idleSeconds: TimeInterval { 0 } }
+extension FocusCaptureSource {
+    var idleSeconds: TimeInterval { 0 }
+    var windowIdentity: ScreenCaptureIdentity? { nil }
+    func captureForQuestion(_ application: FocusApplication) async throws -> FocusQuestionRecord? {
+        try await capture(application).map { FocusQuestionRecord(record: $0, selection: nil) }
+    }
+}
 
 /// A deliberately narrow AX reader: window title + AXDocument, never field values or a web page's contents.
 @MainActor final class MacFocusCaptureSource: FocusCaptureSource {
@@ -107,6 +119,45 @@ extension FocusCaptureSource { var idleSeconds: TimeInterval { 0 } }
         }
         guard !isSecure, !isLocked, self.application == application else { return nil }
         return record.text.isEmpty ? nil : record
+    }
+
+    var windowIdentity: ScreenCaptureIdentity? { application.flatMap { frontWindowIdentity($0) } }
+    func frontWindowIdentity(_ application: FocusApplication) -> ScreenCaptureIdentity? {
+        guard self.application == application,
+              let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]],
+              let row = windows.first(where: { ($0[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value == application.pid && ($0[kCGWindowLayer as String] as? NSNumber)?.intValue == 0 }),
+              let id = row[kCGWindowNumber as String] as? NSNumber else { return nil }
+        return .init(bundleID: application.bundleID, processID: application.pid, windowID: id.uint32Value)
+    }
+    func isNormalBrowserWindow(_ application: FocusApplication, identity: ScreenCaptureIdentity) async -> Bool {
+        guard Self.chromium(application.bundleID), frontWindowIdentity(application) == identity,
+              !isSecure, !isLocked else { return false }
+        let script = "tell application id \"\(application.bundleID)\"\nset w to front window\nreturn {mode of w}\nend tell"
+        let values = await Self.script(script)
+        return values == ["normal"] && frontWindowIdentity(application) == identity && !isSecure && !isLocked
+    }
+    private static func chromium(_ id: String) -> Bool { id.hasPrefix("com.google.Chrome") || id == "com.microsoft.edgemac" }
+    private static func isBrowser(_ id: String) -> Bool {
+        ["com.apple.Safari", "com.google.Chrome", "com.microsoft.edgemac", "org.mozilla.firefox", "com.brave.Browser",
+         "company.thebrowser.Browser", "com.operasoftware.Opera", "com.vivaldi.Vivaldi", "com.kagi.kagimacOS"].contains { id.hasPrefix($0) }
+    }
+    func captureForQuestion(_ application: FocusApplication) async throws -> FocusQuestionRecord? {
+        guard !Self.isBrowser(application.bundleID) || Self.chromium(application.bundleID) || application.bundleID == "com.apple.Safari" else { return nil }
+        guard let identity = frontWindowIdentity(application), let record = try await capture(application),
+              frontWindowIdentity(application) == identity, !isSecure, !isLocked else { return nil }
+        // Safari's exception covers title/URL, not reading arbitrary fields in unclassifiable private windows.
+        if application.bundleID == "com.apple.Safari" { return .init(record: record, selection: nil) }
+        if Self.isBrowser(application.bundleID) {
+            guard await isNormalBrowserWindow(application, identity: identity) else { return nil }
+        }
+        let app = AXUIElementCreateApplication(application.pid)
+        AXUIElementSetMessagingTimeout(app, 0.5)
+        let selected = Self.element(app, kAXFocusedUIElementAttribute).flatMap { element -> String? in
+            guard Self.attribute(element, kAXSubroleAttribute) as? String != kAXSecureTextFieldSubrole else { return nil }
+            return Self.attribute(element, kAXSelectedTextAttribute) as? String
+        }
+        guard frontWindowIdentity(application) == identity, !isSecure, !isLocked else { return nil }
+        return .init(record: record, selection: selected.map { String($0.prefix(64_000)) })
     }
 
     nonisolated private static func script(_ source: String) async -> [String]? {

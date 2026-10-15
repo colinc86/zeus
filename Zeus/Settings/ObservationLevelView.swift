@@ -54,29 +54,47 @@ struct ObservationScopeView: View {
     var onChange: @MainActor @Sendable () -> Void = {}
     @State private var appResult: String?
     private var policy: ObservationPolicy { settings.policy(level) }
-    private var apps: [ExcludedApp] { policy.scope == .exceptPrivate ? privacy.excludedApps : policy.apps }
+    private var apps: [ExcludedApp] { policy.scope == .exceptPrivate ? (level == 1 ? privacy.excludedApps : []) : policy.apps }
+    static func scopeCaption(level: Int, scope: ObservationPolicy.Scope) -> String {
+        if scope == .chosenApps { return "Zeus records this level only in these apps." }
+        return level == 1 ? "Apps on your private list are never recorded at any level. Time in them counts only as private." : "Apps on your private list (above) are never recorded at any level."
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             SettingsSegments(label: "Record in", options: ObservationPolicy.Scope.allCases.map { ($0, $0.title) },
                 selection: Binding(get: { policy.scope }, set: { scope in settings.edit(level) { $0.scope = scope }; onChange() }))
-            Text(policy.scope == .exceptPrivate ? "Apps on your private list are never recorded at any level. Time in them counts only as private." : "Zeus records this level only in these apps.").settingsCaption()
+            Text(Self.scopeCaption(level: level, scope: policy.scope)).settingsCaption()
             if apps.isEmpty && policy.scope == .chosenApps { Text("No apps chosen yet, so nothing is recorded at this level.").settingsCaption() }
             ForEach(apps) { app in
-                HStack {
-                    if let id = app.bundleIDs.first, let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) {
-                        Image(nsImage: NSWorkspace.shared.icon(forFile: url.path)).resizable().frame(width: 16, height: 16).accessibilityHidden(true)
-                    } else {
-                        Image(systemName: "app").font(.system(size: 13)).frame(width: 16, height: 16).accessibilityHidden(true)
-                    }
-                    Text(app.name).settingsBody(); Spacer()
-                    KeyboardButton("–") { remove(app) }.accessibilityLabel("Remove \(app.name)")
-                }
-                if level == 2 && policy.scope == .chosenApps && app.matches(bundleID: "com.apple.Safari", name: nil) {
-                    Text("Private windows can't be told apart, so their titles and addresses are kept too.").settingsCaption()
+                appRow(app, sharedPrivate: false)
+                if level >= 2 && policy.scope == .chosenApps && app.matches(bundleID: "com.apple.Safari", name: nil) {
+                    Text(level == 3 ? "Private windows can't be told apart, so their pictures and descriptions are kept too." : "Private windows can't be told apart, so their titles and addresses are kept too.").settingsCaption().padding(.leading, 24)
                 }
             }
-            KeyboardButton("Add App…", action: pickApp).accessibilityLabel("Add app to level \(level)")
+            if level == 1 || policy.scope == .chosenApps {
+                KeyboardButton("Add App…", action: pickApp).accessibilityLabel("Add app to level \(level)")
+            }
+            if level == 1 && policy.scope == .chosenApps {
+                Text("Private apps").settingsHeading().padding(.top, 8)
+                Text("Never recorded at any level. Time in them counts only as private.").settingsCaption()
+                ForEach(privacy.excludedApps) { app in appRow(app, sharedPrivate: true) }
+                KeyboardButton("Add App…") { presentPicker(scope: .exceptPrivate) }.accessibilityLabel("Add private app")
+            }
             if let appResult { Text(appResult).settingsCaption() }
+        }
+    }
+    private func appRow(_ app: ExcludedApp, sharedPrivate: Bool) -> some View {
+        HStack {
+            if let id = app.bundleIDs.first, let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) {
+                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path)).resizable().frame(width: 16, height: 16).accessibilityHidden(true)
+            } else {
+                Image(systemName: "app").font(.system(size: 13)).frame(width: 16, height: 16).accessibilityHidden(true)
+            }
+            Text(app.name).settingsBody(); Spacer()
+            KeyboardButton("–") {
+                if sharedPrivate { privacy.excludedApps.removeAll { $0.id == app.id }; onChange() }
+                else { remove(app) }
+            }.accessibilityLabel("Remove \(app.name)")
         }
     }
     private func remove(_ app: ExcludedApp) {
@@ -84,8 +102,8 @@ struct ObservationScopeView: View {
         else { settings.edit(level) { $0.apps.removeAll { $0.id == app.id } } }
         onChange()
     }
-    private func pickApp() {
-        let scope = policy.scope
+    private func pickApp() { presentPicker(scope: policy.scope) }
+    private func presentPicker(scope: ObservationPolicy.Scope) {
         let panel = NSOpenPanel(); panel.allowedContentTypes = [.application]; panel.allowsMultipleSelection = false
         panel.directoryURL = URL(fileURLWithPath: "/Applications", isDirectory: true)
         panel.prompt = "Add"; panel.message = scope == .exceptPrivate ? "Choose an app to keep private." : "Choose an app Zeus may record."

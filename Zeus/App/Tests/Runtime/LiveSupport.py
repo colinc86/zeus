@@ -127,6 +127,9 @@ signal.signal(signal.SIGTERM,_terminate)
 def finish_host_build(out,package):
     """Build each native host once per source fingerprint, shared across agent rows."""
     # Runtime learning is optional; headless hosts need its Foundation-only value/protocol seams.
+    # App-owned durable explicit-context intents accompany CardStore in every headless host.
+    context_intent = REPO/"Zeus/Cards/ContextSendIntent.swift"
+    (package/"Sources/Host/ContextSendIntent.swift").write_text(context_intent.read_text())
     seam = REPO/"Zeus/Learn/Seams.swift"
     (package/"Sources/Host/LearningSeams.swift").write_text(seam.read_text())
     fingerprint=hashlib.sha256()

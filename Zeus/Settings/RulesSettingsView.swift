@@ -103,10 +103,12 @@ struct RuleConfidence: View {
     @Environment(\.zeusPalette) private var palette
     static func word(_ value: Double) -> String { value >= 0.75 ? "Sure" : value >= 0.45 ? "Fairly sure" : "Unsure" }
     var body: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 6) {
+            HStack(spacing: 1) {
             ForEach(0..<5) { cell in
                 Rectangle().fill(cell < max(1, min(5, Int((confidence * 5).rounded()))) ? palette.focusRing : palette.fieldBorder)
                     .frame(width: 5, height: 9)
+            }
             }
             Text(Self.word(confidence)).settingsCaption()
         }.accessibilityElement(children: .ignore).accessibilityLabel("Confidence: \(Self.word(confidence))")

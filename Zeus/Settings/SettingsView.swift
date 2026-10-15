@@ -44,7 +44,7 @@ struct SettingsView: View {
     @State private var generalJump: GeneralSettingsSection?
 
     // T1: the selected theme reaches every view below through \.zeusTheme (and so \.zeusPalette).
-    var body: some View { rootBody.environment(\.zeusTheme, settings.currentTheme) }
+    var body: some View { rootBody.environment(\.zeusTheme, settings.currentTheme).zeusThemeAppearance(settings.currentTheme) }
 
     @ViewBuilder private var rootBody: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -123,14 +123,16 @@ struct SettingsView: View {
                     ObservationLevelView(settings: learning.policies, privacy: learn.settings,
                         onChange: { learning.settingsChanged() }, hasPermission: { learning.focus?.hasPermission ?? false })
                     SettingsDivider()
+                    if let screen = learning.screen {
+                        ScreenPrivacyView(model: screen.privacy).zeusThemeAppearance(settings.currentTheme)
+                        SettingsDivider()
+                    }
                     Text("What Zeus kept").settingsTitle()
+                    Text("Every record exactly as stored, and everything sent to your assistant.").settingsCaption()
                     KeyboardButton("Open What Zeus Kept…") { openJournal() }.accessibilityLabel("Open What Zeus Kept…")
                         .disabled(learning.viewer == nil)
-                    if !learn.settings.enabled && learning.policies.policy(2).enabled {
-                        KeyboardButton(learn.isPausedNow ? "Resume" : "Pause for Today") {
-                            if learn.isPausedNow { learn.resume() } else { learn.pauseForToday() }
-                        }.accessibilityLabel(learn.isPausedNow ? "Resume" : "Pause for Today")
-                    }
+                    SettingsDivider()
+                    JournalPrivacyActions(learn: learn, enabled: learning.enabled, delete: { learning.deleteEverything() })
                     if let error = learning.error ?? learning.focus?.error ?? learning.runtimeProblem() { Text(error).settingsError() }
                 } else if let learn { PrivacySettingsView(learn: learn) }
                 else { Text("Learn from me isn't available here.").settingsCaption() }

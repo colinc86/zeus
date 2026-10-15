@@ -253,29 +253,7 @@ struct ConversationView: View {
     }
 
     @ViewBuilder private var attachmentDraft: some View {
-        if !model.draftAttachments.isEmpty {
-            ScrollView(.horizontal) {
-                HStack(spacing: 8) {
-                    ForEach(model.draftAttachments, id: \.id) { item in
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(spacing: 8) {
-                                Text(item.label).lineLimit(1).frame(maxWidth: 160)
-                                KeyboardButton("Remove") { model.removeAttachment(id: item.id) }
-                                    .accessibilityLabel("Remove \(item.label)")
-                            }
-                            if item.kind == .folder && managed?.enabled == true {
-                                KeyboardButton("Work in this folder") { workInFolder(item.target) }
-                                    .accessibilityLabel("Work in \(item.label)")
-                            }
-                        }
-                        .zeusFont(.caption).foregroundStyle(palette.text)
-                        .padding(8).background(palette.field)
-                        .overlay(Rectangle().strokeBorder(palette.fieldBorder, lineWidth: ZeusTheme.pixel))
-                    }
-                }
-            }
-            .fixedSize(horizontal: false, vertical: true)
-        }
+        ContextDraftAttachments(model: model, managed: managed?.enabled == true, workInFolder: workInFolder)
     }
 
     /// The composer delegates draft ownership to the model, including failed sends.

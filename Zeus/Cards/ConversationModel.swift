@@ -64,6 +64,8 @@ enum ConversationSendResult: Equatable, Sendable {
 final class ConversationModel {
     var draft = ""
     var draftAttachments: [Attachment] = []
+    var contextCaption: String?
+    private(set) var contextItems: [String: ContextDraftItem] = [:]
     var attachmentError: String?
     private(set) var isSending = false
     private(set) var result: ConversationSendResult?
@@ -238,7 +240,7 @@ final class ConversationModel {
         result = nil
         defer { isSending = false }
         if let target = replyTarget {
-            let accepted = cards.respond(id: target.id, response: CardResponse(text: text, respondedAt: clock(), device: .mac))
+            let accepted = cards.respond(id: target.id, response: CardResponse(text: text, respondedAt: clock(), device: .mac), context: ContextSendIntent(cardID: target.id, body: text, items: attachments.compactMap { contextItems[$0.id] }))
             if accepted {
                 result = .answered(cardID: target.id)
                 clearMatchingDraft(submittedDraft, attachments: attachments)
@@ -250,7 +252,7 @@ final class ConversationModel {
             let now = clock()
             let card = Card(kind: .userMessage, body: text, attachments: attachments, createdAt: now, updatedAt: now, status: .answered)
             let deliveryID = UserMessageDelivery.makeID()
-            guard cards.addOutgoing(card, deliveryID: deliveryID) else {
+            guard cards.addOutgoing(card, deliveryID: deliveryID, context: ContextSendIntent(cardID: card.id, body: text, items: attachments.compactMap { contextItems[$0.id] })) else {
                 result = .rejected(reason: "Could not save your message. \(cards.persistenceError ?? "Try again.")")
                 return result
             }
@@ -297,6 +299,8 @@ final class ConversationModel {
         if MessageText.submitted(draft) == submitted { draft = "" }
         let sent = Set(attachments.map(\.id))
         draftAttachments.removeAll { sent.contains($0.id) }
+        contextItems = contextItems.filter { !sent.contains($0.key) }
+        if contextItems.isEmpty { contextCaption = nil }
     }
 
     func attach(_ items: [Attachment]) {
@@ -305,7 +309,18 @@ final class ConversationModel {
             if existing.insert(item.target).inserted { draftAttachments.append(item) }
         }
     }
-    func removeAttachment(id: String) { draftAttachments.removeAll { $0.id == id } }
+    func attachContext(_ result: ContextDraftResult) {
+        attach(result.items.map(\.attachment))
+        let ids = Set(draftAttachments.map(\.id))
+        for item in result.items where ids.contains(item.id) { contextItems[item.id] = item }
+        contextCaption = result.caption
+    }
+    func removeAttachment(id: String) {
+        guard !isSending else { return }
+        draftAttachments.removeAll { $0.id == id }
+        if let item = contextItems.removeValue(forKey: id), item.attachment.kind == .file { try? FileManager.default.removeItem(atPath: item.attachment.target) }
+        if contextItems.isEmpty { contextCaption = nil }
+    }
     private static func cardEntryID(_ id: String) -> String { "card:\(id)" }
     private static func answerEntryID(_ id: String) -> String { "answer:\(id)" }
 }
