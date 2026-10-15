@@ -8,7 +8,7 @@ OUT = output_dir('lm2-live')
 def build_host():
     package = host_package(OUT, 'lm2')
     sources = package/'Sources/Host'; sources.mkdir(parents=True, exist_ok=True)
-    inputs = [REPO/'Zeus/App/Tests/Runtime/LM2RuntimeHost.swift', REPO/'Zeus/Shared/AppSeams.swift', REPO/'Zeus/Learn/Seams.swift', REPO/'Zeus/Cards/AttachmentTarget.swift', REPO/'Zeus/Cards/CardStore.swift', REPO/'Zeus/Cards/ThreadNotice.swift', REPO/'Zeus/Learn/PersistentRulesStore.swift']
+    inputs = [REPO/'Zeus/App/Tests/Runtime/LM2RuntimeHost.swift', REPO/'Zeus/Shared/AppSeams.swift', REPO/'Zeus/Learn/Seams.swift', REPO/'Zeus/Cards/AttachmentTarget.swift', REPO/'Zeus/Cards/CardStore.swift', REPO/'Zeus/Cards/ContextSendIntent.swift', REPO/'Zeus/Cards/ThreadNotice.swift', REPO/'Zeus/Learn/PersistentRulesStore.swift']
     inputs += [p for area in ['Zeus/Bridge','Zeus/Agents','Zeus/Learn/Journal','Zeus/Learn/Redactor'] for p in (REPO/area).glob('*.swift') if p.name != 'DebugSpriteFrameCounter.swift']
     for path in inputs:(sources/path.name).write_text(path.read_text())
     # finish_host_build provides the seams; don't compile a duplicate copy.

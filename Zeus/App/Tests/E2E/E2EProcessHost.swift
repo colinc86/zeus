@@ -25,6 +25,7 @@ private actor RuntimeHostBuilder {
                       root.appendingPathComponent("Zeus/Learn/Seams.swift"),
                       root.appendingPathComponent("Zeus/Cards/AttachmentTarget.swift"),
                       root.appendingPathComponent("Zeus/Cards/CardStore.swift"),
+                      root.appendingPathComponent("Zeus/Cards/ContextSendIntent.swift"),
                       root.appendingPathComponent("Zeus/Cards/ThreadNotice.swift")]
         for directory in ["Zeus/Bridge", "Zeus/Agents"] {
             inputs += try FileManager.default.contentsOfDirectory(at: root.appendingPathComponent(directory), includingPropertiesForKeys: nil)
