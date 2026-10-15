@@ -24,7 +24,7 @@ struct WaitingLearningRow: View {
         VStack(alignment: .leading, spacing: 6) {
             KeyboardButton(action: { expanded.toggle() }) {
                 HStack(spacing: 6) {
-                    Text(expanded ? "▾" : "▸").settingsCaption()
+                    ZeusGlyph(.right).rotationEffect(.degrees(expanded ? 90 : 0)).foregroundStyle(palette.secondaryText).accessibilityHidden(true)
                     Text(title).settingsBody()
                     Text(size).settingsCaption()
                 }

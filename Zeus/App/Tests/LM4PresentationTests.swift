@@ -68,6 +68,9 @@ import ZeusDesign
         let f = try LM4Fixture(); defer { f.cleanup() }
         let journal = LM2JournalFake(), viewer = JournalViewerModel(journal: journal, now: f.now)
         viewer.deliveries = f.deliveries; viewer.sentOnly = true
+        try journal.append(.init(time: f.now.addingTimeInterval(-3600), level: .activity, kind: .sentToAssistant,
+            payload: .init(.init(description: "Sent your daily summary", text: "Exact received text.", details: ["kind": "digest", "sessionLabel": "Claude · Zeus", "delivery_id": "received-fixture"]))))
+        viewer.reload()
         f.controller.pendingLearningDeliveries = DeliveryHold.Reason.allFixtureCases.enumerated().map { index, reason in
             .init(id: reason.rawValue, kind: index == 0 ? .learning : .reflection, text: "Exact prepared text for this synthetic \(reason.rawValue) fixture.\nNo private journal content.", preparedAt: f.now.addingTimeInterval(-720), sessionLabel: "Unreceived target", learningKind: .digest)
         }
@@ -90,7 +93,8 @@ import ZeusDesign
                 try await render(VStack(alignment: .leading, spacing: 24) {
                     ConversationNoticeLine(notice: notice, maxWidth: 690, hasAction: true, perform: {}, hasSecondaryAction: edited)
                     ZeusManagedStatusPanel(f.managed.presentation(now: f.now), attachCommand: nil, note: f.managed.note, disabledActions: f.managed.disabledActions, onAction: { _ in }, onCopy: { _ in false })
-                }.padding(24), name: prefix + (edited ? "-edited-setup" : "-stale-setup"), scheme: scheme, height: 300)
+                    if edited { HStack { KeyboardButton("Open Folder") {}; KeyboardButton("Use the new template…") {} } }
+                }.padding(24), name: prefix + (edited ? "-edited-setup" : "-stale-setup"), scheme: scheme, height: edited ? 350 : 300)
             }
         }
     }

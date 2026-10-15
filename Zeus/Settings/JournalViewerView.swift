@@ -56,6 +56,7 @@ struct JournalViewerView: View {
                 LazyVStack(alignment: .leading, spacing: 12) {
             if !model.waiting.isEmpty, let deliveries = model.deliveries {
                 Text("Waiting").settingsHeading().accessibilityAddTraits(.isHeader)
+                Text("Your assistant hasn't received these yet.").settingsCaption()
                 ForEach(model.waiting) { item in
                     WaitingLearningRow(item: item, hold: deliveries.holds.first { $0.deliveryID == item.id }, now: deliveries.now,
                         openTerminal: deliveries.openTerminal, restart: deliveries.restartAssistant, canStart: deliveries.canStart(), start: deliveries.startAssistant)
@@ -214,6 +215,7 @@ struct JournalItemView: View {
 }
 
 private struct JournalRecordRow: View {
+    @Environment(\.zeusPalette) private var palette
     let item: JournalItem
     let sent: Bool
     let expanded: Bool
@@ -225,7 +227,7 @@ private struct JournalRecordRow: View {
             if sent {
                 KeyboardButton(action: toggle) {
                     HStack(spacing: 8) {
-                        Text(expanded ? "\u{25BE}" : "\u{25B8}").settingsCaption()
+                        ZeusGlyph(.right).rotationEffect(.degrees(expanded ? 90 : 0)).foregroundStyle(palette.secondaryText).accessibilityHidden(true)
                         Text(item.time.formatted(date: .omitted, time: .shortened)).settingsCaption()
                         Text(JournalDisplay.ledgerTitle(item)).settingsBody()
                         ZeusSessionLabel(item.payload.value.details["sessionLabel"] ?? item.payload.value.details["session"] ?? "Assistant",

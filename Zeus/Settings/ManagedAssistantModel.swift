@@ -99,7 +99,7 @@ final class ManagedAssistantModel {
     }
     var setupNote: String? {
         if agentUpdateRestartPending && setupNeedsRestart { return agentUpdateWaitingText }
-        if setupStale.template && setupStale.templateEdited { return "Your assistant's instructions are older than Zeus's template" }
+        if setupStale.template && setupStale.templateEdited { return "Your assistant's instructions are older than Zeus's template. Open the folder to compare, or use the new template." }
         guard setupNeedsRestart else { return nil }
         return "Zeus has new \(Self.setupContent(setupStale)) for \(agentName). Restart to use them; the conversation is kept."
     }

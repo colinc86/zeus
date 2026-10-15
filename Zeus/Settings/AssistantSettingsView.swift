@@ -70,7 +70,7 @@ struct AssistantSettingsView: View {
         if managed.setupStale.template && managed.setupStale.templateEdited {
             HStack {
                 KeyboardButton("Open Folder") { openTemplateFolder() }.accessibilityLabel("Open assistant instructions folder")
-                KeyboardButton("Use the new template", action: managed.requestTemplateReplacement).disabled(!managed.setupCanRestart).accessibilityLabel("Use the new assistant template")
+                KeyboardButton("Use the new template…", action: managed.requestTemplateReplacement).disabled(!managed.setupCanRestart).accessibilityLabel("Use the new assistant template")
             }
         }
         if case .restartForUpdate(let mode) = managed.confirmation {
