@@ -31,6 +31,28 @@ import Testing
         #expect(!key.requiresProtectedFiles)
         #expect(KeychainJournalKeyProvider().requiresProtectedFiles) // no key() call, no Keychain access
     }
+    @Test func queuedTypingKeepsOriginalExpiryAndForgetWordsAppliesBeforeUnlock() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("lm2_retention_recovery_" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let key = RecoverableFixtureKey(); key.unavailable = true
+        var now = Date()
+        let store = EncryptedJournalStore(root: root, keyProvider: key, clock: { now })
+        try store.pruneTyping(words: .day, topicsDays: 7, now: now)
+        let item = JournalItem(id: "typed", time: now, level: .typed, kind: .typedText,
+            payload: .init(.init(description: "Typing", text: "Synthetic words", topic: "Synthetic topic")))
+        try store.append(item)
+        try store.pruneTyping(words: .none, topicsDays: 90, now: now)
+        key.unavailable = false; store.retryPendingWrites()
+        let saved = try #require(store.items(matching: .init()).first)
+        #expect(saved.payload.value.text == nil)
+        #expect(saved.payload.value.details["topic_expires"] == String(item.time.addingTimeInterval(7 * 86400).timeIntervalSince1970))
+        key.unavailable = true
+        let later = JournalItem(id: "later", time: now, level: .typed, kind: .typedText,
+            payload: .init(.init(description: "Typing", topic: "Expires in seven days", details: ["topic_expires": String(now.addingTimeInterval(7 * 86400).timeIntervalSince1970)])))
+        try store.append(later)
+        now = now.addingTimeInterval(8 * 86400); store.retryPendingWrites()
+        #expect(store.pendingStorageWrites == 0)
+    }
     @Test func unavailableRulesLaunchPreservesUnknownDiskAndRecoversThenQueuesChanges() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("lm2_rules_recovery_" + UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
