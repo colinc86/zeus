@@ -146,3 +146,16 @@ struct ScreenFingerprint: Sendable {
         Double(zip(pixels, other.pixels).reduce(0) { $0 + abs(Int($1.0) - Int($1.1)) }) / 2560 < 0.3
     }
 }
+
+protocol CoveredFrameReading: Sendable {
+    func read(_ frame: Redacted<FrameItem>) async throws -> CoveredScreenFrame
+}
+/// Deferred descriptions decode only the covered encrypted-preview result, off the main actor.
+actor CoveredFrameReader: CoveredFrameReading {
+    func read(_ frame: Redacted<FrameItem>) async throws -> CoveredScreenFrame {
+        guard let source = CGImageSourceCreateWithData(frame.value.heic as CFData, nil),
+              let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { throw ScreenCaptureError.encoding }
+        let lines = try FrameRedactor.textLines(image)
+        return CoveredScreenFrame(frame: frame, text: lines.map(\.0).joined(separator: "\n"), lineCount: lines.count)
+    }
+}

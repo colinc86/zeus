@@ -37,6 +37,18 @@ private struct FixtureLearningRedactor: Redactor {
     func stop() { runtime.stop(); try? FileManager.default.removeItem(at: root) }
 }
 @Suite @MainActor struct LearningRuntimeTests {
+    @Test func reflectionSamplesScreenDescriptionsNeverFrameMetadataOrBytes() async throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        let frame = Redacted(FrameItem(heic: Data([1, 2, 3]), width: 100, height: 100, boxes: [], appName: "Fixture", windowTitle: "NEVER_FRAME_METADATA"))
+        try f.journal.appendFrame(frame, item: .init(id: "frame", time: f.clock.now, level: .screen, kind: .frame, payload: .init(.init(description: "NEVER_FRAME_METADATA"))))
+        try f.journal.append(.init(id: "screen-description", time: f.clock.now, level: .screen, kind: .description, payload: .init(.init(description: "Reviewing synthetic screen work", details: ["frame_id": "frame"]))))
+        f.box.enabled = true; f.box.context.idleSince = f.clock.now.addingTimeInterval(-601)
+        f.runtime.learningContextDidChange()
+        try await eventually { !f.connector.deliveries.isEmpty }
+        let sent = try #require(f.connector.deliveries.first)
+        #expect(sent.kind == .reflection); #expect(sent.content.contains("Reviewing synthetic screen work"))
+        #expect(!sent.content.contains("NEVER_FRAME_METADATA")); #expect(!sent.content.contains("heic"))
+    }
     @Test func proposalDefaultsValidationConsentAndQuietActions() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
         let output = await f.runtime.callTool("zeus_propose_rules", arguments: ["rules": [["sentence": "Stay quiet while tests fail", "trigger": ["state": "tests failing"]], ["sentence": "Send a recap", "kind": "acts"]]], sessionKey: "claude:/fixture#123.1")

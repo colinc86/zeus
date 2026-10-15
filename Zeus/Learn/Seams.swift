@@ -269,6 +269,8 @@ struct FrameItem: Codable, Equatable, Sendable {
     func frame(id: String) throws -> Redacted<FrameItem>?
     /// Applies only screen retention; never changes another capture level's retention.
     func pruneScreens(descriptionDays: Int, now: Date) throws
+    @discardableResult func deleteFrame(id: String, includingDescription: Bool) throws -> FrameDeletionReceipt
+    func restoreFrame(_ receipt: FrameDeletionReceipt) throws
 }
 
 extension FrameJournalStoring {
@@ -279,4 +281,27 @@ extension FrameJournalStoring {
             if item.time < Calendar.current.startOfDay(for: now).addingTimeInterval(-Double(days) * 86400) { try delete(.item(item.id)) }
         }
     }
+}
+
+/// An in-memory Undo token, already redacted. Restore compares the post-delete rows before replacing them.
+struct FrameDeletionReceipt: Sendable {
+    let frameID: String
+    let epoch: UUID
+    let frame: Redacted<FrameItem>?
+    let before: [JournalItem]
+    let after: [JournalItem]
+}
+enum FrameJournalError: Error, LocalizedError {
+    case unsupported, conflict, notFound
+    var errorDescription: String? {
+        switch self {
+        case .unsupported: "This journal doesn't support picture changes."
+        case .conflict: "The picture or its description changed. Undo wasn't applied."
+        case .notFound: "This picture is no longer kept."
+        }
+    }
+}
+extension FrameJournalStoring {
+    func deleteFrame(id: String, includingDescription: Bool) throws -> FrameDeletionReceipt { throw FrameJournalError.unsupported }
+    func restoreFrame(_ receipt: FrameDeletionReceipt) throws { throw FrameJournalError.unsupported }
 }

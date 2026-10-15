@@ -11,6 +11,7 @@ import CoreMediaIO
     private var listener: CMIOObjectPropertyListenerBlock?
     private(set) var cameraInUse = true // Unknown/enumeration failure is a hard stop.
     var onChange: (() -> Void)?
+    isolated deinit { stop() }
     func start() {
         guard !installed else { return }; installed = true; listenerFailed = false
         let block: CMIOObjectPropertyListenerBlock = { [weak self] _, _ in Task { @MainActor [weak self] in self?.refresh() } }
