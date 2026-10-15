@@ -6,6 +6,7 @@ import ZeusProtocol
 extension ZeusRuntime: LearningRuntimeControlling {
     func startLearning() {
         learningObservationToken = UUID()
+        learningCatchUpPending = true
         observeLearning()
         learningContextDidChange()
     }
@@ -31,6 +32,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         guard running else { return }
         reconcileReflectionEvidence()
         let context = learningContext(), now = clock.now
+        if !reflectionEnabled() || context.isLocked || context.isPrivate { reflectionTask?.cancel() }
         let matching = matchingLearningRules(context: context, at: now)
         let hold = matching.contains { $0.kind == .passive }
         if learningInterruptionHold && !hold {
@@ -49,11 +51,17 @@ extension ZeusRuntime: LearningRuntimeControlling {
             ($0.status == .active || $0.status == .shadow) && $0.trigger.matches(context, at: now, calendar: learningCalendar)
         }
     }
+    private func applicableLearningRuleIDs() -> [String] {
+        let context = learningContext()
+        return (learningRules?.rules ?? []).filter {
+            $0.status == .active && (!$0.trigger.isEvaluable || $0.trigger.matches(context, at: clock.now, calendar: learningCalendar))
+        }.map(\.id)
+    }
     func prepareLearningCard(_ card: Card) throws {
         guard let rules = learningRules else { return }
         // Refresh before CardStore.onArrival can peek; Observation/context callbacks may still be queued.
         learningContextDidChange()
-        let ids = matchingLearningRules(context: learningContext(), at: clock.now).filter { $0.status == .active }.map(\.id)
+        let ids = applicableLearningRuleIDs()
         if !ids.isEmpty {
             try (rules as? any LearningRuleTracking)?.associate(cardID: card.id, ruleIDs: ids)
             learningCardRules[card.id] = ids
@@ -72,7 +80,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         catch { learningError = "Zeus couldn't save this rule outcome." }
     }
     func learningTrackedChange(_ change: AppChange) -> AppChange {
-        let ids = matchingLearningRules(context: learningContext(), at: clock.now).filter { $0.status == .active }.map(\.id)
+        let ids = applicableLearningRuleIDs()
         guard !ids.isEmpty else { return change }
         let event = "undo:" + UUID().uuidString
         return AppChange(summary: change.summary, undoTitle: change.undoTitle, undo: { [weak self] in
@@ -140,19 +148,23 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let now = clock.now, context = learningContext(), calendar = learningCalendar
         let today = calendar.startOfDay(for: now)
         let evening = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: today) ?? today
+        // A catch-up and this evening cannot both send on the same local day.
+        guard !(ledger?.records ?? []).contains(where: { $0.delivery.kind == .reflection && calendar.isDate($0.delivery.createdAt, inSameDayAs: now) }) else { return }
+        var query = JournalQuery(); query.levels = [.activity, .focus]
+        query.kinds = [.activity, .focus, .description, .outcome]; query.limit = 100_000
+        let available: [JournalItem]
+        do { available = try journal.items(matching: query) }
+        catch { learningError = "Zeus couldn't read the day's journal for reflection."; return }
         let day: Date
-        if now >= evening, let idle = context.idleSince, now.timeIntervalSince(idle) >= 600 { day = today }
-        else if now < evening {
-            // Next launch catch-up only when there is an actual previous day's permitted summary.
-            day = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+        if now >= evening, let idle = context.idleSince, now.timeIntervalSince(idle) >= 600,
+           available.contains(where: { calendar.isDate($0.time, inSameDayAs: today) }) { day = today }
+        else if learningCatchUpPending {
+            guard let previous = available.last(where: { $0.time < today }) else { return }
+            day = calendar.startOfDay(for: previous.time)
         } else { return }
         let dayKey = reflectionDayKey(day), id = "d_reflection_" + dayKey
-        guard ledger?.record(id: id) == nil else { return }
-        var query = JournalQuery(); query.from = day; query.to = calendar.date(byAdding: .day, value: 1, to: day)
-        query.levels = [.activity, .focus]; query.kinds = [.activity, .focus, .description, .outcome]; query.limit = 100_000
-        let items: [JournalItem]
-        do { items = try journal.items(matching: query) }
-        catch { learningError = "Zeus couldn't read the day's journal for reflection."; return }
+        guard ledger?.record(id: id) == nil else { learningCatchUpPending = false; return }
+        let items = available.filter { calendar.isDate($0.time, inSameDayAs: day) }
         guard !items.isEmpty else { return }
         // Bound the summary and include only evidence actually presented to the model.
         var lines: [String] = [], evidence: [String] = [], bytes = 0
@@ -166,10 +178,16 @@ extension ZeusRuntime: LearningRuntimeControlling {
         reflectionTask = Task { [weak self] in
             let safe = await redactor.redact(lines.reversed().joined(separator: "\n"))
             guard let self, self.generation == token, self.learningObservationToken == observationToken else { return }
-            defer { self.reflectionTask = nil }
+            defer {
+                self.reflectionTask = nil; self.scheduleLearningBoundary()
+                if Task.isCancelled || journal.revision != revision { self.considerReflection() }
+            }
             guard self.running, !Task.isCancelled, self.reflectionEnabled(), journal.revision == revision,
                   !self.learningContext().isPrivate, !self.learningContext().isLocked,
                   self.assistantTarget == target, self.sessions.contains(where: { $0.id == session.id }), self.ledger?.record(id: id) == nil else { return }
+            if calendar.isDate(day, inSameDayAs: today) {
+                guard let idle = self.learningContext().idleSince, self.clock.now.timeIntervalSince(idle) >= 600 else { return }
+            }
             let content = """
             Zeus reflection for \(dayKey). This is a redacted local summary, not a new user request.
             Read zeus_get_rules. Propose at most two useful rules with zeus_propose_rules; evidence must use IDs below.
@@ -182,12 +200,21 @@ extension ZeusRuntime: LearningRuntimeControlling {
                              "evidence": evidence.joined(separator: ",")]
             do {
                 try self.ledger?.insert(.init(delivery: delivery))
+                self.learningCatchUpPending = false
                 _ = self.beginSend(id: id)
             } catch { self.learningError = "Zeus couldn't save its reflection delivery." }
         }
     }
     func recordReflectionReceipt(id: String) {
         guard let record = ledger?.record(id: id), record.delivery.kind == .reflection, !record.delivery.content.isEmpty else { return }
+        if let journal = learningJournal {
+            var query = JournalQuery(); query.limit = 100_000
+            guard let items = try? journal.items(matching: query) else { return }
+            let retained = Set(items.map(\.id))
+            guard record.delivery.meta["evidence", default: ""].split(separator: ",").allSatisfy({ retained.contains(String($0)) }) else {
+                reconcileReflectionEvidence(); return
+            }
+        }
         recordSentLearning(id: id, kind: "reflection", text: .init(record.delivery.content), sessionKey: record.delivery.sessionKey)
     }
     /// Only callers holding the actual successful notification/tool-result bytes use this receipt path.
@@ -230,7 +257,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
             let retained = Set(try journal.items(matching: query).map(\.id))
             let erased = Set(reflections.filter { record in
                 let evidence = record.delivery.meta["evidence", default: ""].split(separator: ",").map(String.init)
-                return !evidence.allSatisfy(retained.contains)
+                // A journaled paste must keep its exact recovery payload until submitted once; never strand Zeus's own input.
+                return record.delivery.meta["tmux_paste_destination"] == nil && !evidence.allSatisfy(retained.contains)
             }.map { $0.delivery.id })
             guard !erased.isEmpty else { return }
             for id in erased { sends[id]?.cancel(); sendTokens.removeValue(forKey: id) }

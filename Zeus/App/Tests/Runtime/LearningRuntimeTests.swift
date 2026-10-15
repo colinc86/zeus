@@ -81,6 +81,15 @@ private struct FixtureLearningRedactor: Redactor {
         // Both fake cards remain open; the answered card's durable event must not also count as ignored.
         #expect(f.rules.rules.first(where: { $0.id == rule.id })?.confidence ?? 1 <= 0.35)
     }
+    @Test func unconstrainedGuidanceGetsOutcomeFeedbackWithoutHoldingNotifications() async throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        _ = try f.rules.propose([.init(sentence: "Use concise updates")], at: f.clock.now)
+        _ = await f.runtime.callTool("zeus_ask", arguments: ["text": "Question", "wait_seconds": 0], sessionKey: "claude:/fixture#123.1")
+        let card = try #require(f.cards.values.last)
+        f.runtime.receivedResponse(card, response: .init(respondedAt: f.clock.now, device: .mac, skipped: true))
+        #expect(!f.runtime.learningInterruptionHold)
+        #expect(abs((f.rules.rules.first?.confidence ?? 0) - 0.45) < 0.001)
+    }
     @Test func shadowApprovalAndSettingsApprovalReplaceActionWithUndo() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
         _ = await f.runtime.callTool("zeus_propose_rules", arguments: ["rules": [["sentence": "Send a recap", "kind": "acts"], ["sentence": "Use short updates"]]], sessionKey: "claude:/fixture#123.1")
@@ -146,6 +155,17 @@ private struct FixtureLearningRedactor: Redactor {
             #expect(try f.journal.items(matching: .init()).first?.payload.value.text == received.first?.text)
             await client.stop()
         } catch { await client.stop(); throw error }
+    }
+    @Test func launchCatchupAfterEveningUsesLatestRecordedDayAndStillSendsOnlyOnceToday() async throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        try f.journal.append(.init(id: "earlier", time: f.clock.now.addingTimeInterval(-3*86400), level: .focus, kind: .focus, payload: .init(.init(description: "Earlier synthetic activity"))))
+        f.box.enabled = true; f.runtime.learningContextDidChange()
+        try await eventually { f.connector.deliveries.count == 1 }
+        #expect(f.connector.deliveries[0].meta["reflection_day"] == "20261011")
+        try f.journal.append(.init(id: "today", time: f.clock.now, level: .focus, kind: .focus, payload: .init(.init(description: "Today's activity"))))
+        f.box.context.idleSince = f.clock.now.addingTimeInterval(-601); f.runtime.learningContextDidChange()
+        for _ in 0..<20 { await Task.yield() }
+        #expect(f.runtime.ledger?.records.count == 1)
     }
     @Test func reflectionRequiresExplicitCaptureConsentAndIsDurableOncePerDay() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
