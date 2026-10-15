@@ -63,7 +63,7 @@ Same frame as the L1 sheet.
 - **"Zeus never keeps"**
   - "What's inside a window: text, pictures, messages"
   - "Anything while a password field is active"
-  - "Private browser windows"
+  - "Private windows in Chrome and Edge"
   - "Apps on your private list"
 - **"An example of what's stored"**: a monospaced block in the field chrome. The synthetic record shows two redactions:
   ```
@@ -72,7 +72,7 @@ Same frame as the L1 sheet.
   09:52  Xcode    ManagedSessionController.swift — Zeus
   ```
   - Caption under it: "Names, emails, numbers and other private details become placeholders like ‹name› before anything is stored."
-- **Safari line** (caption): "Safari: Zeus keeps only that you used Safari, because it can't tell private windows apart." Drop this line if appdev finds a reliable positive check.
+- **Safari line** (caption): "Safari: Zeus keeps only that you used it. To keep its titles and web addresses too, add Safari under Only in apps I choose. Zeus can't tell Safari's private windows apart, so those would be kept too."
 - **Caveat** (caption): "Summaries of this go to your assistant, which sends them to its model provider like any message. The records themselves stay on this Mac."
 - **Permission** (caption): "Next, macOS asks you to allow Zeus under Accessibility. Zeus uses it only to read window titles."
 - **Buttons:** "Not Now" (cancel, Escape) and "Continue" (default).
@@ -87,12 +87,7 @@ Same frame as the L1 sheet.
 
 ### 2.4 Drafts for later levels (not built in Phase A)
 
-- **Level 3, "Screen":**
-  - Switch: "Let Zeus look at my screen now and then"
-  - Keeps: "A picture of the window in front, after you switch to it, every 5 minutes in the same place, and when you ask"
-  - Description line: "a one-line description made on this Mac"
-  - Never: "Faces (blurred), password dialogs, Keychain and banking apps, video calls, presentations, private windows"
-  - Example record: "10:12 · Xcode · Writing code for a session controller; a test is failing. [picture, 7 days]"
+- **Level 3, "Screen":** specified in §9 (Phase B).
 - **Level 4, "Typing":**
   - Switch: "Let Zeus keep what I type in apps I choose"
   - The coin is fixed to "Only in apps I choose", with no "Everywhere" option.
@@ -110,6 +105,12 @@ Same frame as the L1 sheet.
 - The list below is this level's own **allow list**. The private list still wins.
 - Caption: "Zeus records this level only in these apps."
 - Empty state (caption): "No apps chosen yet, so nothing is recorded at this level."
+
+**Safari** (PM decision, LM2-D):
+- Safari is app-only by default in every mode.
+- Its titles and addresses are kept only when the user adds Safari to Level 2's allow list ("Only in apps I choose").
+- When Safari is in that list, its row gets a caption under it (`settingsCaption`, one line): "Private windows can't be told apart, so their titles and addresses are kept too."
+- Adding Safari shows no extra confirmation. The caption is the warning.
 
 **List rows** (both lists):
 - App icon (16 pt), the app name in `settingsBody`, and a trailing "–" `KeyboardButton`.
@@ -186,7 +187,7 @@ Each section is a `settingsTitle` with a count. Empty sections are hidden, excep
 | Section | Holds | Row extras |
 |---|---|---|
 | "Active" | status active | toggle (on) |
-| "Waiting for your OK" | shadow | "Seen once: <what it would have done>" caption, buttons "OK" and "Not This" |
+| "Waiting for your OK" | shadow | "Seen once: would have <outcome>" caption (fallback when there is no outcome text: "Seen once. Zeus didn't act."), buttons "OK" and "Not This" |
 | "Suggested" | proposed | buttons "Turn On" and "Dismiss" |
 | "Retired" (collapsed by default, "Show 3 retired") | retired | "Retired <date>: you skipped it often" or "…turned off", and "Turn Back On" |
 
@@ -254,3 +255,112 @@ These are system lines in the thread: the existing notice style, the same as "Cl
 - The welcome and first-run copy say nothing about levels 2–4 until one is on (LM2-A §5).
 - The status strip doesn't change.
 - The Talk shortcut hint (KR1) is unaffected.
+
+## 9. Level 3 · "Screen" (Phase B)
+
+Pipeline and costs: `docs/research/on-device-vision.md`. Renders: `scripts/design-harness/render.sh "screenMockups()"` → `docs/design/lm2/lm2b-*.png`.
+
+### 9.1 The level section in Settings › Privacy
+
+```
+Screen                                                        [settingsHeading]
+[ ] Let Zeus look at the window in front now and then           [switch]
+Zeus takes a picture of the window in front at sensible moments, covers
+private text and blurs faces on this Mac, and keeps a one-line description
+of what you were doing. Never the whole screen.                [caption]
+
+Record in   ( Everywhere except my private list | Only in apps I choose )
+<list, §3>
+Up to       ( 4 an hour | 12 an hour | 30 an hour )            [SettingsSegments, default 12]
+Pictures that look the same as the last one don't count.       [caption]
+Keep descriptions for   ( 30 days | 90 days )                  [default 90]
+Pictures are deleted after 7 days.                             [caption]
+```
+
+- **Apple Intelligence off:** add the caption "Apple Intelligence is off, so Zeus keeps the covered pictures without descriptions."
+- **Battery:** in Low Power Mode or below 30 % battery, Zeus still takes pictures but writes their descriptions later. There's no copy for this; it's invisible.
+
+### 9.2 When Zeus looks ("smart timing")
+
+This paragraph is used in the consent sheet and in SETUP.md:
+
+> Zeus doesn't record your screen. It takes one picture of the window in front when something has changed: after you've switched to an app or document and stayed for 10 seconds, every 5 minutes if you stay in the same place, when you come back from a break, and when you ask. It skips the picture if the window looks the same as last time. It never takes one during a video call, while your screen is mirrored for a presentation, while a password field is active, or in private windows and apps on your private list.
+
+### 9.3 Consent sheet, Level 3 (one time)
+
+- **Title:** "Screen"
+- **Body:** "Zeus takes a picture of the window in front at sensible moments, so your assistant knows what you were looking at. Before anything is kept, Zeus covers private text and blurs faces, here on this Mac."
+- **"Zeus keeps"**
+  - "A picture of the window in front, with private text covered and faces blurred, for 7 days"
+  - "A one-line description of what you were doing, for 90 days"
+- **"Zeus never keeps"**
+  - "The rest of your screen or other windows"
+  - "Anything during a video call or while presenting"
+  - "Anything while a password field is active"
+  - "Private windows and apps on your private list"
+  - "Sound"
+- **"When Zeus looks"**: the §9.2 paragraph.
+- **"An example of what's kept"**: a 360×225 mock window in the field chrome.
+  - It shows a browser page with two text lines covered by solid `fieldBorder` boxes with a 1-px `outline`, and a pixellated portrait.
+  - Under it, monospaced: "10:12  Safari  Reviewing account information."
+  - Caption: "Grey boxes are text Zeus covered. Faces are blurred. The picture is kept for 7 days, the description for 90."
+- **Caveat** (caption): "Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself."
+- **Permission** (caption): "Next, macOS asks you to allow Zeus under Screen Recording. Zeus uses it only for these pictures."
+- **Buttons:** "Not Now" and "Continue".
+
+### 9.4 Screen Recording permission flow
+
+1. **Continue** turns the level on and asks macOS once. Until it's granted, a caption line shows under the switch: "Waiting for Screen Recording permission. · Open System Settings".
+2. **macOS needs Zeus to reopen** after granting: "Allowed. Reopen Zeus to start taking pictures. · Reopen Zeus". The link relaunches Zeus and keeps the conversation.
+3. **Revoked later:** "Screen Recording is off for Zeus, so no pictures are taken. · Open System Settings". The level stays on and resumes when it's allowed again.
+4. **A standing caption** under the switch while the level is on: "macOS may show its screen-recording indicator for a moment when Zeus takes a picture, and may ask now and then whether Zeus can still see your screen." The indicator is macOS's own and isn't hidden or imitated.
+5. **Paused:** while a hard stop holds, the level's caption reads "Paused: a video call is on" / "Paused: presenting" / "Paused: a password field is active". It reverts to the normal caption when the stop clears. There's nothing in the thread.
+
+### 9.5 Pictures in What Zeus Kept
+
+**Rows:** a picture item's row starts with a 96×60 thumbnail (the covered frame, 1-px `outline`), followed by the description as stored.
+- Caption under the description: "Picture · 6 days left".
+- If the picture was dropped or has expired, the thumbnail slot shows a `field` box with "No picture", and the caption gives the reason:
+  - "Picture not kept: it looked private" (the model's flag)
+  - "Picture deleted after 7 days"
+  - "Picture deleted by you"
+
+**Detail window:** clicking a thumbnail (or Return on a focused row) opens a sheet titled "Picture from 10:12".
+- **Left:** the frame, fitted.
+  - Every covered area is outlined with a 1-px `focusRing` rectangle.
+  - Legend under it (caption): "▭ Covered text · ▭ Blurred face", with counts: "3 covered · 1 blurred".
+- **Right column:**
+  - App
+  - Window, as stored, with placeholders visible
+  - Description
+  - "Kept until Mon 19 Oct"
+- **Buttons:**
+  - "Delete Picture" keeps the description. No confirmation, and it shows the Undo toast.
+  - "Delete Both" asks: "Delete this picture and its description? This can't be undone."
+  - "Close".
+- **Keys:** ← and → go to the previous or next picture that day, Escape closes, and ⌘⌫ is Delete Picture.
+- **VoiceOver:** the image is one element, "Picture of <app>, <n> areas covered". The description is read next.
+
+**Filters:** Level 3 joins the Level filter as "Screen".
+
+### 9.6 "Ask about this": context chips in the composer
+
+- **How to open it:**
+  - The menu item "Ask About This" (Zeus menu, below "Talk to Zeus…").
+  - The Talk shortcut with Shift added (⇧⌥⌘Z by default; the shortcut's caption says so).
+- **What it does:** it opens the conversation with chips for what's in front, already attached and removable.
+- **One chip per capture.** A chip appears only when its level is on and the capture worked:
+
+  | Chip | Label | Needs |
+  |---|---|---|
+  | Window | "Window · ManagedSessionController.swift" | Level 2 |
+  | Selection | "Selection · 42 words" | Level 2 (the front app's selected text via Accessibility) |
+  | Page | "Page · docs.example.com" | Level 2 and a browser that reports private windows |
+  | Picture | 32×20 thumbnail + "Picture · Xcode" | Level 3 |
+
+- **Chips are attachment chips** (§7), each with an × button. VoiceOver: "Remove Window".
+  - Hovering a chip shows its exact redacted content (the title, the selected text, the URL, or the covered picture).
+- **Caption above the chips:** "From the window in front, with private details removed. Remove anything you don't want to send."
+- **With no level on:** "Ask About This" still opens the conversation, with the caption "Turn on Windows and pages or Screen in Settings › Privacy to attach what's in front."
+- **Sent chips** go to the "Sent to your assistant" ledger as "Attached: Window, Picture" on the message's row.
+- **A hard stop at that moment** (password field, private window): the affected chips don't appear, and the caption adds "Some things weren't attached because they're private."

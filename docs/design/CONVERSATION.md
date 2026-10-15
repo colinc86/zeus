@@ -520,3 +520,4 @@ The full copy and the reasons behind it are in `PRIVACY.md` §6–7. This sectio
   - The panel opens with the composer focused and the dropped items as removable chips. Send works with no text.
   - Nothing dropped is journalled. It goes to the assistant only when you press Send, like any attachment.
 - **Reflection** is never shown as a user message. The ledger in What Zeus Kept lists it as "Day reflection". If the agent replies in the thread, the reply is an ordinary agent card.
+- **Ask About This (Phase B):** "Ask About This" (Zeus menu, or the Talk shortcut with Shift added) opens the conversation with context chips already attached: Window, Selection, Page and Picture. Each is removable, and the full copy is in `PRIVACY.md` §9.6. The chips use the attachment-chip style above the composer, and Send works with chips alone. Render: `lm2/lm2b-ask-chips__*.png`.

@@ -26,7 +26,7 @@
 **Is any Apple cloud model reachable from third-party apps?**
 - **Yes, on macOS 27, but only with Apple's managed entitlement:** `LanguageModelSession(model: PrivateCloudComputeLanguageModel())`.
 - **Without the entitlement, no.** So the PM's belief (on-device only) holds for Zeus today.
-- **Even with the entitlement, it's the wrong place for the Redactor.** Raw text would leave the Mac to reach it, which breaks principle 1 in `docs/design/PRIVACY.md`. A later reflection over already-redacted summaries could use it, and the sheet would have to say so.
+- **Even with the entitlement, it's the wrong place for the Redactor.** Raw text would leave the Mac to reach it, which breaks principle 1 in `docs/design/PRIVACY.md`. **Decision (2026-10-14): Zeus doesn't use Private Cloud Compute, now or later.**
 
 ## 2. Measurements
 
@@ -118,4 +118,4 @@ struct ScreenDescription {
 
 - **Recall on prose health terms is weak** ("dentist appointment" was missed). Platform's fixture corpus should measure it. A small keyword list for health and money terms in stage 1 is cheap insurance.
 - **First-use costs are large:** accurate OCR took 65 s and face detection 6 s on first use, while models load. Warm them at the moment the user turns a level on, not at the first capture.
-- **PCC needs Apple's entitlement and changes the privacy story.** It's a product decision for the user, not a Phase A item.
+- **PCC:** decided against (2026-10-14). Zeus stays on-device.

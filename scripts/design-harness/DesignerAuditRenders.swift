@@ -1472,3 +1472,234 @@ extension DesignerAuditRenders {
         }
     }
 }
+
+// MARK: - LM2 Phase B: Level 3 "Screen" mock-ups (docs/design/PRIVACY.md §9)
+
+/// A drawn browser window after redaction: covered text lines (solid boxes) and a pixellated portrait.
+private struct LM2MockFrame: View {
+    var outlined = false
+    var code = false
+    @Environment(\.zeusPalette) private var palette
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height, u = w / 360
+            if code {
+                ZStack(alignment: .topLeading) {
+                    Rectangle().fill(Color(white: 0.12))
+                    Rectangle().fill(Color(white: 0.18)).frame(height: 18 * u)
+                    Rectangle().fill(Color(white: 0.15)).frame(width: 60 * u).offset(y: 18 * u)
+                    ForEach(0..<9, id: \.self) { i in
+                        Rectangle().fill(Color(red: 0.6, green: 0.65, blue: 0.85)).frame(width: [180, 210, 150, 230, 120, 200, 90, 160, 60][i] * u, height: 4 * u)
+                            .offset(x: (72 + (i % 3 == 0 ? 0 : 12)) * u, y: (28 + CGFloat(i) * 12) * u)
+                    }
+                    Rectangle().fill(Color(white: 0.08)).frame(width: 300 * u, height: 70 * u).offset(x: 60 * u, y: 155 * u)
+                    Rectangle().fill(Color.red.opacity(0.8)).frame(width: 200 * u, height: 4 * u).offset(x: 70 * u, y: 170 * u)
+                    cover(x: 70, y: 184, w: 160, h: 8, u: u)
+                }
+                .frame(width: w, height: h, alignment: .topLeading).clipped()
+            } else {
+            ZStack(alignment: .topLeading) {
+                Rectangle().fill(Color(white: 0.97))
+                Rectangle().fill(Color(white: 0.88)).frame(height: 18 * u)
+                Rectangle().fill(.white).frame(width: 150 * u, height: 10 * u).offset(x: 105 * u, y: 4 * u)
+                Text("Northwind Bank — Checking").font(.system(size: 11 * u, weight: .semibold)).foregroundStyle(.black).offset(x: 14 * u, y: 28 * u)
+                ForEach(0..<2, id: \.self) { i in cover(x: 14, y: 48 + CGFloat(i) * 16, w: [190, 150][i], h: 10, u: u) }
+                ForEach(0..<4, id: \.self) { i in
+                    Rectangle().fill(Color(white: 0.75)).frame(width: [170, 150, 160, 140][i] * u, height: 4 * u).offset(x: 14 * u, y: (100 + CGFloat(i) * 14) * u)
+                }
+                // The pixellated portrait: 6×7 cells of skin, hair and suit tones.
+                let cells: [[Double]] = [[0.2,0.25,0.3,0.3,0.25,0.2],[0.25,0.6,0.65,0.65,0.6,0.25],[0.3,0.62,0.7,0.7,0.62,0.3],
+                                         [0.3,0.6,0.66,0.66,0.6,0.3],[0.85,0.9,0.92,0.92,0.9,0.85],[0.9,0.95,0.8,0.85,0.95,0.9],[0.9,0.92,0.95,0.95,0.92,0.9]]
+                VStack(spacing: 0) {
+                    ForEach(0..<cells.count, id: \.self) { r in
+                        HStack(spacing: 0) { ForEach(0..<6, id: \.self) { c in Rectangle().fill(Color(hue: 0.07, saturation: cells[r][c] < 0.8 ? 0.35 : 0.02, brightness: cells[r][c])).frame(width: 9 * u, height: 9 * u) } }
+                    }
+                }
+                .offset(x: 270 * u, y: 40 * u)
+                .overlay(alignment: .topLeading) { if outlined { Rectangle().strokeBorder(palette.focusRing, lineWidth: 1).frame(width: 54 * u, height: 63 * u).offset(x: 270 * u, y: 40 * u) } }
+            }
+            .frame(width: w, height: h, alignment: .topLeading).clipped()
+            }
+        }
+    }
+    @ViewBuilder func cover(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, u: CGFloat) -> some View {
+        Rectangle().fill(palette.fieldBorder).overlay(Rectangle().strokeBorder(outlined ? palette.focusRing : palette.outline, lineWidth: 1))
+            .frame(width: w * u, height: h * u).offset(x: x * u, y: y * u)
+    }
+}
+
+private struct LM2ScreenSection: View {
+    @State var cap = 12
+    @State var keep = 90
+    let caption: String
+    var body: some View {
+        LM2Settings {
+            Text("Screen").settingsHeading()
+            Toggle("Let Zeus look at the window in front now and then", isOn: .constant(true))
+            Text("Zeus takes a picture of the window in front at sensible moments, covers private text and blurs faces on this Mac, and keeps a one-line description of what you were doing. Never the whole screen.").settingsCaption()
+            Text(caption).settingsCaption()
+            SettingsSegments(label: "Record in", options: [(0, "Everywhere except my private list"), (1, "Only in apps I choose")], selection: .constant(0))
+            SettingsSegments(label: "Up to", options: [(4, "4 an hour"), (12, "12 an hour"), (30, "30 an hour")], selection: $cap)
+            Text("Pictures that look the same as the last one don't count.").settingsCaption()
+            SettingsSegments(label: "Keep descriptions for", options: [(30, "30 days"), (90, "90 days")], selection: $keep)
+            Text("Pictures are deleted after 7 days.").settingsCaption()
+        }
+    }
+}
+
+private struct LM2ScreenConsent: View {
+    let keeps = ["A picture of the window in front, with private text covered and faces blurred, for 7 days",
+                 "A one-line description of what you were doing, for 90 days"]
+    let never = ["The rest of your screen or other windows", "Anything during a video call or while presenting",
+                 "Anything while a password field is active", "Private windows and apps on your private list", "Sound"]
+    var body: some View {
+        LM2Settings(width: 460) {
+            Text("Screen").settingsTitle()
+            Text("Zeus takes a picture of the window in front at sensible moments, so your assistant knows what you were looking at. Before anything is kept, Zeus covers private text and blurs faces, here on this Mac.")
+                .fixedSize(horizontal: false, vertical: true)
+            list("Zeus keeps", keeps)
+            list("Zeus never keeps", never)
+            Text("When Zeus looks").settingsHeading()
+            Text("Zeus doesn't record your screen. It takes one picture of the window in front when something has changed: after you've switched to an app or document and stayed for 10 seconds, every 5 minutes if you stay in the same place, when you come back from a break, and when you ask. It skips the picture if the window looks the same as last time. It never takes one during a video call, while your screen is mirrored for a presentation, while a password field is active, or in private windows and apps on your private list.").settingsCaption()
+            Text("An example of what's kept").settingsHeading()
+            ZeusFieldChrome {
+                VStack(alignment: .leading, spacing: 6) {
+                    LM2MockFrame().frame(width: 360, height: 225).overlay(Rectangle().strokeBorder(Color.black.opacity(0.4), lineWidth: 1))
+                    Text("10:12  Safari  Reviewing account information.").font(.system(size: 11, design: .monospaced))
+                }
+            }
+            Text("Grey boxes are text Zeus covered. Faces are blurred. The picture is kept for 7 days, the description for 90.").settingsCaption()
+            Text("Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself.").settingsCaption()
+            Text("Next, macOS asks you to allow Zeus under Screen Recording. Zeus uses it only for these pictures.").settingsCaption()
+            HStack { Spacer(); Button("Not Now") {}; Button("Continue") {}.buttonStyle(ZeusButtonStyle(.primary, size: .small)) }
+        }
+    }
+    func list(_ title: String, _ items: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).settingsHeading()
+            ForEach(items, id: \.self) { Text("· " + $0).settingsBody().fixedSize(horizontal: false, vertical: true) }
+        }
+    }
+}
+
+private struct LM2PictureRows: View {
+    @Environment(\.zeusPalette) private var palette
+    var body: some View {
+        LM2Settings(width: 672) {
+            HStack {
+                Button("‹") {}; Text("Today").settingsBody(); Button("›") {}.disabled(true)
+                Spacer()
+                Button("Screen ▾") {}; Button("All apps ▾") {}
+            }
+            row(time: "10:12", app: "Safari", text: "Reviewing account information.", caption: "Picture · 6 days left", picture: true)
+            SettingsDivider()
+            row(time: "09:52", app: "Xcode", text: "Debugging a session restart that failed to resume.", caption: "Picture · 6 days left", picture: true, code: true)
+            SettingsDivider()
+            row(time: "09:31", app: "Mail", text: "Reading a message about ‹name›'s lunch plans.", caption: "Picture not kept: it looked private", picture: false)
+        }
+    }
+    func row(time: String, app: String, text: String, caption: String, picture: Bool, code: Bool = false) -> some View {
+        HStack(alignment: .top, spacing: ZeusTheme.Spacing.s) {
+            Text(time).settingsCaption().frame(width: 44, alignment: .leading)
+            Group {
+                if picture { LM2MockFrame(code: code) } else { ZStack { Rectangle().fill(palette.field); Text("No picture").settingsCaption() } }
+            }
+            .frame(width: 96, height: 60).overlay(Rectangle().strokeBorder(palette.outline, lineWidth: 1))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(app).settingsBody()
+                StoredText(text: text).settingsBody()
+                Text(caption).settingsCaption()
+            }
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct LM2PictureDetail: View {
+    @Environment(\.zeusPalette) private var palette
+    var body: some View {
+        LM2Settings(width: 760) {
+            Text("Picture from 10:12").settingsTitle()
+            HStack(alignment: .top, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    LM2MockFrame(outlined: true).frame(width: 448, height: 280).overlay(Rectangle().strokeBorder(palette.outline, lineWidth: 1))
+                        .accessibilityElement().accessibilityLabel("Picture of Safari, 3 areas covered")
+                    Text("▭ Covered text · ▭ Blurred face · 2 covered · 1 blurred").settingsCaption()
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    field("App", "Safari")
+                    field("Window", "Northwind Bank — Checking · bank.example.com/‹id›")
+                    field("Description", "Reviewing account information.")
+                    Text("Kept until Mon 19 Oct").settingsCaption()
+                }
+            }
+            HStack {
+                Text("← → previous and next picture").settingsCaption()
+                Spacer()
+                Button("Delete Picture") {}; Button("Delete Both…") {}; Button("Close") {}.buttonStyle(ZeusButtonStyle(.primary, size: .small))
+            }
+        }
+    }
+    func field(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) { Text(label).settingsHeading(); StoredText(text: value).settingsBody().fixedSize(horizontal: false, vertical: true) }
+    }
+}
+
+private struct LM2AskChips: View {
+    let allLevels: Bool
+    @Environment(\.zeusPalette) private var zp
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if allLevels {
+                Text("From the window in front, with private details removed. Remove anything you don't want to send.")
+                    .zeusFont(.caption).foregroundStyle(zp.secondaryText).fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 6) {
+                    chip("Window · ManagedSessionController.swift")
+                    chip("Selection · 42 words")
+                }
+                HStack(spacing: 6) {
+                    chip("Page · docs.example.com")
+                    chip("Picture · Xcode", picture: true)
+                }
+            } else {
+                Text("Turn on Windows and pages or Screen in Settings › Privacy to attach what's in front.")
+                    .zeusFont(.caption).foregroundStyle(zp.secondaryText).fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(spacing: 8) {
+                ZeusFieldChrome(isFocused: true) { Text("Why is this test failing?").zeusFont(.body) }
+                Button("↑") {}.buttonStyle(ZeusButtonStyle(.primary, size: .small))
+            }
+        }
+        .padding(18).frame(width: 400)
+        .zeusDialog(tail: nil)
+        .environment(\.zeusFontChoice, .pixel)
+    }
+    func chip(_ label: String, picture: Bool = false) -> some View {
+        HStack(spacing: 5) {
+            if picture { LM2MockFrame(code: true).frame(width: 32, height: 20).overlay(Rectangle().strokeBorder(zp.outline, lineWidth: 1)) }
+            Text(label).zeusFont(.caption).foregroundStyle(zp.text).lineLimit(1)
+            Text("×").zeusFont(.caption).foregroundStyle(zp.secondaryText).accessibilityLabel("Remove")
+        }
+        .padding(.horizontal, 6).padding(.vertical, 3)
+        .background(PixelRoundedRectangle(steps: 1).fill(zp.field))
+        .overlay(PixelRoundedRectangle(steps: 1).stroke(zp.fieldBorder, lineWidth: ZeusTheme.pixel))
+    }
+}
+
+extension DesignerAuditRenders {
+    /// LM2-D2: Level 3 "Screen": the Settings section, consent sheet, pictures in What Zeus Kept, the picture detail and Ask About This chips.
+    @Test func screenMockups() async throws {
+        for look in Snap.Look.basic {
+            try await Snap.render("lm2b-screen-section", look: look, padding: 0, settle: 0.5) {
+                LM2ScreenSection(caption: "macOS may show its screen-recording indicator for a moment when Zeus takes a picture, and may ask now and then whether Zeus can still see your screen.")
+            }
+            try await Snap.render("lm2b-screen-section-paused", look: look, padding: 0, settle: 0.5) { LM2ScreenSection(caption: "Paused: a video call is on") }
+            try await Snap.render("lm2b-consent-level3", look: look, padding: 0, settle: 0.5) { LM2ScreenConsent() }
+            try await Snap.render("lm2b-kept-pictures", look: look, padding: 0, settle: 0.5) { LM2PictureRows() }
+            try await Snap.render("lm2b-picture-detail", look: look, padding: 0, settle: 0.5) { LM2PictureDetail() }
+            try await Snap.render("lm2b-ask-chips", look: look, settle: 0.5) { LM2AskChips(allLevels: true) }
+            try await Snap.render("lm2b-ask-none", look: look, settle: 0.5) { LM2AskChips(allLevels: false) }
+        }
+    }
+}
