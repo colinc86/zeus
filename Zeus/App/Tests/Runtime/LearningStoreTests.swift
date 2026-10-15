@@ -48,13 +48,15 @@ import Synchronization
     }
     @Test func retentionAndSentLedger() throws {
         let root = folder(); defer { try? FileManager.default.removeItem(at: root) }
-        let store = EncryptedJournalStore(root: root, keyProvider: FixtureJournalKey())
         let now = Date(), old = now.addingTimeInterval(-45*86400)
+        var retentionNow = old
+        let store = EncryptedJournalStore(root: root, keyProvider: FixtureJournalKey(), clock: { retentionNow })
         try store.append(item("l1", time: old, level: .activity))
         try store.append(item("l2", time: old))
         try store.append(item("l3", time: old, level: .screen, kind: .description))
         try store.append(item("l4", time: old, level: .typed, kind: .typedText))
         try store.append(item("sent", kind: .sentToAssistant))
+        retentionNow = now
         try store.prune(retention: .init(), now: now)
         #expect(try store.items(matching: .init()).count == 4)
         try store.delete(.item("sent")); #expect(try store.items(matching: .init()).count == 4)
