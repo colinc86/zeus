@@ -1,24 +1,25 @@
 {
+  "erasure_late_ack_suppressed": true,
   "agent": "2.1.300 (Claude Code)",
   "tools": [
-    "zeus_ack",
-    "zeus_say"
+    "zeus_ack"
   ],
   "state": {
-    "deliveries": [
-      {
-        "acked": true,
-        "kind": "learning",
-        "id": "lm4-digest",
-        "attempts": 1
-      }
-    ],
+    "ok": true,
     "unread": 0,
     "error": null,
-    "status": "running(Host.ManagedSessionStatus.Activity.idle)",
+    "deliveries": [
+      {
+        "discarded": false,
+        "acked": true,
+        "kind": "learning",
+        "attempts": 1,
+        "id": "lm4-digest"
+      }
+    ],
     "pane": "%0",
     "sessions": 1,
-    "ok": true,
+    "status": "running(Host.ManagedSessionStatus.Activity.idle)",
     "receipts": [
       {
         "payload": {
@@ -27,20 +28,20 @@
             "semanticEngine": "patternsOnly"
           },
           "value": {
-            "text": "Synthetic morning summary: working on a fixture project.",
             "description": "Sent your daily summary",
             "details": {
-              "delivery_id": "lm4-digest",
+              "agent": "claude",
               "kind": "digest",
-              "sessionID": "7217867859e995066e583126c9c95e54ee3ee5a7dbfe2d3317745913db29c863",
+              "delivery_id": "lm4-digest",
               "sessionLabel": "Claude \u00b7 Zeus",
-              "agent": "claude"
-            }
+              "sessionID": "1520295c831312317460fc25a3a017976de32a089ce8325fcd0edf7fa4ef79b7"
+            },
+            "text": "Synthetic morning summary: working on a fixture project."
           }
         },
-        "time": "2026-10-15T21:09:22.643Z",
+        "time": "2026-10-15T22:02:07.721Z",
         "kind": "sentToAssistant",
-        "id": "sent:lm4-digest:7217867859e995066e583126",
+        "id": "sent:lm4-digest:1520295c831312317460fc25",
         "level": 1
       }
     ]
