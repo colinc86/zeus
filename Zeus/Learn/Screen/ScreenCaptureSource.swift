@@ -4,11 +4,14 @@ import ScreenCaptureKit
 
 @MainActor protocol ScreenCapturing: AnyObject {
     var hasPermission: Bool { get }
+    func requestPermission() -> Bool
     func capture(_ context: ScreenContext) async throws -> CapturedScreenFrame
 }
+extension ScreenCapturing { func requestPermission() -> Bool { hasPermission } }
 /// Only a desktop-independent single-window filter is used, never a display or rectangle capture.
 @MainActor final class WindowScreenCapture: ScreenCapturing {
     var hasPermission: Bool { CGPreflightScreenCaptureAccess() }
+    func requestPermission() -> Bool { CGRequestScreenCaptureAccess() }
     private static func isFront(_ context: ScreenContext) -> Bool {
         guard NSWorkspace.shared.frontmostApplication?.processIdentifier == context.processID,
               let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]],

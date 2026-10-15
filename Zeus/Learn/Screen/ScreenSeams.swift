@@ -17,10 +17,12 @@ struct ScreenContext: Equatable, Sendable {
 struct ScreenPolicy: Equatable, Sendable {
     enum Scope: String, Codable, Sendable { case everywhereExcept, onlyChosen }
     var enabled = false
+    var consented = false
     var scope: Scope = .everywhereExcept
     var apps: Set<String> = []
     var privateApps: Set<String> = []
-    var capturesPerHour = 30
+    var capturesPerHour = 12
+    var descriptionRetentionDays = 90
     /// App sets this for Low Power Mode or battery below 30%; pictures still work.
     var deferDescriptions = false
     func permits(_ context: ScreenContext) -> Bool {
@@ -40,7 +42,26 @@ enum ScreenPause: String, Sendable {
     func stop()
     /// Call on app/document, lock, private-window, policy and idle-return events. Invalidates suspended captures immediately.
     func contextDidChange(returnedFromIdle: Bool)
+    /// Explicit consent-button action only. Never requested by start/tick/capture.
+    @discardableResult func requestPermission() -> ScreenPermission
     func captureNow()
+    /// Local Ask About This only; no transmission. Nil means paused/changed/failed. Reuses a verified unchanged frame.
+    func captureOnDemand() async -> ScreenCaptureResult?
     /// Call before journal deletion so an older suspended capture cannot restore deleted content.
     func invalidatePendingCapture()
+}
+
+/// Opaque routing identity for an owned front window. Display titles are present only in the redacted result.
+struct ScreenCaptureIdentity: Codable, Equatable, Sendable {
+    let bundleID: String
+    let processID: Int32
+    let windowID: UInt32
+}
+struct ScreenCaptureResult: Sendable {
+    let identity: ScreenCaptureIdentity
+    let time: Date
+    let frameID: String?
+    let descriptionID: String?
+    let frame: Redacted<FrameItem>?
+    let description: Redacted<JournalPayload>?
 }

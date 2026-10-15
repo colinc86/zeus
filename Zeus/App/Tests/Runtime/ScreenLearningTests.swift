@@ -54,13 +54,15 @@ private struct ScreenFastDescriber: ScreenDescribing {
 @MainActor private final class ScreenFixtureSource: ScreenCapturing {
     var hasPermission = true
     var captures = 0
+    var requests = 0
     let image: CGImage
     init() throws { image = try ScreenTestImages.draw() }
+    func requestPermission() -> Bool { requests += 1; return hasPermission }
     func capture(_ context: ScreenContext) async throws -> CapturedScreenFrame { captures += 1; return .init(image: image) }
 }
 @MainActor private final class ScreenFixture {
     var now = Date(timeIntervalSince1970: 1_800_000_000)
-    var policy = ScreenPolicy(enabled: true)
+    var policy = ScreenPolicy(enabled: true, consented: true)
     var context = ScreenContext(bundleID: "com.example.Editor", appName: "Fixture", windowTitle: "Synthetic", windowID: 1, processID: 42)
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("lm2b_" + UUID().uuidString)
     let source: ScreenFixtureSource
@@ -116,11 +118,12 @@ private struct ScreenFastDescriber: ScreenDescribing {
         let privateResult = await FrameDescriber(redactor: LocalRedactor(useOnDeviceModel: false), model: ScreenFixedModel()).describe(covered)
         #expect(privateResult.value.details["picture_not_kept"] == "private")
     }
-    @Test(arguments: ["disabled", "permission", "private", "locked", "secure", "camera", "mirror", "presentation", "bank", "privateList", "deny", "allow", "cap"])
+    @Test(arguments: ["disabled", "consent", "permission", "private", "locked", "secure", "camera", "mirror", "presentation", "bank", "privateList", "deny", "allow", "cap"])
     func hardStopsNeverCapture(reason: String) async throws {
         let f = try ScreenFixture(); defer { f.close() }
         switch reason {
         case "disabled": f.policy.enabled = false
+        case "consent": f.policy.consented = false
         case "permission": f.source.hasPermission = false
         case "private": f.context.isPrivate = true
         case "locked": f.context.isLocked = true
@@ -216,6 +219,34 @@ private struct ScreenFastDescriber: ScreenDescribing {
         #expect(FrameRedactor.isSensitiveDialog(title: "Authentication required", text: "Synthetic"))
         #expect(FrameRedactor.isSensitiveDialog(title: "Fixture", text: "Enter your password to unlock keychain"))
         #expect(!FrameRedactor.isSensitiveDialog(title: "Editor", text: "Writing a synthetic document"))
+    }
+    @Test func permissionIsOnlyRequestedByExplicitConsentedAction() async throws {
+        let f = try ScreenFixture(); defer { f.close() }
+        f.source.hasPermission = false; f.policy.consented = false; f.observer.start(); f.observer.tick(); f.observer.captureNow()
+        #expect(f.source.requests == 0); _ = f.observer.requestPermission(); #expect(f.source.requests == 0)
+        f.policy.consented = true; #expect(f.observer.requestPermission() == .denied); #expect(f.source.requests == 1)
+    }
+    @Test func demandReturnsSafeLocalFrameReusesUnchangedAndNeverRestoresDeletedPicture() async throws {
+        let f = try ScreenFixture(); defer { f.close() }
+        f.observer.start()
+        let first = try #require(await f.observer.captureOnDemand())
+        #expect(first.identity.windowID == f.context.windowID); #expect(first.frame?.value.windowTitle == "Synthetic")
+        let second = try #require(await f.observer.captureOnDemand())
+        #expect(second.frameID == first.frameID); #expect(try f.journal.items(matching: .init()).count == 2)
+        try f.journal.delete(.item(try #require(first.frameID)))
+        let deleted = try #require(await f.observer.captureOnDemand())
+        #expect(deleted.frame == nil); #expect(deleted.frameID == nil); #expect(deleted.descriptionID != nil)
+        f.context.isPrivate = true; #expect(await f.observer.captureOnDemand() == nil)
+    }
+    @Test func finalAllowedDemandSucceedsAndScreenRetentionNeverChangesOtherLevels() async throws {
+        let f = try ScreenFixture(); defer { f.close() }; f.policy.capturesPerHour = 1
+        f.observer.start(); #expect(await f.observer.captureOnDemand() != nil)
+        #expect(await f.observer.captureOnDemand() == nil)
+        try f.journal.append(.init(id: "activity-old", time: f.now.addingTimeInterval(-200*86400), level: .activity, kind: .activity, payload: .init(.init(description: "Activity retention is owned by its level"))))
+        try f.journal.append(.init(id: "screen-old", time: f.now.addingTimeInterval(-8*86400), level: .screen, kind: .description, payload: .init(.init(description: "Old screen description"))))
+        try f.journal.pruneScreens(descriptionDays: 7, now: f.now)
+        let ids = try f.journal.items(matching: .init()).map(\.id)
+        #expect(ids.contains("activity-old")); #expect(!ids.contains("screen-old"))
     }
     @Test func summarySamplesDescriptionsNeverFrames() {
         let rows = (0..<10).map { JournalItem(id: "\($0)", level: .screen, kind: .description, payload: .init(.init(description: "Description \($0)"))) }

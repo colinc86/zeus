@@ -25,8 +25,11 @@ import ImageIO
     @ObservationIgnored private var due: Date?
     @ObservationIgnored private var kept: [Date] = []
     @ObservationIgnored private var previous: (ScreenContext, ScreenFingerprint)?
+    @ObservationIgnored private var lastResult: ScreenCaptureResult?
+    @ObservationIgnored private var completedResult: ScreenCaptureResult?
     @ObservationIgnored private var permissionWasGranted = false
     @ObservationIgnored private var pendingDescriptions = true
+    @ObservationIgnored private var lastRetention: (Date, Int)?
     init(journal: any FrameJournalStoring, redactor: any Redactor, policy: @escaping () -> ScreenPolicy,
          context: @escaping () -> ScreenContext?, source: (any ScreenCapturing)? = nil,
          processor: (any ScreenFrameRedacting)? = nil, describer: (any ScreenDescribing)? = nil,
@@ -44,7 +47,7 @@ import ImageIO
     }
     func start() {
         guard !running else { return }; running = true
-        if policy().enabled, let processor = processor as? FrameRedactor {
+        if policy().enabled, policy().consented, let processor = processor as? FrameRedactor {
             warmup = Task(priority: .utility) { await processor.prewarm() }
         }
         safety?.onChange = { [weak self] in self?.contextDidChange(returnedFromIdle: false) }
@@ -59,6 +62,7 @@ import ImageIO
             }
             kept = Array(captures.values)
         } catch { lastError = "Zeus couldn't read the recent picture count."; kept = Array(repeating: clock(), count: 120) }
+        applyRetention()
         contextDidChange(returnedFromIdle: false); schedule()
     }
     func stop() {
@@ -68,7 +72,7 @@ import ImageIO
     func invalidatePendingCapture() {
         generation = UUID(); work?.cancel(); work = nil
         // A deletion/policy boundary must not leave an in-memory old-frame suppression checkpoint.
-        previous = nil
+        previous = nil; lastResult = nil; completedResult = nil
     }
     private func current() -> ScreenContext? { context().map { safety?.supplement($0) ?? $0 } }
     func contextDidChange(returnedFromIdle: Bool = false) {
@@ -77,6 +81,7 @@ import ImageIO
         let next = current()
         if next != identity { due = clock().addingTimeInterval(10) }
         identity = next
+        applyRetention()
         updatePermission()
         pause = blocked(next)
         if returnedFromIdle { due = clock(); tick() }
@@ -86,9 +91,23 @@ import ImageIO
     /// Public for deterministic fake-clock tests; the production timer only checks deadlines/permission, not pixels.
     func tick() {
         guard running else { return }
-        updatePermission(); pause = blocked(current())
+        applyRetention(); updatePermission(); pause = blocked(current())
         if let due, clock() >= due { captureNow() }
         else if pendingDescriptions, !policy().deferDescriptions, pause == nil { describePending() }
+    }
+    @discardableResult func requestPermission() -> ScreenPermission {
+        guard policy().consented else { return permission }
+        _ = source.requestPermission(); updatePermission(); contextDidChange(returnedFromIdle: false)
+        return permission
+    }
+    func captureOnDemand() async -> ScreenCaptureResult? {
+        let token = generation, requested = current()
+        if let work { await work.value }
+        guard running, generation == token, requested == current(), blocked(current()) == nil else { return nil }
+        completedResult = nil; captureNow()
+        if let work { await work.value }
+        guard running, generation == token, requested == current(), blocked(current()) == nil || blocked(current()) == .cap else { return nil }
+        return completedResult
     }
     func captureNow() {
         guard running, work == nil else { return }
@@ -106,7 +125,20 @@ import ImageIO
                 guard valid(token, startContext, startPolicy) else { return }
                 let fingerprint = try ScreenFingerprint(image: raw.image)
                 if let previous, previous.0.bundleID == startContext.bundleID,
-                   previous.0.windowTitle == startContext.windowTitle, fingerprint.isUnchanged(from: previous.1) { return }
+                   previous.0.windowTitle == startContext.windowTitle, fingerprint.isUnchanged(from: previous.1) {
+                    if let result = lastResult {
+                        var query = JournalQuery(); query.limit = 100_000
+                        let ids = Set(try journal.items(matching: query).map(\.id))
+                        let frame = try result.frameID.flatMap { try journal.frame(id: $0) }
+                        let description = result.descriptionID.map { ids.contains($0) } == true ? result.description : nil
+                        if frame != nil || description != nil {
+                            completedResult = ScreenCaptureResult(identity: result.identity, time: result.time,
+                                frameID: frame == nil ? nil : result.frameID, descriptionID: description == nil ? nil : result.descriptionID,
+                                frame: frame, description: description)
+                        }
+                    }
+                    return
+                }
                 let covered = try await processor.redact(raw, context: startContext)
                 guard valid(token, startContext, startPolicy) else { return }
                 let description = startPolicy.deferDescriptions ? nil : await describer.describe(covered)
@@ -123,7 +155,10 @@ import ImageIO
                 }
                 if let description { try storeDescription(description, frameID: frameID, at: now, app: startContext.bundleID) }
                 if privateImage { kept.append(now); previous = (startContext, fingerprint) }
-                lastError = nil
+                let result = ScreenCaptureResult(identity: .init(bundleID: startContext.bundleID, processID: startContext.processID, windowID: startContext.windowID),
+                    time: now, frameID: privateImage ? nil : frameID, descriptionID: description == nil ? nil : "description_" + frameID,
+                    frame: privateImage ? nil : covered.frame, description: description)
+                lastResult = result; completedResult = result; lastError = nil
             } catch is CancellationError { }
             catch ScreenCaptureError.sensitive { pause = .sensitiveApp }
             catch { lastError = "Zeus couldn't take or keep this picture." }
@@ -138,6 +173,13 @@ import ImageIO
         updatePermission()
         return running && generation == token && !Task.isCancelled && policy() == capturedPolicy && current() == captured && blocked(current()) == nil
     }
+    private func applyRetention() {
+        guard policy().enabled, policy().consented else { return }
+        let day = Calendar.current.startOfDay(for: clock()), days = policy().descriptionRetentionDays
+        guard lastRetention?.0 != day || lastRetention?.1 != days else { return }
+        do { try journal.pruneScreens(descriptionDays: days, now: clock()); lastRetention = (day, days) }
+        catch { lastError = "Zeus couldn't apply picture retention." }
+    }
     private func updatePermission() {
         let granted = source.hasPermission
         if granted { permissionWasGranted = true; permission = .granted; return }
@@ -145,7 +187,7 @@ import ImageIO
         permission = permissionWasGranted ? .revoked : .denied
         if wasGranted {
             generation = UUID(); work?.cancel(); work = nil
-            if policy().enabled {
+            if policy().enabled && policy().consented {
                 do { try journal.append(.init(time: clock(), level: .screen, kind: .description,
                     payload: .init(.init(description: "Screen Recording permission was turned off. No pictures are being taken.")))) }
                 catch { lastError = "Zeus couldn't save the Screen Recording permission change." }
@@ -159,7 +201,7 @@ import ImageIO
     }
     private func blocked(_ context: ScreenContext?) -> ScreenPause? {
         let policy = policy()
-        guard policy.enabled else { return .disabled }
+        guard policy.enabled, policy.consented else { return .disabled }
         guard source.hasPermission else { return .permission }
         guard let context else { return .privateContext }
         if context.isLocked { return .locked }
