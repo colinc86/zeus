@@ -43,7 +43,7 @@ import Testing
         #expect(restored.policy(3).retentionDays == 7); #expect(restored.screenPerHour == 30)
         settings.screenPerHour = 1; #expect(settings.screenPerHour == 12)
         #expect(ObservationSettings(defaults: defaults).screenPerHour == 12)
-        settings.edit(4) { $0.enabled = true }; #expect(!settings.policy(4).enabled)
+        settings.edit(5) { $0.enabled = true }; #expect(!settings.policy(5).enabled)
     }
     @Test func permissionStatesWinOverHardStopsAndPausedCopyIsQuiet() throws {
         let (name, defaults, settings, model) = try fixture(); defer { defaults.removePersistentDomain(forName: name) }

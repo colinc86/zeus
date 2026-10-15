@@ -36,19 +36,41 @@ final class ObservationSettings {
         }
     }
     var screenPermissionRequested: Bool { didSet { defaults.set(screenPermissionRequested, forKey: "learn.screenPermissionRequested") } }
+    var typingPermissionRequested: Bool { didSet { defaults.set(typingPermissionRequested, forKey: "learn.typingPermissionRequested") } }
+    var typingWordsHours: Int {
+        didSet {
+            let bounded = [0, 24, 168].contains(typingWordsHours) ? typingWordsHours : 24
+            if typingWordsHours != bounded { typingWordsHours = bounded }
+            defaults.set(bounded, forKey: "learn.typingWordsHours")
+        }
+    }
     init(defaults: UserDefaults) {
         self.defaults = defaults
         let cap = defaults.object(forKey: "learn.screenPerHour") as? Int ?? 12
         screenPerHour = [4, 12, 30].contains(cap) ? cap : 12
         screenPermissionRequested = defaults.bool(forKey: "learn.screenPermissionRequested")
+        typingPermissionRequested = defaults.bool(forKey: "learn.typingPermissionRequested")
+        let hours = defaults.object(forKey: "learn.typingWordsHours") as? Int ?? 24
+        typingWordsHours = [0, 24, 168].contains(hours) ? hours : 24
         policies = defaults.data(forKey: "learn.levelPolicies").flatMap { try? JSONDecoder().decode([Int: ObservationPolicy].self, from: $0) } ?? [:]
     }
-    func policy(_ level: Int) -> ObservationPolicy { policies[level] ?? ObservationPolicy() }
+    func policy(_ level: Int) -> ObservationPolicy {
+        var value = policies[level] ?? ObservationPolicy()
+        if level == 4 {
+            value.scope = .chosenApps
+            if policies[level] == nil || ![7, 30, 90].contains(value.retentionDays) { value.retentionDays = 30 }
+        }
+        return value
+    }
     func set(_ level: Int, _ policy: ObservationPolicy) {
         var policy = policy
         policy.retentionDays = min(365, max(1, policy.retentionDays))
         // Future levels cannot be enabled by imported defaults or a generic control.
-        if level > 3 { policy.enabled = false }
+        if level > 4 { policy.enabled = false }
+        if level == 4 {
+            policy.scope = .chosenApps
+            if ![7, 30, 90].contains(policy.retentionDays) { policy.retentionDays = 30 }
+        }
         if level == 3 && ![7, 30, 90].contains(policy.retentionDays) { policy.retentionDays = 90 }
         policies[level] = policy
         if let data = try? JSONEncoder().encode(policies) { defaults.set(data, forKey: "learn.levelPolicies") }
