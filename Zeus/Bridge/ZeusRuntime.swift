@@ -42,6 +42,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored var learningCardRules: [String: [String]] = [:]
     @ObservationIgnored var learningTimer: Task<Void, Never>?
     @ObservationIgnored var reflectionTask: Task<Void, Never>?
+    @ObservationIgnored var learningCatchUpPending = true
     @ObservationIgnored var learningObservationToken = UUID()
     @ObservationIgnored var checkedUpdateVersions: [String: Set<String>] = [:]
     @ObservationIgnored var pendingUpdateErrors: [String: String] = [:]
