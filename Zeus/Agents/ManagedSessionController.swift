@@ -36,6 +36,26 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         guard managedAgentUpdatePending, let applied = managedAppliedConfiguration else { return }
         requestSettings(applied, kind: .agentUpdate)
     }
+    var managedSetupStale: ManagedSetupStaleness {
+        guard record?.conversation?.didLaunch == true else { return .init() }
+        let folder = record?.conversation?.folder ?? ""
+        return .init(tools: record?.launchedToolsHash != ManagedTemplateSetup.toolsHash,
+            template: record?.launchedTemplateVersion != ManagedTemplateHistory.version,
+            templateEdited: ManagedTemplateSetup.edited(ManagedTemplateSetup.snapshot(folder: folder)))
+    }
+    var managedTemplateReplacement: ManagedTemplateReplacement? {
+        record?.conversation.map { ManagedTemplateSetup.snapshot(folder: $0.folder) }
+    }
+    func restartManagedAssistantForSetup() {
+        guard let applied = managedAppliedConfiguration else { return }
+        requestSettings(applied, kind: .agentUpdate)
+    }
+    func replaceEditedManagedTemplates(_ snapshot: ManagedTemplateReplacement) throws {
+        guard snapshot.folder == record?.conversation?.folder else { throw ManagedSessionError.invalidFolder }
+        guard let resourceDirectory else { throw ManagedSessionError.command("The assistant templates are missing from Zeus.") }
+        try ManagedTemplateSetup.refresh(folder: snapshot.folder, resources: resourceDirectory, confirmed: snapshot)
+        onChange?()
+    }
     private var claudeSnapshotExecutable: URL?
     private var claudeSnapshotModified: Date?
     private var claudeSnapshotSupported = false
@@ -452,6 +472,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
             throw ManagedSessionError.command("Start a new conversation to switch agent or folder. Your current conversation was kept.")
         }
         if let pane = try await existingPane(), !pane.dead, record?.conversation?.didLaunch == true { try adopt(pane); try await discoverConversation(); return }
+        try ManagedTemplateSetup.refresh(folder: folder, resources: resourceDirectory)
         monitor?.cancel(); monitor = nil; recovery?.cancel(); recovery = nil; sampledLifetime = nil; clearBlock(); setStatus(.starting)
         if record?.conversation == nil {
             var conversation = ManagedConversation(agent: config.agent, folder: folder, launchPrompt: config.launchPrompt)
@@ -503,7 +524,10 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         record?.conversation?.didLaunch = true; try save()
         let launched = try await hosting.launch(pane, owner: record?.owner ?? "", command: command, folder: folder)
         record?.name = launched.name; record?.pane = launched; record?.launchPending = false
-        config.folder = folder; record?.appliedConfiguration = config; try save()
+        config.folder = folder; record?.appliedConfiguration = config
+        record?.launchedToolsHash = ManagedTemplateSetup.toolsHash
+        record?.launchedTemplateVersion = ManagedTemplateHistory.version
+        try save()
         if launched.dead { try await exited(launched) }
         else { try adopt(launched); try await discoverConversation() }
     }

@@ -30,6 +30,8 @@ struct ManagedSessionRecord: Codable, Sendable {
     var nativeEnvironment: [String: String] = [:]
     /// Exact preferences from the last successful launch; old records have no evidence.
     var appliedConfiguration: ManagedSessionConfig?
+    var launchedToolsHash: String?
+    var launchedTemplateVersion: Int?
 }
 
 struct ManagedSessionStore: Sendable {

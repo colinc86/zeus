@@ -1,0 +1,51 @@
+{
+  "erasure_late_ack_suppressed": true,
+  "agent": "2.1.300 (Claude Code)",
+  "tools": [
+    "zeus_ack"
+  ],
+  "state": {
+    "ok": true,
+    "unread": 0,
+    "error": null,
+    "deliveries": [
+      {
+        "discarded": false,
+        "acked": true,
+        "kind": "learning",
+        "attempts": 1,
+        "id": "lm4-digest"
+      }
+    ],
+    "pane": "%0",
+    "sessions": 1,
+    "status": "running(Host.ManagedSessionStatus.Activity.idle)",
+    "receipts": [
+      {
+        "payload": {
+          "report": {
+            "counts": [],
+            "semanticEngine": "patternsOnly"
+          },
+          "value": {
+            "description": "Sent your daily summary",
+            "details": {
+              "agent": "claude",
+              "kind": "digest",
+              "delivery_id": "lm4-digest",
+              "sessionLabel": "Claude \u00b7 Zeus",
+              "sessionID": "1520295c831312317460fc25a3a017976de32a089ce8325fcd0edf7fa4ef79b7"
+            },
+            "text": "Synthetic morning summary: working on a fixture project."
+          }
+        },
+        "time": "2026-10-15T22:02:07.721Z",
+        "kind": "sentToAssistant",
+        "id": "sent:lm4-digest:1520295c831312317460fc25",
+        "level": 1
+      }
+    ]
+  },
+  "model_received_digest": true,
+  "isolation": "private tmux, disposable HOME/config, localhost synthetic model, fixture encryption key"
+}

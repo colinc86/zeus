@@ -7,6 +7,8 @@ import ZeusDesign
 extension ZeusRuntime {
     /// Central transport selection; a connected polling session intentionally has no push transport.
     func transport(for key: String, delivery: Delivery? = nil) -> ((any DeliveryConnector), ConnectedSession, DeliveryRoutingContext)? {
+        if let delivery, learningWasErased(delivery.id) { return nil }
+        guard delivery?.kind != .learning || learnings.learningsEnabled else { return nil }
         guard let session = sessions.first(where: { $0.sessionKey == key }) else { return nil }
         let managed = managedController.enabled && managedController.sessionKey == key
         let recoveringPaste = delivery?.meta["tmux_paste_destination"] != nil
@@ -53,6 +55,7 @@ extension ZeusRuntime {
         guard running, let ledger, let record = ledger.record(id: id), record.isPending, record.awaitingAssistant != true,
               (record.delivery.meta["tmux_paste_destination"] != nil || (record.delivery.failedAt == nil && record.delivery.attempts < 5)),
               let (connector, session, context) = transport(for: record.delivery.sessionKey, delivery: record.delivery) else { return nil }
+        guard record.delivery.kind != .learning || learnings.learningsEnabled else { return nil }
         let recoveringPaste = record.delivery.meta["tmux_paste_destination"] != nil
         if !recoveringPaste, let recoveredAt = record.tmuxPasteRecoveredAt,
            recoveredAt.addingTimeInterval(180) > clock.now { return nil }
@@ -203,6 +206,7 @@ extension ZeusRuntime {
         bindWaitingUserMessages()
         refreshManagedDraftAlert()
         refreshQueueReasons()
+        refreshLearningDeliveryPresentation()
         updateDisconnectedTargets()
         rerouteEarlierReplies()
         for record in ledger?.records ?? [] {
@@ -237,14 +241,14 @@ extension ZeusRuntime {
     /// Retarget only a proven dead agent lifetime, never a transient bridge outage.
     func retargetDeadUserMessages() {
         let dead = Set((ledger?.records ?? []).filter { record in
-            (record.delivery.kind == .userMessage || record.delivery.kind == .reflection) && record.isPending && record.awaitingAssistant != true
+            (record.delivery.kind == .userMessage || record.delivery.kind == .reflection || record.delivery.kind == .learning) && record.isPending && record.awaitingAssistant != true
                 && record.delivery.meta["opencode_destination_validated"] != "true"
                 && sends[record.delivery.id] == nil && !sessions.contains(where: { $0.sessionKey == record.delivery.sessionKey })
         }.map { $0.delivery.sessionKey }.filter(targetIsDead))
         guard !dead.isEmpty else { return }
         do {
             try ledger?.mutateRecords { records in
-                for i in records.indices where (records[i].delivery.kind == .userMessage || records[i].delivery.kind == .reflection) && records[i].isPending
+                for i in records.indices where (records[i].delivery.kind == .userMessage || records[i].delivery.kind == .reflection || records[i].delivery.kind == .learning) && records[i].isPending
                     && records[i].awaitingAssistant != true
                     && records[i].delivery.meta["opencode_destination_validated"] != "true"
                     && sends[records[i].delivery.id] == nil
@@ -266,11 +270,12 @@ extension ZeusRuntime {
         guard running else { return }
         var dates: [Date] = []
         if let deadline = managedDraftDeadline { dates.append(deadline) }
+        dates += deliveryHoldEpisodes.values.map { $0.since.addingTimeInterval(600) }.filter { $0 > clock.now }
         if !(responseJournal?.intents ?? []).isEmpty && storageProblem != nil { dates.append(clock.now.addingTimeInterval(3)) }
         if !unsaved.isEmpty { dates.append(clock.now.addingTimeInterval(3)) }
         for record in ledger?.records ?? [] where record.isPending {
             let delivery = record.delivery
-            if delivery.kind == .userMessage || delivery.kind == .reflection, record.awaitingAssistant != true, !sessions.contains(where: { $0.sessionKey == delivery.sessionKey }), delivery.sessionKey.contains("#") {
+            if delivery.kind == .userMessage || delivery.kind == .reflection || delivery.kind == .learning, record.awaitingAssistant != true, !sessions.contains(where: { $0.sessionKey == delivery.sessionKey }), delivery.sessionKey.contains("#") {
                 dates.append(clock.now.addingTimeInterval(5))
             }
             if record.awaitingAssistant == true, assistantTarget != nil {
@@ -315,12 +320,12 @@ extension ZeusRuntime {
 
     func acknowledge(ids: Set<String>, sessionKey: String) throws -> [String] {
         guard let ledger else { return [] }
-        let acked = try ledger.acknowledge(ids: ids, sessionKey: sessionKey, at: clock.now)
+        let acked = try ledger.acknowledge(ids: ids.filter { !learningWasErased($0) }, sessionKey: sessionKey, at: clock.now)
         if !acked.isEmpty { noteActivityAcknowledgments(acked, sessionKey: sessionKey) }
         for id in acked { recordReflectionReceipt(id: id); recordContextDeliveryReceipt(id: id) }
         retainRuntimeHistory()
         if unsaved.isEmpty { storageProblem = nil }
-        refreshProblem(); scheduleRetry()
+        refreshLearningDeliveryPresentation(); refreshProblem(); scheduleRetry()
         return acked
     }
 

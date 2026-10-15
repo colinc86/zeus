@@ -101,7 +101,7 @@ extension ZeusRuntime {
                 return result(["ok": true])
             case "zeus_get_responses":
                 bindWaitingUserMessages()
-                let pending = (ledger?.records ?? []).filter { $0.delivery.sessionKey == sessionKey && $0.isPending }
+                let pending = (ledger?.records ?? []).filter { $0.delivery.sessionKey == sessionKey && $0.isPending && !learningWasErased($0.delivery.id) && ($0.delivery.kind != .learning || learnings.learningsEnabled) }
                 let batch = try pollingBatch(pending)
                 if !deferResultCommit { _ = try acknowledge(ids: Set(batch.map { $0.delivery.id }), sessionKey: sessionKey) }
                 let transport = transport(for: sessionKey)

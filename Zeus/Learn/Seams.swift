@@ -440,3 +440,15 @@ struct RuleActionRecord: Codable, Equatable, Identifiable, Sendable {
 @MainActor protocol LearningCardReadState: AnyObject {
     func learningCardWasRead(id: String) -> Bool
 }
+
+/// Synchronous post-delete boundary, before a queued network callback can run.
+/// Nil IDs means Delete Everything; otherwise only committed removals are reported.
+@MainActor protocol JournalDeletionObserving: AnyObject {
+    var onJournalDeletion: ((Set<String>?) -> Void)? { get set }
+}
+
+/// Retained IDs include read summaries, so consumption cannot look like deletion.
+@MainActor protocol LearningDeletionObserving: AnyObject {
+    var retainedLearningIDs: Set<String> { get }
+    var onLearningDeletion: ((Set<String>) -> Void)? { get set }
+}

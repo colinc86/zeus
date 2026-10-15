@@ -5,13 +5,14 @@ import Observation
 /// the raw events. The runtime reads it through `LearningsProviding`; it never sees raw events.
 @MainActor
 @Observable
-final class LearningsStore: LearningsProviding {
+final class LearningsStore: LearningsProviding, LearningReadRecording, LearningDeletionObserving {
     static let fileName = "learnings.json"
     static let keepDays = 365
 
     private struct State: Codable {
         var learnings: [Learning] = []
         var lastReadID: String?
+        var readIDs: Set<String>?
         var lastReadAt: Date?
         /// Days (`yyyy-mm-dd`) already summarized, so each digest is made once.
         var digestedDays: Set<String> = []
@@ -35,16 +36,23 @@ final class LearningsStore: LearningsProviding {
         state = files.read(named: Self.fileName).flatMap { try? ActivityStore.decoder.decode(State.self, from: $0) } ?? State()
     }
 
+    @ObservationIgnored var onLearningDeletion: ((Set<String>) -> Void)?
+    var retainedLearningIDs: Set<String> { Set(state.learnings.map(\.id)) }
+
     var learnings: [Learning] { state.learnings }
     var learningsEnabled: Bool { isEnabled() }
 
     func unreadLearnings() -> [Learning] {
         guard isEnabled() else { return [] }
         if let id = state.lastReadID, let index = state.learnings.firstIndex(where: { $0.id == id }) {
-            return Array(state.learnings[(index + 1)...])
+            return Array(state.learnings[(index + 1)...]).filter { !(state.readIDs ?? []).contains($0.id) }
         }
-        if let date = state.lastReadAt { return state.learnings.filter { $0.createdAt > date } }
-        return state.learnings
+        if let date = state.lastReadAt { return state.learnings.filter { $0.createdAt > date && !(state.readIDs ?? []).contains($0.id) } }
+        return state.learnings.filter { !(state.readIDs ?? []).contains($0.id) }
+    }
+
+    func markLearningRead(id: String) {
+        state.readIDs = (state.readIDs ?? []).union([id]); save()
     }
 
     func markLearningsRead(through id: String) {
@@ -74,11 +82,13 @@ final class LearningsStore: LearningsProviding {
     func prune(now: Date, calendar: Calendar) {
         guard let cutoff = calendar.date(byAdding: .day, value: -Self.keepDays, to: calendar.startOfDay(for: now)) else { return }
         let cutoffKey = files.dayKey(cutoff)
+        let retainedBefore = retainedLearningIDs
         let before = state.learnings.count
         state.learnings.removeAll { $0.createdAt < cutoff }
         let oldDays = state.digestedDays.filter { $0 < cutoffKey }
         let oldMoments = state.momentsByDay.keys.filter { $0 < cutoffKey }
         guard before != state.learnings.count || !oldDays.isEmpty || !oldMoments.isEmpty else { return }
+        onLearningDeletion?(retainedBefore.subtracting(retainedLearningIDs))
         state.digestedDays.subtract(oldDays)
         for key in oldMoments { state.momentsByDay.removeValue(forKey: key) }
         save()
@@ -86,7 +96,9 @@ final class LearningsStore: LearningsProviding {
 
     /// Forgets everything (the file itself is removed with the rest of the Activity folder).
     func reset() {
+        let removed = retainedLearningIDs
         state = State()
+        onLearningDeletion?(removed)
         saveError = nil
     }
 

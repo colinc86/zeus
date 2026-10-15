@@ -27,10 +27,11 @@ enum TmuxExecutable {
 enum AgentInjectionText {
     static func format(_ delivery: Delivery) -> String {
         let card = delivery.cardID.map { " card_id=" + $0 } ?? ""
+        let kind = [.learning, .reflection].contains(delivery.kind) ? " kind=" + delivery.kind.rawValue : ""
         let normalized = MessageText.preservingLines(delivery.content)
         let multiline = delivery.content.utf8.contains(10)
         let content = multiline ? normalized : delivery.content.split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        return "[zeus delivery_id=\(delivery.id)\(card)] \(content) (call zeus_ack with this delivery_id)"
+        return "[zeus delivery_id=\(delivery.id)\(card)\(kind)] \(content) (call zeus_ack with this delivery_id)"
     }
 }
 

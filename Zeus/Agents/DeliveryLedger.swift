@@ -24,6 +24,8 @@ struct DeliveryRecord: Codable, Sendable, Equatable {
     var queueReasonSource: QueueReasonSource?
     var queueReason: String?
     var stateUpdatedAt: Date?
+    var holdSince: Date?
+    var holdReason: String?
     var isPending: Bool { delivery.ackedAt == nil && discardedAt == nil }
 }
 

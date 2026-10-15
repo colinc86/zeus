@@ -211,16 +211,20 @@ struct FixtureLearningRedactor: Redactor {
             await client.stop()
         } catch { await client.stop(); throw error }
     }
-    @Test func learningNotificationIsAnActualReceiptWithoutConsumingPolling() async throws {
+    @Test func learningNotificationIsOnlyAHintUntilDeliveryAcknowledgment() async throws {
         let learnings = FakeLearnings(), f = try LearningRuntimeFixture(learnings: learnings); defer { f.stop() }
         let client = BridgeClient(socketPath: f.runtime.socketPath)
         var received: [BridgeLearning] = []
         do {
             _ = try await client.start(hello: .init(agent: .claude, pid: 17, ppid: 19, cwd: "/fixture", client: .init(name: "Test", version: "1"), capabilities: .init(channel: true, learningNotifications: true), parentStartTime: 3), onPush: { _ in }, onLearning: { value in await MainActor.run { received.append(value) } })
             try await eventually { f.runtime.bridges.count == 1 }
+            (f.runtime.routing as? FakeRouting)?.assistantSessionKey = f.runtime.bridges.values.first?.sessionKey
             learnings.add(.init(id: "note", kind: .moment, createdAt: f.clock.now, text: "Back from a synthetic break."))
-            try await eventually { received.count == 1 && ((try? f.journal.items(matching: .init()).count) == 1) }
-            #expect(learnings.readIDs.isEmpty)
+            try await eventually { received.count == 1 && f.runtime.ledger?.record(id: "note") != nil }
+            #expect(try f.journal.items(matching: .init()).isEmpty)
+            let delivery = try #require(f.runtime.ledger?.record(id: "note")?.delivery)
+            _ = try f.runtime.acknowledge(ids: [delivery.id], sessionKey: delivery.sessionKey)
+            #expect(learnings.readIDs == ["note"])
             #expect(try f.journal.items(matching: .init()).first?.payload.value.text == received.first?.text)
             await client.stop()
         } catch { await client.stop(); throw error }
@@ -268,8 +272,9 @@ struct FixtureLearningRedactor: Redactor {
         let delivery = try #require(f.connector.deliveries.first)
         #expect(delivery.meta["kind"] == "reflection")
         #expect(delivery.content.contains("evidence"))
-        try await eventually { (try? f.journal.items(matching: .init()).contains { $0.kind == .sentToAssistant }) == true }
+        #expect(try !f.journal.items(matching: .init()).contains { $0.kind == .sentToAssistant })
         _ = try f.runtime.acknowledge(ids: [delivery.id], sessionKey: delivery.sessionKey)
+        #expect(try f.journal.items(matching: .init()).contains { $0.kind == .sentToAssistant })
         f.runtime.stop(); try f.runtime.start(); f.runtime.registerSession(.init(id: UUID(), sessionKey: delivery.sessionKey, agent: .claude, cwd: "/fixture", clientName: "Fixture", supportsChannel: true, tmuxPane: nil, connectedAt: f.clock.now))
         f.runtime.learningContextDidChange(); for _ in 0..<20 { await Task.yield() }
         #expect(f.connector.deliveries.count == 1)
