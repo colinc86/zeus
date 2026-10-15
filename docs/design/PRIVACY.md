@@ -305,7 +305,7 @@ Keep descriptions for   ( 7 days | 30 days | 90 days )        [default 90]
 Pictures are deleted after 7 days.                             [caption]
 ```
 
-- **Apple Intelligence off:** add the caption "Apple Intelligence is off, so Zeus keeps the covered pictures without descriptions."
+- **Apple Intelligence off:** add the caption "Apple Intelligence is off, so Zeus writes simpler descriptions." (CONTRACT §13: the `NLTagger` fallback still writes a description)
 - **Battery:** in Low Power Mode or below 30 % battery, Zeus still takes pictures but writes their descriptions later. There's no copy for this; it's invisible.
 
 **Safari in Level 3's allow list:** a caption under Safari's row reads "Private windows can't be told apart, so their pictures and descriptions are kept too." Level 2's caption is unchanged.
