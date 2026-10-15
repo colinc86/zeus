@@ -54,7 +54,8 @@ Deleted pictures never return from that cache. App stages the result locally and
 
 - 64×40 grayscale diff plus 64-bit dHash; unchanged requires same app/title, distance ≤2 and mean difference <0.3.
 - Accurate Vision OCR, batched Redactor stages 1–2 on lines and metadata; cover entire changed/private lines with solid
-  grey (+5 px). Screenshot account/routing/card hints and amounts are covered even if prose generation is unavailable.
+  grey (+5 px). Screenshot account/routing/card hints and amounts are covered even if prose generation is unavailable;
+  the same account-hint fallback also covers stored app/window metadata.
 - Saliency regions over 48×48 px and whole-frame faces (25% padding) are pixellated; no face tiling. Solid text covers run
   last, so picture processing cannot restore covered text. These detectors reduce exposure; they cannot guarantee perfect
   recognition of every private fact or picture, and whole-frame faces can miss small faces (see designer's spike).

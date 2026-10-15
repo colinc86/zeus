@@ -101,7 +101,7 @@ private struct ScreenFastDescriber: ScreenDescribing {
         let image = try ScreenTestImages.draw(bank: true)
         let original = try FrameRedactor.textLines(image).map(\.0).joined(separator: "\n")
         #expect(original.contains("4401")); #expect(original.contains("example.person@example.com"))
-        let context = ScreenContext(bundleID: "com.apple.Safari", appName: "Safari", windowTitle: "Synthetic bank", windowID: 1, processID: 1)
+        let context = ScreenContext(bundleID: "com.apple.Safari", appName: "Safari", windowTitle: "Account 4401 2233 9876", windowID: 1, processID: 1)
         let covered = try await FrameRedactor(redactor: LocalRedactor(useOnDeviceModel: false)).redact(.init(image: image), context: context)
         let source = try #require(CGImageSourceCreateWithData(covered.frame.value.heic as CFData, nil))
         let output = try #require(CGImageSourceCreateImageAtIndex(source, 0, nil))
@@ -109,6 +109,7 @@ private struct ScreenFastDescriber: ScreenDescribing {
         for privateText in ["4401", "2233", "9876", "12,480", "example.person", "123456789", "4242"] { #expect(!final.contains(privateText)) }
         #expect(covered.frame.value.boxes.filter { $0.kind == .text }.count >= 5)
         #expect(!covered.text.contains("4401"))
+        #expect(covered.frame.value.windowTitle == "‹finance›")
         let deferred = try await CoveredFrameReader().read(covered.frame)
         #expect(!deferred.text.contains("4401")); #expect(!deferred.text.contains("example.person"))
         if ProcessInfo.processInfo.environment["ZEUS_TEST_LM2B_EVIDENCE"] == "1" {
@@ -224,6 +225,22 @@ private struct ScreenFastDescriber: ScreenDescribing {
         f.observer.captureNow(); try await f.finish(1)
         let rows = try f.journal.items(matching: .init())
         #expect(rows.map(\.kind) == [.description]); #expect(rows.first?.payload.value.details["picture_not_kept"] == "private")
+    }
+    @Test func deferredPrivateModelHintRemovesPictureWithoutClaimingUserDeletedIt() async throws {
+        let f = try ScreenFixture(describer: FrameDescriber(redactor: LocalRedactor(useOnDeviceModel: false), model: ScreenFixedModel()))
+        defer { f.close() }; f.policy.deferDescriptions = true; f.observer.start()
+        f.observer.captureNow(); try await f.finish(1)
+        let frameID = try #require(f.journal.items(matching: .init()).first?.id)
+        #expect(try f.journal.frame(id: frameID) != nil)
+        f.policy.deferDescriptions = false; f.observer.contextDidChange(returnedFromIdle: false)
+        for _ in 0..<1500 {
+            if try f.journal.frame(id: frameID) == nil { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(try f.journal.frame(id: frameID) == nil)
+        let rows = try f.journal.items(matching: .init())
+        #expect(rows.map(\.kind) == [.description])
+        #expect(rows.first?.payload.value.details["picture_not_kept"] == "private")
     }
     @Test func sensitiveDialogsAreDroppedBeforeStorage() {
         #expect(FrameRedactor.isSensitiveDialog(title: "Authentication required", text: "Synthetic"))
