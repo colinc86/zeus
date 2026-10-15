@@ -1536,7 +1536,7 @@ private struct LM2ScreenSection: View {
         LM2Settings {
             Text("Screen").settingsHeading()
             Toggle("Let Zeus look at the window in front now and then", isOn: .constant(true))
-            Text("Zeus takes a picture of the window in front at sensible moments, covers private text and blurs faces on this Mac, and keeps a one-line description of what you were doing. Never the whole screen.").settingsCaption()
+            Text("Zeus takes a picture of the window in front at sensible moments, covers private text and blurs pictures on this Mac, and keeps a one-line description of what you were doing. Never the whole screen.").settingsCaption()
             Text(caption).settingsCaption()
             SettingsSegments(label: "Record in", options: [(0, "Everywhere except my private list"), (1, "Only in apps I choose")], selection: .constant(0))
             SettingsSegments(label: "Up to", options: [(4, "4 an hour"), (12, "12 an hour"), (30, "30 an hour")], selection: $cap)
@@ -1548,14 +1548,14 @@ private struct LM2ScreenSection: View {
 }
 
 private struct LM2ScreenConsent: View {
-    let keeps = ["A picture of the window in front, with private text covered and faces blurred, for 7 days",
+    let keeps = ["A picture of the window in front, with private text covered and pictures blurred, for 7 days",
                  "A one-line description of what you were doing, for 90 days"]
     let never = ["The rest of your screen or other windows", "Anything during a video call or while presenting",
                  "Anything while a password field is active", "Private windows and apps on your private list", "Sound"]
     var body: some View {
         LM2Settings(width: 460) {
             Text("Screen").settingsTitle()
-            Text("Zeus takes a picture of the window in front at sensible moments, so your assistant knows what you were looking at. Before anything is kept, Zeus covers private text and blurs faces, here on this Mac.")
+            Text("Zeus takes a picture of the window in front at sensible moments, so your assistant knows what you were looking at. Before anything is kept, Zeus covers private text and blurs pictures and faces, here on this Mac.")
                 .fixedSize(horizontal: false, vertical: true)
             list("Zeus keeps", keeps)
             list("Zeus never keeps", never)
@@ -1568,7 +1568,7 @@ private struct LM2ScreenConsent: View {
                     Text("10:12  Safari  Reviewing account information.").font(.system(size: 11, design: .monospaced))
                 }
             }
-            Text("Grey boxes are text Zeus covered. Faces are blurred. The picture is kept for 7 days, the description for 90.").settingsCaption()
+            Text("Grey boxes are text Zeus covered. Pictures and faces are blurred. The picture is kept for 7 days, the description for 90.").settingsCaption()
             Text("Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself.").settingsCaption()
             Text("Next, macOS asks you to allow Zeus under Screen Recording. Zeus uses it only for these pictures.").settingsCaption()
             HStack { Spacer(); Button("Not Now") {}; Button("Continue") {}.buttonStyle(ZeusButtonStyle(.primary, size: .small)) }
@@ -1625,7 +1625,7 @@ private struct LM2PictureDetail: View {
                 VStack(alignment: .leading, spacing: 6) {
                     LM2MockFrame(outlined: true).frame(width: 448, height: 280).overlay(Rectangle().strokeBorder(palette.outline, lineWidth: 1))
                         .accessibilityElement().accessibilityLabel("Picture of Safari, 3 areas covered")
-                    Text("▭ Covered text · ▭ Blurred face · 2 covered · 1 blurred").settingsCaption()
+                    Text("▭ Covered text · ▭ Blurred picture · 2 covered · 1 blurred").settingsCaption()
                 }
                 VStack(alignment: .leading, spacing: 8) {
                     field("App", "Safari")
@@ -1700,6 +1700,145 @@ extension DesignerAuditRenders {
             try await Snap.render("lm2b-picture-detail", look: look, padding: 0, settle: 0.5) { LM2PictureDetail() }
             try await Snap.render("lm2b-ask-chips", look: look, settle: 0.5) { LM2AskChips(allLevels: true) }
             try await Snap.render("lm2b-ask-none", look: look, settle: 0.5) { LM2AskChips(allLevels: false) }
+        }
+    }
+}
+
+// MARK: - LM2 Phase C: Level 4 "Typing" mock-ups (docs/design/PRIVACY.md §10)
+
+private struct LM2TypingSection: View {
+    @State var keep = 24
+    var caption: String? = nil
+    var aiOff = false
+    var body: some View {
+        LM2Settings {
+            Text("Typing").settingsHeading()
+            Toggle("Let Zeus keep what I type in apps I choose", isOn: .constant(!aiOff)).disabled(aiOff)
+            Text("Zeus notes what you were typing about, like \u{201C}replying to a doctor about rescheduling\u{201D}, so your assistant can help with it. Only in the apps you choose, and never in password fields.").settingsCaption()
+            if aiOff {
+                Text("Typing needs Apple Intelligence, which removes names and numbers from what you type. Turn it on in System Settings › Apple Intelligence & Siri.").settingsCaption()
+            } else {
+                if let caption { Text(caption).settingsCaption() }
+                HStack(spacing: ZeusTheme.Spacing.s) { Text("Record in").settingsBody(); Text("Only in apps I choose").settingsCaption() }
+                LM2AppList(apps: ["Mail", "Notes", "Xcode"])
+                Text("Zeus never records typing in an app you haven't added.").settingsCaption()
+                SettingsSegments(label: "Keep the words", options: [(0, "Don't keep"), (24, "24 hours"), (168, "7 days")], selection: $keep)
+                Text("Topics are kept for 30 days. The words, with private details removed, are kept as you choose here.").settingsCaption()
+            }
+        }
+    }
+}
+
+private struct LM2TypingConsent: View {
+    let keeps = ["What each stretch of typing was about, for 30 days",
+                 "The words, with private details removed, for 24 hours (you can change this, or keep no words at all)"]
+    let never = ["Anything you type into a password field", "Typing in apps you haven't chosen, or in private windows",
+                 "What you paste: Zeus only notes that you pasted", "Typing made by other apps, such as a password manager filling in a form"]
+    var body: some View {
+        LM2Settings(width: 460) {
+            Text("Typing").settingsTitle()
+            Text("Zeus notes what you were typing about in the apps you choose, so your assistant knows what you're working on and can help with it. Before anything is kept, Zeus removes names, numbers, addresses and secrets, here on this Mac.")
+                .fixedSize(horizontal: false, vertical: true)
+            list("Zeus keeps", keeps)
+            list("Zeus never keeps", never)
+            Text("An example").settingsHeading()
+            ZeusFieldChrome {
+                VStack(alignment: .leading, spacing: 4) {
+                    StoredText(text: "14:05  Mail  hi dr ‹name› can we move thursday to 3pm my ‹health› is still sore")
+                    Text("       → Replying to a doctor about rescheduling an appointment")
+                }.font(.system(size: 11, design: .monospaced)).fixedSize(horizontal: false, vertical: true)
+            }
+            Text("The first line is the words as kept for 24 hours. The second is the topic kept for 30 days, and the only part your assistant sees.").settingsCaption()
+            Text("Topics go to your assistant in summaries, like any message. The words never leave this Mac.").settingsCaption()
+            Text("Next, macOS asks you to allow Zeus under Input Monitoring. Zeus uses it only to read keys in the apps you choose.").settingsCaption()
+            Text("If you'd rather keep no words, choose Don't keep after turning this on. Topics still work.").settingsCaption()
+            HStack { Spacer(); Button("Not Now") {}; Button("Continue") {}.buttonStyle(ZeusButtonStyle(.primary, size: .small)) }
+        }
+    }
+    func list(_ title: String, _ items: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).settingsHeading()
+            ForEach(items, id: \.self) { Text("· " + $0).settingsBody().fixedSize(horizontal: false, vertical: true) }
+        }
+    }
+}
+
+private struct LM2TypingKept: View {
+    @Environment(\.zeusPalette) private var palette
+    var body: some View {
+        LM2Settings(width: 672) {
+            HStack {
+                Button("‹") {}; Text("Today").settingsBody(); Button("›") {}.disabled(true)
+                Spacer()
+                Button("Typing ▾") {}; Button("All apps ▾") {}
+            }
+            group("Mail · 14:00–15:00", "3 stretches", [
+                ("14:05", "Replying to a doctor about rescheduling an appointment", "hi dr ‹name› can we move thursday to 3pm my ‹health› is still sore"),
+                ("14:31", "Drafting a project update for a colleague", nil),
+                ("14:52", "Replying to support about a login problem", "tried again after ‹pasted› still says expired"),
+            ], hovered: 0)
+            SettingsDivider()
+            group("Xcode · 13:00–14:00", "2 stretches", [
+                ("13:12", "Coding a fix for a restart race", "fix restart race guard state idle"),
+                ("13:40", "Typed in Xcode", "words deleted after 24 hours"),
+            ], hovered: nil)
+        }
+    }
+    func group(_ title: String, _ count: String, _ items: [(String, String, String?)], hovered: Int?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack { Text("▾ " + title).settingsHeading(); Spacer(); Text(count).settingsCaption() }
+            ForEach(Array(items.enumerated()), id: \.offset) { i, item in
+                HStack(alignment: .firstTextBaseline, spacing: ZeusTheme.Spacing.s) {
+                    Text(item.0).settingsCaption().frame(width: 44, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("→ " + item.1).settingsBody()
+                        if let words = item.2, !words.hasPrefix("words ") {
+                            StoredText(text: words).font(.system(size: 11, design: .monospaced)).foregroundStyle(palette.secondaryText)
+                        } else {
+                            Text(item.2 ?? "words not kept").settingsCaption()
+                        }
+                    }
+                    Spacer()
+                    if hovered == i { Button("Delete") {} }
+                }
+                .padding(.vertical, 3).padding(.horizontal, 4)
+                .background(hovered == i ? palette.field : .clear)
+            }
+        }
+    }
+}
+
+/// The Zeus menu's status section while a password field is active (a mock of the NSMenu, not the real menu).
+private struct LM2PrivateInputMenu: View {
+    @Environment(\.zeusPalette) private var palette
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Private input: Zeus isn't noting typing").foregroundStyle(.secondary)
+            Text("Claude is working…").foregroundStyle(.secondary)
+            Divider()
+            Text("Talk to Zeus…")
+            Text("Ask About This")
+            Text("Hide Zeus")
+        }
+        .font(.system(size: 13)).padding(10).frame(width: 300, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .windowBackgroundColor)))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.secondary.opacity(0.3)))
+    }
+}
+
+extension DesignerAuditRenders {
+    /// LM2-D3: Level 4 "Typing": the Settings section and its states, the consent sheet, typing in What Zeus Kept, and the Private input menu line.
+    @Test func typingMockups() async throws {
+        for look in Snap.Look.basic {
+            try await Snap.render("lm2c-typing-section", look: look, padding: 0, settle: 0.5) { LM2TypingSection() }
+            try await Snap.render("lm2c-typing-section-paused", look: look, padding: 0, settle: 0.5) { LM2TypingSection(caption: "Paused: private input.") }
+            try await Snap.render("lm2c-typing-section-revoked", look: look, padding: 0, settle: 0.5) {
+                LM2TypingSection(caption: "Input Monitoring is off for Zeus, so nothing you type is noted. · Open System Settings")
+            }
+            try await Snap.render("lm2c-typing-section-ai-off", look: look, padding: 0, settle: 0.5) { LM2TypingSection(aiOff: true) }
+            try await Snap.render("lm2c-consent-level4", look: look, padding: 0, settle: 0.5) { LM2TypingConsent() }
+            try await Snap.render("lm2c-kept-typing", look: look, padding: 0, settle: 0.5) { LM2TypingKept() }
+            try await Snap.render("lm2c-private-input-menu", look: look, settle: 0.5) { LM2PrivateInputMenu() }
         }
     }
 }

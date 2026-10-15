@@ -88,10 +88,7 @@ Same frame as the L1 sheet.
 ### 2.4 Drafts for later levels (not built in Phase A)
 
 - **Level 3, "Screen":** specified in §9 (Phase B).
-- **Level 4, "Typing":**
-  - Switch: "Let Zeus keep what I type in apps I choose"
-  - The coin is fixed to "Only in apps I choose", with no "Everywhere" option.
-  - Never: "Password fields, apps you haven't chosen, private windows"
+- **Level 4, "Typing":** specified in §10 (Phase C).
 
 ## 3. The coin and the lists
 
@@ -260,13 +257,18 @@ These are system lines in the thread: the existing notice style, the same as "Cl
 
 Pipeline and costs: `docs/research/on-device-vision.md`. Renders: `scripts/design-harness/render.sh "screenMockups()"` → `docs/design/lm2/lm2b-*.png`.
 
+**Pictures (PM decision, LM2-D2):**
+- Every picture region in the frame larger than 48×48 px is pixellated by default.
+- Whole-frame face detection runs as a cheap extra. There's no tiling at capture time.
+- The copy says "pictures and faces are blurred".
+
 ### 9.1 The level section in Settings › Privacy
 
 ```
 Screen                                                        [settingsHeading]
 [ ] Let Zeus look at the window in front now and then           [switch]
 Zeus takes a picture of the window in front at sensible moments, covers
-private text and blurs faces on this Mac, and keeps a one-line description
+private text and blurs pictures on this Mac, and keeps a one-line description
 of what you were doing. Never the whole screen.                [caption]
 
 Record in   ( Everywhere except my private list | Only in apps I choose )
@@ -289,9 +291,9 @@ This paragraph is used in the consent sheet and in SETUP.md:
 ### 9.3 Consent sheet, Level 3 (one time)
 
 - **Title:** "Screen"
-- **Body:** "Zeus takes a picture of the window in front at sensible moments, so your assistant knows what you were looking at. Before anything is kept, Zeus covers private text and blurs faces, here on this Mac."
+- **Body:** "Zeus takes a picture of the window in front at sensible moments, so your assistant knows what you were looking at. Before anything is kept, Zeus covers private text and blurs pictures and faces, here on this Mac."
 - **"Zeus keeps"**
-  - "A picture of the window in front, with private text covered and faces blurred, for 7 days"
+  - "A picture of the window in front, with private text covered and pictures blurred, for 7 days"
   - "A one-line description of what you were doing, for 90 days"
 - **"Zeus never keeps"**
   - "The rest of your screen or other windows"
@@ -303,7 +305,7 @@ This paragraph is used in the consent sheet and in SETUP.md:
 - **"An example of what's kept"**: a 360×225 mock window in the field chrome.
   - It shows a browser page with two text lines covered by solid `fieldBorder` boxes with a 1-px `outline`, and a pixellated portrait.
   - Under it, monospaced: "10:12  Safari  Reviewing account information."
-  - Caption: "Grey boxes are text Zeus covered. Faces are blurred. The picture is kept for 7 days, the description for 90."
+  - Caption: "Grey boxes are text Zeus covered. Pictures and faces are blurred. The picture is kept for 7 days, the description for 90."
 - **Caveat** (caption): "Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself."
 - **Permission** (caption): "Next, macOS asks you to allow Zeus under Screen Recording. Zeus uses it only for these pictures."
 - **Buttons:** "Not Now" and "Continue".
@@ -328,7 +330,7 @@ This paragraph is used in the consent sheet and in SETUP.md:
 **Detail window:** clicking a thumbnail (or Return on a focused row) opens a sheet titled "Picture from 10:12".
 - **Left:** the frame, fitted.
   - Every covered area is outlined with a 1-px `focusRing` rectangle.
-  - Legend under it (caption): "▭ Covered text · ▭ Blurred face", with counts: "3 covered · 1 blurred".
+  - Legend under it (caption): "▭ Covered text · ▭ Blurred picture", with counts: "3 covered · 1 blurred".
 - **Right column:**
   - App
   - Window, as stored, with placeholders visible
@@ -364,3 +366,116 @@ This paragraph is used in the consent sheet and in SETUP.md:
 - **With no level on:** "Ask About This" still opens the conversation, with the caption "Turn on Windows and pages or Screen in Settings › Privacy to attach what's in front."
 - **Sent chips** go to the "Sent to your assistant" ledger as "Attached: Window, Picture" on the message's row.
 - **A hard stop at that moment** (password field, private window): the affected chips don't appear, and the caption adds "Some things weren't attached because they're private."
+
+## 10. Level 4 · "Typing" (Phase C)
+
+Pipeline, costs and the reasons behind these choices: `docs/research/on-device-keystrokes.md`. Renders: `scripts/design-harness/render.sh "typingMockups()"` → `docs/design/lm2/lm2c-*.png`.
+
+**What's kept:**
+- A one-line **topic** per stretch of typing, for 30 days.
+- The **words**, with private details removed, for 24 hours by default.
+- Level 4 needs Apple Intelligence, because the on-device model is what catches names and numbers in casual typing.
+
+### 10.1 The level section in Settings › Privacy
+
+```
+Typing                                                        [settingsHeading]
+[ ] Let Zeus keep what I type in apps I choose                 [switch]
+Zeus notes what you were typing about, like "replying to a doctor about
+rescheduling", so your assistant can help with it. Only in the apps you
+choose, and never in password fields.                          [caption]
+
+Record in   Only in apps I choose                              [label settingsBody, value settingsCaption: not a choice]
+<allow list, §3: rows with icon, name, "–"; "Add App…">
+No apps chosen yet, so nothing is recorded.                    [empty-state caption]
+
+Keep the words   ( Don't keep | 24 hours | 7 days )            [SettingsSegments, default 24 hours]
+Topics are kept for 30 days. The words, with private details removed, are kept as you choose here.   [caption]
+```
+
+- **The coin is fixed.** Level 4 has no "Everywhere" option.
+  - "Record in" is shown as plain text: "Only in apps I choose".
+  - Caption under the list: "Zeus never records typing in an app you haven't added."
+  - The private list still wins: adding an app that's on it shows "<App> is on your private list. Remove it there first."
+- **Browsers in the allow list:** typing in private windows is never kept. Safari can't tell its private windows apart (§3), so adding Safari here shows the caption "Typing in Safari's private windows can't be told apart, so it's kept too."
+- **Apple Intelligence off:** the switch is disabled, with the caption "Typing needs Apple Intelligence, which removes names and numbers from what you type. Turn it on in System Settings › Apple Intelligence & Siri."
+- **IME:** with a Japanese, Chinese or Korean input source active, the record reads "Typed in <App>" and has no words and no topic. There's no extra copy.
+
+### 10.2 Consent sheet, Level 4 (one time)
+
+- **Title:** "Typing"
+- **Body:** "Zeus notes what you were typing about in the apps you choose, so your assistant knows what you're working on and can help with it. Before anything is kept, Zeus removes names, numbers, addresses and secrets, here on this Mac."
+- **"Zeus keeps"**
+  - "What each stretch of typing was about, for 30 days"
+  - "The words, with private details removed, for 24 hours (you can change this, or keep no words at all)"
+- **"Zeus never keeps"**
+  - "Anything you type into a password field"
+  - "Typing in apps you haven't chosen, or in private windows"
+  - "What you paste: Zeus only notes that you pasted"
+  - "Typing made by other apps, such as a password manager filling in a form"
+- **"An example"**, in the field chrome:
+  ```
+  14:05  Mail  hi dr ‹name› can we move thursday to 3pm my ‹health› is still sore
+         → Replying to a doctor about rescheduling an appointment
+  ```
+  - Caption under it: "The first line is the words as kept for 24 hours. The second is the topic kept for 30 days, and the only part your assistant sees."
+- **Caveat** (caption): "Topics go to your assistant in summaries, like any message. The words never leave this Mac."
+- **Permission** (caption): "Next, macOS asks you to allow Zeus under Input Monitoring. Zeus uses it only to read keys in the apps you choose."
+- **Suggestion** (caption): "If you'd rather keep no words, choose Don't keep after turning this on. Topics still work."
+- **Buttons:** "Not Now" and "Continue".
+
+### 10.3 Choosing apps first
+
+- Turning Level 4 on with an empty allow list opens the app picker straight after the consent sheet. The panel message is "Choose the apps where Zeus may note what you type."
+- Cancelling the picker leaves the level on, with the empty-state caption.
+
+### 10.4 Input Monitoring flow
+
+| State | Caption under the switch | Link |
+|---|---|---|
+| Asked, not yet allowed | "Waiting for Input Monitoring permission." | "Open System Settings" |
+| Allowed, macOS needs a reopen | "Allowed. Reopen Zeus to start." | "Reopen Zeus" |
+| Denied | "Input Monitoring is off for Zeus, so nothing you type is noted." | "Open System Settings" |
+| Revoked while running (found by Zeus's check, at most a minute later) | the same as Denied | "Open System Settings" |
+| Paused by a password field | "Paused: private input." | none |
+| Paused because the front app isn't chosen | nothing (that's normal) | — |
+
+- The level stays on through denied and revoked states and resumes by itself when permission comes back.
+- Zeus asks macOS for permission only from the consent sheet, never on its own later.
+
+### 10.5 The "Private input" indicator
+
+While secure input is on (a password field is active) and Level 4 is on:
+
+- **Zeus menu:** the status section shows a line "Private input: Zeus isn't noting typing". It's a disabled line, in the same place and style as "Hidden until …".
+- **Settings › Privacy › Typing:** the caption reads "Paused: private input." (§10.4).
+- **The avatar and the thread show nothing.** A visible cue exactly when a password is being typed would draw attention to that moment. The menu line is there for anyone who checks.
+- **VoiceOver:** nothing is announced, for the same reason.
+- When secure input turns off, the line goes. The run that was open when it turned on is discarded, not kept.
+
+### 10.6 Typing in What Zeus Kept
+
+- **Level filter:** "Typing" joins the Level filter.
+- **Grouping:** typing items are grouped **by app, then by hour**:
+  ```
+  Mail · 14:00–15:00                                   3 stretches
+    14:05  → Replying to a doctor about rescheduling an appointment
+           hi dr ‹name› can we move thursday to 3pm my ‹health› is still sore
+    14:31  → Drafting a project update for a colleague
+           words not kept
+  ```
+- **Each stretch** shows its topic first (`settingsBody`, prefixed with "→"), and below it the words exactly as stored (`settingsCaption`, monospaced, placeholders in `secondaryText`). In place of the words, the caption can read:
+  - "words not kept" (Don't keep is on)
+  - "words deleted after 24 hours"
+  - "pasted" (for `‹pasted›` segments, shown as the placeholder)
+- **The group header** gives the app, the hour range and the number of stretches. Click it to collapse; groups are expanded by default for today and collapsed for earlier days.
+- **Delete:** per stretch (hover and context menu, Undo toast). Per group, use "Delete <App> 14:00–15:00", which asks "Delete what Zeus kept from your typing in <App> between 14:00 and 15:00?" Deleting removes both the topic and the words.
+- **Search** matches topics and words. A match on the words shows the words even in collapsed groups.
+
+### 10.7 Retention
+
+- **"Keep the words"** (`SettingsSegments`): "Don't keep", "24 hours" (default), "7 days".
+  - Changing it to a shorter choice deletes older words at once.
+  - There's no confirmation; the caption under it changes to "Deleted words older than 24 hours."
+- **Topics** are kept for 30 days and aren't configurable in v1.
+- "Delete Everything…" covers both.
