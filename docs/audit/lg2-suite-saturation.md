@@ -84,7 +84,7 @@ ordinary tests.
 - Final host-policy/SA2/shortcut/live-fixture selection: 12 tests pass; real-agent
   opt-ins remain skipped, not falsely reported as executed.
 - `python3 -B Zeus/App/Tests/Runtime/LG2LiveHostLeaseTests.py`: 1 test passes.
-- Full-suite and load results are recorded below after the proof runs.
+- Full-suite and load results are recorded below.
 
 The first complete post-fix run reached all 1,001 app tests in 208.751 seconds,
 with no managed deadline cascade. Its two failures were a pre-existing Phase D
@@ -131,3 +131,49 @@ cleanup. The previous per-suite `.serialized` annotations did not provide this
 cross-suite exclusion. A regression verifies three independent fixture bodies
 never overlap. Fake-host unit tests remain concurrent. The final sequence starts
 again after these fixture changes (1,002 app tests; 249 package tests).
+
+## Final proof on 72653c8
+
+Three consecutive ordinary `scripts/test.sh` runs passed on the same code revision,
+with no competing xcodebuild. Each ran **1,002 app tests in 207 suites**, **249
+package tests**, and the **16 release + 10 live-gate offline fixtures**. The app
+result summaries report 978 passed, 24 normal opt-in skips, zero failures; these
+skips are not claimed as live-CLI proof. Xcode pruned the oldest result bundle;
+all three complete command logs and successful supervisor exit remain available.
+
+| Run | App-test duration | Result | Log |
+|---|---:|---|---|
+| Quiet 1 | 410.739 s | Passed | `build/lg2/full-1.log` |
+| Quiet 2 | 337.521 s | Passed | `build/lg2/full-2.log` |
+| Quiet 3 | 366.152 s | Passed | `build/lg2/full-3.log` |
+
+The quiet sequence ran from 07:30:18 to 07:52:13 UTC on 2026-10-15.
+`quiet-2-summary.json` and `quiet-3-summary.json` retain the surviving xcresult
+summaries. Final process samples (`final-resource-sample.txt`,
+`final-late-sample.txt`) have zero blocked NSAnimation worker stacks and zero
+blocking accept syscall stacks.
+
+`scripts/build.sh` passed. The independent cold build also passed; its warnings
+are in unchanged CharacterSettingsView, PrivacySettingsView,
+AppearanceSettingsView and ManagedTerminal (existing Sendable conversion / unused
+binding warnings), plus the existing ambiguous macOS destination notice. LG2
+introduces no new compiler warnings. No scheme-wide concurrency cap was needed.
+Real process startup remains bounded wall time because a fake clock cannot start
+an OS process; controller time-dependent logic retains its injected clock. The
+shared unit-test `eventually` deadline remains three seconds.
+
+The fourth ordinary full run overlapped a cold `scripts/build.sh` in an isolated,
+detached worktree at the same revision, with separate DerivedData and SwiftPM
+products. **Both exited zero**. The full suite again passed 1,002 app tests in
+207 suites (399.681 s), 249 package tests and all offline fixtures. Its xcresult
+reports 978 passed, 24 skipped, zero failures (`build/lg2/load-summary.json`).
+The full command ran 07:53:47–08:01:29 UTC; the build started 07:54:18 and its last
+successful output was written at 07:55:23 UTC, overlapping the app-test process.
+Evidence: `full-load.log`, `load-build.log`, timestamp and exit files under
+`build/lg2/`. The disposable worktree is removed after proof. This proves one
+parallel cold build, not arbitrary concurrent full-suite or render loads.
+
+No full native-agent live gate is claimed by LG2. Existing opt-in tests retain
+their normal skips; the focused and full runs above exercise ordinary isolated
+fixtures. Production animation behavior is unchanged: static defaults are in the
+test bundle only. No contract change is requested.

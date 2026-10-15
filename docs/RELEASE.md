@@ -38,6 +38,16 @@ full release gate. `--record --quick` is rejected so reduced coverage cannot
 replace a full recorded fixture. Recording PC1 Claude intentionally enables the
 native updater only for its disposable copy, as that probe requires.
 
+LG2 suite reliability baseline (code revision `72653c8`, 2026-10-15): three
+consecutive quiet `scripts/test.sh` runs and a fourth alongside a cold build in a
+separate worktree passed with identical counts: 1,002 app tests (978 passed,
+24 normal opt-in skips), 249 package tests, and 16 release + 10 live-gate offline
+fixtures. Both builds passed with no new warnings. See
+[the saturation audit](audit/lg2-suite-saturation.md) for attribution, fixes,
+timings and logs. Ordinary fixtures default to static native/SwiftUI hosts and
+serialize real process fixtures across suites; motion tests explicitly opt in.
+These ordinary-suite passes do not replace the full native live gate above.
+
 This runs `scripts/test.sh`, recreates `build/release/`, builds Release for **arm64
 and x86_64**, and creates `build/release/Zeus-<version>.dmg` and the Sparkle
 update archive `Zeus-<version>.zip`. Without `--publish`, the script stops at local
