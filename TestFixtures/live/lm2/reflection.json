@@ -1,0 +1,95 @@
+{
+  "agent": "2.1.300 (Claude Code)",
+  "isolation": "private tmux, disposable HOME/config, localhost synthetic model, fixed test key; no user credentials",
+  "path": "production ZeusRuntime -> production TmuxConnector -> real Claude -> real zeus-mcp -> production rules store",
+  "tools": [
+    "zeus_get_rules",
+    "zeus_propose_rules",
+    "zeus_ack",
+    "zeus_say"
+  ],
+  "state": {
+    "deliveries": [
+      {
+        "acked": true,
+        "attempts": 1,
+        "kind": "reflection"
+      }
+    ],
+    "error": null,
+    "reflectionTexts": [
+      "Zeus reflection for 20261014. This is a redacted local summary, not a new user request.\nRead zeus_get_rules. Propose at most two useful rules with zeus_propose_rules; evidence must use IDs below.\nPrefer timing/tone/preparation rules. External acts start in shadow; do not execute them. Do not repeat habits or private details to the user.\n2026-10-14T18:15:00Z Editing a synthetic test document; a test failed.\nEvidence IDs (already-redacted journal records): synthetic-editor"
+    ],
+    "rules": [
+      {
+        "id": "rule_9EB4B534-A02E-47F3-9238-1AA6CC787267",
+        "trigger": {
+          "state": "tests failing",
+          "apps": []
+        },
+        "confidence": 0.6,
+        "evidence": [
+          "synthetic-editor"
+        ],
+        "sentence": "Keep routine updates quiet while tests are failing",
+        "status": "active",
+        "created": "2026-10-14T18:15:00.000Z",
+        "kind": "passive",
+        "updated": "2026-10-14T18:15:00.000Z",
+        "updatedBy": "agent"
+      },
+      {
+        "id": "rule_21763A05-EABE-4A97-848F-E1AF46810DCB",
+        "trigger": {
+          "apps": []
+        },
+        "status": "shadow",
+        "evidence": [
+          "synthetic-editor"
+        ],
+        "sentence": "Send a short recap after work",
+        "confidence": 0.6,
+        "created": "2026-10-14T18:15:00.000Z",
+        "kind": "acts",
+        "updated": "2026-10-14T18:15:00.000Z",
+        "updatedBy": "agent"
+      }
+    ],
+    "notices": [
+      "2 new rules",
+      "I'd have: Send a short recap after work"
+    ],
+    "receipts": [
+      {
+        "id": "sent:d_reflection_20261014:d381892106546e5a2de51e87",
+        "payload": {
+          "value": {
+            "description": "Sent a daily reflection",
+            "details": {
+              "sessionLabel": "Claude \u00b7 Assistant",
+              "delivery_id": "d_reflection_20261014",
+              "agent": "claude",
+              "sessionID": "d381892106546e5a2de51e87ff78f2b3d5db60e9af3934810aa78c72d2f9de91",
+              "kind": "reflection"
+            },
+            "text": "Zeus reflection for 20261014. This is a redacted local summary, not a new user request.\nRead zeus_get_rules. Propose at most two useful rules with zeus_propose_rules; evidence must use IDs below.\nPrefer timing/tone/preparation rules. External acts start in shadow; do not execute them. Do not repeat habits or private details to the user.\n2026-10-14T18:15:00Z Editing a synthetic test document; a test failed.\nEvidence IDs (already-redacted journal records): synthetic-editor"
+          },
+          "report": {
+            "semanticEngine": "patternsOnly",
+            "counts": []
+          }
+        },
+        "level": 1,
+        "time": "2026-10-14T18:15:00.000Z",
+        "kind": "sentToAssistant"
+      }
+    ],
+    "sessions": 1,
+    "ok": true
+  },
+  "pane": {
+    "screen": "\n\u001b[38;5;174m \u2590\u001b[48;5;16m\u259b\u2588\u2588\u2588\u259b\u2588\u001b[39m\u001b[49m   \u001b[1mClaude Code\u001b[0m \u001b[38;5;246mv2.1.300\u001b[39m\n\u001b[38;5;174m\u259d\u259c\u001b[48;5;16m\u2588\u2588\u2588\u2588\u2588\u001b[49m\u2588\u2580\u001b[39m  \u001b[38;5;246mHaiku 4.5 \u00b7 API Usage Billing\u001b[39m\n\u001b[38;5;174m \u259d\u259d   \u259d\u259d \u001b[39m  \u001b[38;5;246m/FIXTURE/project\u001b[39m\n\n\n\u001b[38;5;246m\u001b[48;5;237m\u276f \u001b[38;5;231mBegin the isolated reflection fixture.\u001b[39m\n\n\u001b[38;5;231m\u001b[49m\u23fa\u001b[39m LM2 reflection complete\n\n\u001b[38;5;246m\u273b\u001b[39m \u001b[38;5;246mWorked for 0s \u00b7 done 9:28 PM\n\n\u001b[48;5;237m\u276f \u001b[38;5;231m[zeus delivery_id=d_reflection_20261014] Zeus reflection for 20261014. This is a redacted local summary, not a new \u001b[39m\n  \u001b[38;5;231muser request.\u001b[39m\n  \u001b[38;5;231mRead zeus_get_rules. Propose at most two useful rules with zeus_propose_rules; evidence must use IDs below.\u001b[39m\n  \u001b[38;5;231mPrefer timing/tone/preparation rules. External acts start in shadow; do not execute them. Do not repeat habits or \u001b[39m\n  \u001b[38;5;231mprivate details to the user.\u001b[39m\n  \u001b[38;5;231m2026-10-14T18:15:00Z Editing a synthetic test document; a test failed.\u001b[39m\n  \u001b[38;5;231mEvidence IDs (already-redacted journal records): synthetic-editor (call zeus_ack with this delivery_id)\u001b[39m\n\n\u001b[49m  \u001b[38;5;246mCalled zeus \u001b[1m4\u001b[0m\u001b[38;5;246m times \u001b[39m\n\n\u001b[38;5;231m\u23fa\u001b[39m LM2 reflection complete\n\n\u001b[38;5;246m\u273b\u001b[39m \u001b[38;5;246mWorked for 0s \u00b7 done 9:28 PM\n\n\n\n\n\n\n\n\n\n\n\u001b[39m                     \u001b[38;5;246mtmux detected \u00b7 scroll with PgUp/PgDn \u00b7 or add 'set -g mouse on' to ~/.tmux.conf for wheel scroll\u001b[39m\n\u001b[38;5;244m\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\u001b[39m\u276f\u00a0\u001b[7m \u001b[0m\n\u001b[38;5;244m\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\u001b[39m  \u001b[38;5;246mpaste again to expand\u001b[39m\n",
+    "inputMetadata": "2|37|120|0|0|"
+  },
+  "model_received_reflection": true
+}
