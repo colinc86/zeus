@@ -56,6 +56,9 @@ private struct FixtureLearningRedactor: Redactor {
         _ = try f.rules.propose([.init(sentence: "Quiet in editor", trigger: .init(apps: ["com.example.Editor"]))], at: f.clock.now)
         f.box.context.frontmostApp = "com.example.Editor"; f.runtime.learningContextDidChange()
         #expect(f.runtime.learningInterruptionHold)
+        f.box.context.frontmostApp = "com.example.Other"; f.runtime.learningContextDidChange()
+        f.box.context.frontmostApp = "com.example.Editor" // Context callback has not run yet.
+        f.cards.onAdd = { _ in #expect(f.runtime.learningInterruptionHold) }
         _ = await f.runtime.callTool("zeus_say", arguments: ["text": "Normal"], sessionKey: "claude:/fixture#123.1")
         let normal = try #require(f.cards.values.last?.id)
         _ = await f.runtime.callTool("zeus_say", arguments: ["text": "Urgent", "priority": "high"], sessionKey: "claude:/fixture#123.1")

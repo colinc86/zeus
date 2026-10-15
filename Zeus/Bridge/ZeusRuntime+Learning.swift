@@ -51,6 +51,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
     }
     func prepareLearningCard(_ card: Card) throws {
         guard let rules = learningRules else { return }
+        // Refresh before CardStore.onArrival can peek; Observation/context callbacks may still be queued.
+        learningContextDidChange()
         let ids = matchingLearningRules(context: learningContext(), at: clock.now).filter { $0.status == .active }.map(\.id)
         if !ids.isEmpty {
             try (rules as? any LearningRuleTracking)?.associate(cardID: card.id, ruleIDs: ids)
