@@ -1,0 +1,46 @@
+import Foundation
+
+/// App supplies only permitted context. No capture is made while any stop is true, even for on-demand requests.
+struct ScreenContext: Equatable, Sendable {
+    var bundleID: String
+    var appName: String
+    var windowTitle: String
+    var windowID: UInt32
+    var processID: Int32
+    var isPrivate = false
+    var isLocked = false
+    var secureInput = false
+    var cameraInUse = false
+    var isMirrored = false
+    var isPresenting = false
+}
+struct ScreenPolicy: Equatable, Sendable {
+    enum Scope: String, Codable, Sendable { case everywhereExcept, onlyChosen }
+    var enabled = false
+    var scope: Scope = .everywhereExcept
+    var apps: Set<String> = []
+    var privateApps: Set<String> = []
+    var capturesPerHour = 30
+    /// App sets this for Low Power Mode or battery below 30%; pictures still work.
+    var deferDescriptions = false
+    func permits(_ context: ScreenContext) -> Bool {
+        !privateApps.contains(context.bundleID) && (scope == .onlyChosen ? apps.contains(context.bundleID) : !apps.contains(context.bundleID))
+    }
+}
+enum ScreenPermission: String, Sendable { case notDetermined, denied, granted, revoked }
+enum ScreenPause: String, Sendable {
+    case disabled, permission, privateContext, locked, secureInput, camera, presenting, sensitiveApp, cap
+}
+/// Presentation is observable on the concrete observer. Settings owns consent, app lists and macOS permission requests.
+@MainActor protocol ScreenObserving: AnyObject {
+    var permission: ScreenPermission { get }
+    var pause: ScreenPause? { get }
+    var lastError: String? { get }
+    func start()
+    func stop()
+    /// Call on app/document, lock, private-window, policy and idle-return events. Invalidates suspended captures immediately.
+    func contextDidChange(returnedFromIdle: Bool)
+    func captureNow()
+    /// Call before journal deletion so an older suspended capture cannot restore deleted content.
+    func invalidatePendingCapture()
+}
