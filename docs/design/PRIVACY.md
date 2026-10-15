@@ -177,6 +177,7 @@ Same frame as the L1 sheet.
 - **Caption at the top:** "Everything Zeus sent your assistant about you. Your assistant's model provider received these like any message."
 - **No delete here:** the ledger records what has already been sent. Clearing it is part of "Delete Everything…".
 - **Waiting group (LM4-A).** A row appears in the ledger only when the assistant has acked the delivery. Items Zeus has prepared but the assistant hasn't received yet sit above the day groups under one heading, "Waiting", newest first, so an empty "Sent" list is never a mystery.
+  - Under the "Waiting" heading, a caption scopes the top caption, which otherwise reads as if these were received: "Your assistant hasn't received these yet."
   - A waiting row reads: kind · size · "Waiting since 00:12 · <reason>". No session label: no session has received it. The time is today's clock time, or "Tue 00:12" from another day. Click expands the exact text that will be sent, as for a received row.
   - The reason comes from the platform's `DeliveryHold.reason`, and at most one action follows it:
 
@@ -308,7 +309,7 @@ VoiceOver follows the A12 pattern: "View: Daily summary ready for your assistant
 | tools only | "Zeus has new tools for your assistant · Restart assistant" | "Zeus has new tools for Claude Code. Restart to use them; the conversation is kept." |
 | template only | "Zeus has new instructions for your assistant · Restart assistant" | "Zeus has new instructions for Claude Code. Restart to use them; the conversation is kept." |
 | after pressing | "Restarting when Claude is idle…" (the UP1 text, `agentUpdateWaitingText`) | same |
-| `templateEdited` | "Your assistant's instructions are older than Zeus's template · Open Folder · Use the new template" | the same sentence as the status note, with "Open Folder" and "Use the new template" buttons |
+| `templateEdited` | "Your assistant's instructions are older than Zeus's template · Open Folder · Use the new template" | status note "Your assistant's instructions are older than Zeus's template. Open the folder to compare, or use the new template." with "Open Folder" and "Use the new template…" buttons (ellipsis: it always asks first, like "Delete This Day…") |
 
 The thread line says "Restart assistant" (sentence case, as the UP1 line does); buttons in Settings and the menu say "Restart Assistant" (`ZeusManagedCopy`). The agent's name comes from `agentName`; "Claude Code" above is the example.
 
