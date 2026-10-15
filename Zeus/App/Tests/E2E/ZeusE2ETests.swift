@@ -8,6 +8,8 @@ import ZeusProtocol
 @Suite(.serialized)
 struct ZeusE2ETests {
     @Test func eventDrivenStdinHandlesFragmentsAndEOFWithoutPolling() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let empty = try E2EBridge(socketPath: f.runtime.socketPath, cwd: f.directory)
         f.children.append(empty)
@@ -23,6 +25,8 @@ struct ZeusE2ETests {
     }
 
     @Test func presentationScenario() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let bridge = try await f.bridge()
         #expect(try await bridge.call("zeus_set_status", ["state": "thinking", "detail": "Preparing the presentation"]) == ["ok": true])
@@ -56,6 +60,8 @@ struct ZeusE2ETests {
     enum AnswerOrder: String, CaseIterable { case beforeDeadline, responseAtDeadline, timerAtDeadline }
     @Test(arguments: AnswerOrder.allCases)
     func timeoutRaceHasExactlyOneAnswerPath(_ order: AnswerOrder) async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let bridge = try await f.bridge()
         let callID = try bridge.send(method: "tools/call", params: ["name": "zeus_ask", "arguments": ["text": "Race", "wait_seconds": 1]])
@@ -86,6 +92,8 @@ struct ZeusE2ETests {
     }
 
     @Test func concurrentSessionsKeepRepliesAndAcknowledgmentsSeparate() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let a = try await f.bridge("a"), b = try await f.bridge("b")
         async let askedA = a.call("zeus_ask", ["text": "Question A", "wait_seconds": 0])
@@ -107,6 +115,8 @@ struct ZeusE2ETests {
     }
 
     @Test func killedBridgeRebindsPendingQuestionToSameSessionKey() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let first = try await f.bridge()
         _ = try first.send(method: "tools/call", params: ["name": "zeus_ask", "arguments": ["text": "Still answerable", "wait_seconds": 600]])
@@ -129,6 +139,8 @@ struct ZeusE2ETests {
     }
 
     @Test func newRuntimeReloadsPendingDeliveryAndExistingBridgeReconnects() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let bridge = try await f.bridge()
         let question = try await bridge.call("zeus_ask", ["text": "Survive restart", "wait_seconds": 0])
@@ -151,6 +163,8 @@ struct ZeusE2ETests {
     }
 
     @Test func orphanedReplyReroutesThroughAssistantStdoutWithoutPermanentWarning() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let origin = try await f.bridge("one-shot")
         let pending = try await origin.call("zeus_ask", ["text": "Old question", "wait_seconds": 0])
@@ -174,6 +188,8 @@ struct ZeusE2ETests {
     }
 
     @Test func composerQueuesBeforeAnyAssistantAndPushesAfterRuntimeRestart() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let conversation = ConversationModel(cards: f.cards, messaging: f.runtime, clock: { f.clock.now })
         conversation.draft = "Saved before anyone connects"
@@ -194,6 +210,8 @@ struct ZeusE2ETests {
     }
 
     @Test func unboundQueueWaitsForPreferredAgentAndCanBeConsumedByPolling() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         f.routing.preferredAgent = .codex; f.routing.deliveryMethod = .polling
         #expect(await f.runtime.sendUserMessage("For Codex") == .queued(reason: "Waiting for your assistant to connect."))
@@ -211,6 +229,8 @@ struct ZeusE2ETests {
     }
 
     @Test func pollingOnlyReturnsAndAcksAnswersAndComposeMessages() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         f.routing.deliveryMethod = .polling
         let bridge = try await f.bridge(agent: .codex)

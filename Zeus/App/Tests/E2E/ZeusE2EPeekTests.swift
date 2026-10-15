@@ -5,6 +5,8 @@ import ZeusProtocol
 
 extension ZeusE2ETests {
     @Test func peekOptionProducesOneChannelDeliveryToItsOrigin() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let conversation = ConversationModel(cards: f.cards, messaging: f.runtime, clock: { f.clock.now })
         let peek = f.installPeek(conversation: conversation)
@@ -43,6 +45,8 @@ extension ZeusE2ETests {
     }
 
     @Test func failedPeekAnswerSaveProducesNoDeliveryUntilRetrySucceeds() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let conversation = ConversationModel(cards: f.cards, messaging: f.runtime, clock: { f.clock.now })
         let peek = f.installPeek(conversation: conversation)
@@ -76,6 +80,8 @@ extension ZeusE2ETests {
     }
 
     @Test func realArrivalsRevealOnceAcrossPeekPanelUpdatesAndRuntimeRestart() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let conversation = ConversationModel(cards: f.cards, messaging: f.runtime, clock: { f.clock.now })
         let peek = f.installPeek(conversation: conversation)
@@ -125,6 +131,8 @@ extension ZeusE2ETests {
     }
 
     @Test func peekReplyRearmsTextQuestionAndLateAnswerKeepsItsCaptionAndRouting() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let conversation = ConversationModel(cards: f.cards, messaging: f.runtime, clock: { f.clock.now })
         let peek = f.installPeek(conversation: conversation)

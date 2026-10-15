@@ -10,6 +10,8 @@ import ZeusDesign
 @MainActor struct ManagedFlowE2ETests {
     @Test(.timeLimit(.minutes(2)))
     func configuredAssistantBlocksDeliversResumesAndStopsInPrivateTmux() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let tmux = try #require(TmuxExecutable.resolve())
         let python = try #require(["/opt/homebrew/bin/python3", "/usr/bin/python3"].first { FileManager.default.isExecutableFile(atPath: $0) })
         let bridge = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/zeus-mcp")
@@ -66,6 +68,13 @@ import ZeusDesign
         #expect(cards.cards.isEmpty)
         #expect(managed.canStart && managed.config.startWhenZeusOpens)
         managed.perform(.start)
+        // MCP initialize acknowledges stdio, not the asynchronous Zeus hello.
+        // Permit the fixture's first tool call only after its exact parent is bound.
+        try await wait("exact owned bridge transport", controller: controller) {
+            controller.sessionKey != nil && !controller.isBusy
+        }
+        let readyPID = try #require(controller.record?.pane?.pid)
+        try Data(String(readyPID).utf8).write(to: home.appendingPathComponent("allow-ready-call"), options: .atomic)
         try await wait("MCP check-in and exact owned session", controller: controller) {
             controller.sessionKey != nil && cards.cards.first?.body == "Fake assistant ready." && !controller.isBusy && FileManager.default.fileExists(atPath: home.appendingPathComponent("screen-ready").path)
         }
@@ -139,7 +148,11 @@ import ZeusDesign
     private func wait(_ phase: String, controller: ManagedSessionController, condition: () -> Bool) async throws {
         let end = ContinuousClock.now + .seconds(8)
         while !condition() {
-            guard ContinuousClock.now < end else { throw ManagedSessionError.command("M4b \(phase): \(controller.managedStatus)") }
+            guard ContinuousClock.now < end else {
+                let errors = controller.record?.pane.map { URL(fileURLWithPath: $0.socket).deletingLastPathComponent().appendingPathComponent("home/agent-errors.log") }
+                let detail = errors.flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? "No fixture-agent exception recorded"
+                throw ManagedSessionError.command("M4b \(phase): \(controller.managedStatus); \(detail.suffix(2000))")
+            }
             try await Task.sleep(for: .milliseconds(20))
         }
     }
@@ -161,8 +174,12 @@ import ZeusDesign
     }
 
     private static let agent = #"""
-import json, os, pathlib, re, select, signal, subprocess, sys, termios, tty
+import json, os, pathlib, re, select, signal, subprocess, sys, termios, time, traceback, tty
 home = pathlib.Path(os.environ['HOME'])
+def failure(kind, value, trace):
+    with (home/'agent-errors.log').open('a') as log: traceback.print_exception(kind,value,trace,file=log)
+    sys.__excepthook__(kind,value,trace)
+sys.excepthook = failure
 a = sys.argv[1:]
 def value(flag): return a[a.index(flag)+1] if flag in a else None
 fresh = '--session-id' in a
@@ -188,7 +205,10 @@ def rpc(method, params):
 def tool(name, args): return rpc('tools/call', {'name':name,'arguments':args})
 rpc('initialize', {'protocolVersion':'2025-06-18','capabilities':{},'clientInfo':{'name':'M4b fake Claude','version':'1'}})
 bridge.stdin.write(json.dumps({'jsonrpc':'2.0','method':'notifications/initialized'})+'\n'); bridge.stdin.flush()
-if fresh: tool('zeus_say', {'text':'Fake assistant ready.'})
+if fresh:
+    permit = home/'allow-ready-call'
+    while not permit.exists() or permit.read_text() != str(os.getpid()): time.sleep(0.01)
+    tool('zeus_say', {'text':'Fake assistant ready.'})
 fd = sys.stdin.fileno(); old = termios.tcgetattr(fd); tty.setraw(fd)
 signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
 signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))

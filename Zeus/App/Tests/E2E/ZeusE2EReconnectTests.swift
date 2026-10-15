@@ -19,6 +19,8 @@ import ZeusProtocol
 
 extension ZeusE2ETests {
     @Test func threeAgentParentsInOneFolderStayConnectedWithoutEvictionForThirtySeconds() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         f.runtime.server?.stop()
         let monitor = ConnectionMonitor(f.runtime)
@@ -53,6 +55,8 @@ extension ZeusE2ETests {
     }
 
     @Test func sameParentReplacementGoesIdleWithoutFlappingUntilItsOwnToolCall() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         f.runtime.server?.stop()
         let monitor = ConnectionMonitor(f.runtime)
@@ -75,6 +79,8 @@ extension ZeusE2ETests {
 
     @Test(arguments: [false, true])
     func sameBridgeSurvivesLongCleanQuitOrSIGKILLAndDifferentBuildRelaunch(_ crash: Bool) async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let directory = URL(fileURLWithPath: "/private/tmp/zp13_" + UUID().uuidString.prefix(8))
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }

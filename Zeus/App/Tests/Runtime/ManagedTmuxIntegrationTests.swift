@@ -9,6 +9,8 @@ import ZeusProtocol
 struct ManagedTmuxIntegrationTests {
     @Test(arguments: [AgentKind.claude, .codex, .opencode])
     func ownedLifecycleResumeAndCollisionUseOnlyPrivateSocket(agent: AgentKind) async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         guard let tmux = TmuxExecutable.resolve() else { return }
         let python = ["/opt/homebrew/bin/python3", "/usr/bin/python3"].first { FileManager.default.isExecutableFile(atPath: $0) }
         guard let python else { Issue.record("Python is required for the isolated fake-agent fixture"); return }

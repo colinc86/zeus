@@ -15,6 +15,8 @@ private struct IsolatedTmuxRunner: ProcessRunning {
 struct TmuxIntegrationTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["ZEUS_TEST_TMUX"] == "1"))
     func realTmuxPastesIntoScratchCatPane() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let executable = try #require(TmuxExecutable.resolve())
         let runner = IsolatedTmuxRunner(socketName: "zeus-p4-" + UUID().uuidString.prefix(8))
         do {

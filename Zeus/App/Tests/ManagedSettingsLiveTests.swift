@@ -9,6 +9,8 @@ import ZeusProtocol
 @Suite(.serialized) @MainActor struct ManagedSettingsLiveTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["ZEUS_S3_LIVE"] == "1"), .timeLimit(.minutes(3)), arguments: [AgentKind.claude, .codex, .opencode])
     func realResumePicksUpInstructionsAndPermissionMode(agent: AgentKind) async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let executables = ManagedExecutables.detect()
         let tmux = try #require(executables.tmux), cli = try #require(executables.agents[agent])
         let root = URL(fileURLWithPath: "/private/tmp/zs3_" + UUID().uuidString)

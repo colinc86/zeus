@@ -14,6 +14,8 @@ struct E2ETmuxRunner: ProcessRunning {
 extension ZeusE2ETests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["ZEUS_TEST_TMUX"] == "1"))
     func realTmuxRoutesAutoAssistantAndOriginReplyIntoSeparatePanes() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let binary = try #require(TmuxExecutable.resolve(), "ZEUS_TEST_TMUX=1 requires tmux")
         let runner = E2ETmuxRunner()
         let f = try E2EFixture(connectors: [ChannelDeliveryConnector(), TmuxConnector(executable: binary, runner: runner)])
@@ -77,6 +79,8 @@ extension ZeusE2ETests {
 extension ZeusE2ETests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["ZEUS_TEST_TMUX"] == "1"))
     func duplicatePaneIDsAcrossServersQueueMismatchedSelectionWithoutTyping() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let binary = try #require(TmuxExecutable.resolve())
         let a = E2ETmuxRunner(), b = E2ETmuxRunner()
         let f = try E2EFixture(connectors: [TmuxConnector(executable: binary)])

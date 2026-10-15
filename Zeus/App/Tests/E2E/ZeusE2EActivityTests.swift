@@ -5,6 +5,8 @@ import ZeusProtocol
 
 extension ZeusE2ETests {
     @Test func realBridgeSayThenAckNeverRestartsCompletedActivity() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let bridge = try await f.bridge()
         #expect(await f.runtime.sendUserMessage("Please reply, then ack") == .delivered)
@@ -26,6 +28,8 @@ extension ZeusE2ETests {
     }
 
     @Test func userMessageSentAckThinkingAndResponseEndThroughRealBridge() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let bridge = try await f.bridge()
         #expect(await f.runtime.sendUserMessage("Please draft my presentation") == .delivered)
@@ -46,6 +50,8 @@ extension ZeusE2ETests {
     }
 
     @Test func realBridgeActivityExpiresOnStaleTimeoutTTLAndDisconnect() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let bridge = try await f.bridge()
         #expect(await f.runtime.sendUserMessage("Waiting for the agent") == .delivered)
@@ -72,6 +78,8 @@ extension ZeusE2ETests {
     }
 
     @Test func synchronousAskAnswerStartsSentWithoutChannelDuplication() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
         let f = try E2EFixture(); defer { f.stop() }
         let bridge = try await f.bridge()
         let id = try bridge.send(method: "tools/call", params: ["name": "zeus_ask", "arguments": ["text": "Start now?", "wait_seconds": 45]])

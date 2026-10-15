@@ -115,3 +115,19 @@ Two package regressions cover 64 idle listener stop/release cycles without any
 connection and immediate socket-path replacement. All 22 ZeusLink tests pass,
 including reconnects, handshake timeout, receipts, and hook clients. The final
 three-run sequence starts after this additional fix.
+
+The first final-code attempt (after the listener fix) completed all 1,001 app
+tests but failed one `ManagedFlowE2ETests` initial check-in: its fake agent had
+exited and the controller reported backoff. Its script called `zeus_say`
+immediately after MCP initialize, which does not establish the asynchronous
+Zeus transport. The fixture now waits for the exact managed parent/session binding
+before permitting that first call, and records native-agent exceptions for future
+phase failures. All delivery, block/clear, crash/resume, and stop assertions remain.
+It passes alongside A12 (11 tests) and alongside all three managed-tmux agent cases.
+
+`NativeProcessTestGate` now serializes real E2E/tmux/managed fixtures **across**
+suites, suspending waiters on the main actor and releasing only after private
+cleanup. The previous per-suite `.serialized` annotations did not provide this
+cross-suite exclusion. A regression verifies three independent fixture bodies
+never overlap. Fake-host unit tests remain concurrent. The final sequence starts
+again after these fixture changes (1,002 app tests; 249 package tests).
