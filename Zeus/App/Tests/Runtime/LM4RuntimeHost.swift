@@ -85,11 +85,16 @@ private struct LM4Runner: ProcessRunning {
                     do {
                         let command = try JSONDecoder().decode(JSONValue.self, from: Data(line.utf8))
                         if command["command"] == "digest" { learnings.digest() }
+                        if command["command"] == "eraseThenLateAck" {
+                            try journal.delete(.all)
+                            _ = try live.acknowledge(ids: ["lm4-digest"], sessionKey: controller.sessionKey ?? "")
+                            live.recordReflectionReceipt(id: "lm4-digest")
+                        }
                         try write(["ok": true, "status": .string(String(describing: live.managedStatus)), "sessions": .number(Double(live.sessions.count)),
                             "pane": controller.record?.pane.map { .string($0.id) } ?? .null,
                             "unread": .number(Double(learnings.values.count)),
                             "receipts": .array(try journal.items(matching: .init()).filter { $0.kind == .sentToAssistant }.map(JSONValue.from)),
-                            "deliveries": .array((live.ledger?.records ?? []).map { ["id": .string($0.delivery.id), "kind": .string($0.delivery.kind.rawValue), "acked": .bool($0.delivery.ackedAt != nil), "attempts": .number(Double($0.delivery.attempts))] }),
+                            "deliveries": .array((live.ledger?.records ?? []).map { ["id": .string($0.delivery.id), "kind": .string($0.delivery.kind.rawValue), "acked": .bool($0.delivery.ackedAt != nil), "attempts": .number(Double($0.delivery.attempts)), "discarded": .bool($0.discardedAt != nil)] }),
                             "error": live.learningError.map(JSONValue.string) ?? .null])
                     } catch { try? write(["ok": false, "error": .string(String(describing: error))]) }
                 }

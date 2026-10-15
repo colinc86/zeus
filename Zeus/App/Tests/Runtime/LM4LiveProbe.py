@@ -55,7 +55,9 @@ def main():
             assert state['unread']==0 and len(state['deliveries'])==1 and state['deliveries'][0]['kind']=='learning' and state['deliveries'][0]['attempts']==1,state
             assert state['receipts'][0]['payload']['value']['text']=='Synthetic morning summary: working on a fixture project.',state
             assert state['receipts'][0]['payload']['value']['details']['sessionLabel']=='Claude · Zeus',state
-            proof={'agent':pane.version,'tools':seen,'state':state,'model_received_digest':any('Synthetic morning summary: working on a fixture project.' in json.dumps(b.get('messages',[])) for b in Model.requests),'isolation':'private tmux, disposable HOME/config, localhost synthetic model, fixture encryption key'}
+            erased=control.call('eraseThenLateAck')
+            assert not erased['receipts'] and erased['deliveries'][0]['discarded'],erased
+            proof={'erasure_late_ack_suppressed':True,'agent':pane.version,'tools':seen,'state':state,'model_received_digest':any('Synthetic morning summary: working on a fixture project.' in json.dumps(b.get('messages',[])) for b in Model.requests),'isolation':'private tmux, disposable HOME/config, localhost synthetic model, fixture encryption key'}
             assert proof['model_received_digest']
             proof=scrub_paths(proof,{str(pane.root):'/FIXTURE',str(REPO):'<worktree>'})
             (OUT/'proof.json').write_text(json.dumps(proof,indent=2)+'\n')

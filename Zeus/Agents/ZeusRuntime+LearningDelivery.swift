@@ -15,6 +15,50 @@ extension ZeusRuntime: LearningDeliveryPresenting {
         try managedController.replaceEditedManagedTemplates(snapshot)
     }
 
+    /// Deletion is synchronous on the main actor. Invalidates send tokens before
+    /// cancellation so even a connector that completes late cannot publish a receipt.
+    func eraseLearningDeliveries(ids: Set<String>) {
+        guard !ids.isEmpty else { return }
+        erasedLearningDeliveryIDs.formUnion(ids)
+        for id in ids {
+            sendTokens.removeValue(forKey: id)
+            sends.removeValue(forKey: id)?.cancel()
+            deferredSends.removeValue(forKey: id)
+            deliveryHoldEpisodes.removeValue(forKey: id)
+        }
+        do {
+            try ledger?.mutateRecords { records in
+                for i in records.indices where ids.contains(records[i].delivery.id) {
+                    records[i].discardedAt = clock.now
+                    records[i].stateUpdatedAt = clock.now
+                    records[i].delivery.content = ""
+                    records[i].delivery.meta.removeValue(forKey: "evidence")
+                    // Leave native input alone. A discarded record is never recovered/submitted.
+                    records[i].delivery.meta.removeValue(forKey: "tmux_paste_destination")
+                    records[i].holdSince = nil; records[i].holdReason = nil
+                }
+            }
+        } catch { learningError = "Zeus couldn't save the erased delivery state. Delivery is stopped for this launch." }
+        refreshLearningDeliveryPresentation()
+        managedController.reconsiderSettingsApplication()
+    }
+
+    func journalEvidenceDeleted(_ ids: Set<String>?) {
+        reflectionTask?.cancel(); reflectionTask = nil
+        let records = (ledger?.records ?? []).filter { [.learning, .reflection].contains($0.delivery.kind) }
+        let erased = Set(records.filter { record in
+            guard let ids else { return true }
+            let evidence = Set(record.delivery.meta["evidence", default: ""].split(separator: ",").map(String.init))
+            return ids.contains(record.delivery.id) || !evidence.isDisjoint(with: ids)
+        }.map { $0.delivery.id })
+        eraseLearningDeliveries(ids: ids == nil ? erased.union(learnings.unreadLearnings().map(\.id)) : erased)
+    }
+
+    func learningWasErased(_ id: String) -> Bool {
+        erasedLearningDeliveryIDs.contains(id) || ledger?.record(id: id)?.discardedAt != nil
+            || (learnings as? any LearningDeletionObserving).map { !$0.retainedLearningIDs.contains(id) && ledger?.record(id: id)?.delivery.kind == .learning } == true
+    }
+
     func observeLearningAvailability() {
         guard running else { return }
         let token = generation
@@ -30,7 +74,7 @@ extension ZeusRuntime: LearningDeliveryPresenting {
     }
 
     func enqueueLearning(_ learning: Learning) {
-        guard let ledger, ledger.record(id: learning.id) == nil else { return }
+        guard !learningWasErased(learning.id), let ledger, ledger.record(id: learning.id) == nil else { return }
         var delivery = Delivery(id: learning.id, kind: .learning, sessionKey: assistantTarget ?? "",
             content: learning.text, createdAt: learning.createdAt)
         delivery.meta["kind"] = "learning"
@@ -57,7 +101,7 @@ extension ZeusRuntime: LearningDeliveryPresenting {
     }
 
     func publishPendingLearnings(_ records: [DeliveryRecord]) {
-        let next = records.filter { $0.isPending && [.learning, .reflection].contains($0.delivery.kind) }.map { record in
+        let next = records.filter { $0.isPending && !erasedLearningDeliveryIDs.contains($0.delivery.id) && [.learning, .reflection].contains($0.delivery.kind) }.map { record in
             let key = record.delivery.sessionKey
             let agent = sessions.first { $0.sessionKey == key }?.agent.rawValue ?? String(key.split(separator: ":").first ?? "")
             let name = ["claude": "Claude", "codex": "Codex", "opencode": "OpenCode"][agent] ?? "Your assistant"
@@ -69,7 +113,7 @@ extension ZeusRuntime: LearningDeliveryPresenting {
     }
 
     func refreshLearningDeliveryPresentation() {
-        let records = (ledger?.records ?? []).filter { $0.isPending && $0.transportDeliveredAt == nil && [.userMessage, .learning, .reflection].contains($0.delivery.kind) }
+        let records = (ledger?.records ?? []).filter { $0.isPending && !learningWasErased($0.delivery.id) && $0.transportDeliveredAt == nil && [.userMessage, .learning, .reflection].contains($0.delivery.kind) }
         let previous = deliveryHoldEpisodes
         var next: [String: DeliveryHold] = [:]
         for record in records {

@@ -7,6 +7,7 @@ import ZeusDesign
 extension ZeusRuntime {
     /// Central transport selection; a connected polling session intentionally has no push transport.
     func transport(for key: String, delivery: Delivery? = nil) -> ((any DeliveryConnector), ConnectedSession, DeliveryRoutingContext)? {
+        if let delivery, learningWasErased(delivery.id) { return nil }
         guard delivery?.kind != .learning || learnings.learningsEnabled else { return nil }
         guard let session = sessions.first(where: { $0.sessionKey == key }) else { return nil }
         let managed = managedController.enabled && managedController.sessionKey == key
@@ -319,7 +320,7 @@ extension ZeusRuntime {
 
     func acknowledge(ids: Set<String>, sessionKey: String) throws -> [String] {
         guard let ledger else { return [] }
-        let acked = try ledger.acknowledge(ids: ids, sessionKey: sessionKey, at: clock.now)
+        let acked = try ledger.acknowledge(ids: ids.filter { !learningWasErased($0) }, sessionKey: sessionKey, at: clock.now)
         if !acked.isEmpty { noteActivityAcknowledgments(acked, sessionKey: sessionKey) }
         for id in acked { recordReflectionReceipt(id: id); recordContextDeliveryReceipt(id: id) }
         retainRuntimeHistory()

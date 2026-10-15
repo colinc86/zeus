@@ -507,3 +507,11 @@ native drafts. `requestLearningDeliveryCancellation(deliveryID:)` requests the e
 scoped draft confirmation even for one item; confirmation revalidates the draft and
 cancels only that item. Sent journal rows remain evidence, never inferred from pending
 items disappearing. The ready/sent thread line retains `n_<learning.id>` and exact detail.
+
+- **LM4 erasure boundary.** Delete Everything and deletion of a learning or reflection's
+  evidence discard the affected durable deliveries and cancel in-flight sends.
+  Discarded deliveries never create a Sent receipt from a late acknowledgment,
+  tool-result receipt, or relaunch replay. Native text already pasted is left alone:
+  Zeus neither clears nor submits it after erasure; a later manual submission/ack
+  records nothing. The stores expose optional synchronous deletion callbacks so this
+  boundary takes effect before asynchronous observation/network callbacks run.

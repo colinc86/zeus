@@ -5,7 +5,7 @@ import Observation
 /// the raw events. The runtime reads it through `LearningsProviding`; it never sees raw events.
 @MainActor
 @Observable
-final class LearningsStore: LearningsProviding, LearningReadRecording {
+final class LearningsStore: LearningsProviding, LearningReadRecording, LearningDeletionObserving {
     static let fileName = "learnings.json"
     static let keepDays = 365
 
@@ -35,6 +35,9 @@ final class LearningsStore: LearningsProviding, LearningReadRecording {
         self.isEnabled = isEnabled
         state = files.read(named: Self.fileName).flatMap { try? ActivityStore.decoder.decode(State.self, from: $0) } ?? State()
     }
+
+    @ObservationIgnored var onLearningDeletion: ((Set<String>) -> Void)?
+    var retainedLearningIDs: Set<String> { Set(state.learnings.map(\.id)) }
 
     var learnings: [Learning] { state.learnings }
     var learningsEnabled: Bool { isEnabled() }
@@ -79,11 +82,13 @@ final class LearningsStore: LearningsProviding, LearningReadRecording {
     func prune(now: Date, calendar: Calendar) {
         guard let cutoff = calendar.date(byAdding: .day, value: -Self.keepDays, to: calendar.startOfDay(for: now)) else { return }
         let cutoffKey = files.dayKey(cutoff)
+        let retainedBefore = retainedLearningIDs
         let before = state.learnings.count
         state.learnings.removeAll { $0.createdAt < cutoff }
         let oldDays = state.digestedDays.filter { $0 < cutoffKey }
         let oldMoments = state.momentsByDay.keys.filter { $0 < cutoffKey }
         guard before != state.learnings.count || !oldDays.isEmpty || !oldMoments.isEmpty else { return }
+        onLearningDeletion?(retainedBefore.subtracting(retainedLearningIDs))
         state.digestedDays.subtract(oldDays)
         for key in oldMoments { state.momentsByDay.removeValue(forKey: key) }
         save()
@@ -91,7 +96,9 @@ final class LearningsStore: LearningsProviding, LearningReadRecording {
 
     /// Forgets everything (the file itself is removed with the rest of the Activity folder).
     func reset() {
+        let removed = retainedLearningIDs
         state = State()
+        onLearningDeletion?(removed)
         saveError = nil
     }
 

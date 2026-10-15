@@ -7,6 +7,11 @@ extension ZeusRuntime: LearningRuntimeControlling {
     func startLearning() {
         learningObservationToken = UUID()
         learningCatchUpPending = true
+        (learningJournal as? any JournalDeletionObserving)?.onJournalDeletion = { [weak self] ids in self?.journalEvidenceDeleted(ids) }
+        (learnings as? any LearningDeletionObserving)?.onLearningDeletion = { [weak self] ids in self?.eraseLearningDeliveries(ids: ids) }
+        if let source = learnings as? any LearningDeletionObserving {
+            eraseLearningDeliveries(ids: Set((ledger?.records ?? []).filter { $0.delivery.kind == .learning && !source.retainedLearningIDs.contains($0.delivery.id) }.map { $0.delivery.id }))
+        }
         (learningRules as? any LearningRuleOutcomeSource)?.onRuleOutcome = { [weak self] outcome, ids, eventID, at in
             self?.recordJournalOutcome(outcome, ruleIDs: ids, eventID: eventID, at: at)
         }
@@ -15,6 +20,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
         learningContextDidChange()
     }
     func stopLearning() {
+        (learningJournal as? any JournalDeletionObserving)?.onJournalDeletion = nil
+        (learnings as? any LearningDeletionObserving)?.onLearningDeletion = nil
         learningObservationToken = UUID()
         (learningRules as? any LearningRuleOutcomeSource)?.onRuleOutcome = nil
         learningTimer?.cancel(); learningTimer = nil
@@ -275,7 +282,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         }
     }
     func recordContextDeliveryReceipt(id: String) {
-        guard let record = ledger?.record(id: id), record.delivery.kind != .reflection,
+        guard !learningWasErased(id), let record = ledger?.record(id: id), record.delivery.kind != .reflection,
               let at = record.transportDeliveredAt ?? record.delivery.ackedAt else { return }
         emitContextDeliveryReceipt(deliveryID: id, cardID: record.delivery.cardID, sessionKey: record.delivery.sessionKey, at: at)
     }
@@ -289,7 +296,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
             sessionLabel: name + (managedController.sessionKey == sessionKey ? " · Zeus" : " · Assistant"), sessionID: identity))
     }
     func recordReflectionReceipt(id: String) {
-        guard let record = ledger?.record(id: id), record.delivery.ackedAt != nil,
+        guard !learningWasErased(id), let record = ledger?.record(id: id), record.delivery.ackedAt != nil,
               [.reflection, .learning].contains(record.delivery.kind), !record.delivery.content.isEmpty else { return }
         if record.delivery.kind == .learning {
             recordSentLearning(id: id, kind: record.delivery.meta["learning_kind"] ?? "moment", text: .init(record.delivery.content), sessionKey: record.delivery.meta["learning_consumed_by"] ?? record.delivery.sessionKey, receivedAt: record.delivery.ackedAt)
@@ -309,7 +316,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
     }
     /// Only an acknowledgment or successful tool-result consumption uses this receipt path.
     func recordSentLearning(id: String, kind: String, text: Redacted<String>, sessionKey: String, receivedAt: Date? = nil) {
-        guard let journal = learningJournal else { return }
+        guard !learningWasErased(id), let journal = learningJournal else { return }
         let identity = SHA256.hash(data: Data(sessionKey.utf8)).map { String(format: "%02x", $0) }.joined()
         let receiptID = "sent:" + id + ":" + identity.prefix(24)
         do {
@@ -342,7 +349,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
     }
     func recordLearningToolReceipts(_ items: [JSONValue], sessionKey: String) {
         for value in items {
-            guard let data = try? ZeusJSON.encoder().encode(value), let learning = try? ZeusJSON.decoder().decode(Learning.self, from: data) else { continue }
+            guard let data = try? ZeusJSON.encoder().encode(value), let learning = try? ZeusJSON.decoder().decode(Learning.self, from: data), !learningWasErased(learning.id) else { continue }
             // The tool result contains learningForSending output, never a newly reconstructed summary.
             recordSentLearning(id: learning.id, kind: learning.kind.rawValue, text: .init(learning.text), sessionKey: sessionKey)
             if ledger?.record(id: learning.id)?.isPending == true {
@@ -362,18 +369,11 @@ extension ZeusRuntime: LearningRuntimeControlling {
             let retained = Set(try journal.items(matching: query).map(\.id))
             let erased = Set(reflections.filter { record in
                 let evidence = record.delivery.meta["evidence", default: ""].split(separator: ",").map(String.init)
-                // A journaled paste must keep its exact recovery payload until submitted once; never strand Zeus's own input.
-                return record.delivery.meta["tmux_paste_destination"] == nil && !evidence.allSatisfy(retained.contains)
+                // Deletion stops automatic submission even if native input was already pasted.
+                return !evidence.allSatisfy(retained.contains)
             }.map { $0.delivery.id })
             guard !erased.isEmpty else { return }
-            for id in erased { sends[id]?.cancel(); sendTokens.removeValue(forKey: id) }
-            try ledger.mutateRecords { records in
-                for index in records.indices where erased.contains(records[index].delivery.id) {
-                    records[index].delivery.content = ""
-                    records[index].delivery.meta.removeValue(forKey: "evidence")
-                    if records[index].isPending { records[index].discardedAt = clock.now }
-                }
-            }
+            eraseLearningDeliveries(ids: erased)
         } catch { learningError = "Zeus couldn't reconcile deleted reflection evidence." }
     }
     private func reflectionDayKey(_ date: Date) -> String {
