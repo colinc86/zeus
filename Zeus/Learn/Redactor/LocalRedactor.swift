@@ -103,7 +103,25 @@ actor LocalRedactor: Redactor {
         add(#"(?<!\d)\d{3}-\d{2}-\d{4}(?!\d)"#, .identity)
         add(#"(?i)\b(?:otp|2fa|verification code|authentication code|one.time (?:code|password)|pin)\s*(?:is|:|=)?\s*([0-9][0-9 -]{3,12}[0-9])\b"#, .secret, capture: 1)
         add(#"(?<!\d)(?:\d[ -]?){12,18}\d(?!\d)"#, .card, accept: luhn)
-        add(#"\b[A-Z]{2}[0-9]{2}(?: ?[A-Z0-9]){11,30}\b"#, .iban, accept: validIBAN)
+        if let regex = try? NSRegularExpression(pattern: #"\b[A-Z]{2}[0-9]{2}(?: ?[A-Z0-9]){11,45}\b"#) {
+            let lengths = ["GB": 22, "DE": 22, "FR": 27, "ES": 24, "NL": 18, "IT": 27, "CH": 21, "AT": 20,
+                           "BE": 16, "IE": 22, "PT": 25, "GR": 27, "PL": 28, "CZ": 24, "SK": 24, "SE": 24,
+                           "NO": 15, "DK": 18, "FI": 18, "LU": 20, "RO": 24, "BG": 22, "HR": 21, "SI": 19]
+            for match in regex.matches(in: text, range: full) {
+                let candidate = ns.substring(with: match.range)
+                let expected = lengths[String(candidate.prefix(2))]
+                var compact = "", sourceLength = 0
+                for char in candidate {
+                    sourceLength += char.utf16.count
+                    if char != " " { compact.append(char) }
+                    guard expected.map({ compact.count == $0 }) ?? ((15...34).contains(compact.count)) else { continue }
+                    if validIBAN(compact) {
+                        spans.append(.init(range: NSRange(location: match.range.location, length: sourceLength), kind: .iban)); break
+                    }
+                    if let expected, compact.count >= expected { break }
+                }
+            }
+        }
         add(#"\b(?:sk-(?:proj-|ant-)?[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9]{15,}|github_pat_[A-Za-z0-9_]{15,}|xox[baprs]-[A-Za-z0-9-]{10,}|AIza[A-Za-z0-9_-]{20,}|(?:AKIA|ASIA)[A-Z0-9]{16}|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\b"#, .secret)
         add(#"\b[A-Za-z0-9_+/=-]{28,}\b"#, .secret) { candidate in
             guard candidate.contains(where: \.isNumber), candidate.contains(where: \.isLetter),
