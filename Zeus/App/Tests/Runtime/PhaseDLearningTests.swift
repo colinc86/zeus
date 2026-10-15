@@ -112,7 +112,7 @@ import ZeusProtocol
         let shadow = await f.runtime.callTool("zeus_rule_shadow", arguments: ["ruleID": .string(rule.id), "wouldHave": "Buy synthetic supplies", "amount": 14, "currency": "EUR"], sessionKey: session)
         #expect(!shadow.isError)
         let action = try #require(f.rules.ruleActions.first), cardID = try #require(action.approvalCardID)
-        #expect(f.cards.card(id: cardID)?.body.contains("14.0 EUR") == true)
+        #expect(f.cards.card(id: cardID)?.body.contains(ZeusRuntime.formattedRuleAmount(14, currency: "EUR")) == true)
         let args: JSONValue = ["ruleID": .string(rule.id), "did": "Buy synthetic supplies", "approvalID": .string(action.id)]
         #expect(await f.runtime.callTool("zeus_rule_acted", arguments: args, sessionKey: session).isError)
         f.cards.respond(id: cardID, option: "approve", label: "Approve this purchase")
