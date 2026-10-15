@@ -7,7 +7,8 @@ final class RulesPaneModel {
     @ObservationIgnored let store: any RulesStore
     @ObservationIgnored let journal: JournalViewerModel
     @ObservationIgnored private let clock: () -> Date
-    var selectedRuleID: String?
+    private(set) var selectionRevision: UInt64 = 0
+    var selectedRuleID: String? { didSet { selectionRevision &+= 1 } }
     var editingID: String?
     var sentence = ""
     var appIDs = ""
@@ -60,6 +61,54 @@ final class RulesPaneModel {
             try store.setStatus(enabled ? .active : .retired, id: rule.id, at: clock())
         }
     }
+    func outcomes(for rule: LearnedRule) -> [RuleOutcomeEvent] {
+        (store as? any RuleLifecycleStoring)?.outcomeEvents.filter { $0.ruleID == rule.id }
+            .sorted { $0.at == $1.at ? $0.id > $1.id : $0.at > $1.at } ?? []
+    }
+    func shadowCaption(_ rule: LearnedRule) -> String {
+        guard let action = (store as? any RuleLifecycleStoring)?.ruleActions
+            .filter({ $0.ruleID == rule.id && $0.kind == .shadow }).max(by: { $0.created < $1.created }) else {
+            return "Seen once. Zeus didn't act."
+        }
+        return "Seen once: " + action.text
+    }
+    static func outcomeLabel(_ outcome: RuleOutcome) -> String {
+        switch outcome {
+        case .accepted: "Accepted"
+        case .undone: "Undone"
+        case .skipped: "Skipped"
+        case .ignored: "Ignored"
+        case .stale: "Never applied"
+        case .toggledOff: "Turned off"
+        case .toggledOn: "Turned on"
+        case .edited: "Edited"
+        }
+    }
+    static func dateText(_ date: Date, time: Bool = true) -> String {
+        let formatter = DateFormatter(); formatter.dateFormat = time ? "EEE d MMM HH:mm" : "EEE d MMM"
+        return formatter.string(from: date)
+    }
+    static func outcomeSource(_ event: RuleOutcomeEvent) -> String {
+        switch event.source {
+        case .explicit:
+            switch event.outcome {
+            case .accepted: "you said OK"; case .toggledOff: "turned off in Settings"
+            case .toggledOn: "turned on in Settings"; case .edited: "edited by you"
+            case .undone: "you pressed Undo"
+            case .skipped: "you skipped its question"; case .ignored: "left unanswered for a day"
+            case .stale: "no match in 30 days"
+            }
+        case .actedUnchanged: "action left unchanged"
+        case .heldRead: "held messages read"
+        case .holdShown: "you pressed Show"
+        case .timedQuestion: "its question"
+        case .shadowDeclined: "you pressed Not this"
+        case .shadowIgnored: "suggested action unanswered"
+        case .resultIgnored: "prepared list unopened"
+        case .stale: "no match in 30 days"
+        }
+    }
+    static func alwaysAsks(_ rule: LearnedRule) -> Bool { rule.trigger.kind == "spend" }
     func approve(_ rule: LearnedRule) { setEnabled(true, rule: rule) }
     func delete(_ rule: LearnedRule) {
         guard mutate({ try store.delete(id: rule.id) }) else { return }
@@ -73,7 +122,12 @@ final class RulesPaneModel {
         guard let rule = deletedRule, let deadline = undoDeadline, clock() < deadline else { deletedRule = nil; return }
         if mutate({ try store.restoreDeleted(rule) }) { undoExpiry?.cancel(); deletedRule = nil; undoDeadline = nil }
     }
-    func dismiss(_ rule: LearnedRule) { _ = mutate { try store.setStatus(.proposed, id: rule.id, at: clock()) } }
+    func dismiss(_ rule: LearnedRule) {
+        _ = mutate {
+            if let lifecycle = store as? any RuleLifecycleStoring { try lifecycle.declineRule(id: rule.id, at: clock()) }
+            else { try store.setStatus(.proposed, id: rule.id, at: clock()) }
+        }
+    }
     private func mutate(_ action: () throws -> Void) -> Bool {
         do { try action(); error = nil; return true }
         catch { self.error = "Couldn't save this rule. Try again."; return false }

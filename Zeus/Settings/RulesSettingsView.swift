@@ -64,9 +64,10 @@ struct RulesSettingsView: View {
                 actions(rule)
             }
             Text(RulesPaneModel.triggerText(rule.trigger, appName: JournalDisplay.appName)).settingsCaption()
-            if rule.status == .shadow { Text("Seen once. Zeus didn't act.").settingsCaption() }
+            if rule.status == .shadow { Text(model.shadowCaption(rule)).settingsCaption() }
             HStack(spacing: 6) {
-                RuleConfidence(confidence: rule.confidence)
+                if RulesPaneModel.alwaysAsks(rule) { Text("Always asks").settingsCaption() }
+                else { RuleConfidence(confidence: rule.confidence) }
                 Text("· \(rule.updatedBy == .agent ? "from your assistant" : rule.created == rule.updated ? "added by you" : "edited by you") · \(rule.updated.formatted(.relative(presentation: .named)))").settingsCaption()
             }
             HStack {
@@ -115,10 +116,11 @@ struct RuleConfidence: View {
     }
 }
 
-private struct RuleEvidenceView: View {
+struct RuleEvidenceView: View {
     let model: RulesPaneModel
     let rule: LearnedRule
     var body: some View {
+        ScrollView {
         VStack(alignment: .leading, spacing: 12) {
             Text("Why this rule").settingsTitle()
             let evidence = model.journal.evidence(ids: rule.evidence)
@@ -126,8 +128,24 @@ private struct RuleEvidenceView: View {
             if evidence.count > 5 { Text("and \(evidence.count - 5) more").settingsCaption() }
             if evidence.count < rule.evidence.count { Text("Some of the reasons were deleted.").settingsCaption() }
             if evidence.isEmpty { Text("No stored evidence remains for this rule.").settingsCaption() }
-            Text("\(rule.updatedBy == .agent ? "Proposed by your assistant" : "Added by you") on \(rule.created.formatted(date: .abbreviated, time: .omitted))").settingsCaption()
-        }.padding(20).frame(width: 440).environment(\.zeusFontChoice, .system)
+            Text("\((rule.author ?? rule.updatedBy) == .agent ? "Proposed by your assistant" : "Added by you") on \(RulesPaneModel.dateText(rule.created, time: false))").settingsCaption()
+            SettingsDivider()
+            Text("What happened since").settingsHeading()
+            let events = model.outcomes(for: rule)
+            if events.isEmpty { Text("Nothing has happened with this rule yet.").settingsCaption() }
+            ForEach(Array(events.prefix(10))) { event in
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    RuleOutcomeGlyph(outcome: event.outcome).accessibilityHidden(true)
+                    Text("\(RulesPaneModel.dateText(event.at)) · \(RulesPaneModel.outcomeLabel(event.outcome)) · \(RulesPaneModel.outcomeSource(event))").settingsCaption()
+                }.accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(RulesPaneModel.dateText(event.at)), \(RulesPaneModel.outcomeLabel(event.outcome)), \(RulesPaneModel.outcomeSource(event))")
+            }
+            if events.count > 10 { Text("and \(events.count - 10) earlier").settingsCaption() }
+            if RulesPaneModel.alwaysAsks(rule) { Text("Always asks · \(RuleConfidence.word(rule.confidence))").settingsCaption() }
+            else { RuleConfidence(confidence: rule.confidence) }
+        }.padding(20)
+        }.frame(width: 440, height: min(560, max(320, (NSScreen.main?.visibleFrame.height ?? 800) - 100)))
+            .environment(\.zeusFontChoice, .system)
     }
 }
 
@@ -192,5 +210,28 @@ private struct RuleEditorView: View {
         }.padding(24).frame(width: 560).environment(\.zeusFontChoice, .system)
             .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).toggleStyle(ZeusCheckboxStyle())
             .onAppear { cancelFocused = true }
+    }
+}
+
+/// Uses the existing pixel symbols and tiny drawn marks, avoiding unsupported font glyphs.
+private struct RuleOutcomeGlyph: View {
+    let outcome: RuleOutcome
+    @Environment(\.zeusPalette) private var palette
+    var body: some View {
+        Group {
+            switch outcome {
+            case .accepted: ZeusGlyph(.check)
+            case .undone: ZeusGlyph(.reply)
+            case .skipped: ZeusGlyph(.close)
+            case .ignored, .stale: Rectangle().frame(width: 7, height: 1).offset(y: -3)
+            case .toggledOff: Circle().stroke(lineWidth: 1).frame(width: 6, height: 6)
+            case .toggledOn: Circle().frame(width: 6, height: 6)
+            case .edited:
+                Path { path in
+                    for step in 0..<5 { path.addRect(CGRect(x: step + 1, y: 5 - step, width: 2, height: 2)) }
+                    path.addRect(CGRect(x: 0, y: 7, width: 2, height: 1))
+                }.frame(width: 7, height: 8)
+            }
+        }.foregroundStyle(palette.secondaryText).frame(width: 8)
     }
 }

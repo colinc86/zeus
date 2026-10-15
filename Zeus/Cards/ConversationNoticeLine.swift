@@ -83,6 +83,7 @@ struct ConversationNoticeLine: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(notice.summary)
+        .help(notice.help ?? "")
         .onChange(of: notice.resolvedTitle) { old, done in
             if old != done, let done { announce("\(notice.summary). \(done).") }
         }

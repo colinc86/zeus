@@ -34,6 +34,30 @@ final class LearningPresentation {
                 && policies.policy(1).allows(bundleID: id, name: name, privateApps: learn?.settings.excludedApps ?? ExcludedApp.defaults)
         }
     }
+    static let storageWaitingMessage = "Zeus can't open its journal and rules right now. New records are kept only in memory until it can; quitting Zeus before then loses them."
+    /// Store warnings remain independent of capture permissions and transient runtime errors.
+    var storageWarnings: [String] {
+        var warnings: [String] = []
+        for (error, recovery) in [(journal?.lastError, journal as? any LearningStorageRecovering),
+                                  (rules?.store.lastError, rules?.store as? any LearningStorageRecovering)] {
+            let presentedError = error == LearningStorageAvailability.waitingMessage ? Self.storageWaitingMessage : error
+            let warning = presentedError ?? ((recovery?.storageWaitingForUnlock == true || (recovery?.pendingStorageWrites ?? 0) > 0)
+                ? Self.storageWaitingMessage : nil)
+            if let warning, !warnings.contains(warning) { warnings.append(warning) }
+        }
+        return warnings
+    }
+    /// Unlock and session activation supplement the stores' own bounded retry timers; never request a key or permission here.
+    func retryLearningStorage() {
+        var attemptedRecovery = false
+        for recovery in [journal as? any LearningStorageRecovering, rules?.store as? any LearningStorageRecovering].compactMap({ $0 }) {
+            if recovery.storageWaitingForUnlock || recovery.pendingStorageWrites > 0 {
+                attemptedRecovery = true
+                recovery.retryPendingWrites()
+            }
+        }
+        if attemptedRecovery { viewer?.reload() }
+    }
     var redactionCaption: String {
         let prefix = "Private details are removed on this Mac before anything is kept."
         if SystemLanguageModel.default.isAvailable { return prefix }
@@ -52,6 +76,15 @@ final class LearningPresentation {
             else { defaults.removeObject(forKey: "learn.contextLedgerClearedAt") }
             self.error = "Couldn't delete the journal. Try again."
         }
+    }
+    var journalAccessPolicy: JournalAccessPolicy {
+        var enabled: Set<JournalLevel> = []
+        if learn.settings.enabled { enabled.insert(.activity) }
+        for level in [JournalLevel.focus, .screen, .typed] {
+            let policy = policies.policy(level.rawValue)
+            if policy.enabled && policy.consented { enabled.insert(level) }
+        }
+        return JournalAccessPolicy(enabledLevels: enabled, rawLevels: Set(enabled.filter { policies.rawAllowed($0.rawValue) }))
     }
     var enabled: Bool { learn.settings.enabled || (2...4).contains { policies.policy($0).enabled && policies.policy($0).consented } }
     /// Read only when building the menu; no notification, announcement, avatar state or thread entry is emitted.

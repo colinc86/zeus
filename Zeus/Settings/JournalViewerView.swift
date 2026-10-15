@@ -51,6 +51,7 @@ struct JournalViewerView: View {
             if model.items.isEmpty {
                 Text(model.level == 0 && model.app.isEmpty && model.search.isEmpty ? "Nothing kept on this day." : "Nothing matches.").settingsCaption()
             }
+            ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
             ForEach(model.timeline) { row in
@@ -66,11 +67,15 @@ struct JournalViewerView: View {
                 } else if case .record(let item) = row {
                 JournalRecordRow(item: item, sent: model.sentOnly, expanded: expanded.contains(item.id), toggle: {
                     if !expanded.insert(item.id).inserted { expanded.remove(item.id) }
-                }, delete: { model.deleteItem(item) })
+                }, delete: { model.deleteItem(item) }).id(item.id)
                 }
                 SettingsDivider()
             }
                 }.frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .onChange(of: model.answerSelectionRevision, initial: true) { _, _ in
+                if let id = model.selectedAnswerID { expanded.insert(id); proxy.scrollTo(id, anchor: .top) }
+            }
             }
             HStack {
                 if model.deletedItem != nil || model.deletedTyping != nil {
@@ -178,6 +183,7 @@ struct JournalItemView: View {
         case "reflection": "Day reflection"
         case "digest": "Morning summary"
         case "moment": "Note"
+        case "journal_answer": "Journal answer"
         default: item.payload.value.description
         }
     }
@@ -216,12 +222,14 @@ private struct JournalRecordRow: View {
                         ZeusSessionLabel(item.payload.value.details["sessionLabel"] ?? item.payload.value.details["session"] ?? "Assistant",
                             colorIndex: ZeusSessionLabel.colorIndex(for: item.payload.value.details["sessionKey"] ?? item.payload.value.details["sessionLabel"] ?? "assistant"))
                         Spacer()
-                        Text("\((item.payload.value.text ?? "").split(whereSeparator: \.isWhitespace).count) words").settingsCaption()
+                        Text(JournalAnswerDisplay.size(item)).settingsCaption()
                     }
                 }.buttonStyle(.plain).accessibilityLabel("Show exact sent text: \(item.payload.value.description)")
                     .accessibilityValue(expanded ? "Expanded" : "Collapsed")
+                if let caption = JournalAnswerDisplay.rawCaption(item) { Text(caption).settingsCaption() }
                 if expanded {
-                    ZeusFieldChrome { Text(item.payload.value.text ?? item.payload.value.description).settingsBody().textSelection(.enabled) }
+                    if JournalAnswerDisplay.isAnswer(item) { JournalAnswerDetail(item: item) }
+                    else { ZeusFieldChrome { Text(item.payload.value.text ?? item.payload.value.description).settingsBody().textSelection(.enabled) } }
                 }
             } else {
                 JournalItemView(item: item)

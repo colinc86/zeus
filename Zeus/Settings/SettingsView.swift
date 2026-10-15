@@ -69,8 +69,8 @@ struct SettingsView: View {
                 }
                 .onChange(of: managed.confirmation, initial: true) { revealManagedConfirmation(proxy) }
                 .onChange(of: navigation.tab) { revealManagedConfirmation(proxy) }
-                .onChange(of: learning?.rules?.selectedRuleID) { _, id in
-                    guard navigation.tab == .rules, let id else { return }
+                .onChange(of: learning?.rules?.selectionRevision, initial: true) { _, _ in
+                    guard navigation.tab == .rules, let id = learning?.rules?.selectedRuleID else { return }
                     Task { @MainActor in await Task.yield(); proxy.scrollTo(id, anchor: .center) }
                 }
             }
@@ -117,6 +117,7 @@ struct SettingsView: View {
                 if let learning, let learn {
                     Text("Learn from me").settingsTitle()
                     if learning.enabled { Text(learning.redactionCaption).settingsCaption() }
+                    LearningStorageWarningView(warnings: learning.storageWarnings)
                     PrivacySettingsView(learn: learn, observations: learning.policies,
                         onObservationChange: { learning.settingsChanged() }, deleteAll: { learning.deleteEverything() })
                     SettingsDivider()
