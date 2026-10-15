@@ -30,6 +30,8 @@ private actor RuntimeHostBuilder {
         var inputs = [root.appendingPathComponent("TestFixtures/E2EHost/RuntimeHost.swift"),
                       root.appendingPathComponent("Zeus/Shared/AppSeams.swift"),
                       root.appendingPathComponent("Zeus/Learn/Seams.swift"),
+                      root.appendingPathComponent("Zeus/Learn/Journal/JournalEncryption.swift"),
+                      root.appendingPathComponent("Zeus/Learn/Journal/LearningStorageRecovery.swift"),
                       root.appendingPathComponent("Zeus/Cards/AttachmentTarget.swift"),
                       root.appendingPathComponent("Zeus/Cards/CardStore.swift"),
                       root.appendingPathComponent("Zeus/Cards/ContextSendIntent.swift"),

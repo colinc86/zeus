@@ -85,3 +85,11 @@ ordinary tests.
   opt-ins remain skipped, not falsely reported as executed.
 - `python3 -B Zeus/App/Tests/Runtime/LG2LiveHostLeaseTests.py`: 1 test passes.
 - Full-suite and load results are recorded below after the proof runs.
+
+The first complete post-fix run reached all 1,001 app tests in 208.751 seconds,
+with no managed deadline cascade. Its two failures were a pre-existing Phase D
+headless source-list omission (`LearningStorageRecovering` and
+`LearningStorageError`). P13 and Python headless builders now copy their actual
+recovery/encryption declarations; no key provider is instantiated. The failed
+preflight is retained as `build/lg2/preflight-missing-host-sources.log` and is
+not counted toward the three consecutive passes.
