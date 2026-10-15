@@ -127,13 +127,17 @@ struct SettingsView: View {
                         ScreenPrivacyView(model: screen.privacy).zeusThemeAppearance(settings.currentTheme)
                         SettingsDivider()
                     }
+                    if let typing = learning.typing {
+                        TypingPrivacyView(model: typing.privacy).zeusThemeAppearance(settings.currentTheme)
+                        SettingsDivider()
+                    }
                     Text("What Zeus kept").settingsTitle()
                     Text("Every record exactly as stored, and everything sent to your assistant.").settingsCaption()
                     KeyboardButton("Open What Zeus Kept…") { openJournal() }.accessibilityLabel("Open What Zeus Kept…")
                         .disabled(learning.viewer == nil)
                     SettingsDivider()
                     JournalPrivacyActions(learn: learn, enabled: learning.enabled, delete: { learning.deleteEverything() })
-                    if let error = learning.error ?? learning.focus?.error ?? learning.runtimeProblem() { Text(error).settingsError() }
+                    if let error = learning.error ?? learning.focus?.error ?? learning.typing?.observer?.lastError ?? learning.runtimeProblem() { Text(error).settingsError() }
                 } else if let learn { PrivacySettingsView(learn: learn) }
                 else { Text("Learn from me isn't available here.").settingsCaption() }
             }

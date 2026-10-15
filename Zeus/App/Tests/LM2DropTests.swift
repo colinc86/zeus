@@ -68,8 +68,8 @@ import ZeusProtocol
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = ObservationSettings(defaults: defaults)
         #expect(!settings.policy(2).enabled)
-        policy.enabled = true; settings.set(2, policy); settings.set(4, policy)
+        policy.enabled = true; settings.set(2, policy); settings.set(5, policy)
         #expect(ObservationSettings(defaults: defaults).policy(2) == policy)
-        #expect(!settings.policy(4).enabled)
+        #expect(!settings.policy(5).enabled)
     }
 }

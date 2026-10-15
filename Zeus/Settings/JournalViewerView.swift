@@ -16,7 +16,7 @@ struct JournalWindowView: View {
                 KeyboardButton(dayTitle) { model.day = Date() }.accessibilityLabel("Journal day: \(dayTitle); show today")
                 KeyboardButton("›") { step(1) }.accessibilityLabel("Next day")
                 if !model.sentOnly {
-                    ZeusMenuPicker("Level", choices: [ZeusChoice(id: 1, title: "Apps and timing"), ZeusChoice(id: 2, title: "Windows and pages"), ZeusChoice(id: 3, title: "Screen")],
+                    ZeusMenuPicker("Level", choices: [ZeusChoice(id: 1, title: "Apps and timing"), ZeusChoice(id: 2, title: "Windows and pages"), ZeusChoice(id: 3, title: "Screen"), ZeusChoice(id: 4, title: "Typing")],
                         selection: Binding<Int?>(get: { model.level == 0 ? nil : model.level }, set: { model.level = $0 ?? 0 }), noneTitle: "All levels")
                     ZeusMenuPicker("App", choices: model.applications.map { ZeusChoice(id: $0, title: JournalDisplay.appName($0)) },
                         selection: Binding<String?>(get: { model.app.isEmpty ? nil : model.app }, set: { model.app = $0 ?? "" }), noneTitle: "All apps")
@@ -40,6 +40,7 @@ struct JournalWindowView: View {
 struct JournalViewerView: View {
     @Bindable var model: JournalViewerModel
     @State private var pendingDelete: JournalDeletion?
+    @State private var pendingTypingGroup: JournalTypingGroup?
     @State private var deleteTitle = ""
     @State private var exportError: String?
     @State private var expanded: Set<String> = []
@@ -55,6 +56,13 @@ struct JournalViewerView: View {
             ForEach(model.timeline) { row in
                 if case .picture(let picture) = row {
                     JournalPictureRow(picture: picture, model: model.pictures)
+                } else if case .typing(let group) = row {
+                    JournalTypingGroupView(group: group, initiallyExpanded: Calendar.current.isDateInToday(model.day), search: model.search,
+                        deleteRun: { model.deleteItem($0.item) }, deleteGroup: { group in
+                            pendingDelete = nil; pendingTypingGroup = group
+                            let times = group.rangeLabel().components(separatedBy: "–")
+                            deleteTitle = "Delete what Zeus kept from your typing in \(JournalDisplay.appName(group.app)) between \(times.first ?? "") and \(times.last ?? "")?"
+                        })
                 } else if case .record(let item) = row {
                 JournalRecordRow(item: item, sent: model.sentOnly, expanded: expanded.contains(item.id), toggle: {
                     if !expanded.insert(item.id).inserted { expanded.remove(item.id) }
@@ -65,7 +73,7 @@ struct JournalViewerView: View {
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }
             HStack {
-                if model.deletedItem != nil {
+                if model.deletedItem != nil || model.deletedTyping != nil {
                     Text("Deleted.").settingsCaption()
                     KeyboardButton("Undo") { model.undoDelete() }.accessibilityLabel("Undo journal deletion")
                 }
@@ -85,11 +93,15 @@ struct JournalViewerView: View {
                 KeyboardButton("Export…", action: export).accessibilityLabel("Export journal selection").disabled(model.items.isEmpty)
             }
             Text("Exports what's shown, as stored.").settingsCaption()
-            if pendingDelete != nil {
+            if pendingDelete != nil || pendingTypingGroup != nil {
                 Text(deleteTitle).settingsBody()
                 HStack {
-                    KeyboardButton("Cancel", focus: $cancelFocused) { pendingDelete = nil }.keyboardShortcut(.cancelAction).accessibilityLabel("Cancel deletion")
-                    KeyboardButton("Delete") { if let selection = pendingDelete, model.delete(selection) { pendingDelete = nil } }
+                    KeyboardButton("Cancel", focus: $cancelFocused) { pendingDelete = nil; pendingTypingGroup = nil }.keyboardShortcut(.cancelAction).accessibilityLabel("Cancel deletion")
+                    KeyboardButton("Delete") {
+                        if let group = pendingTypingGroup {
+                            if model.deleteTypingGroup(group) { pendingTypingGroup = nil }
+                        } else if let selection = pendingDelete, model.delete(selection) { pendingDelete = nil }
+                    }
                         .buttonStyle(ZeusButtonStyle(.destructive, size: .small)).accessibilityLabel("Confirm journal deletion")
                 }.onAppear { cancelFocused = true }
             }
@@ -99,7 +111,7 @@ struct JournalViewerView: View {
             _ in JournalPictureDetail(model: model.pictures)
         }
     }
-    private func requestDelete(_ selection: JournalDeletion, _ title: String) { deleteTitle = title; pendingDelete = selection }
+    private func requestDelete(_ selection: JournalDeletion, _ title: String) { pendingTypingGroup = nil; deleteTitle = title; pendingDelete = selection }
     private func export() {
         guard let data = model.export() else { return }
         let panel = NSSavePanel(); panel.allowedContentTypes = [.json]

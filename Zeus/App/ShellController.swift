@@ -115,6 +115,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         if let services = learningServices {
             learning.install(journal: services.journal, rules: services.rules, redactor: services.redactor, source: services.source)
             learning.screen?.privacy.reopen = { Self.reopenForScreenPermission() }
+            learning.typing?.privacy.reopen = { Self.reopenForScreenPermission() }
         } else if requirePrivateJournal { learning.reportStoreError() }
         cards.onContextReceipt = { [weak learning] key, intent in learning?.recordContextReceipt(key: key, intent: intent) ?? false }
         cards.retryContextReceipts()
@@ -1101,6 +1102,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         }
         if let jumpLine, managed.prioritizesMenuStatus { top.append(jumpLine) } else if let detail = menuUnreadDetail { top.append(.line(detail)) }
         if let issue = menuIssueDetail { top.append(.line(issue)) }
+        if let privateInput = learning.privateInputMenuLine { top.append(.line(privateInput)) }
         if let until = visibility.hiddenUntil, visibility.isHidden {
             top.append(.line("Hidden until \(until.formatted(date: .abbreviated, time: .shortened))"))
         }
