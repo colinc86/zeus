@@ -25,6 +25,16 @@ internal enum JSONRPC {
     static func toolResult(_ result: ToolResult) -> JSONValue {
         var json: [String: JSONValue] = ["content": [["type": "text", "text": .string(result.text)]], "isError": .bool(result.isError)]
         if let structured = result.structured { json["structuredContent"] = structured }
+        // Phase D journal answers carry only covered, bounded pictures approved by the app's per-level policy.
+        if !result.isError, case .string(let id) = result.structured?["answer_id"], id.hasPrefix("journal_answer_"),
+           case .array(let items) = result.structured?["items"] {
+            var content: [JSONValue] = [["type": "text", "text": .string(result.text)]]
+            for item in items {
+                guard item["picture"]?["mimeType"] == "image/jpeg", case .string(let data) = item["picture"]?["data"], data.utf8.count <= 200_000 else { continue }
+                content.append(["type": "image", "mimeType": "image/jpeg", "data": .string(data)])
+            }
+            json["content"] = .array(content)
+        }
         return .object(json)
     }
     static func channel(_ push: AgentPush) -> JSONValue {

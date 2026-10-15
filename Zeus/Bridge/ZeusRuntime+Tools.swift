@@ -35,6 +35,8 @@ extension ZeusRuntime {
             guard unexpected.isEmpty else {
                 throw ToolArgumentError("Unexpected arguments for \(name): \(unexpected.joined(separator: ", ")). Allowed: \(properties.keys.sorted().joined(separator: ", ")).")
             }
+            if name == "zeus_get_journal" { return try await callJournalTool(args, sessionKey: sessionKey, deferResultCommit: deferResultCommit) }
+            if ["zeus_rule_shadow", "zeus_rule_acted"].contains(name) { return try await callRuleActionTool(name, args: args, sessionKey: sessionKey) }
             if ["zeus_get_rules", "zeus_propose_rules"].contains(name) {
                 return try await callRuleTool(name, args: args, sessionKey: sessionKey)
             }
@@ -168,7 +170,7 @@ extension ZeusRuntime {
     }
     private func validateAgentCard(_ id: String, sessionKey: String) throws {
         guard let card = cards.card(id: id) else { return }
-        guard !id.hasPrefix(Self.managedCardPrefix) else { throw ToolArgumentError("Agent tools cannot change or dismiss native prompts or local Terminal notices.") }
+        guard !id.hasPrefix(Self.managedCardPrefix), !id.hasPrefix(Self.ruleSpendPrefix) else { throw ToolArgumentError("Agent tools cannot change or dismiss native prompts, purchase confirmations or local Terminal notices.") }
         // A rerouted answer grants its receiving session access to that card,
         // even though history preserves the original creator (CONTRACT §4).
         let handedOff = (ledger?.records ?? []).contains { $0.delivery.cardID == id && $0.delivery.sessionKey == sessionKey }

@@ -44,6 +44,11 @@ final class FakeCards: CardStoring, LocalCardActionHandling, AppChangeRecording,
     var learningContextReceipts: [LearningContextDeliveryReceipt] = []
     func recordLearningContextReceipt(_ receipt: LearningContextDeliveryReceipt) { learningContextReceipts.append(receipt) }
     var learningActions: [String: @MainActor () -> Void] = [:]
+    var learningSecondaryActions: [String: @MainActor () -> Void] = [:]
+    func recordLearningNotice(_ notice: LearningNotice, action: (@MainActor () -> Void)?, secondaryTitle: String?, secondary: (@MainActor () -> Void)?) -> Bool {
+        learningSecondaryActions[notice.id] = secondary
+        return recordLearningNotice(notice, action: action)
+    }
     func recordLearningNotice(_ notice: LearningNotice, action: (@MainActor () -> Void)?) -> Bool {
         learningActions[notice.id] = action
         if let i = learningNotices.firstIndex(where: { $0.id == notice.id }) { learningNotices[i] = notice; return false }
