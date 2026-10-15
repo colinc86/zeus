@@ -5,6 +5,8 @@ import Observation
 @MainActor @Observable
 final class JournalViewerModel {
     @ObservationIgnored let journal: any JournalStore
+    let pictures: JournalPictureModel
+    private(set) var timeline: [JournalTimelineRow] = []
     @ObservationIgnored private let calendar: Calendar
     @ObservationIgnored var beforeDelete: () -> Void = {}
     var day: Date { didSet { reload() } }
@@ -22,7 +24,9 @@ final class JournalViewerModel {
     @ObservationIgnored private var undoDeadline: Date?
 
     init(journal: any JournalStore, calendar: Calendar = .current, now: Date = Date(), clock: @escaping () -> Date = Date.init) {
-        self.journal = journal; self.calendar = calendar; self.clock = clock; day = now
+        self.journal = journal; pictures = JournalPictureModel(journal: journal, clock: clock); self.calendar = calendar; self.clock = clock; day = now
+        pictures.beforeDelete = { [weak self] in self?.beforeDelete(); self?.forgetUndo() }
+        pictures.didChange = { [weak self] in self?.reload() }
         reload(); observe()
     }
     var query: JournalQuery {
@@ -42,8 +46,11 @@ final class JournalViewerModel {
             items = try journal.items(matching: query).sorted { $0.time == $1.time ? $0.id < $1.id : $0.time > $1.time }
             var all = query; all.apps = []; all.levels = []; all.text = ""
             applications = Array(Set(try journal.items(matching: all).compactMap(\.app))).sorted()
+            var catalogQuery = query; catalogQuery.text = ""
+            timeline = JournalTimelineRow.grouped(items, catalog: try journal.items(matching: catalogQuery))
+            pictures.update(timeline)
             error = nil
-        } catch { self.error = "Couldn't read the journal. Nothing was deleted."; items = [] }
+        } catch { self.error = "Couldn't read the journal. Nothing was deleted."; items = []; timeline = []; pictures.update([]) }
     }
     @discardableResult func delete(_ selection: JournalDeletion) -> Bool {
         beforeDelete(); forgetUndo()
@@ -63,7 +70,7 @@ final class JournalViewerModel {
         do { try journal.append(item); forgetUndo(); reload() }
         catch { self.error = "Couldn't restore this record. Try again." }
     }
-    func forgetUndo() { undoExpiry?.cancel(); undoExpiry = nil; undoDeadline = nil; deletedItem = nil }
+    func forgetUndo() { pictures.forgetUndo(); undoExpiry?.cancel(); undoExpiry = nil; undoDeadline = nil; deletedItem = nil }
 
     func export() -> Data? {
         do { let data = try journal.export(matching: query); error = nil; return data }

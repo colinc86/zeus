@@ -12,6 +12,8 @@ final class CardStore: CardStoring {
     private(set) var revealedIDs: Set<String> = []
     private(set) var seenIDs: Set<String> = []
     private(set) var outgoingStates: [String: OutgoingMessageState] = [:] { didSet { if outgoingStates != oldValue { threadRevision &+= 1 } } }
+    @ObservationIgnored private(set) var contextIntents: [String: ContextSendIntent] = [:]
+    @ObservationIgnored var onContextReceipt: ((String, ContextSendIntent) -> Bool)?
     private(set) var outgoingDeliveryIDs: [String: String] = [:]
     /// Quiet app-owned lines in the thread, such as "Sent your daily summary · View" (L1).
     private(set) var notices: [ThreadNotice] = [] { didSet { if notices != oldValue { threadRevision &+= 1 } } }
@@ -43,12 +45,14 @@ final class CardStore: CardStoring {
         var outgoingDeliveryIDs: [String: String] = [:]
         /// Quiet app-owned thread lines (L1). Older history has none.
         var notices: [ThreadNotice] = []
+        var contextIntents: [String: ContextSendIntent]?
         init(cards: [Card], seenIDs: Set<String>, revealedIDs: Set<String>, outgoingStates: [String: OutgoingMessageState] = [:], outgoingDeliveryIDs: [String: String] = [:],
-             notices: [ThreadNotice]) {
+             notices: [ThreadNotice], contextIntents: [String: ContextSendIntent]? = nil) {
+            self.contextIntents = contextIntents
             self.cards = cards; self.seenIDs = seenIDs; self.revealedIDs = revealedIDs
             self.outgoingStates = outgoingStates; self.outgoingDeliveryIDs = outgoingDeliveryIDs; self.notices = notices
         }
-        private enum CodingKeys: String, CodingKey { case version, cards, seenIDs, revealedIDs, outgoingStates, outgoingDeliveryIDs, notices }
+        private enum CodingKeys: String, CodingKey { case version, cards, seenIDs, revealedIDs, outgoingStates, outgoingDeliveryIDs, notices, contextIntents }
         init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             version = try container.decode(Int.self, forKey: .version)
@@ -56,6 +60,7 @@ final class CardStore: CardStoring {
             seenIDs = try container.decode(Set<String>.self, forKey: .seenIDs)
             outgoingStates = try container.decodeIfPresent([String: OutgoingMessageState].self, forKey: .outgoingStates) ?? [:]
             outgoingDeliveryIDs = try container.decodeIfPresent([String: String].self, forKey: .outgoingDeliveryIDs) ?? [:]
+            contextIntents = try container.decodeIfPresent([String: ContextSendIntent].self, forKey: .contextIntents)
             notices = try container.decodeIfPresent([ThreadNotice].self, forKey: .notices) ?? []
             // Legacy history that was already read must never replay after this upgrade.
             revealedIDs = try container.decodeIfPresent(Set<String>.self, forKey: .revealedIDs) ?? seenIDs
@@ -121,15 +126,18 @@ final class CardStore: CardStoring {
     }
 
     /// Persist the outgoing bubble and its initial state before allowing any agent delivery.
-    @discardableResult func addOutgoing(_ card: Card, deliveryID: String = UserMessageDelivery.makeID()) -> Bool {
+    @discardableResult func addOutgoing(_ card: Card, deliveryID: String = UserMessageDelivery.makeID(), context: ContextSendIntent? = nil) -> Bool {
         guard card.kind == .userMessage, self.card(id: card.id) == nil, !outgoingDeliveryIDs.values.contains(deliveryID) else { return false }
+        var nextContexts = contextIntents
+        if let context { nextContexts["delivery:" + deliveryID] = context }
         var nextStates = outgoingStates
         nextStates[card.id] = .sending
         let nextCards = cards + [card]
         var nextIDs = outgoingDeliveryIDs; nextIDs[card.id] = deliveryID
         guard save(snapshot: Snapshot(cards: nextCards, seenIDs: seenIDs, revealedIDs: revealedIDs,
-                                      outgoingStates: nextStates, outgoingDeliveryIDs: nextIDs, notices: notices)) else { return false }
+                                      outgoingStates: nextStates, outgoingDeliveryIDs: nextIDs, notices: notices, contextIntents: nextContexts)) else { return false }
         cards = nextCards
+        contextIntents = nextContexts
         outgoingStates = nextStates
         outgoingDeliveryIDs = nextIDs
         return true
@@ -349,7 +357,9 @@ final class CardStore: CardStoring {
 
     /// Returns false for stale/duplicate responses; persists the answer before notifying the runtime.
     @discardableResult
-    func respond(id: String, response: CardResponse) -> Bool {
+    func respond(id: String, response: CardResponse) -> Bool { respond(id: id, response: response, context: nil) }
+
+    @discardableResult func respond(id: String, response: CardResponse, context: ContextSendIntent?) -> Bool {
         expire()
         guard let index = cards.firstIndex(where: { $0.id == id }),
               cards[index].status == .open, cards[index].response == nil,
@@ -362,7 +372,10 @@ final class CardStore: CardStoring {
         nextCards[index].updatedAt = clock()
         nextSeenIDs.insert(id)
         let answered = nextCards[index]
-        guard save(snapshot: Snapshot(cards: nextCards, seenIDs: nextSeenIDs, revealedIDs: revealedIDs, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs, notices: notices)) else { return false }
+        var nextContexts = contextIntents
+        if let context { nextContexts["card:" + id] = context }
+        guard save(snapshot: Snapshot(cards: nextCards, seenIDs: nextSeenIDs, revealedIDs: revealedIDs, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs, notices: notices, contextIntents: nextContexts)) else { return false }
+        contextIntents = nextContexts
         cards = nextCards
         seenIDs = nextSeenIDs
         responseHandler?(answered, response)
@@ -394,8 +407,26 @@ final class CardStore: CardStoring {
     @discardableResult private func commit(_ next: Snapshot) -> Bool {
         guard save(snapshot: next) else { return false }
         cards = next.cards; seenIDs = next.seenIDs; revealedIDs = next.revealedIDs; outgoingStates = next.outgoingStates; outgoingDeliveryIDs = next.outgoingDeliveryIDs; notices = next.notices
+        if let contexts = next.contextIntents { contextIntents = contexts }
         pruneNoticeActions()
         return true
+    }
+
+    /// Runtime calls only after a real consumed/write receipt. A queued attempt has no receipt and no ledger row.
+    func acceptContextReceipt(_ receipt: LearningContextDeliveryReceipt) {
+        let key = receipt.cardID.map { "card:" + $0 } ?? "delivery:" + receipt.deliveryID
+        guard var intent = contextIntents[key] else { return }
+        intent.receipt = .init(receipt)
+        var next = snapshot; var contexts = contextIntents; contexts[key] = intent; next.contextIntents = contexts
+        guard commit(next) else { return }
+        retryContextReceipts()
+    }
+    func retryContextReceipts() {
+        for (key, intent) in contextIntents where intent.receipt != nil {
+            guard onContextReceipt?(key, intent) == true else { continue }
+            var next = snapshot; var contexts = contextIntents; contexts.removeValue(forKey: key); next.contextIntents = contexts
+            _ = commit(next)
+        }
     }
 
     /// Retry a failed write without changing or discarding the last durable state.
@@ -437,6 +468,7 @@ final class CardStore: CardStoring {
             outgoingStates = snapshot.outgoingStates.filter { ids.contains($0.key) }
             outgoingDeliveryIDs = snapshot.outgoingDeliveryIDs.filter { ids.contains($0.key) }
             notices = snapshot.notices
+            contextIntents = snapshot.contextIntents ?? [:]
         } catch { persistenceError = "Zeus couldn't read your conversation history. \(error.localizedDescription)" }
     }
 
@@ -450,7 +482,10 @@ final class CardStore: CardStoring {
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .iso8601
             encoder.outputFormatting = [.sortedKeys]
-            let data = try encoder.encode(snapshot ?? Snapshot(cards: cards, seenIDs: seenIDs, revealedIDs: revealedIDs, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs, notices: notices))
+            var next = snapshot ?? self.snapshot
+            let ids = Set(next.cards.map(\.id))
+            next.contextIntents = (next.contextIntents ?? contextIntents).filter { ids.contains($0.value.cardID) }
+            let data = try encoder.encode(next)
             try data.write(to: fileURL, options: .atomic)
             // Another successful transaction can still contain an older send caption.
             // Keep the repair action available until the known outcome is committed.

@@ -27,7 +27,7 @@ def build_host():
     source = package / "Sources/Host"
     shutil.rmtree(source, ignore_errors=True); source.mkdir(parents=True)
     inputs = ["Zeus/Learn/Seams.swift", "Zeus/Learn/LearnSettings.swift", "Zeus/Learn/ActivityStore.swift", "Zeus/Learn/LearningSummarizer.swift",
-        "Zeus/Settings/ObservationSettings.swift", "Zeus/Settings/FocusObserver.swift", "Zeus/Settings/FocusCaptureSource.swift", "Zeus/App/Tests/LM2NativeHost.swift"]
+        "Zeus/Learn/Screen/ScreenSeams.swift", "Zeus/Settings/ObservationSettings.swift", "Zeus/Settings/FocusObserver.swift", "Zeus/Settings/FocusCaptureSource.swift", "Zeus/App/Tests/LM2NativeHost.swift"]
     inputs += [str(p.relative_to(REPO)) for folder in ["Zeus/Learn/Journal", "Zeus/Learn/Redactor"] for p in (REPO / folder).glob("*.swift")]
     for name in inputs: shutil.copyfile(REPO / name, source / pathlib.Path(name).name)
     (package / "Package.swift").write_text('// swift-tools-version: 6.2\nimport PackageDescription\n' +

@@ -12,6 +12,8 @@ final class LearningPresentation {
     private(set) var viewer: JournalViewerModel?
     private(set) var rules: RulesPaneModel?
     private(set) var focus: FocusObserver?
+    private(set) var screen: ScreenLearningModel?
+    private(set) var ask: AskAboutThisModel?
     private(set) var error: String?
     @ObservationIgnored private var source: (any FocusCaptureSource)?
     @ObservationIgnored private var journal: (any JournalStore)?
@@ -35,19 +37,26 @@ final class LearningPresentation {
         return prefix + " Apple Intelligence is off, so only fixed patterns (emails, card numbers, passwords…) are caught."
     }
     func deleteEverything() {
-        focus?.invalidate(); learn.invalidatePendingCapture(); viewer?.forgetUndo()
+        focus?.invalidate(); screen?.invalidate(); ask?.invalidate(); learn.invalidatePendingCapture(); viewer?.forgetUndo()
         do {
             try journal?.delete(.all)
             learn.deleteEverything(); viewer?.reload(); error = nil
         } catch { self.error = "Couldn't delete the journal. Try again." }
     }
-    var enabled: Bool { learn.settings.enabled || (policies.policy(2).enabled && policies.policy(2).consented) }
+    var enabled: Bool { learn.settings.enabled || (policies.policy(2).enabled && policies.policy(2).consented) || (policies.policy(3).enabled && policies.policy(3).consented) }
     func install(journal: any JournalStore, rules: any RulesStore, redactor: any Redactor,
                  source: any FocusCaptureSource = MacFocusCaptureSource()) {
         focus?.stop()
         self.journal = journal; self.source = source
         (source as? MacFocusCaptureSource)?.onContextChange = { [weak self] in self?.captureContextChanged() }
         (source as? MacFocusCaptureSource)?.safariDetailsAllowed = { [weak policies] in policies?.policy(2).permitsSafariDetails ?? false }
+        screen?.stop()
+        if let frames = journal as? any FrameJournalStoring {
+            screen = ScreenLearningModel(policies: policies, learn: learn, journal: frames, redactor: redactor, focus: source)
+        }
+        ask = AskAboutThisModel(policies: policies, privacy: learn.settings, source: source, redactor: redactor,
+            paused: { [weak learn] in learn?.isPausedNow ?? true },
+            captureScreen: { [weak self] in await self?.screen?.observer?.captureOnDemand() })
         let viewer = JournalViewerModel(journal: journal)
         self.viewer = viewer; self.rules = RulesPaneModel(store: rules, journal: viewer)
         focus = FocusObserver(source: source, policies: policies,
@@ -58,16 +67,29 @@ final class LearningPresentation {
                 let item = JournalItem(time: capturedAt, level: .focus, app: app.bundleID, kind: .focus, payload: payload)
                 return { try journal.append(item) }
             }
-        viewer.beforeDelete = { [weak self] in self?.focus?.invalidate(); self?.learn.invalidatePendingCapture() }
+        viewer.beforeDelete = { [weak self] in self?.focus?.invalidate(); self?.screen?.invalidate(); self?.ask?.invalidate(); self?.learn.invalidatePendingCapture() }
         if !observing { observing = true; observeSettings(); observeRules() }
         settingsChanged(); scheduleRetention()
     }
     isolated deinit { retentionTask?.cancel() }
-    func stop() { retentionTask?.cancel(); retentionTask = nil; focus?.stop(); (source as? MacFocusCaptureSource)?.onContextChange = nil; observing = false }
+    func stop() { retentionTask?.cancel(); retentionTask = nil; focus?.stop(); screen?.stop(); ask?.invalidate(); (source as? MacFocusCaptureSource)?.onContextChange = nil; observing = false }
+    /// Idempotent ledger adapter: the app has no route/transport heuristics, only the runtime's actual receipt.
+    func recordContextReceipt(key: String, intent: ContextSendIntent) -> Bool {
+        guard let journal, let receipt = intent.receipt else { return false }
+        let id = "attached_" + intent.cardID
+        do {
+            var query = JournalQuery(); query.kinds = [.sentToAssistant]; query.limit = 100_000
+            if try journal.items(matching: query).contains(where: { $0.id == id }) { return true }
+            try journal.append(.init(id: id, time: receipt.deliveredAt, level: intent.kinds.contains("Picture") ? .screen : .focus,
+                kind: .sentToAssistant, payload: .init(.init(description: "Attached: " + intent.kinds.joined(separator: ", "), text: intent.body,
+                    details: ["kind": "attachments", "agent": receipt.agent, "sessionLabel": receipt.sessionLabel, "sessionID": receipt.sessionID]))))
+            error = nil; return true
+        } catch { self.error = "Couldn't save what was sent to your assistant. Zeus will try again."; return false }
+    }
     func reportStoreError() { error = "Zeus couldn't open its private journal or rules. Nothing new will be recorded." }
     func settingsChanged() {
         learn.invalidatePendingCapture()
-        focus?.invalidate()
+        focus?.invalidate(); ask?.invalidate(); screen?.settingsChanged()
         if policies.policy(2).enabled && policies.policy(2).consented { focus?.start() } else { focus?.stop() }
         pruneExpired()
         learn.captureCurrentActivity()
@@ -77,6 +99,7 @@ final class LearningPresentation {
         var retention = JournalRetention()
         retention.activityDays = learn.settings.retentionDays
         retention.focusDays = policies.policy(2).retentionDays
+        retention.descriptionDays = policies.policy(3).retentionDays
         do { try journal?.prune(retention: retention, now: now); error = nil }
         catch { self.error = "Couldn't remove expired journal records. Try again." }
     }
@@ -92,7 +115,7 @@ final class LearningPresentation {
         }
     }
     private func captureContextChanged() {
-        focus?.invalidate(); learn.invalidatePendingCapture(); contextDidChange()
+        focus?.invalidate(); screen?.contextChanged(); ask?.invalidate(); learn.invalidatePendingCapture(); contextDidChange()
     }
     var context: LearningContext {
         guard enabled, let source else { return .init(isPrivate: true) }
@@ -103,7 +126,8 @@ final class LearningPresentation {
                 let globalPrivate = learn.settings.excludedApps.contains { $0.matches(bundleID: app.bundleID, name: app.name) }
                 let l1 = learn.settings.enabled && policies.policy(1).allows(bundleID: app.bundleID, name: app.name, privateApps: learn.settings.excludedApps)
                 let l2 = policies.policy(2).enabled && policies.policy(2).allows(bundleID: app.bundleID, name: app.name, privateApps: learn.settings.excludedApps)
-                return globalPrivate || (!l1 && !l2)
+                let l3 = policies.policy(3).enabled && policies.policy(3).consented && policies.policy(3).allows(bundleID: app.bundleID, name: app.name, privateApps: learn.settings.excludedApps)
+                return globalPrivate || (!l1 && !l2 && !l3)
             } ?? true)
         let seconds = source.idleSeconds
         return LearningContext(frontmostApp: privateContext ? nil : app?.bundleID,
@@ -122,7 +146,7 @@ final class LearningPresentation {
     private func observeSettings() {
         guard observing else { return }
         withObservationTracking {
-            _ = policies.policy(1); _ = policies.policy(2)
+            _ = policies.policy(1); _ = policies.policy(2); _ = policies.policy(3); _ = policies.screenPerHour
             _ = learn.settings.enabled; _ = learn.settings.pausedUntil
             _ = learn.settings.excludedApps; _ = learn.settings.retentionDays
         } onChange: { [weak self] in

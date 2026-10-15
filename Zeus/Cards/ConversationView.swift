@@ -253,28 +253,30 @@ struct ConversationView: View {
     }
 
     @ViewBuilder private var attachmentDraft: some View {
+        if let caption = model.contextCaption {
+            Text(caption).zeusFont(.caption).foregroundStyle(palette.secondaryText).fixedSize(horizontal: false, vertical: true)
+        }
         if !model.draftAttachments.isEmpty {
-            ScrollView(.horizontal) {
-                HStack(spacing: 8) {
+            ScrollView(.vertical) {
+                ZeusChipFlow(spacing: 6) {
                     ForEach(model.draftAttachments, id: \.id) { item in
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(spacing: 8) {
-                                Text(item.label).lineLimit(1).frame(maxWidth: 160)
-                                KeyboardButton("Remove") { model.removeAttachment(id: item.id) }
-                                    .accessibilityLabel("Remove \(item.label)")
+                        HStack(spacing: 4) {
+                            if let context = model.contextItems[item.id], context.kind == .picture,
+                               let image = NSImage(contentsOfFile: item.target) {
+                                Image(nsImage: image).resizable().scaledToFit().frame(width: 32, height: 20).accessibilityHidden(true)
                             }
-                            if item.kind == .folder && managed?.enabled == true {
-                                KeyboardButton("Work in this folder") { workInFolder(item.target) }
-                                    .accessibilityLabel("Work in \(item.label)")
-                            }
+                            ZeusAttachmentChip(item,
+                                actionTitle: item.kind == .folder && managed?.enabled == true ? "Work in this folder" : nil,
+                                onAction: item.kind == .folder && managed?.enabled == true ? { workInFolder(item.target) } : nil,
+                                onRemove: { model.removeAttachment(id: item.id) })
+                                .disabled(model.isSending)
+                                .help(model.contextItems[item.id]?.preview ?? item.label)
                         }
-                        .zeusFont(.caption).foregroundStyle(palette.text)
-                        .padding(8).background(palette.field)
-                        .overlay(Rectangle().strokeBorder(palette.fieldBorder, lineWidth: ZeusTheme.pixel))
                     }
-                }
+                }.frame(maxWidth: .infinity, alignment: .leading)
             }
-            .fixedSize(horizontal: false, vertical: true)
+            .defaultScrollAnchor(.top)
+            .frame(height: min(120, CGFloat(max(1, (model.draftAttachments.count + 1) / 2)) * 40))
         }
     }
 

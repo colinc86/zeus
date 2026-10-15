@@ -44,22 +44,6 @@ struct PrivacySettingsView: View {
                 .disabled(!learn.isAvailable)
             Text(Self.scope).settingsCaption()
             Text(Self.caveat).settingsCaption()
-            if settings.enabled { pauseRow }
-            if let error = learn.writeError ?? learn.learnings?.saveError { Text(error).settingsError() }
-
-            SettingsDivider()
-            Text("What Zeus has recorded").settingsTitle()
-            RecordedTodayList(events: learn.today)
-
-            SettingsDivider()
-            Text("Notes to your assistant").settingsTitle()
-            Text("Each morning Zeus sends a short summary of the day before. It can also send up to four notes a day:").settingsCaption()
-            ForEach(MomentKind.allCases) { kind in
-                Toggle(kind.title, isOn: Binding(get: { settings.momentKinds.contains(kind) },
-                                                 set: { if $0 { settings.momentKinds.insert(kind) } else { settings.momentKinds.remove(kind) } }))
-                    .accessibilityLabel(kind.title)
-            }
-
             SettingsDivider()
             if let observations {
                 ObservationScopeView(settings: observations, privacy: settings, level: 1, onChange: onObservationChange)
@@ -86,10 +70,29 @@ struct PrivacySettingsView: View {
             SettingsSegments(label: "Keep activity for", options: LearnSettings.retentionChoices.map { ($0, "\($0) days") },
                              selection: $settings.retentionDays)
             Text("Summaries are kept for a year. Older activity is deleted every night.").settingsCaption()
+
+            if settings.enabled && observations == nil { pauseRow }
+            if let error = learn.writeError ?? learn.learnings?.saveError { Text(error).settingsError() }
+
+            SettingsDivider()
+            Text("What Zeus has recorded").settingsHeading()
+            RecordedTodayList(events: learn.today)
+
+            SettingsDivider()
+            Text("Notes to your assistant").settingsHeading()
+            Text("Each morning Zeus sends a short summary of the day before. It can also send up to four notes a day:").settingsCaption()
+            ForEach(MomentKind.allCases) { kind in
+                Toggle(kind.title, isOn: Binding(get: { settings.momentKinds.contains(kind) },
+                                                 set: { if $0 { settings.momentKinds.insert(kind) } else { settings.momentKinds.remove(kind) } }))
+                    .accessibilityLabel(kind.title)
+            }
+
+            if observations == nil {
             if confirmingDelete { deleteConfirmation } else {
                 KeyboardButton("Delete Everything…") { confirmingDelete = true }
                     .buttonStyle(ZeusButtonStyle(.destructive, size: .small))
                     .accessibilityLabel("Delete Everything…")
+            }
             }
         }
         .sheet(isPresented: $showsIntro) {

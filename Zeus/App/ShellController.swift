@@ -39,6 +39,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     let learn: LearnFromMe
     let learning: LearningPresentation
     @ObservationIgnored let learningServices: LearningServices?
+    @ObservationIgnored private var contextCaptureTask: Task<Void, Never>?
     private(set) var isVisible = false
     /// The composition point can set this when ZeusRuntime.start() fails.
     var runtimeError: String? { didSet { messaging.startupError = runtimeError } }
@@ -113,7 +114,10 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         super.init()
         if let services = learningServices {
             learning.install(journal: services.journal, rules: services.rules, redactor: services.redactor, source: services.source)
+            learning.screen?.privacy.reopen = { Self.reopenForScreenPermission() }
         } else if requirePrivateJournal { learning.reportStoreError() }
+        cards.onContextReceipt = { [weak learning] key, intent in learning?.recordContextReceipt(key: key, intent: intent) ?? false }
+        cards.retryContextReceipts()
         learning.presentationChanged = { [weak self] in self?.refreshRulesTab() }
         refreshRulesTab()
         managed.hasPendingQuestion = { [weak cards] in cards?.hasOpenQuestion == true }
@@ -223,6 +227,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             if ConversationLayout.hotKeyCloses(isVisible: self.cardPanelState.isVisible, isKey: self.card.isKeyWindow) { self.closeCard() }
             else { self.showTalkPanel() }
         }
+        hotKey.onAskAboutThis = { [weak self] in self?.askAboutThis() }
         hotKey.start(settings.talkHotKey)
         observeHotKeySettings()
         observeMenuBarIconSetting()
@@ -249,6 +254,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         settings.stopWatchingUserFolders()
         learn.stop()
         learning.stop()
+        contextCaptureTask?.cancel(); contextCaptureTask = nil
         learningRuntime?.onReviewRule = nil; learningRuntime?.onLearningHoldCleared = nil
         learning.contextDidChange = {}; learning.runtimeProblem = { nil }
         journalWindow?.close()
@@ -328,6 +334,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     }
 
     private func refreshTimedState() {
+        cards.retryContextReceipts()
         cards.expire()
         status.tick()
         visibility.tick()
@@ -1100,6 +1107,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
         var zeus: [Item] = [
             .action("talk", "Talk to Zeus…", .talk, shortcut: talkShortcut),
+            .action("askAboutThis", "Ask About This", .askAboutThis, shortcut: contextShortcut),
             .action("visibility", visibility.isHidden ? "Show Zeus" : "Hide Zeus", .toggleVisibility),
             .action("hideHour", MenuPresentation.hideForHour, .hideForHour),
             .action("hideTomorrow", MenuPresentation.hideUntilTomorrow, .hideUntilTomorrow),
@@ -1132,6 +1140,35 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         return ZeusMenuModel(sections: [top, zeus, look, app, [.action("quit", "Quit Zeus", .quit, shortcut: .init(key: "q", command: true))]])
     }
 
+    private var contextShortcut: ZeusMenuModel.Shortcut? {
+        guard hotKey.isContextRegistered, let key = settings.talkHotKey.askAboutThis, let menuKey = key.menuKey else { return nil }
+        return .init(key: menuKey, command: key.command, option: key.option, control: key.control, shift: key.shift)
+    }
+
+    /// The explicit permission action reopens the bundle after normal shutdown has flushed app state.
+    private static func reopenForScreenPermission() {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", "sleep 1; exec /usr/bin/open -n \"$1\"", "zeus-reopen", Bundle.main.bundlePath]
+        do { try process.run(); NSApplication.shared.terminate(nil) }
+        catch { AccessibilityFeedback.announce("Couldn't reopen Zeus. Quit and open it again to start taking pictures.") }
+    }
+
+    /// Finish local capture before opening the panel, which changes the frontmost app.
+    func askAboutThis() {
+        contextCaptureTask?.cancel()
+        contextCaptureTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let directory = settings.userCharacterDirectory?.deletingLastPathComponent().appendingPathComponent("Attachments", isDirectory: true)
+            let result: ContextDraftResult
+            if let directory, let ask = learning.ask { result = await ask.capture(directory: directory) }
+            else { result = ContextDraftResult(caption: ContextDraftResult.unavailable) }
+            guard !Task.isCancelled, !stopped else { return }
+            conversation.attachContext(result)
+            showTalkPanel()
+        }
+    }
+
     private var talkShortcut: ZeusMenuModel.Shortcut? {
         let hotKey = settings.talkHotKey
         guard hotKey.enabled, hotKey.isValid, let key = hotKey.menuKey else { return nil }
@@ -1145,6 +1182,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         case .managed(let action): performManagedAction(action)
         case .selectAssistantSession(let key): settings.assistantSessionKey = key
         case .talk: showTalkPanel()
+        case .askAboutThis: askAboutThis()
         case .toggleVisibility: toggleVisibility()
         case .hideForHour: hide(for: .hour)
         case .hideUntilTomorrow: hide(for: .tomorrow)

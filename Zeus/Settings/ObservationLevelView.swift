@@ -54,12 +54,16 @@ struct ObservationScopeView: View {
     var onChange: @MainActor @Sendable () -> Void = {}
     @State private var appResult: String?
     private var policy: ObservationPolicy { settings.policy(level) }
-    private var apps: [ExcludedApp] { policy.scope == .exceptPrivate ? privacy.excludedApps : policy.apps }
+    private var apps: [ExcludedApp] { policy.scope == .exceptPrivate ? (level == 1 ? privacy.excludedApps : []) : policy.apps }
+    static func scopeCaption(level: Int, scope: ObservationPolicy.Scope) -> String {
+        if scope == .chosenApps { return "Zeus records this level only in these apps." }
+        return level == 1 ? "Apps on your private list are never recorded at any level. Time in them counts only as private." : "Apps on your private list (above) are never recorded at any level."
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             SettingsSegments(label: "Record in", options: ObservationPolicy.Scope.allCases.map { ($0, $0.title) },
                 selection: Binding(get: { policy.scope }, set: { scope in settings.edit(level) { $0.scope = scope }; onChange() }))
-            Text(policy.scope == .exceptPrivate ? "Apps on your private list are never recorded at any level. Time in them counts only as private." : "Zeus records this level only in these apps.").settingsCaption()
+            Text(Self.scopeCaption(level: level, scope: policy.scope)).settingsCaption()
             if apps.isEmpty && policy.scope == .chosenApps { Text("No apps chosen yet, so nothing is recorded at this level.").settingsCaption() }
             ForEach(apps) { app in
                 HStack {
@@ -72,10 +76,12 @@ struct ObservationScopeView: View {
                     KeyboardButton("–") { remove(app) }.accessibilityLabel("Remove \(app.name)")
                 }
                 if level == 2 && policy.scope == .chosenApps && app.matches(bundleID: "com.apple.Safari", name: nil) {
-                    Text("Private windows can't be told apart, so their titles and addresses are kept too.").settingsCaption()
+                    Text("Private windows can't be told apart, so their titles and addresses are kept too.").settingsCaption().padding(.leading, 24)
                 }
             }
-            KeyboardButton("Add App…", action: pickApp).accessibilityLabel("Add app to level \(level)")
+            if level == 1 || policy.scope == .chosenApps {
+                KeyboardButton("Add App…", action: pickApp).accessibilityLabel("Add app to level \(level)")
+            }
             if let appResult { Text(appResult).settingsCaption() }
         }
     }
