@@ -83,6 +83,10 @@ final class RulesPaneModel {
         case .edited: "Edited"
         }
     }
+    static func dateText(_ date: Date, time: Bool = true) -> String {
+        let formatter = DateFormatter(); formatter.dateFormat = time ? "EEE d MMM HH:mm" : "EEE d MMM"
+        return formatter.string(from: date)
+    }
     static func outcomeGlyph(_ outcome: RuleOutcome) -> String {
         switch outcome {
         case .accepted: "✓"; case .undone: "↶"; case .ignored, .stale: "–"
@@ -94,8 +98,10 @@ final class RulesPaneModel {
         case .explicit:
             switch event.outcome {
             case .accepted: "you said OK"; case .toggledOff: "turned off in Settings"
-            case .toggledOn: "turned on in Settings"; case .edited: "edited in Settings"
-            case .undone: "you pressed Undo"; default: "your choice"
+            case .toggledOn: "turned on in Settings"; case .edited: "edited by you"
+            case .undone: "you pressed Undo"
+            case .skipped: "you skipped its question"; case .ignored: "left unanswered for a day"
+            case .stale: "no match in 30 days"
             }
         case .actedUnchanged: "action left unchanged"
         case .heldRead: "held messages read"
@@ -104,7 +110,7 @@ final class RulesPaneModel {
         case .shadowDeclined: "you pressed Not this"
         case .shadowIgnored: "suggested action unanswered"
         case .resultIgnored: "prepared list unopened"
-        case .stale: "trigger never matched"
+        case .stale: "no match in 30 days"
         }
     }
     static func alwaysAsks(_ rule: LearnedRule) -> Bool { rule.trigger.kind == "spend" }

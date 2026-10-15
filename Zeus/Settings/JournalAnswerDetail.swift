@@ -46,11 +46,11 @@ struct JournalAnswerDetail: View {
         VStack(alignment: .leading, spacing: 10) {
             if let range = item.payload.value.details["range"] { Text(range).settingsCaption() }
             if let query = item.payload.value.details["query"], !query.isEmpty { Text("“\(query)”").settingsBody() }
-            if let caption = JournalAnswerDisplay.rawCaption(item) { Text(caption).settingsCaption() }
             if let payload {
                 ForEach(payload.items) { entry in
                     ZeusFieldChrome {
                         VStack(alignment: .leading, spacing: 8) {
+                            Text(entry.time + (entry.app.map { " · " + JournalDisplay.appName($0) } ?? "")).settingsCaption()
                             Text(entry.text).settingsBody().textSelection(.enabled)
                             if let words = entry.words { Text(words).settingsBody().textSelection(.enabled) }
                             if let picture = entry.picture { JournalAnswerPicture(picture: picture) }

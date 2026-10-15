@@ -64,8 +64,9 @@ import Testing
         defer { try? FileManager.default.removeItem(at: file) }
         let store = CardStore(fileURL: file); let recorder: any LearningNoticeRecording = store
         var approved = 0, declined = 0
-        let notice = LearningNotice(id: "shadow", kind: .shadow, createdAt: Date(), summary: "I'd have sent an update", actionTitle: "OK next time?", detail: "Your rule: Send an update", ruleID: "rule")
-        #expect(recorder.recordLearningNotice(notice, action: { approved += 1 }, secondaryTitle: "Not this", secondary: { declined += 1 }))
+        let notice = LearningNotice(id: "shadow", kind: .shadow, createdAt: Date(timeIntervalSince1970: 1_800_000_000), summary: "I'd have sent an update", actionTitle: "OK next time?", detail: "Your rule: Send an update", ruleID: "rule")
+        let recorded = recorder.recordLearningNotice(notice, action: { approved += 1 }, secondaryTitle: "Not this", secondary: { declined += 1 })
+        #expect(recorded)
         #expect(store.unseenCount == 0 && store.cards.isEmpty)
         #expect(store.notices.first?.detail == nil && store.notices.first?.help == notice.detail)
         #expect(store.hasNoticeAction(id: notice.id) && store.hasSecondaryNoticeAction(id: notice.id))
@@ -83,11 +84,26 @@ import Testing
         defer { try? FileManager.default.removeItem(at: root) }
         let file = root.appendingPathComponent("history.json"), store = CardStore(fileURL: root.appendingPathComponent("history.json"))
         var count = 0
-        let notice = LearningNotice(id: "shadow", kind: .shadow, createdAt: Date(), summary: "Shadow", actionTitle: "OK", detail: nil, ruleID: nil)
-        #expect(store.recordLearningNotice(notice, action: { count += 1 }, secondaryTitle: "Not this", secondary: { count += 1 }))
+        let notice = LearningNotice(id: "shadow", kind: .shadow, createdAt: Date(timeIntervalSince1970: 1_800_000_000), summary: "Shadow", actionTitle: "OK", detail: nil, ruleID: nil)
+        let recorded = store.recordLearningNotice(notice, action: { count += 1 }, secondaryTitle: "Not this", secondary: { count += 1 })
+        #expect(recorded)
         try FileManager.default.removeItem(at: file); try FileManager.default.createDirectory(at: file, withIntermediateDirectories: true)
         store.performNoticeAction(id: notice.id); store.performSecondaryNoticeAction(id: notice.id)
         #expect(count == 0 && store.hasNoticeAction(id: notice.id) && store.hasSecondaryNoticeAction(id: notice.id))
+    }
+    @Test func everyQuietLineRunsItsActionAndNavigationRemainsReusable() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("depth-actions-\(UUID()).json")
+        defer { try? FileManager.default.removeItem(at: file) }
+        let store = CardStore(fileURL: file)
+        for (index, title) in ["View", "OK next time?", "Undo", "Not again", "Review"].enumerated() {
+            var count = 0
+            let notice = LearningNotice(id: "n-\(index)", kind: .reflection, createdAt: Date(), summary: "Quiet line", actionTitle: title, detail: nil, ruleID: nil)
+            let recorded = store.recordLearningNotice(notice, action: { count += 1 })
+            #expect(recorded)
+            store.performNoticeAction(id: notice.id); store.performNoticeAction(id: notice.id)
+            #expect(count == (["View", "Review"].contains(title) ? 2 : 1))
+        }
+        #expect(store.unseenCount == 0 && store.cards.isEmpty)
     }
     static func answer(time: Date) -> JournalItem {
         .init(id: "journal_answer_fixture", time: time, level: .typed, kind: .sentToAssistant,

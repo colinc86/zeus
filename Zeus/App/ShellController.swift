@@ -852,7 +852,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             access.onViewJournalAnswer = { [weak self] id in
                 guard let self else { return }
                 self.learning.viewer?.showAnswer(id: id)
-                self.showJournal()
+                self.showJournal(reload: false)
             }
         }
         runtime.onReviewRule = { [weak self] in self?.showRule($0) }
@@ -1038,9 +1038,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         showSettings(tab: .rules)
     }
 
-    func showJournal() {
+    func showJournal(reload: Bool = true) {
         guard let viewer = learning.viewer else { return }
-        viewer.reload()
+        if reload { viewer.reload() }
         if journalWindow == nil {
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 720, height: 520),
                 styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
