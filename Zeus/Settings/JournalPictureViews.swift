@@ -50,7 +50,7 @@ struct JournalPictureDetail: View {
                                 Rectangle().strokeBorder(palette.secondaryText, lineWidth: 1).frame(width: 10, height: 7).accessibilityHidden(true)
                                 Text("Covered text ·").settingsCaption()
                                 Rectangle().strokeBorder(palette.secondaryText, lineWidth: 1).frame(width: 10, height: 7).accessibilityHidden(true)
-                                Text("Blurred picture").settingsCaption()
+                                Text("Pixellated picture").settingsCaption()
                             }
                             Text(Self.counts(covered: covered, blurred: blurred)).settingsCaption()
                         } else {
@@ -94,7 +94,7 @@ struct JournalPictureDetail: View {
             .onKeyPress(.rightArrow) { guard !model.confirmsDeleteBoth else { return .ignored }; model.step(-1); return .handled }
     }
     static func counts(covered: Int, blurred: Int) -> String {
-        [covered > 0 ? "\(covered) covered" : nil, blurred > 0 ? "\(blurred) blurred" : nil].compactMap { $0 }.joined(separator: " · ")
+        [covered > 0 ? "\(covered) covered" : nil, blurred > 0 ? "\(blurred) pixellated" : nil].compactMap { $0 }.joined(separator: " · ")
     }
     private func field(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {

@@ -50,7 +50,7 @@ enum RawJournalCopy {
     }
     static func body(_ level: JournalLevel) -> String {
         level == .screen
-            ? "When your assistant asks about a moment, it can get the picture Zeus kept (with private text covered and pictures blurred), not just the description. That picture goes to your assistant's model provider, like anything you send."
+            ? "When your assistant asks about a moment, it can get the picture Zeus kept (with private text covered and pictures pixellated), not just the description. That picture goes to your assistant's model provider, like anything you send."
             : "When your assistant asks about a moment, it can get the words Zeus kept (with names, numbers and secrets removed), not just the topic. Those words go to your assistant's model provider, like anything you send."
     }
 }

@@ -9,7 +9,7 @@ struct ScreenPrivacyView: View {
             Text("Screen").settingsTitle()
             Toggle("Let Zeus look at the window in front now and then", isOn: Binding(get: { model.policy.enabled }, set: model.setEnabled))
                 .accessibilityLabel("Let Zeus look at the window in front now and then")
-            Text("Zeus takes a picture of the window in front at sensible moments, covers private text and blurs pictures on this Mac, and keeps a one-line description of what you were doing. Never the whole screen.").settingsCaption()
+            Text("Zeus takes a picture of the window in front at sensible moments, covers private text and pixellates pictures on this Mac, and keeps a one-line description of what you were doing. Never the whole screen.").settingsCaption()
             if model.policy.enabled {
                 if let caption = model.statusCaption {
                     Text(caption).settingsCaption()
@@ -73,8 +73,8 @@ struct ScreenConsentSheet: View {
     }
     private var content: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Zeus takes a picture of the window in front at sensible moments, so your assistant knows what you were looking at. Before anything is kept, Zeus covers private text and blurs pictures and faces, here on this Mac.").settingsBody()
-            list("Zeus keeps", ["A picture of the window in front, with private text covered and pictures blurred, for 7 days", "A one-line description of what you were doing, for 90 days"])
+            Text("Zeus takes a picture of the window in front at sensible moments, so your assistant knows what you were looking at. Before anything is kept, Zeus covers private text and pixellates pictures and faces, here on this Mac.").settingsBody()
+            list("Zeus keeps", ["A picture of the window in front, with private text covered and pictures pixellated, for 7 days", "A one-line description of what you were doing, for 90 days"])
             list("Zeus never keeps", ["The rest of your screen or other windows", "Anything during a video call or while presenting", "Anything while a password field is active", "Private windows and apps on your private list", "Sound"])
             Text("When Zeus looks").settingsHeading()
             Text(Self.timing).settingsCaption()
@@ -85,7 +85,7 @@ struct ScreenConsentSheet: View {
                     Text("10:12  Safari  Reviewing account information.").font(.system(size: 11, design: .monospaced))
                 }
             }.frame(width: 384)
-            Text("Grey boxes are text Zeus covered. Pictures and faces are blurred. The picture is kept for 7 days, the description for 90.").settingsCaption()
+            Text("Grey boxes are text Zeus covered. Pictures and faces are pixellated. The picture is kept for 7 days, the description for 90.").settingsCaption()
             Text("Safari: Zeus takes no pictures of Safari unless you add it under Only in apps I choose. Zeus can't tell Safari's private windows apart, so those would be pictured too.").settingsCaption()
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -131,6 +131,6 @@ struct ScreenConsentExample: View {
                 } }
             }.frame(width: 54, height: 72).offset(x: 280, y: 48)
         }.clipped().overlay(Rectangle().strokeBorder(palette.outline, lineWidth: 1))
-            .accessibilityElement(children: .ignore).accessibilityLabel("Example covered Safari window, two private text areas covered and a picture blurred")
+            .accessibilityElement(children: .ignore).accessibilityLabel("Example covered Safari window, two private text areas covered and a picture pixellated")
     }
 }

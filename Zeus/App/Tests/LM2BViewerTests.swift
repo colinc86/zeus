@@ -94,7 +94,7 @@ import Testing
         #expect(RulesPaneModel.triggerText(.init(apps: ["editor"], state: "tests failing"), appName: { _ in "Xcode" }) == "in Xcode · when tests failing")
         #expect(RulesPaneModel.triggerText(.init()) == "Any time")
         #expect(JournalPictureDetail.counts(covered: 1, blurred: 0) == "1 covered")
-        #expect(JournalPictureDetail.counts(covered: 0, blurred: 2) == "2 blurred")
-        #expect(JournalPictureDetail.counts(covered: 3, blurred: 1) == "3 covered · 1 blurred")
+        #expect(JournalPictureDetail.counts(covered: 0, blurred: 2) == "2 pixellated")
+        #expect(JournalPictureDetail.counts(covered: 3, blurred: 1) == "3 covered · 1 pixellated")
     }
 }
