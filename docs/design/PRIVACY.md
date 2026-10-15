@@ -3,7 +3,7 @@
 The spec for everything the user sees about what Zeus observes, keeps, sends and decides (LM2 Phase A, levels 1–2, rules).
 Copy in quotes is final unless the code needs to shorten it, in which case ask the designer.
 Settings uses the system font and the existing Settings components (`settingsTitle`, `settingsBody`, `settingsCaption`, `settingsError`, `SettingsSegments`, `KeyboardButton`, `SettingsDivider`). There are no new ZeusDesign tokens.
-Renders: `scripts/design-harness/render.sh "privacyMockups()"` → `build/lm2-renders/`.
+Renders: `scripts/design-harness/render.sh "privacyMockups()"` → `build/q2-renders/lm2-*.png`, copied to `docs/design/lm2/`.
 
 ## 1. The seven principles
 
@@ -169,7 +169,7 @@ Same frame as the L1 sheet.
 
 ### 5.1 The dial
 
-`SettingsSegments` labelled "New rules", with three stops, and the default is the middle one. The caption under it changes with the choice.
+`SettingsSegments` labelled "New rules", with three stops stored as 0, 0.5 and 1. The default is the middle one (0.5). The caption under it changes with the choice.
 
 | Stop | Caption |
 |---|---|
@@ -223,6 +223,7 @@ Weekdays from 18:00 · in Slack · held, not dropped    [caption: the trigger in
   - Field "Rule", placeholder "Say what Zeus or your assistant should do"
   - "When" fields: days, a time window, apps ("Any app" / chosen apps), state ("Any" / "Tests failing" / "In a meeting"), where Zeus can enforce it
   - Kind is shown, not chosen: "Changes only when and how Zeus talks to you" (passive) or "Acts for you outside Zeus" (acts)
+  - A rule the user writes is always passive. Caption under the kind line in "New Rule": "To have your assistant act for you, ask it. It suggests a rule you can OK."
   - Buttons "Cancel" and "Save"
   - Rules edited by the user count as `updatedBy: user`, and the reflection treats them as strong signal.
 
@@ -233,7 +234,7 @@ These are system lines in the thread: the existing notice style, the same as "Cl
 | Moment | Line | Actions |
 |---|---|---|
 | A passive rule starts | "New rule: Hold Slack messages after 18:00 · Review" | Review opens Settings › Rules at that rule |
-| A rule that acts, first time (shadow) | "I'd have sent “Running late, 10 min” to the team chat · OK next time?" | "OK" → "OK. I'll do that from now on. · Undo"; "No" → "Got it. I won't." The rule moves to Suggested |
+| A rule that acts, first time (shadow) | "I'd have sent “Running late, 10 min” to the team chat · OK next time?" | One action, "OK next time?" → "OK. I'll do that from now on. · Undo". "Not This" is in Settings › Rules. Ignoring the line leaves the rule waiting, and after 24 h it counts as an ignored result |
 | Zeus held messages for a rule | "Held 2 messages for your rule “No interruptions while tests fail” · Show" | Show opens the panel at the first held card |
 | A rule retired itself | "Retired a rule you kept skipping: “Prepare PR list at 8:50” · Review" | Review |
 
