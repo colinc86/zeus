@@ -37,6 +37,51 @@ import ZeusProtocol
         #expect(journal.records[0].payload.value.details["sessionLabel"] == "Claude · Fixture")
         #expect(retry.contextIntents.isEmpty)
     }
+    @Test func failedHistoryWriteRetainsRealReceiptUntilExplicitPersistenceRetry() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-receipt-write-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appendingPathComponent("cards.json"), cards = CardStore(fileURL: file)
+        let intent = try #require(ContextSendIntent(cardID: "m", body: "Covered attachment", items: [
+            .init(attachment: .init(kind: .file, label: "Window", target: "/fixture/window.txt"), kind: .window, preview: "Covered")]))
+        #expect(cards.addOutgoing(.init(id: "m", kind: .userMessage, body: intent.body), deliveryID: "d", context: intent))
+        let saved = try Data(contentsOf: file)
+        try FileManager.default.removeItem(at: file); try FileManager.default.createDirectory(at: file, withIntermediateDirectories: false)
+        var recorded = 0
+        cards.onContextReceipt = { _, value in #expect(value.receipt != nil); recorded += 1; return true }
+        cards.recordLearningContextReceipt(.init(deliveryID: "d", cardID: nil, deliveredAt: Date(), agent: "claude", sessionLabel: "Claude", sessionID: "opaque"))
+        #expect(cards.persistenceError != nil); #expect(recorded == 0)
+        try FileManager.default.removeItem(at: file); try saved.write(to: file)
+        #expect(cards.retryPersistence()); #expect(recorded == 1); #expect(cards.contextIntents.isEmpty)
+        cards.retryContextReceipts(); #expect(recorded == 1)
+        #expect(CardStore(fileURL: file).contextIntents.isEmpty)
+    }
+    @Test func clearingCompletedHistoryAlsoDropsItsLocalContextIntent() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-context-clear-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appendingPathComponent("cards.json"), cards = CardStore(fileURL: file)
+        let intent = try #require(ContextSendIntent(cardID: "m", body: "Covered context", items: [
+            .init(attachment: .init(kind: .file, label: "Window", target: "/fixture/window.txt"), kind: .window, preview: "Covered")]))
+        #expect(cards.addOutgoing(.init(id: "m", kind: .userMessage, body: intent.body), deliveryID: "d", context: intent))
+        #expect(cards.setOutgoingState(.acked, cardID: "m")); #expect(cards.clearConversation())
+        #expect(cards.contextIntents.isEmpty); #expect(CardStore(fileURL: file).contextIntents.isEmpty)
+    }
+    @Test func eraseBoundaryPreventsAnOldPendingReceiptFromRestoringDeletedJournal() throws {
+        let name = "zeus-context-erase-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        let journal = LM2JournalFake(), learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)
+        let presentation = LearningPresentation(defaults: defaults, learn: learn)
+        presentation.install(journal: journal, rules: LM2RulesFake(), redactor: LocalRedactor(useOnDeviceModel: false), source: LM2FocusSource())
+        defer { presentation.stop() }
+        var intent = try #require(ContextSendIntent(cardID: "old", body: "Previously delivered covered window", items: [
+            .init(attachment: .init(kind: .file, label: "Window", target: "/fixture/window.txt"), kind: .window, preview: "Covered")]))
+        intent.receipt = .init(.init(deliveryID: "old", cardID: nil, deliveredAt: Date().addingTimeInterval(-10), agent: "claude", sessionLabel: "Claude", sessionID: "opaque"))
+        presentation.deleteEverything()
+        #expect(presentation.recordContextReceipt(key: "delivery:old", intent: intent)); #expect(journal.records.isEmpty)
+        let restored = LearningPresentation(defaults: defaults, learn: learn)
+        restored.install(journal: journal, rules: LM2RulesFake(), redactor: LocalRedactor(useOnDeviceModel: false), source: LM2FocusSource())
+        defer { restored.stop() }
+        #expect(restored.recordContextReceipt(key: "delivery:old", intent: intent)); #expect(journal.records.isEmpty)
+    }
     @Test func answerIntentIsCommittedBeforeSynchronousRuntimeReceiptAndFailedHistoryNeverRoutes() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-context-answer-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }

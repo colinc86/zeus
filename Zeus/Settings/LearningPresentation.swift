@@ -8,6 +8,7 @@ import ZeusProtocol
 @MainActor @Observable
 final class LearningPresentation {
     let policies: ObservationSettings
+    @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored let learn: LearnFromMe
     private(set) var viewer: JournalViewerModel?
     private(set) var rules: RulesPaneModel?
@@ -24,6 +25,7 @@ final class LearningPresentation {
     @ObservationIgnored private var retentionTask: Task<Void, Never>?
 
     init(defaults: UserDefaults, learn: LearnFromMe, policies: ObservationSettings? = nil) {
+        self.defaults = defaults
         self.policies = policies ?? ObservationSettings(defaults: defaults); self.learn = learn
         let policies = self.policies
         learn.settings.permitsApp = { [weak learn] id, name in
@@ -38,10 +40,17 @@ final class LearningPresentation {
     }
     func deleteEverything() {
         focus?.invalidate(); screen?.invalidate(); ask?.invalidate(); learn.invalidatePendingCapture(); viewer?.forgetUndo()
+        // Persist the erase boundary before deleting, so an old receipt cannot restore the sent ledger after relaunch.
+        let previousBoundary = defaults.object(forKey: "learn.contextLedgerClearedAt")
+        defaults.set(Date(), forKey: "learn.contextLedgerClearedAt")
         do {
             try journal?.delete(.all)
             learn.deleteEverything(); viewer?.reload(); error = nil
-        } catch { self.error = "Couldn't delete the journal. Try again." }
+        } catch {
+            if let previousBoundary { defaults.set(previousBoundary, forKey: "learn.contextLedgerClearedAt") }
+            else { defaults.removeObject(forKey: "learn.contextLedgerClearedAt") }
+            self.error = "Couldn't delete the journal. Try again."
+        }
     }
     var enabled: Bool { learn.settings.enabled || (policies.policy(2).enabled && policies.policy(2).consented) || (policies.policy(3).enabled && policies.policy(3).consented) }
     func install(journal: any JournalStore, rules: any RulesStore, redactor: any Redactor,
@@ -76,6 +85,7 @@ final class LearningPresentation {
     /// Idempotent ledger adapter: the app has no route/transport heuristics, only the runtime's actual receipt.
     func recordContextReceipt(key: String, intent: ContextSendIntent) -> Bool {
         guard let journal, let receipt = intent.receipt else { return false }
+        if let clearedAt = defaults.object(forKey: "learn.contextLedgerClearedAt") as? Date, receipt.deliveredAt <= clearedAt { return true }
         let id = "attached_" + intent.cardID
         do {
             var query = JournalQuery(); query.kinds = [.sentToAssistant]; query.limit = 100_000

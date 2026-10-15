@@ -8,11 +8,21 @@ import ZeusProtocol
 final class CardStore: CardStoring {
     /// Changes only when the chronological thread or an outgoing caption can change.
     private(set) var threadRevision: UInt64 = 0
-    private(set) var cards: [Card] = [] { didSet { if cards != oldValue { threadRevision &+= 1 } } }
+    private(set) var cards: [Card] = [] {
+        didSet {
+            if cards != oldValue {
+                threadRevision &+= 1
+                let ids = Set(cards.map(\.id))
+                contextIntents = contextIntents.filter { ids.contains($0.value.cardID) }
+                pendingContextReceipts = pendingContextReceipts.filter { contextIntents[$0.key] != nil }
+            }
+        }
+    }
     private(set) var revealedIDs: Set<String> = []
     private(set) var seenIDs: Set<String> = []
     private(set) var outgoingStates: [String: OutgoingMessageState] = [:] { didSet { if outgoingStates != oldValue { threadRevision &+= 1 } } }
     @ObservationIgnored private(set) var contextIntents: [String: ContextSendIntent] = [:]
+    @ObservationIgnored private var pendingContextReceipts: [String: LearningContextDeliveryReceipt] = [:]
     @ObservationIgnored var onContextReceipt: ((String, ContextSendIntent) -> Bool)?
     private(set) var outgoingDeliveryIDs: [String: String] = [:]
     /// Quiet app-owned lines in the thread, such as "Sent your daily summary · View" (L1).
@@ -415,13 +425,21 @@ final class CardStore: CardStoring {
     /// Runtime calls only after a real consumed/write receipt. A queued attempt has no receipt and no ledger row.
     func acceptContextReceipt(_ receipt: LearningContextDeliveryReceipt) {
         let key = receipt.cardID.map { "card:" + $0 } ?? "delivery:" + receipt.deliveryID
-        guard var intent = contextIntents[key] else { return }
-        intent.receipt = .init(receipt)
-        var next = snapshot; var contexts = contextIntents; contexts[key] = intent; next.contextIntents = contexts
-        guard commit(next) else { return }
+        guard contextIntents[key] != nil else { return }
+        pendingContextReceipts[key] = receipt
         retryContextReceipts()
     }
     func retryContextReceipts() {
+        if !pendingContextReceipts.isEmpty {
+            var contexts = contextIntents
+            for (key, receipt) in pendingContextReceipts {
+                guard var intent = contexts[key] else { continue }
+                intent.receipt = .init(receipt); contexts[key] = intent
+            }
+            var next = snapshot; next.contextIntents = contexts
+            guard commit(next) else { return } // Keep the real receipt in RAM until history becomes writable.
+            pendingContextReceipts.removeAll()
+        }
         for (key, intent) in contextIntents where intent.receipt != nil {
             guard onContextReceipt?(key, intent) == true else { continue }
             var next = snapshot; var contexts = contextIntents; contexts.removeValue(forKey: key); next.contextIntents = contexts
@@ -444,7 +462,8 @@ final class CardStore: CardStoring {
         pendingAppChanges.removeAll()
         pendingOutgoingStates.removeAll()
         persistenceError = nil
-        return true
+        retryContextReceipts()
+        return pendingContextReceipts.isEmpty
     }
 
     private func rank(_ priority: Card.Priority) -> Int {
@@ -468,7 +487,7 @@ final class CardStore: CardStoring {
             outgoingStates = snapshot.outgoingStates.filter { ids.contains($0.key) }
             outgoingDeliveryIDs = snapshot.outgoingDeliveryIDs.filter { ids.contains($0.key) }
             notices = snapshot.notices
-            contextIntents = snapshot.contextIntents ?? [:]
+            contextIntents = (snapshot.contextIntents ?? [:]).filter { ids.contains($0.value.cardID) }
         } catch { persistenceError = "Zeus couldn't read your conversation history. \(error.localizedDescription)" }
     }
 
