@@ -25,6 +25,7 @@ import Observation
     @ObservationIgnored private var running = false
     @ObservationIgnored private var generation = UUID()
     @ObservationIgnored private var currentRun: Run?
+    @ObservationIgnored private var lastContext: TypingContext?
     @ObservationIgnored private var pending: [Pending] = []
     @ObservationIgnored private var timer: Task<Void, Never>?
     @ObservationIgnored private var idleTask: Task<Void, Never>?
@@ -88,6 +89,7 @@ import Observation
     }
     func invalidatePendingCapture() {
         generation = UUID(); currentRun = nil; pending.removeAll(); idleTask?.cancel(); idleTask = nil
+        lastContext = nil
         work?.cancel(); work = nil; workID = nil; source.resetTranslation()
     }
     func contextDidChange() {
@@ -153,6 +155,8 @@ import Observation
         else { reason = nil }
         pause = reason
         if reason != nil { invalidatePendingCapture(); return nil }
+        if let candidate, let previous = lastContext, previous != candidate { finishRun(); source.resetTranslation() }
+        lastContext = candidate
         return candidate
     }
     /// Event source has already excluded synthetic keys and rechecked all gates before translation.
@@ -168,6 +172,10 @@ import Observation
             }
         case .text(let text):
             if (currentRun?.imeCount ?? 0) > 0 { finishRun() }
+            if text.isEmpty {
+                if currentRun == nil { currentRun = Run(context: context, started: now, lastKey: now) }
+                currentRun?.lastKey = now
+            }
             for character in text {
                 if currentRun == nil { currentRun = Run(context: context, started: now, lastKey: now) }
                 currentRun?.chunks.append(String(character)); currentRun?.lastKey = now
@@ -192,7 +200,6 @@ import Observation
     }
     private func finishRun() {
         guard let run = currentRun else { return }; currentRun = nil; idleTask?.cancel(); idleTask = nil
-        source.resetTranslation()
         guard run.imeCount > 0 || !run.chunks.isEmpty else { return }
         let first = LocalRedactor.firstPass(run.text)
         // Queue the stage-one value, not its raw source. Keep metadata and counts only.

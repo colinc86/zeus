@@ -13,7 +13,8 @@ enum TypingKey: Equatable, Sendable {
     func stop()
 }
 
-/// Retains the layout data while UCKeyTranslate uses its pointer; dead keys belong to one run only.
+/// Retains layout data while UCKeyTranslate uses its pointer. Pending accents survive idle boundaries;
+/// app/window and privacy boundaries reset the translator.
 @MainActor struct TypingKeyTranslator {
     private let data: CFData
     private var deadKeys: UInt32 = 0
@@ -125,11 +126,13 @@ enum TypingKey: Equatable, Sendable {
             resetTranslation(); return
         }
         if code == 51 {
-            if translator?.cancelPendingDeadKey() != true { onKey?(.backspace) }
+            if translator?.cancelPendingDeadKey() == true { onKey?(.text("")) }
+            else { onKey?(.backspace) }
             return
         }
         if [48, 53, 115, 116, 117, 119, 121, 123, 124, 125, 126].contains(code) { onKey?(.invalidate); resetTranslation(); return }
         if TypingKeyTranslator.isIME { onKey?(.ime); return }
-        if let text = translator?.text(code: code, flags: flags), !text.isEmpty { onKey?(.text(text)) }
+        // Empty output can be a pending accent: it is still physical activity for the run's idle deadline.
+        if let text = translator?.text(code: code, flags: flags) { onKey?(.text(text)) }
     }
 }
