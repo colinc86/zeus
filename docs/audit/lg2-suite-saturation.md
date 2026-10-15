@@ -93,3 +93,25 @@ headless source-list omission (`LearningStorageRecovering` and
 recovery/encryption declarations; no key provider is instantiated. The failed
 preflight is retained as `build/lg2/preflight-missing-host-sources.log` and is
 not counted toward the three consecutive passes.
+
+## Second resource leak exposed by the longer run
+
+After the source-list fix, the full suite **passed** (1,001 tests, 310.324 s).
+A late sample nevertheless showed hundreds of `ZeusLink.accept` workers still
+blocked in `Darwin.accept`, with no animation workers. A separate private Unix
+socket probe confirmed `shutdown(listeningFD, SHUT_RDWR)` returns errno 57
+(`ENOTCONN`) here and leaves `accept` blocked; `close` finally releases it.
+`ListeningSocket.run` retained itself until that blocked call returned, while
+`stop` deliberately deferred `close` to the worker. Thus stopped test listeners
+accumulated for the lifetime of the app-test process. This also affects real
+repeated server start/stop, so a test-only timeout or concurrency cap is inadequate.
+
+`ListeningSocket` now uses a nonblocking `DispatchSourceRead` accept loop. Idle
+listeners consume no worker. Stop cancels the source and its cancellation handler
+closes the descriptor after any event handler has finished; accepted channels
+retain their previous blocking I/O semantics. The stop-before-run path closes
+immediately, and inode-scoped unlinking remains intact. No public API changes.
+Two package regressions cover 64 idle listener stop/release cycles without any
+connection and immediate socket-path replacement. All 22 ZeusLink tests pass,
+including reconnects, handshake timeout, receipts, and hook clients. The final
+three-run sequence starts after this additional fix.
