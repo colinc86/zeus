@@ -34,7 +34,14 @@ final class TestRuntimeClock: RuntimeClock {
 }
 
 @MainActor
-final class FakeCards: CardStoring, LocalCardActionHandling, AppChangeRecording {
+final class FakeCards: CardStoring, LocalCardActionHandling, AppChangeRecording, LearningNoticeRecording {
+    var learningNotices: [LearningNotice] = []
+    var learningActions: [String: @MainActor () -> Void] = [:]
+    func recordLearningNotice(_ notice: LearningNotice, action: (@MainActor () -> Void)?) -> Bool {
+        learningActions[notice.id] = action
+        if let i = learningNotices.firstIndex(where: { $0.id == notice.id }) { learningNotices[i] = notice; return false }
+        learningNotices.append(notice); return true
+    }
     let clock: TestRuntimeClock
     var values: [Card] = []
     var responseHandler: ((Card, CardResponse) -> Void)?

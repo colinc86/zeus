@@ -23,7 +23,11 @@ extension ZeusRuntime {
             let items = learnings.learningsEnabled ? learnings.unreadLearnings() : []
             // Keep both text and structured copies within the link's 4 MiB frame limit.
             var batch: [Learning] = [], bytes = 1024
-            for item in items {
+            let token = generation
+            for original in items {
+                let item = await learningForSending(original)
+                guard running, generation == token, learnings.learningsEnabled,
+                      learnings.unreadLearnings().contains(where: { $0.id == original.id }) else { throw CancellationError() }
                 let json = try JSONValue.from(item), raw = try ZeusJSON.encoder().encode(json)
                 let escaped = try ZeusJSON.encoder().encode(JSONValue.string(String(decoding: raw, as: UTF8.self)))
                 guard bytes + raw.count + escaped.count < 4 * 1024 * 1024 else {
@@ -32,7 +36,10 @@ extension ZeusRuntime {
                 batch.append(item); bytes += raw.count + escaped.count
             }
             let output = result(["learnings": .array(try batch.map(JSONValue.from))])
-            if !deferResultCommit, !output.isError, let last = batch.last { learnings.markLearningsRead(through: last.id) }
+            if !deferResultCommit, !output.isError, let last = batch.last {
+                learnings.markLearningsRead(through: last.id)
+                recordLearningToolReceipts(try batch.map(JSONValue.from), sessionKey: sessionKey)
+            }
             return output
         }
         if name == "zeus_check_for_updates" {
@@ -75,8 +82,9 @@ extension ZeusRuntime {
             change = try appControl.setAppearance(patch)
         default: throw ToolArgumentError("Unknown tool: \(name)")
         }
-        if let recorder = cards as? any AppChangeRecording { recorder.recordAppChange(change) }
-        else { cards.recordAppChange(change) }
+        let trackedChange = learningTrackedChange(change)
+        if let recorder = cards as? any AppChangeRecording { recorder.recordAppChange(trackedChange) }
+        else { cards.recordAppChange(trackedChange) }
         if name == "zeus_set_character" { return result(["ok": true, "previous": .string(previous), "current": .string(appControl.appControlState.characterID)]) }
         return result(["ok": true, "summary": .string(change.summary)])
     }
@@ -122,14 +130,25 @@ extension ZeusRuntime {
 
     func notifyLearning(_ learning: Learning) {
         guard running, learnings.learningsEnabled else { return }
-        let payload = BridgeLearning(id: learning.id, kind: learning.kind == .digest ? .digest : .moment, text: learning.text)
         let token = generation
-        for session in bridges.values where session.hello.capabilities.channel && session.hello.capabilities.learningNotifications {
-            Task { [weak self] in
-                guard let self, self.running, self.generation == token, self.learnings.learningsEnabled,
-                      self.bridges[session.sessionKey]?.id == session.id else { return }
-                // A lost announcement never consumes a learning; the polling tool retains it.
-                try? await session.notifyLearning(payload)
+        // Redact once for all recipients, so the ledger records each recipient's exact payload.
+        Task { [weak self] in
+            guard let self else { return }
+            let safe = await self.learningForSending(learning)
+            guard self.running, self.generation == token, self.learnings.learningsEnabled,
+                  self.learnings.unreadLearnings().contains(where: { $0.id == learning.id }) else { return }
+            let payload = BridgeLearning(id: safe.id, kind: safe.kind == .digest ? .digest : .moment, text: safe.text)
+            for session in self.bridges.values where session.hello.capabilities.channel && session.hello.capabilities.learningNotifications {
+                Task { [weak self] in
+                    guard let self, self.running, self.generation == token, self.learnings.learningsEnabled,
+                          self.bridges[session.sessionKey]?.id == session.id else { return }
+                    // A lost announcement never consumes a learning; polling retains it.
+                    do {
+                        try await session.notifyLearning(payload)
+                        guard self.running, self.generation == token else { return }
+                        self.recordSentLearning(id: safe.id, kind: safe.kind.rawValue, text: .init(safe.text), sessionKey: session.sessionKey)
+                    } catch { /* No fabricated receipt for an unsuccessful notification. */ }
+                }
             }
         }
     }

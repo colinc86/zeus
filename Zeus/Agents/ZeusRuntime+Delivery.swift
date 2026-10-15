@@ -138,6 +138,7 @@ extension ZeusRuntime {
                 } catch { self.storageProblem = "Couldn't save the postponed delivery: \(error.localizedDescription)" }
             }
             self.recordUserMessageOutcome(id: id, outcome: outcome)
+            if outcome == .delivered { self.recordReflectionReceipt(id: id) }
             if outcome == .delivered {
                 self.noteDeliveredActivity(sessionKey: session.sessionKey, deliveryID: id, token: activityToken, sessionID: session.id)
             } else { self.activityEarlyAcknowledgments.removeValue(forKey: id) }
@@ -229,14 +230,14 @@ extension ZeusRuntime {
     /// Retarget only a proven dead agent lifetime, never a transient bridge outage.
     func retargetDeadUserMessages() {
         let dead = Set((ledger?.records ?? []).filter { record in
-            record.delivery.kind == .userMessage && record.isPending && record.awaitingAssistant != true
+            (record.delivery.kind == .userMessage || record.delivery.kind == .reflection) && record.isPending && record.awaitingAssistant != true
                 && record.delivery.meta["opencode_destination_validated"] != "true"
                 && sends[record.delivery.id] == nil && !sessions.contains(where: { $0.sessionKey == record.delivery.sessionKey })
         }.map { $0.delivery.sessionKey }.filter(targetIsDead))
         guard !dead.isEmpty else { return }
         do {
             try ledger?.mutateRecords { records in
-                for i in records.indices where records[i].delivery.kind == .userMessage && records[i].isPending
+                for i in records.indices where (records[i].delivery.kind == .userMessage || records[i].delivery.kind == .reflection) && records[i].isPending
                     && records[i].awaitingAssistant != true
                     && records[i].delivery.meta["opencode_destination_validated"] != "true"
                     && sends[records[i].delivery.id] == nil
@@ -262,7 +263,7 @@ extension ZeusRuntime {
         if !unsaved.isEmpty { dates.append(clock.now.addingTimeInterval(3)) }
         for record in ledger?.records ?? [] where record.isPending {
             let delivery = record.delivery
-            if delivery.kind == .userMessage, record.awaitingAssistant != true, !sessions.contains(where: { $0.sessionKey == delivery.sessionKey }), delivery.sessionKey.contains("#") {
+            if delivery.kind == .userMessage || delivery.kind == .reflection, record.awaitingAssistant != true, !sessions.contains(where: { $0.sessionKey == delivery.sessionKey }), delivery.sessionKey.contains("#") {
                 dates.append(clock.now.addingTimeInterval(5))
             }
             if record.awaitingAssistant == true, assistantTarget != nil {
@@ -309,6 +310,7 @@ extension ZeusRuntime {
         guard let ledger else { return [] }
         let acked = try ledger.acknowledge(ids: ids, sessionKey: sessionKey, at: clock.now)
         if !acked.isEmpty { noteActivityAcknowledgments(acked, sessionKey: sessionKey) }
+        for id in acked { recordReflectionReceipt(id: id) }
         retainRuntimeHistory()
         if unsaved.isEmpty { storageProblem = nil }
         refreshProblem(); scheduleRetry()

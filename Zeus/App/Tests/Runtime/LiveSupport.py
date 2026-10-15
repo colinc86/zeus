@@ -126,6 +126,9 @@ signal.signal(signal.SIGTERM,_terminate)
 
 def finish_host_build(out,package):
     """Build each native host once per source fingerprint, shared across agent rows."""
+    # Runtime learning is optional; headless hosts need its Foundation-only value/protocol seams.
+    seam = REPO/"Zeus/Learn/Seams.swift"
+    (package/"Sources/Host/LearningSeams.swift").write_text(seam.read_text())
     fingerprint=hashlib.sha256()
     paths=list((package/"Sources").rglob("*.swift"))+[package/"Package.swift"]
     paths+=list((REPO/"Packages/ZeusKit/Sources").rglob("*.swift"))+[REPO/"Packages/ZeusKit/Package.swift"]

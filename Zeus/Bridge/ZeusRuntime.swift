@@ -28,6 +28,21 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored let quietHours: (Date) -> Bool
     @ObservationIgnored let appControl: any AppControlling
     @ObservationIgnored let learnings: any LearningsProviding
+    @ObservationIgnored let learningRules: (any RulesStore)?
+    @ObservationIgnored let learningJournal: (any JournalStore)?
+    @ObservationIgnored let learningRedactor: (any Redactor)?
+    @ObservationIgnored let learningContext: () -> LearningContext
+    @ObservationIgnored let reflectionEnabled: () -> Bool
+    @ObservationIgnored let learningCalendar: Calendar
+    var learningInterruptionHold = false
+    var learningError: String?
+    @ObservationIgnored var onReviewRule: ((String) -> Void)?
+    @ObservationIgnored var onLearningHoldCleared: (([String]) -> Void)?
+    @ObservationIgnored var learningHeldIDs: [String] = []
+    @ObservationIgnored var learningCardRules: [String: [String]] = [:]
+    @ObservationIgnored var learningTimer: Task<Void, Never>?
+    @ObservationIgnored var reflectionTask: Task<Void, Never>?
+    @ObservationIgnored var learningObservationToken = UUID()
     @ObservationIgnored var checkedUpdateVersions: [String: Set<String>] = [:]
     @ObservationIgnored var pendingUpdateErrors: [String: String] = [:]
     @ObservationIgnored var installingSessions: Set<String> = []
@@ -101,7 +116,12 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
          targetIsDead: @escaping (String) -> Bool = AgentSessionLiveness.isDead,
          managedController: ManagedSessionController? = nil,
          appControl: (any AppControlling)? = nil, learnings: (any LearningsProviding)? = nil,
-         ownScreenReader: any OwnSessionScreenReading = OwnSessionScreenReader()) {
+         ownScreenReader: any OwnSessionScreenReading = OwnSessionScreenReader(),
+         rules: (any RulesStore)? = nil, journal: (any JournalStore)? = nil, redactor: (any Redactor)? = nil,
+         learningContext: @escaping () -> LearningContext = { .init() },
+         reflectionEnabled: @escaping () -> Bool = { false }, learningCalendar: Calendar = .current) {
+        self.learningRules = rules; self.learningJournal = journal; self.learningRedactor = redactor
+        self.learningContext = learningContext; self.reflectionEnabled = reflectionEnabled; self.learningCalendar = learningCalendar
         self.ownScreenReader = ownScreenReader
         self.cards = cards; self.status = status; self.characters = characters; self.routing = routing
         self.appControl = appControl ?? UnavailableAppControl()
@@ -144,6 +164,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         appQuestionIDs = Set(((cards as? any CardPersistenceReporting)?.persistedCards ?? [])
             .filter { $0.kind == .question && $0.status == .open }.map(\.id))
         learnings.onNewLearning = { [weak self] learning in self?.notifyLearning(learning) }
+        startLearning()
         publishUserMessageDeliveries(loaded.records)
         handledResponses.formUnion(loaded.records.compactMap { $0.delivery.cardID })
         (cards as? any LocalCardActionHandling)?.localActionHandler = { [weak self] card, response in
@@ -177,6 +198,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         // when the next process decides whether the 60-second grace period elapsed.
         for session in sessions { disconnectedAt[session.sessionKey] = clock.now }
         running = false
+        stopLearning()
         learnings.onNewLearning = nil
         checkedUpdateVersions.removeAll(); pendingUpdateErrors.removeAll(); installingSessions.removeAll(); activeToolCalls.removeAll()
         managedController.shutdown()
@@ -261,6 +283,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         if name == "zeus_get_learnings", written, !result.isError,
            case .array(let items) = result.structured?["learnings"], case .string(let id) = items.last?["id"] {
             learnings.markLearningsRead(through: id)
+            recordLearningToolReceipts(items, sessionKey: session.sessionKey)
         }
         if name == "zeus_get_responses", written, case .array(let items) = result.structured?["items"] {
             let ids = Set(items.compactMap { item -> String? in
@@ -318,6 +341,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
             } else { _ = beginSend(id: id) }
         }
         processDueDeliveries()
+        learningContextDidChange()
     }
     func unregisterSession(id: UUID, sessionKey: String) {
         guard sessions.first(where: { $0.sessionKey == sessionKey })?.id == id else { return }
@@ -337,6 +361,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         guard running else { return }
         if handleManagedAction(card, response: response) { return }
         guard handledResponses.insert(card.id).inserted else { return }
+        recordRuleAnswer(card, response: response)
         if let waiter = waiters[card.id] {
             if clock.now < waiter.deadline {
                 if waiter.deferResultCommit {
@@ -411,7 +436,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     }
     func result(_ value: JSONValue) -> ToolResult {
         var value = value
-        if quietHours(clock.now), case .object(var fields) = value {
+        if quietHours(clock.now) || learningInterruptionHold, case .object(var fields) = value {
             fields["quiet"] = true; value = .object(fields)
         }
         do { return try ToolResult(structured: value) }
