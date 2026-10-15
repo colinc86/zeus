@@ -7,6 +7,7 @@ import Observation
 @MainActor @Observable final class TypingObserver: TypingObserving {
     private(set) var permission: TypingPermission = .notDetermined
     private(set) var lastPermissionRequestGranted: Bool?
+    private(set) var permissionGrantedRequiresReopen = false
     private(set) var privateInput = false
     private(set) var isRecording = false
     private(set) var pause: TypingPause?
@@ -81,7 +82,9 @@ import Observation
     @discardableResult func requestPermission() -> TypingPermission {
         guard policy().consented else { return permission }
         lastPermissionRequestGranted = source.requestPermission(); nextTapAttempt = .distantPast
-        updatePermission(); if running { tick() }; return permission
+        updatePermission()
+        permissionGrantedRequiresReopen = lastPermissionRequestGranted == true && !source.hasPermission
+        if running { tick() }; return permission
     }
     func invalidatePendingCapture() {
         generation = UUID(); currentRun = nil; pending.removeAll(); idleTask?.cancel(); idleTask = nil
@@ -94,9 +97,10 @@ import Observation
     }
     private func updatePermission() {
         let prior = permission
-        if source.hasPermission { permission = .granted }
+        if source.hasPermission { permission = .granted; permissionGrantedRequiresReopen = false }
         else { permission = prior == .granted || prior == .revoked ? .revoked : (lastPermissionRequestGranted == nil ? .notDetermined : .denied) }
         if prior == .granted, permission == .revoked {
+            permissionGrantedRequiresReopen = false
             source.stop(); isRecording = false; invalidatePendingCapture()
             if policy().enabled && policy().consented {
                 do { try journal.append(.init(time: clock(), level: .typed, kind: .outcome, payload: .init(.init(description: "Input Monitoring is off. Typing is not recorded.")))) }

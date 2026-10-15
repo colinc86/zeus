@@ -47,5 +47,5 @@ For the independent synthetic model/schema check use the same disposable-HOME co
 `TEST_RUNNER_ZEUS_TEST_LM2C_MODEL=1` instead of `TEST_RUNNER_ZEUS_TEST_LM2C_NATIVE=1`. It requires the complete suite filter
 shown above; a method filter without Swift Testing's exact method identifier can silently select zero tests.
 
-The ordinary suite never installs a tap, prompts for permission, changes focus, generates native-model requests or reads
+The ordinary typing suites never install a tap, prompt for permission, change focus, generate native-model requests or read
 the screen. Its event source and model are injected fakes. The opt-in harness never requests permission either.
