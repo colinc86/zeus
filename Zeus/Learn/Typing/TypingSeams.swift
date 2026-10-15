@@ -46,5 +46,5 @@ enum TypingPause: String, Sendable { case disabled, permission, modelUnavailable
     func invalidatePendingCapture()
 }
 extension TypingObserving {
-    var permissionGrantedRequiresReopen: Bool { lastPermissionRequestGranted == true && permission != .granted }
+    var permissionGrantedRequiresReopen: Bool { lastPermissionRequestGranted == true && permission == .denied }
 }

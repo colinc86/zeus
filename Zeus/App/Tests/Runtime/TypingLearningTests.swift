@@ -176,6 +176,9 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
         f.source.permissionRequestResult = true; _ = f.observer.requestPermission()
         #expect(f.observer.permissionGrantedRequiresReopen)
         f.source.hasPermission = true; f.observer.tick(); #expect(!f.observer.permissionGrantedRequiresReopen)
+        f.source.hasPermission = false; f.observer.tick()
+        #expect(f.observer.permission == .revoked); #expect(!f.observer.permissionGrantedRequiresReopen)
+        f.source.hasPermission = true; f.observer.tick()
         f.secure = true; f.observer.tick(); #expect(f.observer.privateInput)
         f.policy.enabled = false; f.observer.tick(); #expect(!f.observer.privateInput)
         f.observer.stop(); #expect(!f.observer.privateInput)
@@ -240,14 +243,14 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
         defer { try? FileManager.default.removeItem(at: root) }
         var now = Date(timeIntervalSince1970: 1_800_000_000)
         var journal: EncryptedJournalStore? = EncryptedJournalStore(root: root, keyProvider: FixtureJournalKey(), clock: { now })
-        weak var weakJournal = journal
+        let retainedStore = { [weak journal] in journal }
         try journal?.append(.init(id: "timed", time: now, level: .typed, kind: .typedText,
             payload: .init(.init(description: "A safe topic", text: "safe local fixture words", topic: "A safe topic"))))
         now += 86400
         let row = try #require(journal?.items(matching: .init()).first)
         #expect(row.payload.value.text == nil && row.payload.value.topic == "A safe topic")
         #expect(row.payload.value.details["words_not_kept"] == "expired24Hours")
-        journal = nil; #expect(weakJournal == nil)
+        journal = nil; #expect(retainedStore() == nil)
         let reopened = EncryptedJournalStore(root: root, keyProvider: FixtureJournalKey(), clock: { now })
         #expect(try reopened.items(matching: .init()).first?.payload.value.text == nil)
     }
