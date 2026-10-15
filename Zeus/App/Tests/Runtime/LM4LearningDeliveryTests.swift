@@ -98,6 +98,18 @@ import ZeusProtocol
         #expect(f.runtime.ledger?.record(id: "keep-message")?.isPending == true)
         #expect(f.tmux.deliveries.isEmpty)
     }
+    @Test func discardedNotesAreNeverReturnedByPollingAndSentNoticeKeepsView() async throws {
+        let provider = FakeLearnings(), f = try LearningRuntimeFixture(learnings: provider); defer { f.stop() }
+        provider.add(.init(id: "discarded", kind: .moment, createdAt: f.clock.now, text: "Synthetic"))
+        try await eventually { f.runtime.ledger?.record(id: "discarded") != nil }
+        try f.runtime.ledger?.updateRecord(id: "discarded") { $0.discardedAt = f.clock.now }
+        let result = await f.runtime.callTool("zeus_get_learnings", arguments: [:], sessionKey: "claude:/fixture#123.1")
+        #expect(result.structured?["learnings"] == [])
+        f.runtime.recordSentLearning(id: "moment", kind: "moment", text: .init("Back at the Mac after a synthetic break."), sessionKey: "claude:/fixture#123.1")
+        let notice = try #require(f.cards.learningNotices.first { $0.id == "n_moment" })
+        #expect(notice.summary == "Sent a note: back from a break")
+        #expect(notice.actionTitle == "View" && notice.detail == "Back at the Mac after a synthetic break.")
+    }
     @Test func exactStoreConsumptionSurvivesReopenWithoutEatingEarlierNote() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("lm4-read-" + UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -115,7 +127,9 @@ import ZeusProtocol
         f.clock.advance(601, wake: false); f.runtime.processDueDeliveries()
         #expect(f.runtime.deliveryHolds.first?.reason == .disconnected)
         let since = f.runtime.deliveryHolds.first?.since
-        f.runtime.stop(); try f.runtime.start()
-        #expect(f.runtime.deliveryHolds.first?.since == since)
+        f.stop(remove: false)
+        let replacement = try RuntimeFixture(directory: f.directory); defer { replacement.stop() }
+        replacement.clock.now = f.clock.now; replacement.runtime.processDueDeliveries()
+        #expect(replacement.runtime.deliveryHolds.first?.since == since)
     }
 }

@@ -20,7 +20,7 @@ extension ZeusRuntime {
     func callAppTool(_ name: String, args: ToolArguments, sessionKey: String, deferResultCommit: Bool) async throws -> ToolResult {
         if name == "zeus_app_state" { return result(try JSONValue.from(appControl.appControlState)) }
         if name == "zeus_get_learnings" {
-            let items = learnings.learningsEnabled ? learnings.unreadLearnings() : []
+            let items = learnings.learningsEnabled ? learnings.unreadLearnings().filter { ledger?.record(id: $0.id)?.discardedAt == nil && ledger?.record(id: $0.id)?.delivery.ackedAt == nil } : []
             // Keep both text and structured copies within the link's 4 MiB frame limit.
             var batch: [Learning] = [], bytes = 1024
             let token = generation
@@ -139,10 +139,10 @@ extension ZeusRuntime {
                   self.learnings.unreadLearnings().contains(where: { $0.id == learning.id }) else { return }
             self.enqueueLearning(safe)
             let payload = BridgeLearning(id: safe.id, kind: safe.kind == .digest ? .digest : .moment, text: safe.text)
-            for session in self.bridges.values where session.hello.capabilities.channel && session.hello.capabilities.learningNotifications {
+            for session in self.bridges.values where session.sessionKey == self.assistantTarget && session.hello.capabilities.channel && session.hello.capabilities.learningNotifications {
                 Task { [weak self] in
                     guard let self, self.running, self.generation == token, self.learnings.learningsEnabled,
-                          self.bridges[session.sessionKey]?.id == session.id else { return }
+                          self.bridges[session.sessionKey]?.id == session.id, self.assistantTarget == session.sessionKey else { return }
                     // A lost announcement never consumes a learning; polling retains it.
                     do {
                         try await session.notifyLearning(payload)

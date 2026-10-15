@@ -52,6 +52,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     }
     func replaceEditedManagedTemplates(_ snapshot: ManagedTemplateReplacement) throws {
         guard snapshot.folder == record?.conversation?.folder else { throw ManagedSessionError.invalidFolder }
+        guard let resourceDirectory else { throw ManagedSessionError.command("The assistant templates are missing from Zeus.") }
         try ManagedTemplateSetup.refresh(folder: snapshot.folder, resources: resourceDirectory, confirmed: snapshot)
         onChange?()
     }

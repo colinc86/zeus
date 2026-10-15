@@ -204,6 +204,7 @@ import ZeusLink
                 _ = try await client.start(hello: hello, onPush: { _ in }, onLearning: { item in await MainActor.run { received[i].append(item) } })
             }
             try await eventually { f.runtime.sessions.count == 3 }
+            f.routing.assistantSessionKey = "claude:/fixture#10.3"
             store.add(.init(id: "l_1", kind: .moment, createdAt: f.clock.now, text: "Back from a break."))
             try await eventually { received[0].count == 1 }
             #expect(received[0][0] == .init(id: "l_1", kind: .moment, text: "Back from a break."))

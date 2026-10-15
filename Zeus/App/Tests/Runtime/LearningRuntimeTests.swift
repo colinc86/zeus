@@ -218,6 +218,7 @@ struct FixtureLearningRedactor: Redactor {
         do {
             _ = try await client.start(hello: .init(agent: .claude, pid: 17, ppid: 19, cwd: "/fixture", client: .init(name: "Test", version: "1"), capabilities: .init(channel: true, learningNotifications: true), parentStartTime: 3), onPush: { _ in }, onLearning: { value in await MainActor.run { received.append(value) } })
             try await eventually { f.runtime.bridges.count == 1 }
+            (f.runtime.routing as? FakeRouting)?.assistantSessionKey = f.runtime.bridges.values.first?.sessionKey
             learnings.add(.init(id: "note", kind: .moment, createdAt: f.clock.now, text: "Back from a synthetic break."))
             try await eventually { received.count == 1 && f.runtime.ledger?.record(id: "note") != nil }
             #expect(try f.journal.items(matching: .init()).isEmpty)

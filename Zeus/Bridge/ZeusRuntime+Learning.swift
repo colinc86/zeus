@@ -292,7 +292,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         guard let record = ledger?.record(id: id), record.delivery.ackedAt != nil,
               [.reflection, .learning].contains(record.delivery.kind), !record.delivery.content.isEmpty else { return }
         if record.delivery.kind == .learning {
-            recordSentLearning(id: id, kind: record.delivery.meta["learning_kind"] ?? "moment", text: .init(record.delivery.content), sessionKey: record.delivery.meta["learning_consumed_by"] ?? record.delivery.sessionKey)
+            recordSentLearning(id: id, kind: record.delivery.meta["learning_kind"] ?? "moment", text: .init(record.delivery.content), sessionKey: record.delivery.meta["learning_consumed_by"] ?? record.delivery.sessionKey, receivedAt: record.delivery.ackedAt)
             if let exact = learnings as? any LearningReadRecording { exact.markLearningRead(id: id) }
             else { markAcknowledgedLearningsRead() }
             return
@@ -305,10 +305,10 @@ extension ZeusRuntime: LearningRuntimeControlling {
                 reconcileReflectionEvidence(); return
             }
         }
-        recordSentLearning(id: id, kind: "reflection", text: .init(record.delivery.content), sessionKey: record.delivery.sessionKey)
+        recordSentLearning(id: id, kind: "reflection", text: .init(record.delivery.content), sessionKey: record.delivery.sessionKey, receivedAt: record.delivery.ackedAt)
     }
     /// Only an acknowledgment or successful tool-result consumption uses this receipt path.
-    func recordSentLearning(id: String, kind: String, text: Redacted<String>, sessionKey: String) {
+    func recordSentLearning(id: String, kind: String, text: Redacted<String>, sessionKey: String, receivedAt: Date? = nil) {
         guard let journal = learningJournal else { return }
         let identity = SHA256.hash(data: Data(sessionKey.utf8)).map { String(format: "%02x", $0) }.joined()
         let receiptID = "sent:" + id + ":" + identity.prefix(24)
@@ -318,15 +318,22 @@ extension ZeusRuntime: LearningRuntimeControlling {
             let agent = sessions.first(where: { $0.sessionKey == sessionKey })?.agent.rawValue ?? sessionKey.split(separator: ":").first.map(String.init) ?? "other"
             let agentLabel = ["claude": "Claude", "codex": "Codex", "opencode": "OpenCode"][agent] ?? "Assistant"
             let label = agentLabel + (managedController.sessionKey == sessionKey ? " · Zeus" : " · Assistant")
-            let summary = kind == "reflection" ? "Sent a daily reflection" : (kind == "digest" ? "Sent your daily summary" : "Sent a note")
+            let summary = Self.sentLearningSummary(kind: kind, text: text.value)
             let payload = JournalPayload(description: summary, text: text.value,
                 details: ["kind": kind, "delivery_id": id, "agent": agent, "sessionLabel": label, "sessionID": identity])
             if existing == nil {
-                try journal.append(.init(id: receiptID, time: clock.now, level: .activity, kind: .sentToAssistant,
+                try journal.append(.init(id: receiptID, time: receivedAt ?? clock.now, level: .activity, kind: .sentToAssistant,
                     payload: .init(payload, report: text.report)))
             }
-            (cards as? any LearningNoticeRecording)?.recordLearningNotice(.init(id: "n_" + id, kind: .reflection, createdAt: existing?.time ?? clock.now, summary: summary, actionTitle: nil, detail: text.value, ruleID: nil), action: nil)
+            (cards as? any LearningNoticeRecording)?.recordLearningNotice(.init(id: "n_" + id, kind: .reflection, createdAt: existing?.time ?? receivedAt ?? clock.now, summary: summary, actionTitle: "View", detail: text.value, ruleID: nil), action: nil)
         } catch { learningError = "Zeus couldn't record this learning receipt." }
+    }
+    static func sentLearningSummary(kind: String, text: String) -> String {
+        if kind == "reflection" { return "Sent a daily reflection" }
+        if kind == "digest" { return "Sent your daily summary" }
+        let moments = [("First activity today", "first activity today"), ("Back at the Mac", "back from a break"),
+            ("Later start than usual", "a later start"), ("Day winding down", "day winding down")]
+        return moments.first { text.hasPrefix($0.0) }.map { "Sent a note: " + $0.1 } ?? "Sent a note"
     }
     func learningForSending(_ learning: Learning) async -> Learning {
         guard let redactor = learningRedactor else { return learning }

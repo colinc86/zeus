@@ -32,6 +32,7 @@ enum ManagedTemplateSetup {
     static func refresh(folder: String, resources: URL?, confirmed: ManagedTemplateReplacement? = nil) throws {
         guard let resources else { return }
         let before = snapshot(folder: folder)
+        if confirmed != nil, before.hashes.values.contains("symlink") { throw ManagedSessionError.command("Linked assistant instructions must be edited in Terminal.") }
         if let confirmed, confirmed != before { throw ManagedSessionError.command("The assistant folder changed. Review it before replacing its instructions.") }
         for name in names {
             guard let old = before.hashes[name], old != "symlink",

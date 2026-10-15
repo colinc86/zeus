@@ -58,10 +58,14 @@ import Testing
         record.launchedToolsHash = nil; record.launchedTemplateVersion = nil
         f.controller.shutdown(); try f.controller.store.save(record)
         // Re-created controller must not silently upgrade an adopted running lease's evidence.
-        let other = try ManagedFixture(folder: f.folder)
-        defer { other.controller.shutdown() }
-        other.controller.activate(); try await other.settle()
-        // A fresh fake host launches anew; actual launch updates the evidence.
-        #expect(other.controller.record?.launchedToolsHash == ManagedTemplateSetup.toolsHash)
+        let binary = URL(fileURLWithPath: "/bin/cat")
+        let other = ManagedSessionController(configuration: { f.config.value }, stateURL: f.folder.appendingPathComponent("state.json"),
+            bridge: binary, bridgeSocket: f.folder.appendingPathComponent("bridge.sock").path,
+            executables: .init(tmux: binary, agents: [.claude: binary]), hosting: f.host, finder: f.finder,
+            environment: ["HOME": f.folder.path, "PATH": "/usr/bin:/bin"], clock: f.clock)
+        defer { other.shutdown() }
+        other.activate(); try await eventually { !other.isBusy }
+        #expect(other.managedSetupStale.tools && other.managedSetupStale.template)
+        #expect(other.record?.launchedToolsHash == nil)
     }
 }
