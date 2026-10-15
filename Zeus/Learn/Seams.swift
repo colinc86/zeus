@@ -242,3 +242,29 @@ extension RuleTrigger {
 @MainActor protocol LearningRuleOutcomeSource: AnyObject {
     var onRuleOutcome: ((RuleOutcome, [String], String, Date) -> Void)? { get set }
 }
+
+// Phase B values stay Foundation-only so headless runtime hosts can compile these seams.
+/// Normalized top-left coordinates, relative to the kept preview (0...1).
+struct FrameBox: Codable, Equatable, Sendable {
+    enum Kind: String, Codable, Sendable { case text, picture, face }
+    var x: Double
+    var y: Double
+    var width: Double
+    var height: Double
+    var kind: Kind
+}
+/// Already-covered preview bytes only. No source image or removed OCR text is retained.
+struct FrameItem: Codable, Equatable, Sendable {
+    var heic: Data
+    var width: Int
+    var height: Int
+    var boxes: [FrameBox]
+    var appName: String
+    var windowTitle: String
+}
+/// Optional journal capability. Frame IDs equal their .frame JournalItem IDs; descriptions link via details["frame_id"].
+/// Query/export return text metadata, never image bytes. Only explicit local viewer/attachment actions read a frame.
+@MainActor protocol FrameJournalStoring: JournalStore {
+    func appendFrame(_ frame: Redacted<FrameItem>, item: JournalItem) throws
+    func frame(id: String) throws -> Redacted<FrameItem>?
+}
