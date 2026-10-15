@@ -354,7 +354,7 @@ Zeus is a **conversation**, not a stack of cards to clear.
 
 5. **One menu** (MB1, 2026-10-14). The menu bar icon and a right-click on Zeus show the same menu (`ZeusMenuModel`, built by `ShellController.menuModel`), top to bottom:
    1. status: the strip's sentence when a question or unread is waiting (choosing it opens the panel at that message), else the avatar status; the managed actions or the Assistant session picker; unread, issue and "Hidden until" lines;
-   2. Talk to Zeus… · Hide/Show Zeus · Hide for 1 Hour · Hide Until Tomorrow · Delivery problem… (only when there is one);
+   2. Talk to Zeus… · Ask About This (LM2-B: Shift + the Talk shortcut when that combination registered, otherwise the menu item only; it opens the composer with the current level 2 record and, with level 3 on, one redacted frame as removable chips; nothing is sent before Send) · Hide/Show Zeus · Hide for 1 Hour · Hide Until Tomorrow · Delivery problem… (only when there is one);
    3. Character ▸ · Size ▸ · Theme ▸;
    4. Settings… · Check for Updates… · About Zeus;
    5. Quit Zeus.
