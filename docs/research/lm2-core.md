@@ -58,8 +58,9 @@ to the journal, including user toggles/edits, so reflection includes outcomes. E
 The cards object optionally conforms to `LearningNoticeRecording`:
 - Reconnect/update the same notice ID without a new badge, peek or sound; changed nil actions clear stale actions.
 - One persisted proposal group gets `N new rules · Review`; `onReviewRule` opens the list/focuses the first rule.
-- An act's first shadow result gets `I'd have: … · OK next time?`. Approval, including from Settings, replaces that same
-  line with `OK. I will do that from now on. · Undo`. Undo atomically restores shadow status and records its confidence signal.
+- An act's first shadow result gets `I'd have acted on “…” · OK next time?`. Approval, including from Settings, replaces that same
+  line with `OK. I'll do that from now on. · Undo`. Undo atomically restores shadow status and records its confidence signal.
+  Not This becomes `Got it. I won't.` with no action; retired acts show `Retired: “…” · Review`.
 
 A matching active passive trigger sets `learningInterruptionHold` before synchronous card arrival. App presentation keeps
 badges but holds nonurgent peek/sound; high priority bypasses. `onLearningHoldCleared(ids)` lets app replay the newest

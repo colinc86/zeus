@@ -136,7 +136,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
                 guard !rule.trigger.isEvaluable || matching.contains(where: { $0.id == rule.id }) else { continue }
                 _ = try tracking?.markShadowShown(id: rule.id)
                 let recorded = recorder.recordLearningNotice(.init(id: "shadow:" + rule.id, kind: .shadow, createdAt: rule.created,
-                    summary: "I'd have: \(rule.sentence)", actionTitle: "OK next time?", detail: rule.sentence, ruleID: rule.id), action: { [weak self] in
+                    summary: "I'd have acted on “\(rule.sentence)”", actionTitle: "OK next time?", detail: rule.sentence, ruleID: rule.id), action: { [weak self] in
                     guard let self, self.learningRules?.rules.first(where: { $0.id == rule.id })?.status == .shadow else { return }
                     do { try self.learningRules?.setStatus(.active, id: rule.id, at: self.clock.now); self.learningContextDidChange() }
                     catch { self.learningError = "Zeus couldn't activate this rule." }
@@ -152,9 +152,10 @@ extension ZeusRuntime: LearningRuntimeControlling {
                     do { try (self.learningRules as? any LearningRuleTracking)?.undoShadowApproval(id: rule.id, at: self.clock.now); self.learningContextDidChange() }
                     catch { self.learningError = "Zeus couldn't undo this rule approval." }
                 } }
+                if rule.status == .retired { action = { @MainActor [weak self] in self?.onReviewRule?(rule.id) } }
                 recorder.recordLearningNotice(.init(id: "shadow:" + rule.id, kind: .shadow, createdAt: rule.created,
-                    summary: approved ? "OK. I will do that from now on." : "Rule retired: \(rule.sentence)",
-                    actionTitle: approved ? "Undo" : nil, detail: rule.sentence, ruleID: rule.id), action: action)
+                    summary: approved ? "OK. I'll do that from now on." : (rule.status == .retired ? "Retired: “\(rule.sentence)”" : "Got it. I won't."),
+                    actionTitle: approved ? "Undo" : (rule.status == .retired ? "Review" : nil), detail: rule.sentence, ruleID: rule.id), action: action)
             }
         }
     }
