@@ -6,6 +6,29 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.2.5</title>
+      <pubDate>Thu, 15 Oct 2026 22:25:50 GMT</pubDate>
+      <sparkle:version>18</sparkle:version>
+      <sparkle:shortVersionString>0.2.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Summaries and notes now reach your assistant.</strong> The morning summary and the day's notes are delivered to your assistant the same way your messages are, and your assistant confirms each one. They queue if the assistant isn't connected yet and go to a restarted assistant on their own. Before, they were only announced quietly, and an assistant that never asked for them never saw them.</li>
+<li><strong>"Sent" means received.</strong> The conversation says "Daily summary ready for your assistant · View" until the assistant has it, then "Sent your daily summary". In What Zeus Kept, <strong>Sent to your assistant</strong> shows a <strong>Waiting</strong> group for anything prepared but not yet received, with the reason and the fix: Start Assistant, Open in Terminal, or Restart Assistant.</li>
+<li><strong>Stuck deliveries say so.</strong> If a message, summary or reflection has waited ten minutes because the assistant's Terminal has unsent text, or it's busy, or it isn't connected, a quiet line says which, with Open in Terminal, and Don't send for the one item. Zeus still never types over text you left in the Terminal.</li>
+<li><strong>New tools need a restart, and Zeus says so.</strong> When a Zeus update adds tools or instructions for your assistant, the conversation and Settings › Assistant show "Zeus has new tools and instructions · Restart assistant". The conversation is kept. If you haven't edited the instructions Zeus wrote for a new assistant, Zeus refreshes them on restart; if you have, it offers to open the folder or replace them, after asking.</li>
+<li><strong>Delete Everything</strong> also discards summaries and reflections still waiting to be delivered, and a late confirmation can't bring them back.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.2.5/Zeus-0.2.5.zip" type="application/octet-stream" sparkle:edSignature="7tkeIuApS3VOj4zXANyNruTN+IKtWDgRIDd8n7n6Nc8UocfQnQY/Y1VSEZSCx7nzfW3rmSd44DpboAkoiIzsBw==" length="12273725"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.2.4</title>
       <pubDate>Thu, 15 Oct 2026 21:25:14 GMT</pubDate>
       <sparkle:version>17</sparkle:version>
