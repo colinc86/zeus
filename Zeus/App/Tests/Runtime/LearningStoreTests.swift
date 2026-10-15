@@ -2,6 +2,7 @@ import CryptoKit
 import Foundation
 import Observation
 import Testing
+import Synchronization
 @testable import Zeus
 
 @MainActor final class FixtureJournalKey: JournalKeyProviding {
@@ -104,6 +105,25 @@ import Testing
         #expect(store.rules.last?.status == .active)
         let own = try store.addOwn(.init(sentence: "My rule", kind: .acts), at: Date())
         #expect(own.kind == .passive && own.updatedBy == .user && own.confidence == 0.75)
+    }
+    @Test func olderRuleSnapshotLoadsWithConsentAndNoticeHistoryDefaults() throws {
+        struct OldState: Encodable { var rules: [LearnedRule]; var autonomy: Double }
+        let root = folder(); defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appendingPathComponent("rules.zrules"), key = FixtureJournalKey()
+        let first = try PersistentRulesStore(fileURL: url, keyProvider: key)
+        let added = try first.propose([.init(sentence: "Use short updates")], at: Date())
+        try LearningEncryption.write(OldState(rules: added, autonomy: 0), to: url, key: key)
+        let reopened = try PersistentRulesStore(fileURL: url, keyProvider: key)
+        #expect(reopened.rules == added && reopened.autonomy == 0)
+        #expect(reopened.ruleNoticeGroups() == [added.map(\.id)])
+    }
+    @Test func dialPublishesChangesToObservers() throws {
+        let root = folder(); defer { try? FileManager.default.removeItem(at: root) }
+        let store = try PersistentRulesStore(fileURL: root.appendingPathComponent("rules.zrules"), keyProvider: FixtureJournalKey())
+        let changes = Mutex(0)
+        withObservationTracking { _ = store.autonomy } onChange: { changes.withLock { $0 += 1 } }
+        store.autonomy = 0
+        #expect(changes.withLock { $0 } == 1)
     }
     @Test func triggerANDPrivateAndOvernightWeekday() throws {
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = try #require(TimeZone(secondsFromGMT: 0))
