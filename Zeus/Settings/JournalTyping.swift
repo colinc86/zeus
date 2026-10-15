@@ -41,6 +41,7 @@ struct JournalTypingGroup: Identifiable, Equatable {
     let hour: Date
     let end: Date
     let runs: [JournalTypingRun]
+    var totalCount: Int
     var id: String { "typing:\(app):\(hour.timeIntervalSince1970)" }
     var time: Date { runs.map(\.time).max() ?? hour }
     func rangeLabel(calendar: Calendar = .current) -> String {
@@ -54,7 +55,7 @@ struct JournalTypingGroup: Identifiable, Equatable {
         }
         return buckets.map { key, values in
             Self(app: key.app, hour: key.hour, end: calendar.date(byAdding: .hour, value: 1, to: key.hour) ?? key.hour,
-                runs: values.sorted { $0.time == $1.time ? $0.id < $1.id : $0.time < $1.time })
+                runs: values.sorted { $0.time == $1.time ? $0.id < $1.id : $0.time < $1.time }, totalCount: values.count)
         }.sorted { $0.app == $1.app ? $0.hour > $1.hour : $0.app.localizedStandardCompare($1.app) == .orderedAscending }
     }
 }

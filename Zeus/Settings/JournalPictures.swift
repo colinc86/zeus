@@ -43,7 +43,10 @@ enum JournalTimelineRow: Identifiable {
         }
         result.sort { $0.time == $1.time ? $0.id < $1.id : $0.time > $1.time }
         // Typing is grouped by app, then hour, rather than interleaving stretches from different apps.
-        result += JournalTypingGroup.grouped(shown.filter { $0.level == .typed && $0.kind == .typedText }.map(JournalTypingRun.init), calendar: calendar).map(Self.typing)
+        let totals = Dictionary(uniqueKeysWithValues: JournalTypingGroup.grouped(catalog.filter { $0.level == .typed && $0.kind == .typedText }.map(JournalTypingRun.init), calendar: calendar).map { ($0.id, $0.runs.count) })
+        result += JournalTypingGroup.grouped(shown.filter { $0.level == .typed && $0.kind == .typedText }.map(JournalTypingRun.init), calendar: calendar).map {
+            var group = $0; group.totalCount = totals[group.id] ?? group.runs.count; return Self.typing(group)
+        }
         return result
     }
 }

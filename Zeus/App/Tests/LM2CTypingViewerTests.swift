@@ -70,7 +70,7 @@ import Testing
         let viewer = JournalViewerModel(journal: store, calendar: calendar, now: now); viewer.search = "appointment"; viewer.app = "test.mail"
         let groups = viewer.timeline.compactMap { if case .typing(let group) = $0 { group } else { nil } }
         let group = try #require(groups.first { $0.runs.contains { $0.id == "match" } })
-        #expect(group.runs.count == 1); #expect(viewer.deleteTypingGroup(group))
+        #expect(group.runs.count == 1); #expect(group.totalCount == 2); #expect(viewer.deleteTypingGroup(group))
         #expect(Set(try store.items(matching: .init()).map(\.id)) == ["other-app", "other-hour"])
         viewer.undoDelete(); #expect(try store.items(matching: .init()).count == 4)
     }

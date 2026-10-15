@@ -18,7 +18,7 @@ struct JournalTypingGroupView: View {
                     Text(expanded ? "\u{25BE}" : "\u{25B8}").settingsCaption()
                     Text(JournalDisplay.appName(group.app) + " · " + group.rangeLabel()).settingsHeading()
                     Spacer()
-                    Text("\(group.runs.count) \(group.runs.count == 1 ? "stretch" : "stretches")").settingsCaption()
+                    Text("\(group.totalCount) \(group.totalCount == 1 ? "stretch" : "stretches")").settingsCaption()
                 }
             }.buttonStyle(.plain).accessibilityLabel(JournalDisplay.appName(group.app) + " · " + group.rangeLabel())
                 .accessibilityValue(expanded ? "Expanded" : "Collapsed")
