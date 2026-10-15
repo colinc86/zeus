@@ -189,6 +189,8 @@ Same frame as the L1 sheet.
     | `.olderSetup` | "it was started with an older setup" | "Restart Assistant" |
 
     "Terminal" is the app, capitalised as everywhere else in Zeus; "unsent text" matches the draft card ("Your assistant has unsent text in Terminal") and the menu line ("Waiting on unsent text in Terminal").
+  - While the Waiting group is shown, the received rows below it sit under a "Received" heading, so the two groups read as a pair. Without waiting items the ledger looks as before.
+  - Both row kinds share one disclosure: `ZeusGlyph(.right)`, rotated when expanded, in `secondaryText`, hidden from VoiceOver.
   - When the hold clears and the delivery is acked, the row moves into its day with the usual session label. The group disappears when nothing is waiting.
   - "Export…" on this segment writes received rows only, never waiting ones; its caption reads "Exports the received items shown, as stored."
   - VoiceOver: "Morning summary, 212 words, waiting since 00:12, your assistant isn't connected", then the action's own label.
