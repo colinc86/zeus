@@ -117,6 +117,8 @@ The model gets the OCR lines after covering, with private lines replaced by `‹
 
 ## 2. Recommended pipeline and per-frame budget
 
+> **Decision (2026-10-14, after this spike):** pixellate every picture region larger than 48×48 px by default, and run whole-frame face detection as a cheap extra. No tiling at capture time. Step 5 below is replaced by that; it costs far less than tiling.
+
 On an event (app or document switch after 10 s of dwell, 5 min in the same context, return from idle, or on demand), and under the hourly cap:
 
 | # | Step | Cost at 2560×1600 (M1 Pro) |
