@@ -17,10 +17,10 @@ import ZeusDesign
         let policies = ObservationSettings(defaults: defaults), privacy = LearnSettings(defaults: defaults)
         policies.edit(4) { $0.enabled = true; $0.consented = true; $0.apps = [.init(name: "Mail", bundleIDs: ["com.apple.mail"]), .init(name: "Safari", bundleIDs: ["com.apple.Safari"])] }
         let model = TypingPrivacyModel(policies: policies, privacy: privacy); model.modelAvailable = true; model.permission = .granted
-        let hour = Calendar.current.dateInterval(of: .hour, for: now)?.start ?? now
+        let hour = Calendar.current.date(bySettingHour: 14, minute: 0, second: 0, of: now) ?? now
         for (index, topic) in ["Replying to a doctor about rescheduling an appointment", "Drafting a project update for a colleague", "Planning a source change"].enumerated() {
             try store.append(.init(id: "run-\(index)", time: hour.addingTimeInterval(Double(5 + index * 10) * 60), level: .typed,
-                app: "com.apple.mail", kind: .typedText, payload: .init(.init(description: "Typing", text: index == 1 ? nil : "hi dr ‹name› can we move thursday my ‹health› is still sore ‹pasted› thanks",
+                app: "com.apple.mail", kind: .typedText, payload: .init(.init(description: "Typing", text: index == 1 ? nil : (index == 2 ? "fix restart race guard state idle" : "hi dr ‹name› can we move thursday my ‹health› is still sore ‹pasted› thanks"),
                     topic: topic, details: ["words_not_kept": "setting"]))))
         }
         let viewer = JournalViewerModel(journal: store, now: now); viewer.level = 4

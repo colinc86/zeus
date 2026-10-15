@@ -82,7 +82,7 @@ struct TypingConsentSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Zeus notes what you were typing about in the apps you choose, so your assistant knows what you're working on and can help with it. Before anything is kept, Zeus removes names, numbers, addresses and secrets, here on this Mac.").settingsBody()
             list("Zeus keeps", ["What each stretch of typing was about, for 30 days (you can change this)", "The words, with private details removed, for 24 hours (you can change this, or keep no words at all)"])
-            list("Zeus never keeps", ["Anything you type into a password field", "Typing in apps you haven't chosen, or in private windows", "What you paste: Zeus only notes that you pasted", "Typing made by other apps, such as a password manager filling in a form"])
+            list("Zeus never keeps", ["Anything you type into a password field", "Typing in apps you haven't chosen, or in private windows in Chrome and Edge", "What you paste: Zeus only notes that you pasted", "Typing made by other apps, such as a password manager filling in a form"])
             Text("An example").settingsHeading()
             ZeusFieldChrome {
                 VStack(alignment: .leading, spacing: 6) {
@@ -93,6 +93,7 @@ struct TypingConsentSheet: View {
             }
             Text("The first line is the words as kept for 24 hours. The second is the topic kept for 30 days, and the only part your assistant sees.").settingsCaption()
             Text("If you'd rather keep no words, choose Don't keep after turning this on. Topics still work.").settingsCaption()
+            Text("Safari: Zeus notes nothing you type in Safari unless you add it under Only in apps I choose. Zeus can't tell Safari's private windows apart, so typing in those would be kept too.").settingsCaption()
         }
     }
     private var footer: some View {
