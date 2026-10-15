@@ -82,7 +82,10 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    func applicationDidBecomeActive(_ notification: Notification) { shell.login.refresh() }
+    func applicationDidBecomeActive(_ notification: Notification) {
+        shell.login.refresh()
+        shell.learning.retryLearningStorage()
+    }
 
     /// MB1: reopening Zeus (Finder, Spotlight, Launchpad, Dock) always brings it back, even with the menu bar icon off.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

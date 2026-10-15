@@ -39,6 +39,10 @@ import ZeusDesign
             settings.setTheme(id: theme.id)
             for scheme in [ColorScheme.light, .dark] {
                 let prefix = theme.id + (scheme == .light ? "-light" : "-dark")
+                try await render(VStack(alignment: .leading, spacing: 12) {
+                    Text("Learn from me").settingsHeading()
+                    LearningStorageWarningView(warnings: [LearningPresentation.storageWaitingMessage])
+                }.padding(24), prefix + "-storage-warning", theme: theme, scheme: scheme, width: 700, height: 180)
                 try await render(RawJournalConsentSheet(level: .screen, allow: {}, cancel: {}), prefix + "-pictures-consent", theme: theme, scheme: scheme, width: 520, height: 330)
                 try await render(RawJournalConsentSheet(level: .typed, allow: {}, cancel: {}), prefix + "-words-consent", theme: theme, scheme: scheme, width: 520, height: 330)
                 try await render(VStack(alignment: .leading, spacing: 24) {

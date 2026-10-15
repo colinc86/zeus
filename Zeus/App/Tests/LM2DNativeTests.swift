@@ -38,6 +38,14 @@ import ZeusDesign
         for _ in 0..<8 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
         return (host, window)
     }
+    @Test func storageWarningIsAccessibleAndWrapsWithinPrivacyWidth() async throws {
+        let warning = LearningPresentation.storageWaitingMessage
+        let (host, window) = try await mount(LearningStorageWarningView(warnings: [warning]).frame(width: 440).padding(24))
+        defer { window.contentView = nil; window.close() }
+        let node = try #require(depthNodes(host).first { depthLabel($0) == warning })
+        let frame = try #require((node as AnyObject).accessibilityFrame?())
+        #expect(host.bounds.insetBy(dx: -1, dy: -1).contains(host.convert(window.convertFromScreen(frame), from: nil)))
+    }
     @Test func rawSheetHasVisibleDisclosureAndAccessibleCancelAllow() async throws {
         var cancelled = 0, allowed = 0
         let (host, window) = try await mount(RawJournalConsentSheet(level: .typed, allow: { allowed += 1 }, cancel: { cancelled += 1 }))

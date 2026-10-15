@@ -3,7 +3,15 @@ import Observation
 import Testing
 @testable import Zeus
 
-@MainActor @Observable final class LM2JournalFake: JournalStore {
+@MainActor @Observable final class LM2JournalFake: JournalStore, LearningStorageRecovering {
+    var storageWaitingForUnlock = false
+    var pendingStorageWrites = 0
+    var recoveryAttempts = 0
+    var recoverySucceeds = true
+    func retryPendingWrites() {
+        recoveryAttempts += 1
+        if recoverySucceeds { storageWaitingForUnlock = false; pendingStorageWrites = 0; lastError = nil }
+    }
     var revision: UInt64 = 0
     var lastError: String?
     var records: [JournalItem] = []
@@ -34,7 +42,15 @@ import Testing
     func export(matching query: JournalQuery) throws -> Data { try JSONEncoder().encode(items(matching: query)) }
     func prune(retention: JournalRetention, now: Date) throws { self.retention = retention; prunedAt = now }
 }
-@MainActor @Observable final class LM2RulesFake: RulesStore {
+@MainActor @Observable final class LM2RulesFake: RulesStore, LearningStorageRecovering {
+    var storageWaitingForUnlock = false
+    var pendingStorageWrites = 0
+    var recoveryAttempts = 0
+    var recoverySucceeds = true
+    func retryPendingWrites() {
+        recoveryAttempts += 1
+        if recoverySucceeds { storageWaitingForUnlock = false; pendingStorageWrites = 0; lastError = nil }
+    }
     var rules: [LearnedRule] = []
     var revision: UInt64 = 0
     var lastError: String?
@@ -214,5 +230,66 @@ private struct LM2FixtureRedactor: Redactor {
         model.pruneExpired(now: now)
         #expect(journal.prunedAt == now); #expect(journal.retention?.activityDays == 90)
         #expect(journal.retention?.focusDays == 7); #expect(journal.retention?.frameDays == 7)
+    }
+}
+
+@MainActor struct LM2StoragePresentationTests {
+    private func withModel(_ check: (LearningPresentation, LM2JournalFake, LM2RulesFake) throws -> Void) throws {
+        let suite = "zeus-lm2-storage-ui-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)
+        let model = LearningPresentation(defaults: defaults, learn: learn)
+        let journal = LM2JournalFake(), rules = LM2RulesFake()
+        model.install(journal: journal, rules: rules, redactor: LM2FixtureRedactor(), source: LM2FocusSource())
+        defer { model.stop() }
+        try check(model, journal, rules)
+    }
+    @Test func storageErrorsRemainVisibleWithLearningOffAndAreDeduplicated() throws {
+        try withModel { model, journal, rules in
+            #expect(!model.enabled)
+            #expect(model.storageWarnings.isEmpty)
+            journal.lastError = "Journal remains in memory."
+            rules.lastError = journal.lastError
+            #expect(model.storageWarnings == ["Journal remains in memory."])
+            rules.lastError = "Rules could not be saved."
+            #expect(model.storageWarnings == ["Journal remains in memory.", "Rules could not be saved."])
+            #expect(model.error == nil)
+            #expect(!model.enabled)
+        }
+    }
+    @Test func unavailableCapabilitiesWarnWithoutAnErrorAndRecoverBothStores() throws {
+        try withModel { model, journal, rules in
+            journal.storageWaitingForUnlock = true
+            rules.pendingStorageWrites = 2
+            #expect(model.storageWarnings.count == 1)
+            #expect(model.storageWarnings == [LearningPresentation.storageWaitingMessage])
+            journal.lastError = LearningStorageAvailability.waitingMessage
+            #expect(model.storageWarnings == [LearningPresentation.storageWaitingMessage])
+            model.retryLearningStorage()
+            #expect(journal.recoveryAttempts == 1)
+            #expect(rules.recoveryAttempts == 1)
+            #expect(model.storageWarnings.isEmpty)
+            #expect(!model.enabled)
+            #expect(model.journalAccessPolicy.enabledLevels.isEmpty)
+            model.retryLearningStorage()
+            #expect(journal.recoveryAttempts == 1)
+            #expect(rules.recoveryAttempts == 1)
+        }
+    }
+    @Test func failedRetryKeepsWarningUntilSuccessfulRecovery() throws {
+        try withModel { model, journal, rules in
+            journal.pendingStorageWrites = 1
+            journal.lastError = "New entries stay in memory."
+            journal.recoverySucceeds = false
+            model.retryLearningStorage()
+            #expect(model.storageWarnings == ["New entries stay in memory."])
+            #expect(journal.pendingStorageWrites == 1)
+            #expect(rules.recoveryAttempts == 0)
+            journal.recoverySucceeds = true
+            model.retryLearningStorage()
+            #expect(model.storageWarnings.isEmpty)
+            #expect(journal.pendingStorageWrites == 0)
+        }
     }
 }

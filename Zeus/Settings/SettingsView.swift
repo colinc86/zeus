@@ -117,6 +117,7 @@ struct SettingsView: View {
                 if let learning, let learn {
                     Text("Learn from me").settingsTitle()
                     if learning.enabled { Text(learning.redactionCaption).settingsCaption() }
+                    LearningStorageWarningView(warnings: learning.storageWarnings)
                     PrivacySettingsView(learn: learn, observations: learning.policies,
                         onObservationChange: { learning.settingsChanged() }, deleteAll: { learning.deleteEverything() })
                     SettingsDivider()
