@@ -16,7 +16,7 @@ Phase D app presentation uses the platform's optional journal access and rule li
 - Combined focused run: **15 tests in five suites passed**, including the app models, native actions, all-theme renders and platform's pure Phase D transition tests (`build/lm2d-integrated-focused.log`).
 - A subsequent native navigation regression verified an older answer, forty rows down, is actually expanded and visible. **All four native tests passed** (`build/lm2d-navigation-native.log`). This adds one new passing test to the combined set; the other three overlap.
 - Combined package suites passed (`build/lm2d-integrated-packages.log`).
-- Full `scripts/test.sh` is **not green**: its pre-core full app attempt hit the locked-console protection gate below and was interrupted. The final integrated full suite must run after unlock. No protected-write bypass or automatic retry was added.
+- Full `scripts/test.sh` is **not green**: its pre-core full app attempt hit the locked-console protection gate below and was interrupted. That earlier protection issue is resolved for synthetic fixtures by the platform recovery addendum below. The current full-suite blocker is dispatch-worker saturation, not protected storage.
 
 ## Earlier app-side checks
 
@@ -37,6 +37,24 @@ Phase D app presentation uses the platform's optional journal access and rule li
 
 Designer approved the native all-theme render set (seven themes, both system appearances, 1×/2×), including consent, switches, ledger words/pictures/refusals, Rules, Why and quiet lines. The pixel outcome marks were separately approved, including the final dash alignment. Adopted designer/lm2d-copy `9283a86` by original history. The expanded ledger item's ISO timestamp is literally the timestamp sent by the runtime. No ZeusDesign source or tests changed. The designer's Phase D copy branch is adopted by original-history merges.
 
-## Environment gate
+## Earlier environment gate
 
-During the full-suite run, the console locked (`IOConsoleLocked = Yes`). Encrypted journal/rules fixture writes then failed with Cocoa 513 / errno 1 at complete-file-protection writes. The already-failed full app run was interrupted after recording those failures, rather than waiting through further encrypted-fixture timeouts. Protection was not weakened and no test bypass was added. These gates require a subsequent unlocked-console run; focused app fixtures and render results must not be presented as a full-suite pass.
+During the full-suite run, the console locked (`IOConsoleLocked = Yes`). Encrypted journal/rules fixture writes then failed with Cocoa 513 / errno 1 at complete-file-protection writes. The already-failed full app run was interrupted after recording those failures, rather than waiting through further encrypted-fixture timeouts. Protection was not weakened and no test bypass was added. This recorded the earlier blocker. Platform subsequently isolated fixture-only OS protection and added real storage recovery; see the addendum below for the new integrated gate.
+
+## Storage recovery addendum
+
+- Merged platform recovery `037d10e` by original history. Its explicitly marked fixture key providers opt out of OS file protection only; AES-GCM and atomic file writes remain exercised. Production protection stays intact, and no test uses real Keychain credentials.
+- Privacy shows distinct store errors below its status caption, deduplicates identical journal/rules warnings, and supplies the approved memory-only warning when a recovery capability reports unavailable storage or pending writes. Generic store errors remain intact. Adopted designer copy `ade2d4c`.
+- Unlock, session activation and app activation call the optional recovery capability only for pending/unavailable stores. The viewer reloads after an attempted recovery. Healthy stores are not retried, and capture consent/policy is unchanged.
+- Three fake-store regressions cover capture-off visibility, deduplication, missing-error fallback, both stores, failed recovery and successful clearing. A native accessibility test verifies the complete warning fits the Privacy width. Warning renders cover all seven themes, both appearances and both scales.
+- `scripts/build.sh` passed with no new warnings (`build/lm2d-recovery-final-build.log`). The first integrated focused run passed **18 tests in five suites** (`build/lm2d-recovery-focused.log`); it preceded the final wording-only adjustment. Public check passed (`build/lm2d-recovery-public.log`).
+
+### Final gate limitation
+
+Two full runs were attempted after recovery adoption. `build/lm2d-recovery-full-test.log` included opt-in renders and initially overlapped platform's suite. `build/lm2d-recovery-standard-test.log` ran ordinary `scripts/test.sh`, without renders and without an overlapping heavy platform run. Both passed all package suites, then reported managed fixture `.deadline` cascades (Round5ManagedBlockEnd, Round5ManagedDialog/Presentation, SA2Activity). Neither reported protected-storage failures.
+
+Both already-failed app runs were stopped after sampling. Samples are `build/lm2d-full-test-sample.txt` and `build/lm2d-standard-test-sample.txt`. Both reached the dispatch soft limit of 64 workers; the first includes synchronous Vision OCR and the second many blocked `NSAnimation._runBlocking` workers while the main thread pumps XCTest/AppKit. Platform is addressing the separate synchronous OCR fixture call. The remaining native-animation saturation under the locked console is unproven; do not claim a passing full gate or attribute it solely to concurrent runs. Only this worktree's exact test/xcodebuild PIDs were stopped.
+
+Designer approved the storage-warning renders. Their small fixture uses `settingsHeading` for context; the real Privacy pane retains `settingsTitle` and places the warning after its optional model status caption. No ZeusDesign changes.
+
+Final isolated focused verification after the approved wording: **18 tests in five suites passed**, including all nine render surfaces (**252 PNGs**) (`build/lm2d-recovery-final-focused.log`). No test process remains from this appdev verification.
