@@ -109,5 +109,6 @@ import Testing
         let row = try #require(store.items(matching: .init()).first)
         #expect(row.payload.value.text == nil); #expect(row.payload.value.topic == "Planning source changes")
         #expect(row.payload.value.details["words_not_kept"] == "setting")
+        #expect(learning.viewer?.items.allSatisfy { $0.payload.value.text == nil } == true)
     }
 }

@@ -77,6 +77,8 @@ final class LearningPresentation {
         ask = AskAboutThisModel(policies: policies, privacy: learn.settings, source: source, redactor: redactor,
             paused: { [weak learn] in learn?.isPausedNow ?? true },
             captureScreen: { [weak self] in await self?.screen?.observer?.captureOnDemand() })
+        // Apply local retention before a viewer can cache any words under a longer/default preference.
+        pruneExpired()
         let viewer = JournalViewerModel(journal: journal)
         self.viewer = viewer; self.rules = RulesPaneModel(store: rules, journal: viewer)
         focus = FocusObserver(source: source, policies: policies,
@@ -126,8 +128,8 @@ final class LearningPresentation {
             try journal?.prune(retention: retention, now: now)
             let words: TypingWordsRetention = switch policies.typingWordsHours { case 0: .none; case 168: .week; default: .day }
             try (journal as? any TypingJournalStoring)?.pruneTyping(words: words, topicsDays: policies.policy(4).retentionDays, now: now)
-            error = nil; return true
-        } catch { self.error = "Couldn't remove expired journal records. Try again."; return false }
+            viewer?.reload(); error = nil; return true
+        } catch { viewer?.reload(); self.error = "Couldn't remove expired journal records. Try again."; return false }
     }
     private func scheduleRetention() {
         retentionTask?.cancel()
