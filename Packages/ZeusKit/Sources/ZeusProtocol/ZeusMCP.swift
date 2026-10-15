@@ -44,7 +44,7 @@ public enum ZeusMCP {
     - Use wait_seconds 0 when you don't need the answer now; use more than 45 seconds only when you can wait for a decision the user is actively considering.
     
     DELIVERIES (answers and messages that arrive later)
-    - Claude Code: a <channel source="zeus"> event. Its meta has kind (reply | skipped | userMessage), delivery_id, and card_id/option_id for replies. A skipped delivery says which question the user skipped and has no option_id. earlier_session means this answer was rerouted from an older session; handle it normally, and its card_id can acknowledge it in this receiving session.
+    - Claude Code: a <channel source="zeus"> event. Its meta has kind (reply | skipped | userMessage | reflection), delivery_id, and card_id/option_id for replies. A skipped delivery says which question the user skipped and has no option_id. earlier_session means this answer was rerouted from an older session; handle it normally, and its card_id can acknowledge it in this receiving session.
     - Other agents: a line starting [zeus delivery_id=d_… card_id=c_…], or items from zeus_get_responses.
     - Recipe: handle it, reply through Zeus (not just the terminal), then call zeus_ack with its delivery_id. Acking after your reply doesn't restart the activity indicator.
       The target session is the agent process receiving this delivery, not necessarily the session that created the card. A later tool call from this receiving session with that card_id also counts as the ack. zeus_say has no card_id, so replying with it still requires zeus_ack.
@@ -56,6 +56,9 @@ public enum ZeusMCP {
     - Ask before big or irreversible actions.
     - Respect quiet hours: when a tool result includes quiet: true, hold non-urgent cards.
     - If a tool says Zeus isn't running, tell the user in the terminal once and carry on.
+
+    REFLECTION AND RULES
+    - A reflection delivery is a local, redacted daily summary, not a new user request. Read zeus_get_rules, propose only useful supported rules with zeus_propose_rules, and ack the delivery. Do not narrate the user's habits or repeat private details. Active rules guide you; shadow rules do not authorize external actions.
 
     APP CONTROLS AND LEARNINGS
     - Change the look only when asked, or to use something you just made at the user's request. Read zeus_app_state.formats before writing character or theme JSON. Prefer zeus_move position "near-active-window" over coordinates. Don't move Zeus while the user is typing to it.
@@ -96,7 +99,7 @@ public enum ZeusMCP {
             tool("zeus_ack", "Confirm you've handled one or more deliveries (from a <channel source=\"zeus\"> event or a [zeus delivery_id=…] line). Ack duplicates too. Without an ack, Zeus resends with backoff.", ["delivery_ids": ["type": "array", "items": text]], ["delivery_ids"]),
             tool("zeus_list_characters", "List Zeus's characters (costumes) and the current one. Only change costume when the user asks.", [:], []),
             tool("zeus_set_character", "Switch Zeus's costume to a character id from zeus_list_characters. Only when the user asks. Returns ok, previous and current character ids.", ["id": text], ["id"])
-        ] + ZeusAppTools.tools
+        ] + ZeusAppTools.tools + ZeusRuleTools.tools
     }()
 
     private static func described(_ schema: JSONValue, _ description: String) -> JSONValue {

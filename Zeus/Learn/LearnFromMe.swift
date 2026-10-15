@@ -16,6 +16,12 @@ final class LearnFromMe {
     @ObservationIgnored private let makeSource: () -> any ActivityEventSource
     @ObservationIgnored private let clock: () -> Date
     @ObservationIgnored private let calendar: Calendar
+    @ObservationIgnored private let journal: (any JournalStore)?
+    @ObservationIgnored private let redactor: (any Redactor)?
+    @ObservationIgnored private let captureAllowed: (ActivityEvent) -> Bool
+    @ObservationIgnored private var captureGeneration = UUID()
+    @ObservationIgnored private var captureTask: Task<Void, Never>?
+    @ObservationIgnored private var migrationTask: Task<Void, Never>?
     @ObservationIgnored private var recorder: ActivityRecorder?
     @ObservationIgnored private var ticker: Task<Void, Never>?
     @ObservationIgnored private var lastTickDay: String?
@@ -28,12 +34,15 @@ final class LearnFromMe {
     @ObservationIgnored var onDeleteEverything: (() -> Void)?
 
     init(settings: LearnSettings, root: URL?, calendar: Calendar = .current, clock: @escaping () -> Date = Date.init,
-         source: @escaping () -> any ActivityEventSource = { WorkspaceActivitySource() }) {
+         source: @escaping () -> any ActivityEventSource = { WorkspaceActivitySource() },
+         journal: (any JournalStore)? = nil, redactor: (any Redactor)? = nil,
+         captureAllowed: @escaping (ActivityEvent) -> Bool = { _ in true }) {
+        self.journal = journal; self.redactor = redactor; self.captureAllowed = captureAllowed
         self.settings = settings
         self.calendar = calendar
         self.clock = clock
         makeSource = source
-        let files = root.map { ActivityStore(root: $0, calendar: calendar) }
+        let files = root.map { ActivityStore(root: $0, calendar: calendar, journal: journal) }
         self.files = files
         learnings = files.map { files in LearningsStore(files: files, isEnabled: { [weak settings] in settings?.enabled ?? false }) }
     }
@@ -45,10 +54,30 @@ final class LearnFromMe {
     /// App launch: prune old files, then record if the switch is on.
     func start() {
         prune()
+        startLegacyMigration()
         if settings.enabled { startRecording() }
         refreshToday()
     }
+    private func startLegacyMigration() {
+        if migrationTask == nil, let files, files.hasLegacyActivity, let redactor, journal != nil, settings.enabled {
+            let token = captureGeneration
+            migrationTask = Task { [weak self] in
+                guard let self else { return }
+                do {
+                    try await files.migrateLegacy(redactor: redactor,
+                        allowed: { [weak self] event in self?.mayCapture(event) ?? false },
+                        excluded: { [weak self] event in
+                            guard let self else { return false }
+                            return event.app != nil && settings.isExcluded(bundleID: event.app, name: event.name)
+                        },
+                        stillAllowed: { [weak self] in self?.captureGeneration == token && self?.settings.enabled == true })
+                    guard captureGeneration == token else { return }; migrationTask = nil; refreshToday()
+                } catch { migrationTask = nil; writeError = "Zeus couldn't finish migrating old activity. Unprocessed files are unchanged." }
+            }
+        }
+    }
     func stop() {
+        invalidatePendingCapture()
         stopTicker()
         recorder?.stop()
         recorder = nil
@@ -62,6 +91,7 @@ final class LearnFromMe {
     }
 
     func pauseForToday() {
+        invalidatePendingCapture()
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: clock())) ?? clock().addingTimeInterval(86_400)
         settings.pausedUntil = tomorrow
     }
@@ -69,6 +99,7 @@ final class LearnFromMe {
 
     /// Removes every raw event and summary. Recording continues if the switch is on.
     func deleteEverything() {
+        invalidatePendingCapture()
         files?.deleteEverything()
         learnings?.reset()
         startCache.removeAll()
@@ -82,6 +113,7 @@ final class LearnFromMe {
     func tick(now: Date? = nil) {
         let now = now ?? clock()
         recorder?.tick(now: now)
+        startLegacyMigration()
         if let files {
             let day = files.dayKey(now)
             if let lastTickDay, lastTickDay != day { prune(); refreshToday() }
@@ -95,8 +127,35 @@ final class LearnFromMe {
     /// Writes one event, then makes any digest or moments it triggers.
     func record(_ event: ActivityEvent) {
         guard let files else { return }
+        guard journal != nil else { commit(event, write: { try files.append(event) }); return }
+        guard let redactor, mayCapture(event) else { return }
+        let token = captureGeneration, previous = captureTask
+        captureTask = Task { [weak self] in
+            await previous?.value
+            guard let self, token == captureGeneration, mayCapture(event), !Task.isCancelled else { return }
+            let safe = await redactor.redact(ActivityStore.payload(event))
+            // No suspension between the final policy/generation check and the encrypted append.
+            guard token == captureGeneration, mayCapture(event), !Task.isCancelled else { return }
+            let item = JournalItem(time: event.t, level: .activity, app: event.app, kind: .activity, payload: safe)
+            guard let safeEvent = ActivityStore.activityEvent(item) else { return }
+            commit(safeEvent, write: { try files.appendRedacted(safe, event: safeEvent) })
+        }
+    }
+    /// App calls on capture policy/context changes and before journal deletion. Invalidates any redaction in flight.
+    func invalidatePendingCapture() {
+        captureGeneration = UUID(); captureTask?.cancel(); captureTask = nil
+        migrationTask?.cancel(); migrationTask = nil
+    }
+    /// App calls after boundary invalidation when capture remains enabled; this is a fresh observation, not replay.
+    func captureCurrentActivity() { recorder?.captureCurrentApp() }
+    private func mayCapture(_ event: ActivityEvent) -> Bool {
+        settings.enabled && !settings.isPaused(at: clock()) && captureAllowed(event) &&
+        (event.app == nil || !settings.isExcluded(bundleID: event.app, name: event.name))
+    }
+    private func commit(_ event: ActivityEvent, write: () throws -> Void) {
+        guard let files else { return }
         let earlier = calendar.isDate(event.t, inSameDayAs: clock()) && !today.isEmpty ? today : files.events(on: event.t)
-        do { try files.append(event); writeError = nil } catch {
+        do { try write(); writeError = nil } catch {
             writeError = "Zeus couldn't save today's activity. \(error.localizedDescription)"
             return
         }
@@ -104,7 +163,7 @@ final class LearnFromMe {
         if calendar.isDate(event.t, inSameDayAs: clock()) {
             today.insert(event, at: today.lastIndex { $0.t <= event.t }.map { $0 + 1 } ?? 0)
         }
-        guard event.showsPresence else { return }
+        guard event.showsPresence, migrationTask == nil else { return }
         sendDigestIfDue(now: event.t)
         let median = LearningSummarizer.medianStart(previousStarts(before: event.t), calendar: calendar)
         send(LearningSummarizer.moments(after: event, earlier: earlier, medianStart: median, calendar: calendar), at: event.t)
@@ -146,7 +205,7 @@ final class LearnFromMe {
     }
 
     private func prune() {
-        files?.prune(now: clock(), keepingDays: settings.retentionDays)
+        if journal == nil { files?.prune(now: clock(), keepingDays: settings.retentionDays) }
         learnings?.prune(now: clock(), calendar: calendar)
         startCache.removeAll()
     }

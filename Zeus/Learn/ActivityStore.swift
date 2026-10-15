@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 /// One raw level-1 event (CONTRACT §13): which app is frontmost, launches and quits, lock/sleep, idle periods and
 /// display count. Never keystrokes, clipboard, window titles, URLs, file names, screenshots, audio or location.
@@ -55,10 +56,12 @@ struct ActivityEvent: Codable, Equatable, Sendable {
 final class ActivityStore {
     let root: URL
     let calendar: Calendar
+    private let journal: (any JournalStore)?
     private static let filePermissions = 0o600
     private static let folderPermissions = 0o700
 
-    init(root: URL, calendar: Calendar = .current) {
+    init(root: URL, calendar: Calendar = .current, journal: (any JournalStore)? = nil) {
+        self.journal = journal
         self.root = root
         self.calendar = calendar
     }
@@ -71,6 +74,7 @@ final class ActivityStore {
     func fileURL(for day: Date) -> URL { root.appendingPathComponent(dayKey(day) + ".jsonl") }
 
     func append(_ event: ActivityEvent) throws {
+        guard journal == nil else { throw LearningStorageError.invalidItem }
         try ensureFolder()
         let url = fileURL(for: event.t)
         if !FileManager.default.fileExists(atPath: url.path) {
@@ -87,6 +91,7 @@ final class ActivityStore {
 
     /// The day's events in time order. Lines that don't parse are skipped.
     func events(on day: Date) -> [ActivityEvent] {
+        if journal != nil { return journalItems(on: day).compactMap(Self.activityEvent) }
         guard let text = try? String(contentsOf: fileURL(for: day), encoding: .utf8) else { return [] }
         let events = text.split(separator: "\n").compactMap { try? Self.decoder.decode(ActivityEvent.self, from: Data($0.utf8)) }
         return events.enumerated().sorted { $0.element.t == $1.element.t ? $0.offset < $1.offset : $0.element.t < $1.element.t }.map(\.element)
@@ -94,11 +99,20 @@ final class ActivityStore {
 
     /// Days with a raw file, oldest first, as the start of each day.
     func recordedDays() -> [Date] {
-        rawFiles().compactMap(\.day).sorted()
+        if let journal {
+            var query = JournalQuery(); query.levels = [.activity]; query.kinds = [.activity]; query.limit = 100_000
+            return Array(Set(((try? journal.items(matching: query)) ?? []).map { calendar.startOfDay(for: $0.time) })).sorted()
+        }
+        return rawFiles().compactMap(\.day).sorted()
     }
 
     /// Deletes raw files older than `keepingDays` days. Learnings are pruned by `LearningsStore`.
     func prune(now: Date, keepingDays: Int) {
+        if let journal {
+            var query = JournalQuery(); query.levels = [.activity]; query.kinds = [.activity]; query.limit = 100_000
+            query.to = calendar.date(byAdding: .day, value: -keepingDays, to: calendar.startOfDay(for: now))
+            for item in (try? journal.items(matching: query)) ?? [] { try? journal.delete(.item(item.id)) }
+        }
         guard let cutoff = calendar.date(byAdding: .day, value: -keepingDays, to: calendar.startOfDay(for: now)) else { return }
         for file in rawFiles() where file.day.map({ $0 < cutoff }) ?? false {
             try? FileManager.default.removeItem(at: file.url)
@@ -107,6 +121,10 @@ final class ActivityStore {
 
     /// Removes every file in the Activity folder.
     func deleteEverything() {
+        if let journal {
+            var query = JournalQuery(); query.levels = [.activity]; query.kinds = [.activity]; query.limit = 100_000
+            for item in (try? journal.items(matching: query)) ?? [] { try? journal.delete(.item(item.id)) }
+        }
         for url in (try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? [] {
             try? FileManager.default.removeItem(at: url)
         }
@@ -136,6 +154,58 @@ final class ActivityStore {
             let parts = url.deletingPathExtension().lastPathComponent.split(separator: "-").compactMap { Int($0) }
             guard parts.count == 3 else { return (url, nil) }
             return (url, calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])))
+        }
+    }
+
+
+    /// Only LearnFromMe's post-redaction pipeline uses this write path.
+    func appendRedacted(_ payload: Redacted<JournalPayload>, event: ActivityEvent, id: String = UUID().uuidString) throws {
+        guard let journal else { throw LearningStorageError.invalidItem }
+        try journal.append(.init(id: id, time: event.t, level: .activity, app: event.app, kind: .activity, payload: payload))
+    }
+    func journalItems(on day: Date) -> [JournalItem] {
+        guard let journal else { return [] }
+        var query = JournalQuery(); query.levels = [.activity]; query.kinds = [.activity]; query.limit = 100_000
+        query.from = calendar.startOfDay(for: day); query.to = calendar.date(byAdding: .day, value: 1, to: query.from ?? day)
+        return (try? journal.items(matching: query)) ?? []
+    }
+    static func payload(_ event: ActivityEvent) -> JournalPayload {
+        var details = ["kind": event.kind.rawValue]
+        if let name = event.name { details["name"] = name }
+        if let seconds = event.seconds { details["seconds"] = String(seconds) }
+        if let displays = event.displays { details["displays"] = String(displays) }
+        return .init(description: event.plainDescription, details: details)
+    }
+    static func activityEvent(_ item: JournalItem) -> ActivityEvent? {
+        let details = item.payload.value.details
+        guard let kind = details["kind"].flatMap(ActivityEvent.Kind.init(rawValue:)) else { return nil }
+        return .init(t: item.time, kind: kind, app: item.app, name: details["name"],
+                     seconds: details["seconds"].flatMap(Double.init), displays: details["displays"].flatMap(Int.init))
+    }
+    var hasLegacyActivity: Bool { !rawFiles().isEmpty }
+    /// Source files remain until every permitted event has committed. Stable IDs make interrupted migration idempotent.
+    func migrateLegacy(redactor: any Redactor, allowed: (ActivityEvent) -> Bool,
+                       excluded: (ActivityEvent) -> Bool = { _ in false }, stillAllowed: () -> Bool) async throws {
+        guard let journal else { return }
+        var query = JournalQuery(); query.levels = [.activity]; query.kinds = [.activity]; query.limit = 100_000
+        var importedIDs = Set(try journal.items(matching: query).map(\.id))
+        for file in rawFiles() {
+            guard stillAllowed() else { return }
+            let data = try Data(contentsOf: file.url)
+            let hash = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+            for (offset, line) in data.split(separator: 10).enumerated() {
+                guard let event = try? Self.decoder.decode(ActivityEvent.self, from: Data(line)) else { continue }
+                let id = "l1_\(hash)_\(offset)"
+                if importedIDs.contains(id) || excluded(event) { continue }
+                // A temporary hard stop pauses migration; it must not silently drop permitted history.
+                guard allowed(event) else { return }
+                let payload = await redactor.redact(Self.payload(event))
+                guard stillAllowed(), allowed(event) else { return }
+                try appendRedacted(payload, event: event, id: id)
+                importedIDs.insert(id)
+            }
+            guard stillAllowed() else { return }
+            try FileManager.default.removeItem(at: file.url)
         }
     }
 
