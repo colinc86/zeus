@@ -11,12 +11,23 @@ import ZeusProtocol
         var shownShadowIDs: Set<String> = []
         var cardRules: [String: [String]] = [:]
         var batches: [[String]] = []
+        init() {}
+        private enum CodingKeys: String, CodingKey { case rules, autonomy, outcomeIDs, shownShadowIDs, cardRules, batches }
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            rules = try c.decodeIfPresent([LearnedRule].self, forKey: .rules) ?? []
+            autonomy = try c.decodeIfPresent(Double.self, forKey: .autonomy) ?? 0.5
+            outcomeIDs = try c.decodeIfPresent(Set<String>.self, forKey: .outcomeIDs) ?? []
+            shownShadowIDs = try c.decodeIfPresent(Set<String>.self, forKey: .shownShadowIDs) ?? []
+            cardRules = try c.decodeIfPresent([String: [String]].self, forKey: .cardRules) ?? [:]
+            batches = try c.decodeIfPresent([[String]].self, forKey: .batches) ?? rules.map { [$0.id] }
+        }
     }
     private(set) var rules: [LearnedRule]
     private(set) var revision: UInt64 = 0
     private(set) var lastError: String?
     var autonomy: Double {
-        get { state.autonomy }
+        get { _ = revision; return state.autonomy }
         set {
             guard newValue.isFinite else { return }
             var next = state; next.autonomy = min(1, max(0, newValue))
@@ -58,7 +69,7 @@ import ZeusProtocol
         guard next.rules[index].status != status else { return }
         let effective: LearnedRuleStatus = status == .active && next.rules[index].kind == .acts && !next.shownShadowIDs.contains(id) ? .shadow : status
         next.rules[index].status = effective; next.rules[index].updatedBy = .user; next.rules[index].updated = now
-        adjust(&next.rules[index], outcome: status == .retired ? .toggledOff : .toggledOn)
+        adjust(&next.rules[index], outcome: status == .retired || status == .proposed ? .toggledOff : .toggledOn)
         // Explicit user re-enablement is allowed even for a previously retired low-confidence rule.
         if effective == .active { next.rules[index].confidence = max(0.2, next.rules[index].confidence); next.rules[index].status = .active }
         try commit(next)
