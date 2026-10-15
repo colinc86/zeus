@@ -64,6 +64,12 @@ final class ActivityRecorder {
         source.start { [weak self] signal in self?.receive(signal) }
     }
 
+    /// Re-sample after a capture-policy boundary without reading any window content.
+    func captureCurrentApp() {
+        guard isRunning, let app = source.frontmostApp else { return }
+        receive(.activated(bundleID: app.bundleID, name: app.name))
+    }
+
     func stop() {
         guard isRunning else { return }
         flushPrivate(at: clock())
