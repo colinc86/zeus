@@ -201,9 +201,12 @@ struct ConversationView: View {
                 guard let target else { return }
                 // A person operating thread controls owns the viewport until they jump to latest.
                 setPinned(false)
+                // A pointer already reached its target. Centering it now moves the button
+                // out from under a held press. Keyboard focus still reveals its target.
+                guard !panel.focusCameFromPointer else { return }
                 Task { @MainActor in
                     await Task.yield()
-                    guard panel.isVisible, focusedControl == target else { return }
+                    guard panel.isVisible, focusedControl == target, !panel.focusCameFromPointer else { return }
                     proxy.scrollTo(target, anchor: .center)
                 }
             }

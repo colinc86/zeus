@@ -1,30 +1,50 @@
-# FX2 first-click verification
+# FX2 held-press verification
 
-## Isolation and baseline
+## Reproduced cause
 
-Started from main `6ed0826`. Before testing, no installed `/Applications/Zeus.app/Contents/MacOS/Zeus` process was running. The dev test host uses `build/fx2-home` through `TEST_RUNNER_HOME` and `TEST_RUNNER_CFFIXED_USER_HOME`; its fixture uses a private defaults suite, temporary CardStore, fake messaging, and no live runtime/bridge. Events are posted only inside the test application, never through global CGEvents. The fixture refuses to run beside the installed Zeus app.
+The initial first-mouse hypothesis was not the cause. The explicit hosting override and CONTRACT §10 sentence remain as requested.
 
-The console is locked (`IOConsoleLocked = Yes`). A real click into another application cannot be checked in that state. The offscreen native baseline **did not reproduce** the user's double-click failure: before any production change, `ConversationHostingView.acceptsFirstMouse(for:)` returned true over the synthetic choice, and one local down/up pair produced its CardResponse while the panel was non-key. The same result held after disabling the accessibility enhancement used to discover the button's coordinates. Evidence: `build/fx2-baseline-enhanced.log` and `build/fx2-baseline-no-ax.log`. Earlier attempts were fixture discovery/compilation failures, not reproductions.
+The addendum's first candidate **reproduces in the actual native ConversationHostingView**, using a private CardStore and a 51-card thread. The open question is at the viewport top, with history on both sides. A mouse-down is followed by a run-loop timer's mouse-up 120 ms later at the same point; the test samples focus, viewport and the option's accessibility frame at 80 ms.
 
-## Change
+Before the focus-scroll fix (`build/fx2-delayed-baseline.log`):
 
-Added the explicitly requested hosting-level `acceptsFirstMouse(for:) -> true` policy and the exact panel-behavior sentence in CONTRACT §10. This makes the intended policy explicit instead of inheriting framework behavior; **it is not a demonstrated root-cause fix** on the locked-console baseline. No button-specific handler, editor, responder, keyboard shortcut or VoiceOver behavior was changed.
+- Before down: no focused control; viewport offset 4474; option y −9453.
+- During the held press: `option:yes` gains focus; offset changes to 4300.5; option y changes to −9626.5.
+- The option moves 173.5 points away from the pointer. Mouse-up records no response.
 
-`ConversationFirstClickTests` hosts the actual ConversationHostingView in a nonactivating NSPanel equivalent (`becomesKeyOnlyIfNeeded = true`). It checks host policy at exposed button locations, the actual hit view over a choice, and that one local mouse-down/up pair persists the expected CardResponse. It restores the app's previous accessibility-enhancement setting afterward.
+After the fix (`build/fx2-delayed-fixed.log`, `build/fx2-addendum-focused.log`), focus still moves to the option, but offset remains 4474 and the frame remains unchanged. The first release persists `CardResponse.optionID = yes`.
 
-## Required unlocked hand check
+These are app-local native events, not the unlocked WindowServer/cliclick acceptance check. The offscreen fixture remains non-key under the locked console; the failure does not require key-window activation.
 
-Run only the isolated dev build with a fixture question; stop the installed Zeus first. Do not connect real sessions.
+## Fix and coverage
 
-1. Open a question with multiple choices. Click a separate disposable app/window, then click a choice once. Verify one CardResponse and no second click needed. Repeat with the panel already key.
-2. Repeat that away-and-back sequence for Send (a nonempty draft), reply chip, Skip, Go to question, journal View, rule OK next time?/Not this/Undo, Ask About This attachment/remove targets, and a fixture link.
-3. Put multiline text in the composer, click away, then click within its first line. The first click must place the caret there. Check Escape, Command shortcuts, Tab/Shift-Tab and VoiceOver activation remain correct.
+ConversationHostingView observes native mouse-down/key-down events **only for its own window**. Pointer-origin focus no longer invokes ScrollViewProxy's centering operation. Keyboard events restore focus scrolling; explicit strip/question jumps still position their targets. The monitor returns every event unchanged, installs when the view joins a window, and is removed on detach/deinit. Its input-source flag is not observable layout state.
 
-Those real activation-transition checks remain unverified while the console is locked. No LG1 case was added: local event injection does not demonstrate the cross-application WindowServer activation path, and must not be presented as that live gate.
+The second candidate did not reproduce for question choices: thread typewriter animation is restricted to message cards, so questions render their whole body even with the setting on. Peek typing already reserves the full body height. Held-press tests with typing enabled and disabled verify stationary option frames, recorded answers, and **zero peek expansions**. No speculative reveal/layout change was made.
 
-## Results
+Coverage includes short and scrolling conversation fixtures, typewriter off/on, the original first-mouse policy assertions, Tab resetting pointer provenance, existing Command-J/Shift-Command-J strip navigation, composer focus and accessibility tests. The test data uses a disposable defaults suite, temporary history, fake messaging/password storage and no runtime, socket, agent, credentials or Keychain.
 
-- `scripts/build.sh`: passed, no new warnings (`build/fx2-build.log`).
-- Isolated focused click/focus/accessibility/shortcut run: 14 tests in four suites passed (`build/fx2-focused.log`); tests explicitly requiring an unlocked keyboard session retained their normal skips.
-- `TEST_RUNNER_HOME="$PWD/build/fx2-home" TEST_RUNNER_CFFIXED_USER_HOME="$PWD/build/fx2-home" scripts/test.sh`: passed, including 1,007 app tests in 209 suites (465.768 seconds), package suites and offline checks (`build/fx2-full-test.log`). The longer run progressed through the private reconnect/build fixtures; a sample had no animation-worker saturation. No process was stopped or deadline weakened.
-- Production change, native fixture and the task-authorized CONTRACT §10 sentence are committed. No global shortcut registration, user sessions, real credentials or installed-app launch was used for the reproduction attempt. Cross-app hand verification remains blocked on the locked console, and the original failure remains unreproduced.
+LM2RenderTests now writes only its build/lm2-renders artifacts. The `readmeName` argument and docs/readme output branch are removed; the designer's harness owns README images.
+
+## Real press acceptance
+
+The opt-in cases `liveChoiceWithCliclick()` and `livePeekWithCliclick()` show only synthetic fixture windows and invoke `/opt/homebrew/bin/cliclick dd:x,y w:120 du:x,y`. No installed Zeus process is stopped and no bridge is started, so there is no socket conflict. The test checks `IOConsoleLocked = No` before showing a fixture or posting an event. The console is currently locked; this live gate remains pending, not passed.
+
+Run from the appdev worktree once unlocked:
+
+```sh
+TEST_RUNNER_FX2_LIVE=1 \
+TEST_RUNNER_HOME="$PWD/build/fx2-home" \
+TEST_RUNNER_CFFIXED_USER_HOME="$PWD/build/fx2-home" \
+xcodebuild -project Zeus.xcodeproj -scheme Zeus -configuration Debug \
+  -destination 'platform=macOS' -derivedDataPath "$PWD/build/DerivedData" \
+  -clonedSourcePackagesDirPath "$PWD/build/SourcePackages" \
+  -only-testing:ZeusTests/ConversationFirstClickTests test
+```
+
+For manual checking, use the same isolated fixture: hold an off-centre choice for about 120 ms and release in place; it must answer without moving. Repeat a peek inline choice while it types: it must answer without expanding. Check Tab/Shift-Tab and Command-J still reveal the focused control; Send, reply chip, strip, notice actions, attachment chips and links keep their first-click behaviour. Do not use the user's sessions or stop installed Zeus.
+
+## Gates
+
+- Focused native suites: 17 tests in four suites passed (including ordinary unlocked-only skips), `build/fx2-addendum-focused.log`.
+- Build/full-suite results are recorded in the final handback. The initial pre-addendum full pass was 1,007 app tests; it is not evidence for the new fix.

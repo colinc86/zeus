@@ -19,7 +19,7 @@ import ZeusDesign
             payload: Redacted(JournalPayload(description: "Editor", text: "Window: Review for ‹email›\nDocument: Example.swift — /project"))),
             JournalItem(id: "sent", level: .activity, kind: .sentToAssistant,
                 payload: Redacted(JournalPayload(description: "Day reflection", text: "A synthetic day summary with ‹name›.", details: ["sessionLabel": "Claude · Fixture"])))]
-        // Fixed fixture date: README captures must not show a freshly-created "1 second ago" rule.
+        // Fixed fixture date: Repeatable fixture renders must not show a freshly-created "1 second ago" rule.
         let now = try #require(ISO8601DateFormatter().date(from: "2026-10-12T03:00:00Z"))
         _ = try store.propose([RuleProposal(sentence: "Hold routine messages after 18:00", trigger: .init(time: .init(startMinute: 1080, endMinute: 540)), evidence: ["evidence"]),
             RuleProposal(sentence: "Send a short update to the team", kind: .acts, evidence: ["evidence"])], at: now)
@@ -35,10 +35,10 @@ import ZeusDesign
             try await render(JournalWindowView(model: viewer), name: prefix + "-journal", scheme: scheme, width: 720, height: 620)
             viewer.sentOnly = true
             try await render(JournalWindowView(model: viewer), name: prefix + "-sent", scheme: scheme, width: 720, height: 520)
-            try await render(RulesSettingsView(model: rules), name: prefix + "-rules", scheme: scheme, width: 792, height: nil, readmeName: "rules-" + prefix)
+            try await render(RulesSettingsView(model: rules), name: prefix + "-rules", scheme: scheme, width: 792, height: nil)
         }
     }
-    private func render<V: View>(_ view: V, name: String, scheme: ColorScheme, width: CGFloat = 640, height: CGFloat?, readmeName: String? = nil) async throws {
+    private func render<V: View>(_ view: V, name: String, scheme: ColorScheme, width: CGFloat = 640, height: CGFloat?) async throws {
         let palette = ZeusPalette.for(scheme)
         let host = TestHostingView(rootView: view.padding(20).frame(width: width, height: height, alignment: .topLeading)
             .environment(\.zeusFontChoice, .system).environment(\.colorScheme, scheme).background(palette.panel)
@@ -59,12 +59,6 @@ import ZeusDesign
             host.cacheDisplay(in: host.bounds, to: bitmap)
             let data = try #require(bitmap.representation(using: .png, properties: [:]))
             try data.write(to: out.appendingPathComponent(name + "-\(scale)x.png"))
-            if let readmeName, scale == 2 {
-                let readme = repo.appendingPathComponent("docs/readme")
-                try FileManager.default.createDirectory(at: readme, withIntermediateDirectories: true)
-                #expect(width == 792 && bitmap.pixelsWide == 1584)
-                try data.write(to: readme.appendingPathComponent(readmeName + ".png"))
-            }
         }
     }
 }
