@@ -1,7 +1,7 @@
 # What the assistant learns from Zeus, and how it should use it
 
 The agent-facing side of Learn from me (LM2 Phase D). `PRIVACY.md` covers what the *user* sees. This file covers what the *assistant* receives, how it asks for more, how it proposes and runs rules, and the instructions it reads in its folder (§6).
-- **Status:** design for Phase D. The tools in §3 and §5 don't exist yet.
+- **Status:** shipped (Phase D, 0.2.3). The shipped tool shapes are `zeus_get_journal {query?, from?, to?, kinds?, raw?, limit?}`, `zeus_rule_shadow {ruleID, wouldHave, amount?, currency?}` and `zeus_rule_acted {ruleID, did, undo?, approvalID?}` (CONTRACT §13, Phase D). §5 describes them as shipped; the verb/object design is kept in §5.1 for the wording it produced.
 - **Voice:** the assistant speaks as Zeus (see `Zeus/Resources/AssistantTemplate/AGENTS.md`): warm, brief, capable, and never commenting on the user's habits.
 
 ## 1. Principles for the assistant
@@ -48,7 +48,8 @@ Call this to answer a question about what the user was doing ("what was I readin
     {"id": "j_901", "time": "14:20", "app": "Xcode", "kind": "screen", "text": "Debugging a session restart that failed to resume.", "picture": null}
   ],
   "raw": {"screen": "not allowed", "typing": "not allowed"},
-  "note": "Logged in the user's What Zeus Kept › Sent to your assistant."
+  "raw_requested": true,
+  "note": "This answer is logged in What Zeus Kept › Sent to your assistant."
 }
 ```
 
@@ -60,7 +61,7 @@ Call this to answer a question about what the user was doing ("what was I readin
   - The thread shows one quiet line: "Looked at your journal: Tue 14:00–15:30 · View" (`PRIVACY.md` §11.2).
   - The call is logged in Sent to your assistant.
   - So call once with a sensible range rather than many narrow calls.
-- **Limits:** 20 calls an hour. A call made while every level is off returns `{"items": [], "note": "Learn from me is off."}`.
+- **Limits:** 20 calls an hour, at most 50 items, the answer bounded to 400 KB. A call made while every level is off returns `{"items": [], "note": "Learn from me is off."}`. Without `raw`, the statuses read `not requested`.
 - **Errors are plain sentences** ("That range is longer than 7 days."). Fix the call; don't retry blindly.
 
 ## 4. Proposing rules (`zeus_propose_rules`, during reflection)
@@ -102,31 +103,28 @@ Call this to answer a question about what the user was doing ("what was I readin
 
 ## 5. Acting rules (Phase D)
 
-New tools for acting rules. **Platform names and builds them; this is the behaviour to build them to.**
+**Shipped shapes.** `zeus_rule_shadow {ruleID, wouldHave, amount?, currency?}` and `zeus_rule_acted {ruleID, did, undo?, approvalID?}`. `wouldHave` and `did` are short, non-private sentences starting with the past participle ("sent “Running late, 10 min” to the team chat"); the runtime strips a leading "would have" / "I'd have" and shows "I'd have … · OK next time? · Not this", and later "Did: … · Undo" (or "· Not again" without `undo`). A shadow call returns `{action_id, approvalID, act: false, note}` and repeats return the existing action until the user answers. A purchase under a rule needs `amount` and a three-letter `currency`; Zeus itself posts the durable question "Approve this purchase?" with the amount, and `zeus_rule_acted` then needs that `approvalID` with the identical `did` text within an hour, single-use. The runtime never executes a purchase. Both tools refuse when the rule's trigger hasn't matched, when the rule isn't in the right status, when learning storage is locked, or from a session that isn't the assistant.
 
-- **`zeus_rule_shadow {rule_id, verb, object}`:** call this *instead of* acting when a rule is in shadow.
+### 5.1 Behaviour (the design the shipped tools follow)
+
+- **`zeus_rule_shadow`** (designed as `{rule_id, verb, object}`): call this *instead of* acting when a rule is in shadow.
   - `verb` is one of `sent`, `posted`, `drafted`, `changed`, `bought`, `booked`, `deleted`.
   - `object` is a short phrase with nothing private: "“Running late, 10 min” to the team chat".
   - Zeus shows "I'd have sent “Running late, 10 min” to the team chat · OK next time?". Don't act.
-- **`zeus_rule_acted {rule_id, verb, object, reversible}`:** call this *right after* acting under an active acting rule.
+- **`zeus_rule_acted`** (designed as `{rule_id, verb, object, reversible}`; shipped as `did` plus an optional `undo` instruction): call this *right after* acting under an active acting rule.
   - Zeus shows "Sent “Running late, 10 min” to the team chat · Undo" when `reversible` is true. When it's false, the line ends with "· Not again".
-  - **Undo** reaches you as a message: "Undo what you did for the rule “…”: <object>." Reverse it if you can and say so in one line. If you can't, say so plainly.
+  - **Undo** reaches you as a message carrying the `undo` instruction you gave (idempotent; it may repeat). Reverse it if you can and say so in one line. If you can't, say so plainly.
   - **Not again** turns the rule off. You don't need to do anything.
 - **Each time an acting rule's trigger fires:** check the rule's status with `zeus_get_rules`, which is cached per session and refreshed by Zeus's notifications.
   - **Retired, off or proposed:** do nothing.
   - **Shadow:** call `zeus_rule_shadow`, at most once per rule. Zeus ignores repeats until the user answers.
   - **Active:** act, then call `zeus_rule_acted`.
-- **Spending (`bought`, `booked`):** even when the rule is active, use `zeus_ask` with the amount before paying when it's more than the amount in the rule's sentence, or more than the last time.
+- **Spending (`bought`, `booked`):** every purchase asks, every time (PM decision, 2026-10-14): `zeus_rule_shadow` with the amount, Zeus's own question, then `zeus_rule_acted` with the `approvalID`. A spend rule stays in shadow; there is no standing approval.
 - **Never:** act under a rule from a reflection delivery itself, act for a rule whose trigger didn't fire, or chain one rule's action into another rule's trigger.
 
 ## 6. Instructions in the assistant's folder (AssistantTemplate)
 
-**Status:** the Phase A–C part shipped in LM2-D5 as the template's "## Learnings and rules" section. It differs from the draft below in three places:
-- **At most two rules a night**, matching Zeus's reflection delivery.
-- **Every purchase asks first, every time**, the 2026-10-14 decision.
-- **No journal or acting-rule tools.**
-
-The draft below is the full Phase D version.
+**Status:** shipped. The template's "## Learnings and rules" section (R7) covers the journal, reflection v2 (three proposals, confidence 0.4–0.7, evidence from two days, suppression fingerprints), shadow and acted reporting, and the purchase flow with `approvalID`. The draft below is the short form it grew from; the template is the source of truth.
 
 > ## Learnings and rules
 >

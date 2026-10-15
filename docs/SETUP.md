@@ -132,10 +132,10 @@ Names, emails, numbers and other private details become placeholders like ‹nam
 
 #### Screen
 
-Turn on **Let Zeus look at the window in front now and then**. The consent sheet shows what's kept, when Zeus looks, and an example: a covered page with grey boxes where text was, a blurred picture, and the one-line description under it.
+Turn on **Let Zeus look at the window in front now and then**. The consent sheet shows what's kept, when Zeus looks, and an example: a covered page with grey boxes where text was, a pixellated picture, and the one-line description under it.
 
 - **When Zeus looks:** it doesn't record your screen. It takes one picture of the window in front when something has changed: after you've switched to an app or document and stayed for 10 seconds, every 5 minutes if you stay in the same place, when you come back from a break, and when you ask. It skips the picture if the window looks the same as last time. It never takes one during a video call, while your screen is mirrored for a presentation, while a password field is active, or in private windows and apps on your private list. While one of those holds, the level's caption says so (*Paused: a video call is on*).
-- **What's kept:** the picture of the window in front with private text covered, every picture in it pixellated and faces blurred, for 7 days; and a one-line description of what you were doing, for 7, 30 or 90 days (**Keep descriptions for**). Never the rest of your screen, other windows, or sound.
+- **What's kept:** the picture of the window in front with private text covered and every picture and face in it pixellated, for 7 days; and a one-line description of what you were doing, for 7, 30 or 90 days (**Keep descriptions for**). Never the rest of your screen, other windows, or sound.
 - **Screen Recording:** press **Continue**, and macOS asks you to allow Zeus under **Privacy & Security › Screen & System Audio Recording**. Then the pane says *Allowed. Reopen Zeus to start taking pictures. · Reopen Zeus*; the relaunch keeps your conversation. While the level is on, the pane reminds you that macOS may show its screen-recording indicator for a moment when Zeus takes a picture.
 - **Up to** 4, 12 or 30 pictures an hour (12 by default). Pictures that look the same as the last one don't count.
 - **Let my assistant see the pictures when it asks** (off by default) is the Raw on request switch for this level; see below.

@@ -41,7 +41,7 @@ Top to bottom:
 4. **What Zeus kept**: §4.
 5. **Pause for Today / Delete Everything…**: unchanged. "Delete Everything…" now covers the whole journal.
 
-Levels 3 ("Screen") and 4 ("Typing") don't appear until they're built. There are no "coming soon" rows.
+Levels 3 ("Screen", §9) and 4 ("Typing", §10) follow Level 2 in the same style, each with its own switch; the pane shows the four levels, then What Zeus kept and the global actions.
 
 ### 2.1 A level section (Level 2 shown)
 
@@ -97,10 +97,10 @@ Same frame as the L1 sheet.
 3. If it's revoked later: "Accessibility is off for Zeus, so window titles aren't kept. · Open System Settings". The level stays on, and nothing is recorded at Level 2 until it's granted again. Level 1 keeps working.
 4. The thread never mentions permissions. This lives in Settings only.
 
-### 2.4 Drafts for later levels (not built in Phase A)
+### 2.4 Levels 3 and 4
 
-- **Level 3, "Screen":** specified in §9 (Phase B).
-- **Level 4, "Typing":** specified in §10 (Phase C).
+- **Level 3, "Screen":** §9 (shipped in Phase B).
+- **Level 4, "Typing":** §10 (shipped in Phase C). Both sections' Raw on request switches are §11.1.
 
 ## 3. The coin and the lists
 
@@ -287,7 +287,7 @@ Pipeline and costs: `docs/research/on-device-vision.md`. Renders: `scripts/desig
 **Pictures (PM decision, LM2-D2):**
 - Every picture region in the frame larger than 48×48 px is pixellated by default.
 - Whole-frame face detection runs as a cheap extra. There's no tiling at capture time.
-- The copy says "pictures and faces are blurred".
+- The copy says "pictures and faces are pixellated" (R7: aligned with `FrameRedactor`, which pixellates both; the earlier "blurred" wording is retired).
 
 ### 9.1 The level section in Settings › Privacy
 
@@ -295,7 +295,7 @@ Pipeline and costs: `docs/research/on-device-vision.md`. Renders: `scripts/desig
 Screen                                                        [settingsHeading]
 [ ] Let Zeus look at the window in front now and then           [switch]
 Zeus takes a picture of the window in front at sensible moments, covers
-private text and blurs pictures on this Mac, and keeps a one-line description
+private text and pixellates pictures on this Mac, and keeps a one-line description
 of what you were doing. Never the whole screen.                [caption]
 
 Record in   ( Everywhere except my private list | Only in apps I choose )
@@ -320,9 +320,9 @@ This paragraph is used in the consent sheet and in SETUP.md:
 ### 9.3 Consent sheet, Level 3 (one time)
 
 - **Title:** "Screen"
-- **Body:** "Zeus takes a picture of the window in front at sensible moments, so your assistant knows what you were looking at. Before anything is kept, Zeus covers private text and blurs pictures and faces, here on this Mac."
+- **Body:** "Zeus takes a picture of the window in front at sensible moments, so your assistant knows what you were looking at. Before anything is kept, Zeus covers private text and pixellates pictures and faces, here on this Mac."
 - **"Zeus keeps"**
-  - "A picture of the window in front, with private text covered and pictures blurred, for 7 days"
+  - "A picture of the window in front, with private text covered and pictures pixellated, for 7 days"
   - "A one-line description of what you were doing, for 90 days"
 - **"Zeus never keeps"**
   - "The rest of your screen or other windows"
@@ -332,9 +332,9 @@ This paragraph is used in the consent sheet and in SETUP.md:
   - "Sound"
 - **"When Zeus looks"**: the §9.2 paragraph.
 - **"An example of what's kept"**: a 360×225 mock window in the field chrome.
-  - It shows a browser page with two text lines covered by solid `fieldBorder` boxes with a 1-px `outline`, and a pixellated portrait.
+  - It shows a browser page with two text lines covered by solid `fieldBorder` boxes with a 1-px `outline`, and a pixellated portrait. VoiceOver: "Example covered Safari window, two private text areas covered and a picture pixellated".
   - Under it, monospaced: "10:12  Safari  Reviewing account information."
-  - Caption: "Grey boxes are text Zeus covered. Pictures and faces are blurred. The picture is kept for 7 days, the description for 90."
+  - Caption: "Grey boxes are text Zeus covered. Pictures and faces are pixellated. The picture is kept for 7 days, the description for 90."
 - **Safari** (caption, PM decision: same exception as Level 2): "Safari: Zeus takes no pictures of Safari unless you add it under Only in apps I choose. Zeus can't tell Safari's private windows apart, so those would be pictured too."
 - **Caveat** (caption): "Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself or let your assistant see them when it asks (off until you turn it on)."
 - **Permission** (caption): "Next, macOS asks you to allow Zeus under Screen Recording. Zeus uses it only for these pictures."
@@ -360,7 +360,7 @@ This paragraph is used in the consent sheet and in SETUP.md:
 **Detail window:** clicking a thumbnail (or Return on a focused row) opens a sheet titled "Picture from 10:12".
 - **Left:** the frame, fitted.
   - Every covered area is outlined with a 1-px `focusRing` rectangle.
-  - Legend under it (caption): "▭ Covered text · ▭ Blurred picture", with counts: "3 covered · 1 blurred".
+  - Legend under it (caption): "▭ Covered text · ▭ Pixellated picture", with counts: "3 covered · 1 pixellated".
 - **Right column:**
   - App
   - Window, as stored, with placeholders visible
@@ -538,7 +538,7 @@ The assistant's side of all this is `docs/design/AGENT_LEARNING.md`. Renders: `s
   - Caption: "Otherwise it gets only descriptions. Each time it looks, you'll see a line in the conversation."
   - Level 4's caption says "topics" instead of "descriptions".
 - **The sheet on first turning it on**, titled "Let your assistant see pictures?" (Level 4: "…see the words?"):
-  - **Body:** "When your assistant asks about a moment, it can get the picture Zeus kept (with private text covered and pictures blurred), not just the description. That picture goes to your assistant's model provider, like anything you send."
+  - **Body:** "When your assistant asks about a moment, it can get the picture Zeus kept (with private text covered and pictures pixellated), not just the description. That picture goes to your assistant's model provider, like anything you send."
   - Level 4 body: "…it can get the words Zeus kept (with names, numbers and secrets removed), not just the topic. Those words go to your assistant's model provider, like anything you send."
   - **Caption:** "Every time it looks, the conversation says so, and What Zeus Kept › Sent to your assistant shows exactly what it got."
   - **Buttons:** "Cancel" and "Allow".
