@@ -47,6 +47,11 @@ import ZeusProtocol
     }
     func delete(_ selection: JournalDeletion) throws {
         try perform {
+            if case .all = selection {
+                // Forget works even with an unavailable key or damaged ciphertext.
+                for url in try files() { try FileManager.default.removeItem(at: url); revision &+= 1 }
+                index.removeAll(); return
+            }
             for url in try files() {
                 let old = try read(url)
                 let kept = old.filter { item in
@@ -80,6 +85,7 @@ import ZeusProtocol
             for url in try files() {
                 let old = try read(url)
                 let kept = old.filter { item in
+                    if item.kind == .sentToAssistant { return true }
                     let days: Int
                     switch item.level {
                     case .activity: days = retention.activityDays

@@ -3,12 +3,14 @@ import Observation
 import ZeusProtocol
 
 /// Atomic encrypted rule state; user consent and confidence survive a restart.
-@MainActor @Observable final class PersistentRulesStore: RulesStore {
+@MainActor @Observable final class PersistentRulesStore: RulesStore, LearningRuleTracking {
     private struct State: Codable {
         var rules: [LearnedRule] = []
         var autonomy = 0.5
         var outcomeIDs: Set<String> = []
         var shownShadowIDs: Set<String> = []
+        var cardRules: [String: [String]] = [:]
+        var batches: [[String]] = []
     }
     private(set) var rules: [LearnedRule]
     private(set) var revision: UInt64 = 0
@@ -47,17 +49,18 @@ import ZeusProtocol
                 status: proposal.confidence < 0.2 ? .retired : (author == .user ? .active : (state.autonomy == 0 ? .proposed : (proposal.kind == .acts ? .shadow : .active))),
                 confidence: proposal.confidence, evidence: proposal.evidence, created: now, updated: now, updatedBy: author)
         }
-        var next = state; next.rules += created; try commit(next); return created
+        var next = state; next.rules += created; next.batches.append(created.map(\.id)); try commit(next); return created
     }
     /// A UI toggle is one atomic status/confidence mutation. Do not separately report toggledOn/Off.
     func setStatus(_ status: LearnedRuleStatus, id: String, at now: Date) throws {
         var next = state
         guard let index = next.rules.firstIndex(where: { $0.id == id }) else { throw LearningStorageError.missingRule }
         guard next.rules[index].status != status else { return }
-        next.rules[index].status = status; next.rules[index].updatedBy = .user; next.rules[index].updated = now
+        let effective: LearnedRuleStatus = status == .active && next.rules[index].kind == .acts && !next.shownShadowIDs.contains(id) ? .shadow : status
+        next.rules[index].status = effective; next.rules[index].updatedBy = .user; next.rules[index].updated = now
         adjust(&next.rules[index], outcome: status == .retired ? .toggledOff : .toggledOn)
         // Explicit user re-enablement is allowed even for a previously retired low-confidence rule.
-        if status == .active { next.rules[index].confidence = max(0.2, next.rules[index].confidence); next.rules[index].status = .active }
+        if effective == .active { next.rules[index].confidence = max(0.2, next.rules[index].confidence); next.rules[index].status = .active }
         try commit(next)
     }
     func edit(id: String, sentence: String, trigger: RuleTrigger, at now: Date) throws {
@@ -85,8 +88,24 @@ import ZeusProtocol
         var next = state
         for index in next.rules.indices where ruleIDs.contains(next.rules[index].id) {
             adjust(&next.rules[index], outcome: outcome); next.rules[index].updated = now
+            if outcome == .accepted && next.autonomy == 1 && next.rules[index].status == .shadow && next.shownShadowIDs.contains(next.rules[index].id) {
+                next.rules[index].status = .active; next.rules[index].updatedBy = .agent
+            }
         }
         next.outcomeIDs.insert(eventID); try commit(next)
+    }
+    func associate(cardID: String, ruleIDs: [String]) throws {
+        var next = state; next.cardRules[cardID] = ruleIDs; try commit(next)
+    }
+    func associatedRuleIDs(cardID: String) -> [String] { state.cardRules[cardID] ?? [] }
+    func ruleNoticeGroups() -> [[String]] { state.batches }
+    func hasShadowShown(id: String) -> Bool { state.shownShadowIDs.contains(id) }
+    func undoShadowApproval(id: String, at now: Date) throws {
+        var next = state
+        guard let i = next.rules.firstIndex(where: { $0.id == id }), next.rules[i].kind == .acts,
+              next.rules[i].status == .active else { throw LearningStorageError.missingRule }
+        next.rules[i].status = .shadow; next.rules[i].updated = now; next.rules[i].updatedBy = .user
+        adjust(&next.rules[i], outcome: .undone); try commit(next)
     }
     func markShadowShown(id: String) throws -> Bool {
         guard !state.shownShadowIDs.contains(id) else { return false }
@@ -121,24 +140,5 @@ import ZeusProtocol
             try LearningEncryption.write(next, to: fileURL, key: keyProvider)
             state = next; rules = next.rules; revision &+= 1; lastError = nil
         } catch { lastError = "Zeus couldn't save your rules. Your previous rules are unchanged."; throw error }
-    }
-}
-
-extension RuleTrigger {
-    /// No constraint means assistant guidance only, never an indefinite interruption hold.
-    var isEvaluable: Bool { time != nil || !apps.isEmpty || state != nil }
-    func matches(_ context: LearningContext, at date: Date, calendar: Calendar = .current) -> Bool {
-        guard isEvaluable, !context.isLocked, !context.isPrivate else { return false }
-        if !apps.isEmpty, !apps.contains(context.frontmostApp ?? "") { return false }
-        if let state, !context.states.contains(state) { return false }
-        if let time {
-            let minute = calendar.component(.hour, from: date) * 60 + calendar.component(.minute, from: date)
-            let wraps = time.startMinute > time.endMinute
-            let inside = time.startMinute == time.endMinute || (wraps ? minute >= time.startMinute || minute < time.endMinute : minute >= time.startMinute && minute < time.endMinute)
-            guard inside else { return false }
-            let weekdayDate = wraps && minute < time.endMinute ? calendar.date(byAdding: .day, value: -1, to: date) ?? date : date
-            if !time.weekdays.isEmpty, !time.weekdays.contains(calendar.component(.weekday, from: weekdayDate)) { return false }
-        }
-        return true
     }
 }
