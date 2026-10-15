@@ -33,4 +33,4 @@ The native field exposes “Talk to Zeus shortcut” with its glyph value, accep
 - Native/model/render check: 7 tests in 2 suites passed, including both appearance/scale matrices.
 - Shutdown fix: 6 focused model tests passed. Platform re-review found no further blocker.
 - `scripts/build.sh`: passed, no new warnings; existing Sendable warnings remain in untouched appearance/character/privacy Settings views, plus the scripts' existing ambiguous destination warning.
-- Final `scripts/test.sh`: pending summary after lifecycle fix.
+- Final `scripts/test.sh`: passed after the lifecycle fix — 813 app tests in 168 suites, 241 package tests and 16 offline release/appcast checks. The render test is opt-in (`KR1_RENDER=1 TEST_RUNNER_KR1_RENDER=1`); it passed separately. Standard active-keyboard suites retain their existing opt-in flags; the KR1 native live check ran separately on the unlocked console.
