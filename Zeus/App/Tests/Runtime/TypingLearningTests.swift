@@ -29,7 +29,7 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
 @MainActor private final class TypingFixtureSource: TypingEventSource {
     var hasPermission = true
     var permissionRequestResult: Bool?
-    var requests = 0, starts = 0, stops = 0
+    var requests = 0, starts = 0, stops = 0, resets = 0
     var disabled: (() -> Void)?
     var shouldRead: (() -> Bool)?
     var onKey: ((TypingKey) -> Void)?
@@ -37,7 +37,7 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
     func start(shouldRead: @escaping () -> Bool, onKey: @escaping (TypingKey) -> Void, onDisabled: @escaping () -> Void) -> Bool {
         starts += 1; self.shouldRead = shouldRead; self.onKey = onKey; disabled = onDisabled; return hasPermission
     }
-    func resetTranslation() {}
+    func resetTranslation() { resets += 1 }
     func stop() { stops += 1; shouldRead = nil; onKey = nil; disabled = nil }
     func send(_ key: TypingKey) { if shouldRead?() == true { onKey?(key) } }
 }
@@ -95,6 +95,19 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
         f.source.send(.text("second synthetic editing run")); f.context.windowID = 2; f.observer.contextDidChange()
         try await f.wait(2)
         f.source.send(.text("third synthetic editing run")); f.finish(); try await f.wait(3)
+    }
+    @Test func emptyDeadKeyOutputRefreshesGapAndIdleDoesNotClearPendingTranslation() async throws {
+        let f = TypingFixture(); defer { f.close() }; f.observer.start()
+        var translator = try #require(TypingKeyTranslator(sourceID: "com.apple.keylayout.US"))
+        f.source.send(.text("review synthetic pars")); f.now += 1.5
+        let accent = translator.text(code: 14, flags: .maskAlternate); #expect(accent.isEmpty)
+        f.source.send(.text(accent)); f.now += 1; f.observer.tick()
+        for _ in 0..<20 { await Task.yield() }; #expect(try f.rows().isEmpty)
+        f.source.send(.text(translator.text(code: 14, flags: [])))
+        let resets = f.source.resets; f.finish(); try await f.wait(1)
+        #expect(try f.rows().first?.payload.value.text == "review synthetic parsé")
+        #expect(f.source.resets == resets)
+        f.context.windowID += 1; f.observer.contextDidChange(); #expect(f.source.resets > resets)
     }
     @Test(arguments: ["disabled", "consent", "model", "permission", "secure", "contextSecure", "private", "lock", "empty", "privateList"])
     func hardStopsBeforeKeys(reason: String) throws {
