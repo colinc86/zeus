@@ -30,8 +30,10 @@ import ZeusProtocol
     }
     isolated deinit { typingExpiryTask?.cancel(); recoveryTask?.cancel() }
     func append(_ item: JournalItem) throws {
-        do { try append(item, allowFrame: false) }
-        catch where LearningStorageAvailability.isUnavailable(error) { try queue(item, frame: nil) }
+        // Freeze the original retention deadline before queuing; later preferences may only shorten it.
+        let prepared = try applyingTypingRetention(to: item)
+        do { try append(prepared, allowFrame: false) }
+        catch where LearningStorageAvailability.isUnavailable(error) { try queue(prepared, frame: nil) }
     }
     private func queue(_ item: JournalItem, frame: Redacted<FrameItem>?) throws {
         if let existing = pendingEntries.first(where: { $0.0.id == item.id }) {
@@ -50,7 +52,15 @@ import ZeusProtocol
             guard let self else { return }; self.recoveryTask = nil; self.retryPendingWrites()
         }
     }
+    private func refreshPendingRetention() throws {
+        pendingEntries = try pendingEntries.compactMap { entry in
+            do { return (try applyingTypingRetention(to: entry.0), entry.1) }
+            catch TypingJournalError.expired { return nil }
+        }
+    }
     func retryPendingWrites() {
+        do { try refreshPendingRetention() }
+        catch { lastError = "Zeus couldn't apply retention to queued learning entries."; return }
         while let entry = pendingEntries.first {
             do {
                 if let frame = entry.1 { try persistFrame(frame, item: entry.0) }
@@ -257,6 +267,7 @@ import ZeusProtocol
             let days = [7, 30, 90].contains(topicsDays) ? topicsDays : 30
             if words.hours < (typingWordsPreference ?? .day).hours || days < typingTopicsPreference { typingForgetEpoch = UUID() }
             typingWordsPreference = words; typingTopicsPreference = days
+            try refreshPendingRetention()
             typingExpiryInitialized = false
             for url in try files() {
                 let old = try read(url)
