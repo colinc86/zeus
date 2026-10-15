@@ -41,3 +41,16 @@ Drops exercise files, folders, URLs, text and image-file creation, removable chi
 The folder action uses the existing managed S3 confirmation, which is automatically scrolled into view.
 
 The final build/test/public gate results are recorded in the task handback and worktree build/lm2-*.log.
+
+## Final integrated verification
+
+On appdev/lm2-app at `a66c08a` (platform core/design adopted through platform `6000297`):
+
+- `scripts/build.sh`: passed, no new warnings (existing ambiguous destination warning only).
+- `scripts/test.sh`: passed, 856 app tests total, 21 conditional opt-in skips, no failures; 242 package tests.
+- Offline release/appcast tests: 16 passed; live-gate fixture tests: 10 passed.
+- `scripts/check-public.sh`: passed using the local denylist.
+
+Logs: `build/lm2-build-integrated.log`, `build/lm2-test-integrated.log`, and `build/lm2-public-integrated.log`.
+The app-side native probe is named `LM2AppLiveProbe.py` to coexist with the runtime probe in the app test target.
+The native Safari and real-Xcode acceptance gates described above remain incomplete; the passing unit gates do not replace them.
