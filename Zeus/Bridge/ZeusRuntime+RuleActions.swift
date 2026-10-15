@@ -2,6 +2,23 @@ import Foundation
 import ZeusProtocol
 
 extension ZeusRuntime {
+    /// Presentation only: retain original action text for exact purchase approval matching.
+    static func shadowActionText(_ text: String) -> String {
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        for prefix in ["would have", "would've", "would’ve", "I'd have", "I’d have", "I would have"] {
+            guard text.lowercased().hasPrefix(prefix.lowercased()) else { continue }
+            let rest = text.dropFirst(prefix.count)
+            if rest.first?.isWhitespace == true {
+                let trimmed = rest.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty { return trimmed }
+            }
+        }
+        return text
+    }
+    static func formattedRuleAmount(_ amount: Double, currency: String, locale: Locale = .autoupdatingCurrent) -> String {
+        amount.formatted(FloatingPointFormatStyle<Double>.Currency(code: currency)
+            .precision(.fractionLength(amount.rounded() == amount ? 0 : 2)).locale(locale))
+    }
     static let ruleSpendPrefix = "zeus_rule_spend_"
     func callRuleActionTool(_ name: String, args: ToolArguments, sessionKey: String) async throws -> ToolResult {
         guard let store = learningRules as? any RuleLifecycleStoring, let redactor = learningRedactor else { throw ToolArgumentError("Rule actions aren't available.") }
@@ -77,7 +94,7 @@ extension ZeusRuntime {
                 appQuestionIDs.insert(cardID)
                 // Durable action comes first: rebuilding after a crash presents the same approval exactly once.
                 cards.add(Card(id: cardID, kind: .question, title: "Approve this purchase?",
-                    body: action.text + " — " + String(action.amount ?? 0) + " " + (action.currency ?? ""),
+                    body: action.text + " — " + Self.formattedRuleAmount(action.amount ?? 0, currency: action.currency ?? ""),
                     options: [.init(id: "approve", label: "Approve this purchase"), .init(id: "decline", label: "Not this")],
                     priority: .high, sessionKey: action.sessionKey, createdAt: action.created, updatedAt: action.created))
             }
@@ -92,8 +109,8 @@ extension ZeusRuntime {
                 if shadow && rule.status == .retired { summary = "Retired: “\(rule.sentence)”"; title = "Review" }
                 else if shadow && rule.status == .active && action.amount == nil { summary = "OK. I'll do that from now on."; title = "Undo" }
                 else {
-                    summary = shadow ? "I'd have acted on “\(action.text)”" : "Did: \(action.text)"
-                    if let amount = action.amount, let currency = action.currency { summary += " — \(amount) \(currency)" }
+                    summary = shadow ? "I'd have \(Self.shadowActionText(action.text))" : "Did: \(action.text)"
+                    if let amount = action.amount, let currency = action.currency { summary += " — \(Self.formattedRuleAmount(amount, currency: currency))" }
                     title = shadow ? (action.amount == nil ? "OK next time?" : nil) : (action.undo == nil ? "Not again" : "Undo")
                     secondary = shadow && action.amount == nil ? "Not this" : nil
                 }

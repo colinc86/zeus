@@ -70,7 +70,7 @@ final class RulesPaneModel {
             .filter({ $0.ruleID == rule.id && $0.kind == .shadow }).max(by: { $0.created < $1.created }) else {
             return "Seen once. Zeus didn't act."
         }
-        return "Seen once: " + action.text
+        return "Seen once: would have " + ZeusRuntime.shadowActionText(action.text)
     }
     static func outcomeLabel(_ outcome: RuleOutcome) -> String {
         switch outcome {
