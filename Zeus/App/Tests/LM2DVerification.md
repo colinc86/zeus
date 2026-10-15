@@ -9,7 +9,16 @@ Phase D app presentation uses the platform's optional journal access and rule li
 - `scripts/check-public.sh`
 - `TEST_RUNNER_LM2D_RENDER=1 xcodebuild -project Zeus.xcodeproj -scheme Zeus -configuration Debug -destination platform=macOS -derivedDataPath build/DerivedData -clonedSourcePackagesDirPath build/SourcePackages test -only-testing:ZeusTests/LM2DAppTests -only-testing:ZeusTests/LM2DRulesTests -only-testing:ZeusTests/LM2DNativeTests -only-testing:ZeusTests/LM2DRenderTests`
 
-## App-side results before final core adoption
+## Integrated result
+
+- Adopted platform core `121b3bd` by an original-history merge and connected `LearningCardReadState` to durable `CardStore.seenIDs`.
+- Combined `scripts/build.sh` passed (`build/lm2d-integrated-build.log`). No new warnings; the existing Sendable callback warnings in Privacy/Character/Appearance and unused binding in ManagedTerminal are unchanged.
+- Combined focused run: **15 tests in five suites passed**, including the app models, native actions, all-theme renders and platform's pure Phase D transition tests (`build/lm2d-integrated-focused.log`).
+- A subsequent native navigation regression verified an older answer, forty rows down, is actually expanded and visible. **All four native tests passed** (`build/lm2d-navigation-native.log`). This adds one new passing test to the combined set; the other three overlap.
+- Combined package suites passed (`build/lm2d-integrated-packages.log`).
+- Full `scripts/test.sh` is **not green**: its pre-core full app attempt hit the locked-console protection gate below and was interrupted. The final integrated full suite must run after unlock. No protected-write bypass or automatic retry was added.
+
+## Earlier app-side checks
 
 - Focused app, Rules, native action and render suites: **12 tests in four suites passed** (`build/lm2d-native-focused.log`). Native thumbnail activation opened an attached picture-detail sheet; the test inspected its accessible title.
 - Native renders: **224 PNGs**, seven themes × two system appearances × two scales × eight surfaces, under `build/lm2d-renders`. Designer approved the corrected set and pixel glyph mapping.
@@ -26,7 +35,7 @@ Phase D app presentation uses the platform's optional journal access and rule li
 
 ## Design review
 
-Designer approved the native all-theme render set (seven themes, both system appearances, 1×/2×), including consent, switches, ledger words/pictures/refusals, Rules, Why and quiet lines. The pixel outcome marks were separately approved. The expanded ledger item's ISO timestamp is literally the timestamp sent by the runtime. No ZeusDesign source or tests changed. The designer's Phase D copy branch is adopted by original-history merges.
+Designer approved the native all-theme render set (seven themes, both system appearances, 1×/2×), including consent, switches, ledger words/pictures/refusals, Rules, Why and quiet lines. The pixel outcome marks were separately approved, including the final dash alignment. Adopted designer/lm2d-copy `9283a86` by original history. The expanded ledger item's ISO timestamp is literally the timestamp sent by the runtime. No ZeusDesign source or tests changed. The designer's Phase D copy branch is adopted by original-history merges.
 
 ## Environment gate
 

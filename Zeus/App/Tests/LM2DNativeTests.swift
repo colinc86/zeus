@@ -68,6 +68,20 @@ import ZeusDesign
         #expect((approve as AnyObject).accessibilityPerformPress?() == true)
         #expect(primary == 1)
     }
+    @Test func openingAnOlderAnswerRevealsAndExpandsItsRow() async throws {
+        let journal = LM2JournalFake(), now = Date(timeIntervalSince1970: 1_792_090_800)
+        for index in 0..<40 {
+            journal.records.append(.init(id: "answer-\(index)", time: now.addingTimeInterval(-Double(index) * 60), level: .activity, kind: .sentToAssistant,
+                payload: .init(.init(description: "Answer \(index)", text: "Exact sent response \(index)", details: ["kind": "journal_answer", "item_count": "1"]))))
+        }
+        let model = JournalViewerModel(journal: journal, now: now)
+        model.showAnswer(id: "answer-39")
+        let (host, window) = try await mount(JournalWindowView(model: model))
+        defer { window.contentView = nil; window.close() }
+        let target = try #require(depthNodes(host).first { depthLabel($0) == "Exact sent response 39" })
+        let frame = try #require((target as AnyObject).accessibilityFrame?())
+        #expect(host.bounds.contains(host.convert(window.convertFromScreen(frame), from: nil)), "The selected answer must be visible, not only expanded below the viewport")
+    }
     @Test func sentThumbnailOpensItsStoredPictureInADetailSheet() async throws {
         let bitmap = try #require(NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 4, pixelsHigh: 4, bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0))
         let bytes = try #require(bitmap.representation(using: .jpeg, properties: [:]))
