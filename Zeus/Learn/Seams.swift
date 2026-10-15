@@ -61,9 +61,11 @@ enum JournalKind: String, Codable, CaseIterable, Sendable {
 struct JournalPayload: Codable, Equatable, Sendable {
     var description: String
     var text: String?
+    /// Level 4 summary, distinct from locally retained words. Older journal rows decode this as nil.
+    var topic: String?
     var details: [String: String]
-    init(description: String, text: String? = nil, details: [String: String] = [:]) {
-        self.description = description; self.text = text; self.details = details
+    init(description: String, text: String? = nil, topic: String? = nil, details: [String: String] = [:]) {
+        self.description = description; self.text = text; self.topic = topic; self.details = details
     }
 }
 struct JournalItem: Codable, Equatable, Identifiable, Sendable {
@@ -107,6 +109,15 @@ struct JournalRetention: Codable, Equatable, Sendable {
     func delete(_ selection: JournalDeletion) throws
     func export(matching query: JournalQuery) throws -> Data
     func prune(retention: JournalRetention, now: Date) throws
+}
+
+enum TypingWordsRetention: String, Codable, CaseIterable, Sendable {
+    case none, day, week
+    var hours: Int { switch self { case .none: 0; case .day: 24; case .week: 168 } }
+}
+/// Optional capability: discard words independently of topics, atomically per stretch; other levels are untouched.
+@MainActor protocol TypingJournalStoring: JournalStore {
+    func pruneTyping(words: TypingWordsRetention, now: Date) throws
 }
 
 struct RuleTimeWindow: Codable, Equatable, Sendable {
