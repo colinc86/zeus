@@ -18,6 +18,7 @@ struct PendingLearningDelivery: Equatable, Sendable, Identifiable {
     let text: String
     let preparedAt: Date
     let sessionLabel: String
+    var learningKind: Learning.Kind? = nil
 }
 
 struct ManagedSetupStaleness: Equatable, Sendable {
@@ -39,7 +40,14 @@ struct ManagedTemplateReplacement: Equatable, Sendable {
     var deliveryHolds: [DeliveryHold] { get }
     var managedSetupStale: ManagedSetupStaleness { get }
     var managedTemplateReplacement: ManagedTemplateReplacement? { get }
+    func requestLearningDeliveryCancellation(deliveryID: String)
     func restartManagedAssistantForSetup()
     /// Call only after the user confirms replacing the exact snapshot's edited templates.
     func replaceEditedManagedTemplates(_ snapshot: ManagedTemplateReplacement) throws
+}
+
+/// Exact consumption prevents an out-of-order delivery acknowledgment from
+/// marking an earlier, unseen learning read. Legacy providers retain prefix behavior.
+@MainActor protocol LearningReadRecording: AnyObject {
+    func markLearningRead(id: String)
 }
