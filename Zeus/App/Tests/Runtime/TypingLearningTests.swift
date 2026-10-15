@@ -28,11 +28,12 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
 }
 @MainActor private final class TypingFixtureSource: TypingEventSource {
     var hasPermission = true
+    var permissionRequestResult: Bool?
     var requests = 0, starts = 0, stops = 0
     var disabled: (() -> Void)?
     var shouldRead: (() -> Bool)?
     var onKey: ((TypingKey) -> Void)?
-    func requestPermission() -> Bool { requests += 1; return hasPermission }
+    func requestPermission() -> Bool { requests += 1; return permissionRequestResult ?? hasPermission }
     func start(shouldRead: @escaping () -> Bool, onKey: @escaping (TypingKey) -> Void, onDisabled: @escaping () -> Void) -> Bool {
         starts += 1; self.shouldRead = shouldRead; self.onKey = onKey; disabled = onDisabled; return hasPermission
     }
@@ -164,6 +165,24 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
         f.source.send(.text("must discard partial input")); f.source.hasPermission = false; f.source.disabled?()
         #expect(f.observer.permission == .revoked); #expect(!f.observer.isRecording)
         #expect(try f.rows().map(\.kind) == [.outcome]); f.observer.tick(); #expect(try f.rows().count == 1)
+    }
+    @Test func reopenRequiresPositiveRequestEvidenceAndDisabledInputShowsNoPrivateCue() throws {
+        let f = TypingFixture(); defer { f.close() }; f.source.hasPermission = false; f.observer.start()
+        #expect(!f.observer.permissionGrantedRequiresReopen)
+        f.source.permissionRequestResult = true; _ = f.observer.requestPermission()
+        #expect(f.observer.permissionGrantedRequiresReopen)
+        f.source.hasPermission = true; f.observer.tick(); #expect(!f.observer.permissionGrantedRequiresReopen)
+        f.secure = true; f.observer.tick(); #expect(f.observer.privateInput)
+        f.policy.enabled = false; f.observer.tick(); #expect(!f.observer.privateInput)
+        f.observer.stop(); #expect(!f.observer.privateInput)
+    }
+    @Test func semanticDeclineKeepsNothingAndExposesAnHonestNonPrivateError() async throws {
+        let f = TypingFixture(processor: RunRedactor(redactor: LocalRedactor(prose: TypingFixtureProse(fails: true))))
+        defer { f.close() }; f.observer.start(); f.source.send(.text("review a synthetic change")); f.finish()
+        let until = ContinuousClock.now.advanced(by: .seconds(15))
+        while f.observer.lastError == nil, ContinuousClock.now < until { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(f.observer.lastError != nil); #expect(try f.rows().isEmpty)
+        #expect(f.observer.lastError?.contains("synthetic") == false)
     }
     @Test func semanticPassIsRequiredAndEntireSecretsAreDropped() async throws {
         let stageOne = LocalRedactor.firstPass("review with priya about knee and 4200 euros")

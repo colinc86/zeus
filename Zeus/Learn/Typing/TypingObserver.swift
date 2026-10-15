@@ -36,6 +36,7 @@ import Observation
         let started: Date
         var lastKey: Date
         var chunks: [String] = []
+        var characterCount = 0
         var imeCount = 0
         var pasteCount = 0
         var text: String { chunks.joined() }
@@ -73,6 +74,7 @@ import Observation
     }
     func stop() {
         running = false; timer?.cancel(); timer = nil; source.stop(); isRecording = false
+        privateInput = false; pause = .disabled
         invalidatePendingCapture()
     }
     isolated deinit { stop() }
@@ -97,7 +99,7 @@ import Observation
         if prior == .granted, permission == .revoked {
             source.stop(); isRecording = false; invalidatePendingCapture()
             if policy().enabled && policy().consented {
-                do { try journal.append(.init(level: .typed, kind: .outcome, payload: .init(.init(description: "Input Monitoring is off. Typing is not recorded.")))) }
+                do { try journal.append(.init(time: clock(), level: .typed, kind: .outcome, payload: .init(.init(description: "Input Monitoring is off. Typing is not recorded.")))) }
                 catch { lastError = "Zeus couldn't save the Input Monitoring change." }
             }
         }
@@ -109,7 +111,7 @@ import Observation
         let value = settings
         guard value.enabled, value.consented, modelAvailable(), permission == .granted else {
             pause = !value.enabled || !value.consented ? .disabled : (!modelAvailable() ? .modelUnavailable : .permission)
-            privateInput = secureInput(); source.stop(); isRecording = false; invalidatePendingCapture(); return
+            privateInput = false; source.stop(); isRecording = false; invalidatePendingCapture(); return
         }
         _ = readableContext()
         if !isRecording, clock() >= nextTapAttempt, !value.apps.isEmpty {
@@ -128,8 +130,14 @@ import Observation
         updatePermission()
     }
     private func readableContext() -> TypingContext? {
+        let value = settings
+        guard value.enabled, value.consented, modelAvailable(), source.hasPermission else {
+            privateInput = false
+            pause = !value.enabled || !value.consented ? .disabled : (!modelAvailable() ? .modelUnavailable : .permission)
+            invalidatePendingCapture(); return nil
+        }
         if secureInput() { privateInput = true; pause = .secureInput; invalidatePendingCapture(); return nil }
-        let value = settings, candidate = context()
+        let candidate = context()
         privateInput = candidate?.secureInput == true
         let reason: TypingPause?
         if !value.enabled || !value.consented { reason = .disabled }
@@ -151,17 +159,22 @@ import Observation
         switch key {
         case .invalidate: currentRun = nil; source.resetTranslation(); return
         case .backspace:
-            if currentRun?.chunks.isEmpty == false { currentRun?.chunks.removeLast(); currentRun?.lastKey = now }
+            if let chunk = currentRun?.chunks.last {
+                currentRun?.chunks.removeLast(); currentRun?.characterCount -= chunk.count; currentRun?.lastKey = now
+            }
         case .text(let text):
             if (currentRun?.imeCount ?? 0) > 0 { finishRun() }
             for character in text {
                 if currentRun == nil { currentRun = Run(context: context, started: now, lastKey: now) }
                 currentRun?.chunks.append(String(character)); currentRun?.lastKey = now
-                if (currentRun?.text.count ?? 0) >= 2_000 { finishRun() }
+                currentRun?.characterCount += 1
+                if (currentRun?.characterCount ?? 0) >= 2_000 { finishRun() }
             }
         case .paste:
             if currentRun == nil { currentRun = Run(context: context, started: now, lastKey: now) }
             currentRun?.chunks.append("‹pasted›"); currentRun?.pasteCount += 1; currentRun?.lastKey = now
+            currentRun?.characterCount += "‹pasted›".count
+            if (currentRun?.characterCount ?? 0) >= 2_000 { finishRun() }
         case .ime:
             if currentRun?.chunks.isEmpty == false { finishRun() }
             if currentRun == nil { currentRun = Run(context: context, started: now, lastKey: now) }
@@ -205,7 +218,11 @@ import Observation
                     payload = .init(.init(description: "Typed in " + app.value,
                         details: ["appName": app.value, "inputMethod": "ime", "keyCount": String(item.run.imeCount), "words_not_kept": "inputMethod"]))
                 } else {
-                    guard let safe = await processor.redact(words: item.firstPass, app: item.run.context.appName), valid(item) else { continue }
+                    guard let safe = await processor.redact(words: item.firstPass, app: item.run.context.appName) else {
+                        if valid(item) { lastError = "Some typing wasn't kept because Zeus couldn't safely remove private details." }
+                        continue
+                    }
+                    guard valid(item) else { continue }
                     let topic = await summarizer.summarize(safe)
                     guard valid(item) else { continue }
                     var result = topic.value

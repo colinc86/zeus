@@ -29,6 +29,7 @@ enum TypingPause: String, Sendable { case disabled, permission, modelUnavailable
 @MainActor protocol TypingObserving: AnyObject {
     var permission: TypingPermission { get }
     var lastPermissionRequestGranted: Bool? { get }
+    var permissionGrantedRequiresReopen: Bool { get }
     var privateInput: Bool { get }
     var isRecording: Bool { get }
     var pause: TypingPause? { get }
@@ -41,4 +42,7 @@ enum TypingPause: String, Sendable { case disabled, permission, modelUnavailable
     func contextDidChange()
     /// Call before forgetting journal content, so suspended processing cannot repopulate it.
     func invalidatePendingCapture()
+}
+extension TypingObserving {
+    var permissionGrantedRequiresReopen: Bool { lastPermissionRequestGranted == true && permission != .granted }
 }

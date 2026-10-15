@@ -278,10 +278,10 @@ import ZeusProtocol
                 }
                 kept = kept.map { item in
                     guard !onlyScreen, item.level == .typed, item.kind == .typedText, item.payload.value.text != nil else { return item }
-                    let expiry = item.payload.value.details["words_expires"].flatMap(Double.init) ?? item.time.addingTimeInterval(86400).timeIntervalSince1970
-                    guard expiry <= now.timeIntervalSince1970 else { return item }
+                    let expiry = Self.wordsExpiry(item)
+                    guard expiry <= now else { return item }
                     var value = item.payload.value; value.text = nil
-                    value.details["words_not_kept"] = expiry - item.time.timeIntervalSince1970 > 86400 ? "expired7Days" : "expired24Hours"
+                    value.details["words_not_kept"] = expiry.timeIntervalSince(item.time) > 86400 ? "expired7Days" : "expired24Hours"
                     return .init(id: item.id, time: item.time, level: item.level, app: item.app, kind: item.kind,
                                  payload: .init(value, report: item.payload.report))
                 }
