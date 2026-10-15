@@ -20,6 +20,8 @@ final class ConversationPanelState {
     @ObservationIgnored var newestMessageFrameForDiagnostics: CGRect?
     @ObservationIgnored var focusedControlForDiagnostics: ConversationControlTarget?
     #endif
+    /// Native input provenance; pointer focus must not move a control before mouse-up.
+    @ObservationIgnored var focusCameFromPointer = false
     var composerFocused = false
     var keyboardScroll: ConversationScrollCommand?
     var keyboardScrollRequest = 0

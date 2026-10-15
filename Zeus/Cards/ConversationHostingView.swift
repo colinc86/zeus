@@ -6,6 +6,7 @@ import ZeusDesign
 /// editor or scroll view except in the outermost six points of the away edge.
 @MainActor
 final class ConversationHostingView: NSHostingView<ConversationView> {
+    private var inputMonitor: Any?
     let resizeHandle = ConversationResizeHandle()
     var resizeEdge: ConversationWidth.Edge = .left { didSet { needsLayout = true } }
     required init(rootView: ConversationView) {
@@ -13,6 +14,23 @@ final class ConversationHostingView: NSHostingView<ConversationView> {
         addSubview(resizeHandle)
     }
     @available(*, unavailable) required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    /// The nonactivating panel must deliver its first click, not spend it becoming key.
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let inputMonitor { NSEvent.removeMonitor(inputMonitor); self.inputMonitor = nil }
+        guard window != nil else { return }
+        inputMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown, .keyDown]) { [weak self] event in
+            MainActor.assumeIsolated {
+                guard let self, let window = self.window, event.window === window else { return }
+                self.rootView.panel.focusCameFromPointer = event.type != .keyDown
+            }
+            return event
+        }
+    }
+    isolated deinit {
+        if let inputMonitor { NSEvent.removeMonitor(inputMonitor) }
+    }
     override func layout() {
         super.layout()
         resizeHandle.edge = resizeEdge
