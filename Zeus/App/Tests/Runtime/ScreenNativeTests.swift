@@ -73,7 +73,7 @@ import Testing
             }
             proof.append(["fixture": kind, "capture": "production single-window ScreenCaptureKit; fixture-owned window/PID", "captureDuration": String(describing: elapsed), "coveredBoxes": "\(covered.frame.value.boxes.count)"])
             var blocked = context; blocked.cameraInUse = true
-            var policy = ScreenPolicy(); policy.enabled = true
+            var policy = ScreenPolicy(); policy.enabled = true; policy.consented = true
             let refused = ScreenObserver(journal: journal, redactor: redactor, policy: { policy }, context: { blocked })
             refused.start(); refused.captureNow(); #expect(refused.pause == .camera); refused.stop()
         }

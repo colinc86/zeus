@@ -120,12 +120,18 @@ import ZeusProtocol
             return try encoder.encode(items(matching: query))
         }
     }
-    func prune(retention: JournalRetention, now: Date) throws {
+    func prune(retention: JournalRetention, now: Date) throws { try prune(retention: retention, now: now, onlyScreen: false) }
+    func pruneScreens(descriptionDays: Int, now: Date) throws {
+        var retention = JournalRetention(); retention.frameDays = 7
+        retention.descriptionDays = [7, 30, 90].contains(descriptionDays) ? descriptionDays : 90
+        try prune(retention: retention, now: now, onlyScreen: true)
+    }
+    private func prune(retention: JournalRetention, now: Date, onlyScreen: Bool) throws {
         try perform {
             for url in try files() {
                 let old = try read(url)
                 let kept = old.filter { item in
-                    if item.kind == .sentToAssistant { return true }
+                    if item.kind == .sentToAssistant || (onlyScreen && item.level != .screen) { return true }
                     let days: Int
                     switch item.level {
                     case .activity: days = retention.activityDays

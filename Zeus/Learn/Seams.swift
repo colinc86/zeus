@@ -1,6 +1,6 @@
 import Foundation
 
-// LM2 Phase A integration seams. Platform-owned until the PM promotes them to CONTRACT §13.
+// Learning integration seams (CONTRACT §13). Platform-owned; app adapters remain optional.
 
 /// Placeholders carry a category, never the removed text.
 enum RedactionKind: String, Codable, CaseIterable, Sendable {
@@ -57,7 +57,7 @@ enum JournalLevel: Int, Codable, CaseIterable, Sendable { case activity = 1, foc
 enum JournalKind: String, Codable, CaseIterable, Sendable {
     case activity, focus, description, frame, typedText, outcome, reflection, sentToAssistant
 }
-/// Phase A stores text only. Frames require the Phase B image-redaction path; .frame is reserved and rejected for now.
+/// Text metadata only. Image bytes require FrameJournalStoring.appendFrame after image redaction.
 struct JournalPayload: Codable, Equatable, Sendable {
     var description: String
     var text: String?
@@ -267,4 +267,16 @@ struct FrameItem: Codable, Equatable, Sendable {
 @MainActor protocol FrameJournalStoring: JournalStore {
     func appendFrame(_ frame: Redacted<FrameItem>, item: JournalItem) throws
     func frame(id: String) throws -> Redacted<FrameItem>?
+    /// Applies only screen retention; never changes another capture level's retention.
+    func pruneScreens(descriptionDays: Int, now: Date) throws
+}
+
+extension FrameJournalStoring {
+    func pruneScreens(descriptionDays: Int, now: Date) throws {
+        var query = JournalQuery(); query.levels = [.screen]; query.limit = 100_000
+        for item in try items(matching: query) {
+            let days = item.kind == .frame ? 7 : ([7, 30, 90].contains(descriptionDays) ? descriptionDays : 90)
+            if item.time < Calendar.current.startOfDay(for: now).addingTimeInterval(-Double(days) * 86400) { try delete(.item(item.id)) }
+        }
+    }
 }
