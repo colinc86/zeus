@@ -113,8 +113,8 @@ import Observation
             pause = !value.enabled || !value.consented ? .disabled : (!modelAvailable() ? .modelUnavailable : .permission)
             privateInput = false; source.stop(); isRecording = false; invalidatePendingCapture(); return
         }
-        _ = readableContext()
-        if !isRecording, clock() >= nextTapAttempt, !value.apps.isEmpty {
+        let readable = readableContext()
+        if !isRecording, readable != nil, clock() >= nextTapAttempt, !value.apps.isEmpty {
             nextTapAttempt = clock().addingTimeInterval(60)
             isRecording = source.start(shouldRead: { [weak self] in self?.readableContext() != nil },
                 onKey: { [weak self] in self?.receive($0) }, onDisabled: { [weak self] in self?.tapDisabled() })
@@ -234,6 +234,8 @@ import Observation
                 }
                 guard valid(item) else { continue }
                 var value = payload.value; value.details["run_id"] = item.run.id
+                let topicDays = [7, 30, 90].contains(item.policy.topicRetentionDays) ? item.policy.topicRetentionDays : 30
+                value.details["topic_expires"] = String(item.run.started.addingTimeInterval(Double(topicDays) * 86400).timeIntervalSince1970)
                 do {
                     try journal.append(.init(id: item.run.id, time: item.run.started, level: .typed, app: item.run.context.bundleID,
                         kind: .typedText, payload: .init(value, report: payload.report)))

@@ -36,6 +36,10 @@ enum TypingKey: Equatable, Sendable {
               let raw = TISGetInputSourceProperty(source, kTISPropertyInputSourceType) else { return true }
         return Unmanaged<CFString>.fromOpaque(raw).takeUnretainedValue() as String == kTISTypeKeyboardInputMode as String
     }
+    /// Backspace cancels an uncommitted accent rather than removing the preceding character from the run.
+    mutating func cancelPendingDeadKey() -> Bool {
+        let pending = deadKeys != 0; deadKeys = 0; return pending
+    }
     mutating func text(code: UInt16, flags: CGEventFlags) -> String {
         guard let bytes = CFDataGetBytePtr(data) else { return "" }
         var modifiers: UInt32 = 0
@@ -120,7 +124,10 @@ enum TypingKey: Equatable, Sendable {
             } else { onKey?(.invalidate) }
             resetTranslation(); return
         }
-        if code == 51 { onKey?(.backspace); return }
+        if code == 51 {
+            if translator?.cancelPendingDeadKey() != true { onKey?(.backspace) }
+            return
+        }
         if [48, 53, 115, 116, 117, 119, 121, 123, 124, 125, 126].contains(code) { onKey?(.invalidate); resetTranslation(); return }
         if TypingKeyTranslator.isIME { onKey?(.ime); return }
         if let text = translator?.text(code: code, flags: flags), !text.isEmpty { onKey?(.text(text)) }

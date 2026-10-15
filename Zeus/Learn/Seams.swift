@@ -120,6 +120,33 @@ enum TypingWordsRetention: String, Codable, CaseIterable, Sendable {
 /// Optional capability: discard words independently of topics, atomically per stretch; other levels are untouched.
 @MainActor protocol TypingJournalStoring: JournalStore {
     func pruneTyping(words: TypingWordsRetention, now: Date) throws
+    func pruneTyping(words: TypingWordsRetention, topicsDays: Int, now: Date) throws
+    /// One atomic day transaction. App/hour groups share a day; cross-day selections fail before mutation.
+    func deleteTyping(ids: Set<String>) throws -> TypingDeletionReceipt
+    func restoreTyping(_ receipt: TypingDeletionReceipt) throws
+}
+/// In-memory Undo token, scoped to this store instance and its current forget epoch.
+struct TypingDeletionReceipt: Sendable {
+    let epoch: UUID
+    let items: [JournalItem]
+}
+enum TypingJournalError: Error, LocalizedError {
+    case unsupported, notFound, conflict, expired
+    var errorDescription: String? {
+        switch self {
+        case .unsupported: "This journal can't change a typing group."
+        case .notFound: "This typing group is no longer available."
+        case .conflict: "This typing group has changed."
+        case .expired: "This typing group has expired."
+        }
+    }
+}
+extension TypingJournalStoring {
+    func pruneTyping(words: TypingWordsRetention, topicsDays: Int, now: Date) throws {
+        try pruneTyping(words: words, now: now)
+    }
+    func deleteTyping(ids: Set<String>) throws -> TypingDeletionReceipt { throw TypingJournalError.unsupported }
+    func restoreTyping(_ receipt: TypingDeletionReceipt) throws { throw TypingJournalError.unsupported }
 }
 
 struct RuleTimeWindow: Codable, Equatable, Sendable {
