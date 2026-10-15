@@ -6,12 +6,15 @@ import ImageIO
 /// Event-driven Level 3 coordinator. Every suspension is followed by policy/context/generation revalidation.
 @MainActor @Observable final class ScreenObserver: ScreenObserving {
     private(set) var permission: ScreenPermission = .notDetermined
+    private(set) var lastPermissionRequestGranted: Bool?
+    var permissionGrantedRequiresReopen: Bool { lastPermissionRequestGranted == true && permission != .granted }
     private(set) var pause: ScreenPause?
     private(set) var lastError: String?
     @ObservationIgnored private let journal: any FrameJournalStoring
     @ObservationIgnored private let source: any ScreenCapturing
     @ObservationIgnored private let processor: any ScreenFrameRedacting
     @ObservationIgnored private let describer: any ScreenDescribing
+    @ObservationIgnored private let coveredReader: any CoveredFrameReading
     @ObservationIgnored private let policy: () -> ScreenPolicy
     @ObservationIgnored private let context: () -> ScreenContext?
     @ObservationIgnored private let clock: () -> Date
@@ -33,6 +36,7 @@ import ImageIO
     init(journal: any FrameJournalStoring, redactor: any Redactor, policy: @escaping () -> ScreenPolicy,
          context: @escaping () -> ScreenContext?, source: (any ScreenCapturing)? = nil,
          processor: (any ScreenFrameRedacting)? = nil, describer: (any ScreenDescribing)? = nil,
+         coveredTextReader: (any CoveredFrameReading)? = nil,
          safety: ScreenSafetyMonitor? = nil, clock: @escaping () -> Date = Date.init) {
         self.journal = journal
         self.policy = {
@@ -43,8 +47,10 @@ import ImageIO
         self.context = context; self.clock = clock
         self.source = source ?? WindowScreenCapture(); self.processor = processor ?? FrameRedactor(redactor: redactor)
         self.describer = describer ?? FrameDescriber(redactor: redactor)
+        self.coveredReader = coveredTextReader ?? CoveredFrameReader()
         self.safety = safety ?? (source == nil ? ScreenSafetyMonitor() : nil)
     }
+    isolated deinit { stop() }
     func start() {
         guard !running else { return }; running = true
         if policy().enabled, policy().consented, let processor = processor as? FrameRedactor {
@@ -97,7 +103,7 @@ import ImageIO
     }
     @discardableResult func requestPermission() -> ScreenPermission {
         guard policy().consented else { return permission }
-        _ = source.requestPermission(); updatePermission(); contextDidChange(returnedFromIdle: false)
+        lastPermissionRequestGranted = source.requestPermission(); updatePermission(); contextDidChange(returnedFromIdle: false)
         return permission
     }
     func captureOnDemand() async -> ScreenCaptureResult? {
@@ -238,12 +244,8 @@ import ImageIO
                 let described = Set(rows.filter { $0.kind == .description }.compactMap { $0.payload.value.details["frame_id"] })
                 for row in rows where row.kind == .frame && !described.contains(row.id) {
                     guard running, generation == token, !policy().deferDescriptions, blocked(current()) == nil,
-                          let frame = try journal.frame(id: row.id), let data = CGImageSourceCreateWithData(frame.value.heic as CFData, nil),
-                          let image = CGImageSourceCreateImageAtIndex(data, 0, nil) else { return }
-                    let covered = try await Task.detached(priority: .utility) {
-                        let lines = try FrameRedactor.textLines(image)
-                        return CoveredScreenFrame(frame: frame, text: lines.map(\.0).joined(separator: "\n"), lineCount: lines.count)
-                    }.value
+                          let frame = try journal.frame(id: row.id) else { return }
+                    let covered = try await coveredReader.read(frame)
                     let description = await describer.describe(covered)
                     guard running, generation == token, !Task.isCancelled, policy().enabled, !policy().deferDescriptions,
                           blocked(current()) == nil, try journal.frame(id: row.id) != nil else { return }

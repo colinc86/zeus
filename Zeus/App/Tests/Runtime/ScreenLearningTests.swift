@@ -48,6 +48,11 @@ private struct ScreenFastRedactor: ScreenFrameRedacting {
         .init(frame: .init(.init(heic: try FrameRedactor.heic(frame.image), width: frame.image.width, height: frame.image.height, boxes: [], appName: "Fixture", windowTitle: "Synthetic")), text: "Safe fixture text", lineCount: 1)
     }
 }
+private struct ScreenFixtureCoveredReader: CoveredFrameReading {
+    func read(_ frame: Redacted<FrameItem>) async throws -> CoveredScreenFrame {
+        .init(frame: frame, text: "Covered fixture text", lineCount: 1)
+    }
+}
 private struct ScreenFastDescriber: ScreenDescribing {
     func describe(_ covered: CoveredScreenFrame) async -> Redacted<JournalPayload> { .init(.init(description: "A synthetic description")) }
 }
@@ -55,9 +60,10 @@ private struct ScreenFastDescriber: ScreenDescribing {
     var hasPermission = true
     var captures = 0
     var requests = 0
+    var requestResultOverride: Bool?
     let image: CGImage
     init() throws { image = try ScreenTestImages.draw() }
-    func requestPermission() -> Bool { requests += 1; return hasPermission }
+    func requestPermission() -> Bool { requests += 1; return requestResultOverride ?? hasPermission }
     func capture(_ context: ScreenContext) async throws -> CapturedScreenFrame { captures += 1; return .init(image: image) }
 }
 @MainActor private final class ScreenFixture {
@@ -72,15 +78,16 @@ private struct ScreenFastDescriber: ScreenDescribing {
         source = try ScreenFixtureSource(); journal = .init(root: root, keyProvider: FixtureJournalKey())
         observer = ScreenObserver(journal: journal, redactor: LocalRedactor(useOnDeviceModel: false), policy: { [unowned self] in policy },
             context: { [unowned self] in context }, source: source, processor: processor ?? ScreenFastRedactor(),
-            describer: describer ?? ScreenFastDescriber(), clock: { [unowned self] in now })
+            describer: describer ?? ScreenFastDescriber(), coveredTextReader: ScreenFixtureCoveredReader(), clock: { [unowned self] in now })
     }
     func close() { observer.stop(); try? FileManager.default.removeItem(at: root) }
     func finish(_ count: Int = 2) async throws {
-        for _ in 0..<200 {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(15))
+        while ContinuousClock.now < deadline {
             if try journal.items(matching: .init()).count >= count { return }
             try await Task.sleep(for: .milliseconds(10))
         }
-        Issue.record("Screen fixture did not commit expected rows; pause=\(String(describing: observer.pause)), error=\(String(describing: observer.lastError))")
+        Issue.record("Screen fixture did not commit expected \(count) rows within 15s (actual=\((try? journal.items(matching: .init()).count) ?? -1)); pause=\(String(describing: observer.pause)), error=\(String(describing: observer.lastError))")
     }
 }
 @Suite @MainActor struct ScreenLearningTests {
@@ -101,6 +108,8 @@ private struct ScreenFastDescriber: ScreenDescribing {
         for privateText in ["4401", "2233", "9876", "12,480", "example.person", "123456789", "4242"] { #expect(!final.contains(privateText)) }
         #expect(covered.frame.value.boxes.filter { $0.kind == .text }.count >= 5)
         #expect(!covered.text.contains("4401"))
+        let deferred = try await CoveredFrameReader().read(covered.frame)
+        #expect(!deferred.text.contains("4401")); #expect(!deferred.text.contains("example.person"))
         if ProcessInfo.processInfo.environment["ZEUS_TEST_LM2B_EVIDENCE"] == "1" {
             let output = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("TestFixtures/live/lm2b")
             try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
@@ -247,6 +256,56 @@ private struct ScreenFastDescriber: ScreenDescribing {
         try f.journal.pruneScreens(descriptionDays: 7, now: f.now)
         let ids = try f.journal.items(matching: .init()).map(\.id)
         #expect(ids.contains("activity-old")); #expect(!ids.contains("screen-old"))
+    }
+    @Test func permissionReopenRequiresPositiveGrantEvidenceAndClearsWhenUsable() throws {
+        let f = try ScreenFixture(); defer { f.close() }; f.source.hasPermission = false
+        f.observer.start(); #expect(!f.observer.permissionGrantedRequiresReopen)
+        f.source.requestResultOverride = true; _ = f.observer.requestPermission()
+        #expect(f.observer.lastPermissionRequestGranted == true); #expect(f.observer.permissionGrantedRequiresReopen)
+        f.source.hasPermission = true; f.observer.tick(); #expect(f.observer.permission == .granted); #expect(!f.observer.permissionGrantedRequiresReopen)
+    }
+    @Test func pairedPictureDeletionUndoTombstonesConflictsAndForgetEpoch() throws {
+        let f = try ScreenFixture(); defer { f.close() }
+        let frame = Redacted(FrameItem(heic: Data([1,2,3]), width: 100, height: 100, boxes: [], appName: "Fixture", windowTitle: "Synthetic"))
+        let row = JournalItem(id: "frame-pair", time: f.now, level: .screen, app: f.context.bundleID, kind: .frame, payload: .init(.init(description: "Covered frame")))
+        let description = JournalItem(id: "description-pair", time: f.now, level: .screen, app: f.context.bundleID, kind: .description, payload: .init(.init(description: "A synthetic description", details: ["frame_id": row.id])))
+        try f.journal.appendFrame(frame, item: row); try f.journal.append(description)
+        let beforeRevision = f.journal.revision
+        let receipt = try f.journal.deleteFrame(id: row.id, includingDescription: false)
+        #expect(f.journal.revision == beforeRevision + 1); #expect(try f.journal.frame(id: row.id) == nil)
+        #expect(try f.journal.items(matching: .init()).first?.payload.value.details["picture_not_kept"] == "deletedByUser")
+        let reopened = EncryptedJournalStore(root: f.root, keyProvider: FixtureJournalKey())
+        #expect(try reopened.items(matching: .init()).first?.payload.value.details["picture_not_kept"] == "deletedByUser")
+        try f.journal.restoreFrame(receipt); #expect(try f.journal.frame(id: row.id) == frame)
+        #expect(try f.journal.items(matching: .init()).contains(description))
+        #expect(throws: FrameJournalError.self) { try f.journal.restoreFrame(receipt) }
+        let both = try f.journal.deleteFrame(id: row.id, includingDescription: true)
+        #expect(try f.journal.items(matching: .init()).isEmpty); #expect(try f.journal.frame(id: row.id) == nil)
+        try f.journal.restoreFrame(both); #expect(try f.journal.items(matching: .init()).count == 2)
+        let forgotten = try f.journal.deleteFrame(id: row.id, includingDescription: true)
+        try f.journal.delete(.all)
+        #expect(throws: FrameJournalError.self) { try f.journal.restoreFrame(forgotten) }
+        #expect(try f.journal.items(matching: .init()).isEmpty)
+    }
+    @Test func failedPairCommitLeavesImageAndDescriptionIntact() throws {
+        let f = try ScreenFixture(); defer { f.close() }
+        let frame = Redacted(FrameItem(heic: Data([1]), width: 100, height: 100, boxes: [], appName: "Fixture", windowTitle: "Synthetic"))
+        let row = JournalItem(id: "frame-fail", time: f.now, level: .screen, kind: .frame, payload: .init(.init(description: "Frame")))
+        try f.journal.appendFrame(frame, item: row)
+        let before = try f.journal.items(matching: .init()), revision = f.journal.revision
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: f.root.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: f.root.path) }
+        #expect(throws: (any Error).self) { try f.journal.deleteFrame(id: row.id, includingDescription: true) }
+        #expect(f.journal.revision == revision); #expect(try f.journal.items(matching: .init()) == before)
+        #expect(try f.journal.frame(id: row.id) == frame)
+    }
+    @Test func frontWindowResolutionIgnoresOtherProcessesAndOverlayLayers() {
+        let overlay: [String: Any] = [kCGWindowOwnerPID as String: 42, kCGWindowLayer as String: 5, kCGWindowNumber as String: 1]
+        let other: [String: Any] = [kCGWindowOwnerPID as String: 9, kCGWindowLayer as String: 0, kCGWindowNumber as String: 2]
+        let front: [String: Any] = [kCGWindowOwnerPID as String: 42, kCGWindowLayer as String: 0, kCGWindowNumber as String: 3]
+        #expect((ScreenWindowContextSource.frontWindow(processID: 42, windows: [overlay, other, front])?[kCGWindowNumber as String] as? NSNumber)?.intValue == 3)
+        #expect(ScreenWindowContextSource.isBrowser("com.apple.SafariTechnologyPreview"))
+        #expect(!ScreenWindowContextSource.isBrowser("com.example.Editor"))
     }
     @Test func summarySamplesDescriptionsNeverFrames() {
         let rows = (0..<10).map { JournalItem(id: "\($0)", level: .screen, kind: .description, payload: .init(.init(description: "Description \($0)"))) }
