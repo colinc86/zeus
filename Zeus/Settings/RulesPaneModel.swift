@@ -88,12 +88,6 @@ final class RulesPaneModel {
         let formatter = DateFormatter(); formatter.dateFormat = time ? "EEE d MMM HH:mm" : "EEE d MMM"
         return formatter.string(from: date)
     }
-    static func outcomeGlyph(_ outcome: RuleOutcome) -> String {
-        switch outcome {
-        case .accepted: "✓"; case .undone: "↶"; case .ignored, .stale: "–"
-        case .skipped: "✕"; case .toggledOff: "○"; case .toggledOn: "●"; case .edited: "✎"
-        }
-    }
     static func outcomeSource(_ event: RuleOutcomeEvent) -> String {
         switch event.source {
         case .explicit:

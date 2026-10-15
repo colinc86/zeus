@@ -134,7 +134,10 @@ struct RuleEvidenceView: View {
             let events = model.outcomes(for: rule)
             if events.isEmpty { Text("Nothing has happened with this rule yet.").settingsCaption() }
             ForEach(Array(events.prefix(10))) { event in
-                Text("\(RulesPaneModel.outcomeGlyph(event.outcome)) \(RulesPaneModel.dateText(event.at)) · \(RulesPaneModel.outcomeLabel(event.outcome)) · \(RulesPaneModel.outcomeSource(event))").settingsCaption()
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    RuleOutcomeGlyph(outcome: event.outcome).accessibilityHidden(true)
+                    Text("\(RulesPaneModel.dateText(event.at)) · \(RulesPaneModel.outcomeLabel(event.outcome)) · \(RulesPaneModel.outcomeSource(event))").settingsCaption()
+                }.accessibilityElement(children: .ignore)
                     .accessibilityLabel("\(RulesPaneModel.dateText(event.at)), \(RulesPaneModel.outcomeLabel(event.outcome)), \(RulesPaneModel.outcomeSource(event))")
             }
             if events.count > 10 { Text("and \(events.count - 10) earlier").settingsCaption() }
@@ -207,5 +210,28 @@ private struct RuleEditorView: View {
         }.padding(24).frame(width: 560).environment(\.zeusFontChoice, .system)
             .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).toggleStyle(ZeusCheckboxStyle())
             .onAppear { cancelFocused = true }
+    }
+}
+
+/// Uses the existing pixel symbols and tiny drawn marks, avoiding unsupported font glyphs.
+private struct RuleOutcomeGlyph: View {
+    let outcome: RuleOutcome
+    @Environment(\.zeusPalette) private var palette
+    var body: some View {
+        Group {
+            switch outcome {
+            case .accepted: ZeusGlyph(.check)
+            case .undone: ZeusGlyph(.reply)
+            case .skipped: ZeusGlyph(.close)
+            case .ignored, .stale: Rectangle().frame(width: 7, height: 1)
+            case .toggledOff: Circle().stroke(lineWidth: 1).frame(width: 6, height: 6)
+            case .toggledOn: Circle().frame(width: 6, height: 6)
+            case .edited:
+                Path { path in
+                    for step in 0..<5 { path.addRect(CGRect(x: step + 1, y: 5 - step, width: 2, height: 2)) }
+                    path.addRect(CGRect(x: 0, y: 7, width: 2, height: 1))
+                }.frame(width: 7, height: 8)
+            }
+        }.foregroundStyle(palette.secondaryText).frame(width: 8)
     }
 }
