@@ -1842,3 +1842,121 @@ extension DesignerAuditRenders {
         }
     }
 }
+
+// MARK: - LM2 Phase D: depth mock-ups (docs/design/PRIVACY.md §11)
+
+private struct LM2RawSwitch: View {
+    var body: some View {
+        LM2Settings {
+            Text("Screen").settingsHeading()
+            SettingsSegments(label: "Keep descriptions for", options: [(30, "30 days"), (90, "90 days")], selection: .constant(90))
+            Toggle("Let my assistant see the pictures when it asks", isOn: .constant(false))
+            Text("Otherwise it gets only descriptions. Each time it looks, you'll see a line in the conversation.").settingsCaption()
+            SettingsDivider()
+            Text("Typing").settingsHeading()
+            SettingsSegments(label: "Keep the words", options: [(0, "Don't keep"), (24, "24 hours"), (168, "7 days")], selection: .constant(24))
+            Toggle("Let my assistant see the words when it asks", isOn: .constant(true))
+            Text("Otherwise it gets only topics. Each time it looks, you'll see a line in the conversation.").settingsCaption()
+        }
+    }
+}
+
+private struct LM2RawSheet: View {
+    var body: some View {
+        LM2Settings(width: 440) {
+            Text("Let your assistant see pictures?").settingsTitle()
+            Text("When your assistant asks about a moment, it can get the picture Zeus kept (with private text covered and pictures blurred), not just the description. That picture goes to your assistant's model provider, like anything you send.")
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Every time it looks, the conversation says so, and What Zeus Kept › Sent to your assistant shows exactly what it got.").settingsCaption()
+            HStack { Spacer(); Button("Cancel") {}; Button("Allow") {}.buttonStyle(ZeusButtonStyle(.primary, size: .small)) }
+        }
+    }
+}
+
+private struct LM2WhyPopover: View {
+    @Environment(\.zeusPalette) private var palette
+    let evidence = ["Mon 12 Oct · 18:20 · Slack · #design-review", "Tue 13 Oct · 18:42 · Slack · #general"]
+    let outcomes: [(String, String, String)] = [
+        ("✓", "Wed 15 Oct 18:05 · Held 2 messages; you read them at 19:10", "accepted"),
+        ("↶", "Thu 16 Oct 18:30 · You pressed Show before 19:00", "undone"),
+        ("–", "Fri 17 Oct · The prepared list wasn't opened", "ignored"),
+        ("✕", "Sat 18 Oct · You pressed Skip on its question", "skipped"),
+    ]
+    var body: some View {
+        LM2Settings(width: 470) {
+            Text("Why this rule").settingsTitle()
+            Text("Based on:").settingsHeading()
+            ForEach(evidence, id: \.self) { Text($0).settingsCaption() }
+            Text("Proposed by your assistant on Wed 14 Oct").settingsCaption()
+            SettingsDivider()
+            Text("What happened since").settingsHeading()
+            ForEach(outcomes, id: \.1) { o in
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(o.0).settingsBody().frame(width: 14)
+                    Text(o.1).settingsBody()
+                    Spacer()
+                    Text("(\(o.2))").settingsCaption()
+                }.accessibilityElement(children: .combine)
+            }
+            HStack(spacing: 6) { LM2Meter(cells: 3); Text("Fairly sure · was Sure on 15 Oct").settingsCaption() }
+        }
+    }
+}
+
+private struct LM2JournalLedger: View {
+    var body: some View {
+        LM2Settings(width: 672) {
+            Text("Everything Zeus sent your assistant about you. Your assistant's model provider received these like any message.").settingsCaption()
+            HStack(spacing: ZeusTheme.Spacing.s) {
+                Text("▾").settingsCaption(); Text("14:32").settingsCaption(); Text("Journal answer").settingsBody(); Text("■ Claude · Zeus").settingsCaption()
+                Spacer(); Text("3 items").settingsCaption()
+            }
+            ZeusFieldChrome {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Tue 14 Oct 14:00–15:30 · “pull request”").font(.system(size: 12, weight: .semibold))
+                    StoredText(text: "14:05 · Mail · typing · Replying to a doctor about rescheduling an appointment")
+                    StoredText(text: "14:12 · Chrome · window · Q3 planning – Docs · docs.example.com/d/‹id›")
+                    HStack(spacing: 6) {
+                        LM2MockFrame(code: true).frame(width: 64, height: 40)
+                        StoredText(text: "14:20 · Xcode · picture · Debugging a session restart that failed to resume.")
+                    }
+                }.font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(spacing: ZeusTheme.Spacing.s) {
+                Text("▸").settingsCaption(); Text("11:02").settingsCaption(); Text("Journal answer").settingsBody(); Text("■ Claude · Zeus").settingsCaption()
+                Spacer(); Text("Asked for pictures; not allowed").settingsCaption()
+            }
+        }
+    }
+}
+
+extension DesignerAuditRenders {
+    /// LM2-D4: Raw on request, journal-answer and acting-rule lines, Why? with outcomes, and journal answers in the ledger.
+    @Test func depthMockups() async throws {
+        for look in Snap.Look.basic {
+            try await Snap.render("lm2d-raw-switch", look: look, padding: 0, settle: 0.5) { LM2RawSwitch() }
+            try await Snap.render("lm2d-raw-sheet", look: look, padding: 0, settle: 0.5) { LM2RawSheet() }
+            try await Snap.render("lm2d-why-outcomes", look: look, padding: 0, settle: 0.5) { LM2WhyPopover() }
+            try await Snap.render("lm2d-ledger-journal", look: look, padding: 0, settle: 0.5) { LM2JournalLedger() }
+            for (name, lines) in [("lm2d-thread-journal-shadow", ["Looked at your journal: Tue 14:00–15:30 · View",
+                                                                  "Looked at your journal, including 2 pictures: Tue 14:00–15:30 · View",
+                                                                  "I'd have drafted a reply to the scheduling email · OK next time?",
+                                                                  "I'd have moved your 15:00 meeting to 15:30 · OK next time?",
+                                                                  "I'd have bought the usual coffee beans for €14 · OK next time?"]),
+                                  ("lm2d-thread-acted-retired", ["Sent “Running late, 10 min” to the team chat · Not again",
+                                                                 "Drafted a reply to the scheduling email · Undo",
+                                                                 "Rule turned off · Review",
+                                                                 "Retired a rule you kept skipping: “Prepare PR list at 8:50” · Review"])] {
+                let f = Fixture(font: look.font); defer { f.cleanup() }
+                f.store.add(Card(id: "c_m1", kind: .message, body: "The PR you had open at 14:12 was #482, the restart race fix.", sessionKey: AuditMessaging.claude.sessionKey, createdAt: t0, updatedAt: t0))
+                f.messaging.sessions = [AuditMessaging.claude]
+                for (i, line) in lines.enumerated() {
+                    let parts = line.components(separatedBy: " · ")
+                    f.store.recordNotice(ThreadNotice(kind: .learning, createdAt: t0.addingTimeInterval(Double(i + 1) * 60),
+                                                      summary: parts.dropLast(parts.count > 1 ? 1 : 0).joined(separator: " · "), actionTitle: parts.count > 1 ? parts.last : nil), action: {})
+                }
+                try await Snap.render(name, look: look, settle: 0.6) { f.conversation() }
+            }
+        }
+    }
+}
