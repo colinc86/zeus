@@ -63,7 +63,7 @@ Same frame as the L1 sheet.
 - **"Zeus never keeps"**
   - "What's inside a window: text, pictures, messages"
   - "Anything while a password field is active"
-  - "Private browser windows"
+  - "Private windows in Chrome and Edge"
   - "Apps on your private list"
 - **"An example of what's stored"**: a monospaced block in the field chrome. The synthetic record shows two redactions:
   ```
@@ -72,7 +72,7 @@ Same frame as the L1 sheet.
   09:52  Xcode    ManagedSessionController.swift — Zeus
   ```
   - Caption under it: "Names, emails, numbers and other private details become placeholders like ‹name› before anything is stored."
-- **Safari line** (caption): "Safari: Zeus keeps only that you used Safari, because it can't tell private windows apart." Drop this line if appdev finds a reliable positive check.
+- **Safari line** (caption): "Safari: Zeus keeps only that you used it. To keep its titles and web addresses too, add Safari under Only in apps I choose. Zeus can't tell Safari's private windows apart, so those would be kept too."
 - **Caveat** (caption): "Summaries of this go to your assistant, which sends them to its model provider like any message. The records themselves stay on this Mac."
 - **Permission** (caption): "Next, macOS asks you to allow Zeus under Accessibility. Zeus uses it only to read window titles."
 - **Buttons:** "Not Now" (cancel, Escape) and "Continue" (default).
@@ -110,6 +110,12 @@ Same frame as the L1 sheet.
 - The list below is this level's own **allow list**. The private list still wins.
 - Caption: "Zeus records this level only in these apps."
 - Empty state (caption): "No apps chosen yet, so nothing is recorded at this level."
+
+**Safari** (PM decision, LM2-D):
+- Safari is app-only by default in every mode.
+- Its titles and addresses are kept only when the user adds Safari to Level 2's allow list ("Only in apps I choose").
+- When Safari is in that list, its row gets a caption under it (`settingsCaption`, one line): "Private windows can't be told apart, so their titles and addresses are kept too."
+- Adding Safari shows no extra confirmation. The caption is the warning.
 
 **List rows** (both lists):
 - App icon (16 pt), the app name in `settingsBody`, and a trailing "–" `KeyboardButton`.
