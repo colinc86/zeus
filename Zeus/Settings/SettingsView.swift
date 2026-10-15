@@ -4,7 +4,7 @@ import ZeusProtocol
 import ZeusDesign
 
 enum SettingsTab: String, CaseIterable {
-    case general = "General", appearance = "Appearance", agent = "Assistant", character = "Character", privacy = "Privacy", about = "About"
+    case general = "General", appearance = "Appearance", agent = "Assistant", character = "Character", privacy = "Privacy", rules = "Rules", about = "About"
     #if DEBUG
     case debug = "Debug"
     #endif
@@ -12,7 +12,11 @@ enum SettingsTab: String, CaseIterable {
 
 @MainActor
 @Observable
-final class SettingsNavigation { var tab = SettingsTab.general }
+final class SettingsNavigation {
+    var tab = SettingsTab.general
+    var showsRules = false
+    var tabs: [SettingsTab] { SettingsTab.allCases.filter { $0 != .rules || showsRules } }
+}
 
 struct SettingsView: View {
     @Bindable var settings: AppSettings
@@ -31,6 +35,8 @@ struct SettingsView: View {
     var updater: any AppUpdating = UpdaterService()
     /// Settings › Privacy's "Learn from me" (L1); nil shows the pane as unavailable.
     var learn: LearnFromMe?
+    var learning: LearningPresentation?
+    var openJournal: () -> Void = {}
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
     /// This root's own colors come from the theme directly: the environment it sets applies to its children.
@@ -63,6 +69,10 @@ struct SettingsView: View {
                 }
                 .onChange(of: managed.confirmation, initial: true) { revealManagedConfirmation(proxy) }
                 .onChange(of: navigation.tab) { revealManagedConfirmation(proxy) }
+                .onChange(of: learning?.rules?.selectedRuleID) { _, id in
+                    guard navigation.tab == .rules, let id else { return }
+                    Task { @MainActor in await Task.yield(); proxy.scrollTo(id, anchor: .center) }
+                }
             }
         }
         .padding(24)
@@ -75,11 +85,19 @@ struct SettingsView: View {
     }
 
     private func revealManagedConfirmation(_ proxy: ScrollViewProxy) {
-        guard navigation.tab == .agent, managed.confirmation == .newConversation else { return }
+        guard navigation.tab == .agent, let target = Self.managedConfirmationTarget(managed.confirmation) else { return }
         Task { @MainActor in
             await Task.yield()
-            guard navigation.tab == .agent, managed.confirmation == .newConversation else { return }
-            proxy.scrollTo("newConversationConfirmation", anchor: .top)
+            guard navigation.tab == .agent, Self.managedConfirmationTarget(managed.confirmation) == target else { return }
+            proxy.scrollTo(target, anchor: .top)
+        }
+    }
+
+    static func managedConfirmationTarget(_ confirmation: ManagedAssistantModel.Confirmation?) -> String? {
+        switch confirmation {
+        case .newConversation?: "newConversationConfirmation"
+        case .switchConversation?: "switchConversationConfirmation"
+        default: nil
         }
     }
 
@@ -95,8 +113,36 @@ struct SettingsView: View {
         case .character:
             CharacterSettingsView(settings: settings, resetPosition: resetPosition)
         case .privacy:
-            if let learn { PrivacySettingsView(learn: learn) }
-            else { Text("Learn from me isn't available here.").settingsCaption() }
+            VStack(alignment: .leading, spacing: 16) {
+                if let learning, let learn {
+                    Text("Learn from me").settingsTitle()
+                    if learning.enabled { Text(learning.redactionCaption).settingsCaption() }
+                    PrivacySettingsView(learn: learn, observations: learning.policies,
+                        onObservationChange: { learning.settingsChanged() }, deleteAll: { learning.deleteEverything() })
+                    SettingsDivider()
+                    ObservationLevelView(settings: learning.policies, privacy: learn.settings,
+                        onChange: { learning.settingsChanged() }, hasPermission: { learning.focus?.hasPermission ?? false })
+                    SettingsDivider()
+                    Text("What Zeus kept").settingsTitle()
+                    KeyboardButton("Open What Zeus Kept…") { openJournal() }.accessibilityLabel("Open What Zeus Kept…")
+                        .disabled(learning.viewer == nil)
+                    if !learn.settings.enabled && learning.policies.policy(2).enabled {
+                        KeyboardButton(learn.isPausedNow ? "Resume" : "Pause for Today") {
+                            if learn.isPausedNow { learn.resume() } else { learn.pauseForToday() }
+                        }.accessibilityLabel(learn.isPausedNow ? "Resume" : "Pause for Today")
+                    }
+                    if let error = learning.error ?? learning.focus?.error ?? learning.runtimeProblem() { Text(error).settingsError() }
+                } else if let learn { PrivacySettingsView(learn: learn) }
+                else { Text("Learn from me isn't available here.").settingsCaption() }
+            }
+        case .rules:
+            if let rules = learning?.rules {
+                VStack(alignment: .leading, spacing: 12) {
+                    RulesSettingsView(model: rules)
+                    if let error = learning?.runtimeProblem() { Text(error).settingsError() }
+                }
+            }
+            else { Text("Rules aren't available here.").settingsCaption() }
         case .about:
             AboutSettingsView()
         #if DEBUG
@@ -162,7 +208,7 @@ struct SettingsTabBar: View {
 
     private func tabs(equalWidths: Bool) -> some View {
         HStack(spacing: ZeusTheme.Spacing.s) {
-            ForEach(SettingsTab.allCases, id: \.self) { tab in
+            ForEach(navigation.tabs, id: \.self) { tab in
                 KeyboardButton { navigation.tab = tab } label: {
                     if equalWidths { Text(tab.rawValue).frame(maxWidth: .infinity) }
                     else { Text(tab.rawValue).lineLimit(1).fixedSize().frame(maxWidth: .infinity) }

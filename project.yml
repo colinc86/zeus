@@ -31,10 +31,12 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.colinc86.Zeus
+        CODE_SIGN_ENTITLEMENTS: Zeus/App/Zeus.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_FILE: Zeus/App/UpdateInfo.plist
         INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_NSAppleEventsUsageDescription: Zeus reads the current browser address or Mail subject only when you enable window and document learning.
         INFOPLIST_KEY_CFBundleDisplayName: Zeus
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: NO

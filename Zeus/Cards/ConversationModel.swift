@@ -63,6 +63,8 @@ enum ConversationSendResult: Equatable, Sendable {
 @Observable
 final class ConversationModel {
     var draft = ""
+    var draftAttachments: [Attachment] = []
+    var attachmentError: String?
     private(set) var isSending = false
     private(set) var result: ConversationSendResult?
     private var clearedReplyCardIDs: Set<String> = []
@@ -123,7 +125,7 @@ final class ConversationModel {
 
     var unseenCount: Int { cards.unseenCount }
     var isPanelOpen: Bool { cards.isConversationOpen }
-    var canSend: Bool { !isSending && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    var canSend: Bool { !isSending && (!draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !draftAttachments.isEmpty) }
 
     /// Priority never changes conversational chronology or which question the keyboard targets.
     var newestOpenQuestion: Card? {
@@ -228,7 +230,9 @@ final class ConversationModel {
 
     /// Captures routing before an async send. A newly arriving question cannot consume an older send.
     @discardableResult func send(_ text: String) async -> ConversationSendResult? {
-        let text = MessageText.submitted(text)
+        let submittedDraft = MessageText.submitted(text)
+        let attachments = draftAttachments
+        let text = Self.message(text, attaching: attachments)
         guard !isSending, !text.isEmpty else { return nil }
         isSending = true
         result = nil
@@ -237,14 +241,14 @@ final class ConversationModel {
             let accepted = cards.respond(id: target.id, response: CardResponse(text: text, respondedAt: clock(), device: .mac))
             if accepted {
                 result = .answered(cardID: target.id)
-                clearMatchingDraft(text)
+                clearMatchingDraft(submittedDraft, attachments: attachments)
             } else {
                 result = .rejected(reason: cards.persistenceError.map { "Could not save your reply. \($0) Try again." }
                     ?? "This question is no longer open. Review the reply target and try again.")
             }
         } else {
             let now = clock()
-            let card = Card(kind: .userMessage, body: text, createdAt: now, updatedAt: now, status: .answered)
+            let card = Card(kind: .userMessage, body: text, attachments: attachments, createdAt: now, updatedAt: now, status: .answered)
             let deliveryID = UserMessageDelivery.makeID()
             guard cards.addOutgoing(card, deliveryID: deliveryID) else {
                 result = .rejected(reason: "Could not save your message. \(cards.persistenceError ?? "Try again.")")
@@ -256,7 +260,7 @@ final class ConversationModel {
             _ = cards.reconcileOutgoingDeliveries(messaging.userMessageDeliveries)
             sendingIDs.remove(card.id)
             result = .message(cardID: card.id, outcome: outcome)
-            if case .failed = outcome {} else { clearMatchingDraft(text) }
+            if case .failed = outcome {} else { clearMatchingDraft(submittedDraft, attachments: attachments) }
         }
         return result
     }
@@ -264,7 +268,7 @@ final class ConversationModel {
     /// Retry the same outgoing bubble, never consuming a newly arrived question or duplicating history.
     func retry(entryID: String) async {
         guard !isSending, let entry = thread.first(where: { $0.id == entryID }),
-              case .userMessage = entry.content, case .delivery(.failed)? = entry.outcome else { return }
+              case .userMessage(let sentCard) = entry.content, case .delivery(.failed)? = entry.outcome else { return }
         isSending = true
         defer { isSending = false }
         guard let deliveryID = cards.deliveryIDForRetry(cardID: entry.sourceCardID),
@@ -274,7 +278,11 @@ final class ConversationModel {
         _ = cards.setOutgoingState(.init(outcome), cardID: entry.sourceCardID)
         _ = cards.reconcileOutgoingDeliveries(messaging.userMessageDeliveries)
         sendingIDs.remove(entry.sourceCardID)
-        if case .failed = outcome {} else { clearMatchingDraft(entry.body) }
+        if case .failed = outcome {} else {
+            if Self.message(draft, attaching: draftAttachments) == entry.body {
+                clearMatchingDraft(MessageText.submitted(draft), attachments: sentCard.attachments)
+            }
+        }
     }
 
     func pruneClearedHistory() {
@@ -285,9 +293,19 @@ final class ConversationModel {
         if let id = explicitReplyCardID, !ids.contains(id) { explicitReplyCardID = nil }
     }
 
-    private func clearMatchingDraft(_ submitted: String) {
+    private func clearMatchingDraft(_ submitted: String, attachments: [Attachment] = []) {
         if MessageText.submitted(draft) == submitted { draft = "" }
+        let sent = Set(attachments.map(\.id))
+        draftAttachments.removeAll { sent.contains($0.id) }
     }
+
+    func attach(_ items: [Attachment]) {
+        var existing = Set(draftAttachments.map(\.target))
+        for item in items where draftAttachments.count < AvatarDrop.maximumItems {
+            if existing.insert(item.target).inserted { draftAttachments.append(item) }
+        }
+    }
+    func removeAttachment(id: String) { draftAttachments.removeAll { $0.id == id } }
     private static func cardEntryID(_ id: String) -> String { "card:\(id)" }
     private static func answerEntryID(_ id: String) -> String { "answer:\(id)" }
 }

@@ -1,0 +1,24 @@
+{
+  "revision": "067ffd9",
+  "launch": {
+    "ax_trusted": true,
+    "private_home": true,
+    "ready": true,
+    "safari_automation_status": -1744
+  },
+  "xcode_launch": {
+    "ok": false,
+    "reason": "Requires a clean macOS test user or VM"
+  },
+  "xcode": {
+    "status": "blocked",
+    "reason": "Requires a clean macOS test user or VM",
+    "ok": false
+  },
+  "safari": {
+    "status": "blocked",
+    "automation_status": -1744,
+    "reason": "Automation would require user consent; no prompt or browser data read"
+  },
+  "required_native_gate": "blocked"
+}

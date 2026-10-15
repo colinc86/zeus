@@ -20,7 +20,12 @@ struct ZeusApp: App {
 
 @MainActor
 final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
-    let shell = ShellController()
+    lazy var shell: ShellController = {
+        let testing = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil || NSClassFromString("XCTestCase") != nil
+        guard !testing else { return ShellController() }
+        do { return ShellController(learningServices: try LearningServices.production(), requirePrivateJournal: true) }
+        catch { return ShellController(requirePrivateJournal: true) }
+    }()
     private(set) var runtime: ZeusRuntime?
 
 
@@ -48,7 +53,12 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
         let runtime = ZeusRuntime(cards: shell.cards, status: shell.status,
                                   characters: settings, routing: settings,
                                   quietHours: { [weak settings] date in settings?.isQuiet(at: date) ?? false },
-                                  appControl: shell.appControl, learnings: shell.learn.learnings)
+                                  appControl: shell.appControl, learnings: shell.learn.learnings,
+                                  rules: shell.learningServices?.rules, journal: shell.learningServices?.journal,
+                                  redactor: shell.learningServices?.redactor,
+                                  learningContext: { [weak learning = shell.learning] in learning?.context ?? .init(isPrivate: true) },
+                                  reflectionEnabled: { [weak learning = shell.learning] in learning?.enabled == true })
+        shell.connectLearningRuntime(runtime)
         do {
             try runtime.start()
             self.runtime = runtime

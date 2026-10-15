@@ -240,7 +240,7 @@ import ZeusProtocol
         let host = f.host(SettingsTabBar(navigation: navigation), height: 80)
         try await f.settle(host)
         let nodes = liveAXNodes(host)
-        for tab in SettingsTab.allCases {
+        for tab in navigation.tabs {
             #expect(nodes.contains { liveAXString($0, "accessibilityRole") == "AXButton" && liveAXDescription($0).contains(tab.rawValue) })
         }
     }

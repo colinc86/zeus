@@ -32,6 +32,8 @@ struct SpriteAvatarView: View {
     let messaging: any AgentMessaging
     let artLayout: AvatarArtLayout
     let activity: SurfaceActivity
+    var isDropTarget = false
+    @Environment(\.zeusPalette) private var palette
 
     // T1: the selected theme reaches every view below through \.zeusTheme (and so \.zeusPalette).
     var body: some View { rootBody.environment(\.zeusTheme, settings.currentTheme) }
@@ -39,10 +41,18 @@ struct SpriteAvatarView: View {
     @ViewBuilder private var rootBody: some View {
         Group {
             if let character = settings.currentCharacter {
-                CharacterAnimationView(character: character, state: status.state, scale: settings.pixelScale)
+                CharacterAnimationView(character: character, state: isDropTarget ? .alert : status.state, scale: settings.pixelScale)
             } else {
                 Image(systemName: "bolt.fill").frame(width: 96, height: 112)
                     .accessibilityLabel("Character unavailable")
+            }
+        }
+        .overlay(alignment: .top) {
+            if isDropTarget {
+                Text("Drop to attach").zeusFont(.caption).foregroundStyle(palette.text)
+                    .padding(4).background(palette.panel)
+                    .overlay(Rectangle().strokeBorder(palette.fieldBorder, lineWidth: ZeusTheme.pixel))
+                    .accessibilityLabel("Drop to attach")
             }
         }
         .overlay(alignment: .topLeading) {
@@ -69,6 +79,7 @@ struct SpriteAvatarView: View {
 /// Handles a click versus a drag without ever making the avatar panel key.
 @MainActor
 final class AvatarInteractionView: NSHostingView<SpriteAvatarView> {
+    var onDrop: ((NSPasteboard) -> Bool)?
     var onWarning: (() -> Void)?
     var onShowDeliveryProblem: (() -> Void)?
     var hasWarning: (() -> Bool)?
@@ -83,6 +94,24 @@ final class AvatarInteractionView: NSHostingView<SpriteAvatarView> {
     private var startMouse = CGPoint.zero
     private var startOrigin = CGPoint.zero
     private var dragged = false
+
+    required init(rootView: SpriteAvatarView) {
+        super.init(rootView: rootView)
+        registerForDraggedTypes(AvatarDrop.types)
+    }
+    @available(*, unavailable) required init?(coder: NSCoder) { fatalError("Use init(rootView:)") }
+    override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
+        rootView.isDropTarget = AvatarDrop.accepts(sender.draggingPasteboard)
+        return rootView.isDropTarget ? .copy : []
+    }
+    override func draggingUpdated(_ sender: any NSDraggingInfo) -> NSDragOperation { draggingEntered(sender) }
+    override func prepareForDragOperation(_ sender: any NSDraggingInfo) -> Bool { AvatarDrop.accepts(sender.draggingPasteboard) }
+    override func draggingExited(_ sender: (any NSDraggingInfo)?) { rootView.isDropTarget = false }
+    override func concludeDragOperation(_ sender: (any NSDraggingInfo)?) { rootView.isDropTarget = false }
+    override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
+        rootView.isDropTarget = false
+        return onDrop?(sender.draggingPasteboard) ?? false
+    }
 
     override func hitTest(_ point: NSPoint) -> NSView? { bounds.contains(point) ? self : nil }
     override func updateTrackingAreas() {

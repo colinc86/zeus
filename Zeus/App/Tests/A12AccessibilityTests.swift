@@ -213,7 +213,7 @@ import ZeusProtocol
         #expect(characterLabels.contains("Idle opacity") && characterLabels.contains("Idle fade delay"))
         let navigation = SettingsNavigation()
         let tabs = try await f.mount(SettingsTabBar(navigation: navigation), width: 700, height: 100)
-        #expect(ordered(f.tabLabels(tabs), startingAt: "General") == SettingsTab.allCases.map(\.rawValue))
+        #expect(ordered(f.tabLabels(tabs), startingAt: "General") == navigation.tabs.map(\.rawValue))
         try f.evidence(tabs, name: "settings-tabs")
     }
 
