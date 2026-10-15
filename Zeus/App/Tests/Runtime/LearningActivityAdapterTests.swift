@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import Testing
 @testable import Zeus
 
@@ -27,6 +28,22 @@ private actor PausedLearningRedactor: Redactor {
         try await adapter.migrateLegacy(redactor: LocalRedactor(useOnDeviceModel: false), allowed: { _ in true }, stillAllowed: { true })
         #expect(try journal.items(matching: .init()).count == 1)
         #expect(throws: LearningStorageError.self) { try adapter.append(.init(t: now, kind: .active)) }
+    }
+    @Test func migrationResumesWithoutReredactingCommittedPrefix() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("lm2_l1_" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let old = ActivityStore(root: root.appendingPathComponent("Activity")), now = Date(timeIntervalSince1970: 1_700_000_000)
+        let first = ActivityEvent(t: now, kind: .activate, app: "com.example.Editor", name: "Some original app name")
+        try old.append(first); try old.append(.init(t: now.addingTimeInterval(10), kind: .active))
+        let journal = EncryptedJournalStore(root: root.appendingPathComponent("Journal"), keyProvider: FixtureJournalKey())
+        let adapter = ActivityStore(root: old.root, journal: journal)
+        let hash = SHA256.hash(data: try Data(contentsOf: old.fileURL(for: now))).map { String(format: "%02x", $0) }.joined()
+        let payload = Redacted(JournalPayload(description: "A prior model removed more than this pass would", details: ["kind": "activate", "name": "‹name›"]), report: .init(counts: [.name: 1], semanticEngine: .onDeviceModel))
+        try adapter.appendRedacted(payload, event: first, id: "l1_\(hash)_0")
+        try await adapter.migrateLegacy(redactor: LocalRedactor(useOnDeviceModel: false), allowed: { _ in true }, stillAllowed: { true })
+        #expect(!FileManager.default.fileExists(atPath: old.fileURL(for: now).path))
+        #expect(try journal.items(matching: .init()).count == 2)
+        #expect(try journal.items(matching: .init()).first?.payload == payload)
     }
     @Test func disableOrDeletionDuringRedactionCannotAppend() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("lm2_l1_" + UUID().uuidString)
