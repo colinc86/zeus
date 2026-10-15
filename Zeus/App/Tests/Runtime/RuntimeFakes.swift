@@ -178,12 +178,15 @@ struct RuntimeFixture {
     }
 }
 
-enum RuntimeTestError: Error { case deadline }
+enum RuntimeTestError: Error {
+    case deadline
+    case conditionDeadline(file: String, line: UInt)
+}
 @MainActor
-func eventually(_ condition: @MainActor () -> Bool) async throws {
+func eventually(file: StaticString = #fileID, line: UInt = #line, _ condition: @MainActor () -> Bool) async throws {
     let end = ContinuousClock.now + .seconds(3)
     while !condition() {
-        guard ContinuousClock.now < end else { throw RuntimeTestError.deadline }
+        guard ContinuousClock.now < end else { throw RuntimeTestError.conditionDeadline(file: String(describing: file), line: line) }
         try await Task.sleep(for: .milliseconds(5))
     }
 }

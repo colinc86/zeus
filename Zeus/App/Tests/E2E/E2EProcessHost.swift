@@ -8,9 +8,16 @@ import ZeusProtocol
 private actor RuntimeHostBuilder {
     static let shared = RuntimeHostBuilder()
     private var tasks: [String: Task<URL, any Error>] = [:]
+    private var lastBuild: Task<URL, any Error>?
     func executable(configuration: String) async throws -> URL {
         if let task = tasks[configuration] { return try await task.value }
-        let task = Task { try await build(configuration: configuration) }
+        // Actor reentrancy otherwise allows Debug/Release subprocess builds to overlap.
+        let previous = lastBuild
+        let task = Task {
+            _ = try? await previous?.value
+            return try await build(configuration: configuration)
+        }
+        lastBuild = task
         tasks[configuration] = task
         return try await task.value
     }

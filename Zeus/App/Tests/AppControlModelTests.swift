@@ -210,8 +210,8 @@ import ZeusDesign
             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.isReleasedWhenClosed = false; panel.ignoresMouseEvents = true
         defer { panel.orderOut(nil); panel.contentView = nil; panel.close() }
-        func render<V: View>(_ view: V, name: String, size: CGSize) async throws -> NSHostingView<AnyView> {
-            let host = NSHostingView(rootView: AnyView(view.environment(\.accessibilityEnabled, true)
+        func render<V: View>(_ view: V, name: String, size: CGSize) async throws -> TestHostingView {
+            let host = TestHostingView(rootView: AnyView(view.environment(\.accessibilityEnabled, true)
                 .environment(\.zeusFontChoice, .system).environment(\.zeusTheme, f.settings.currentTheme)
                 .background(Color(nsColor: .windowBackgroundColor))))
             host.sizingOptions = []

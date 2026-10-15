@@ -30,9 +30,9 @@ import ZeusProtocol
     return ""
 }
 @MainActor @Suite(.serialized) struct LM2BLayoutTests {
-    private func mount<V: View>(_ view: V, width: CGFloat, height: CGFloat) async throws -> (NSHostingView<AnyView>, NSWindow) {
+    private func mount<V: View>(_ view: V, width: CGFloat, height: CGFloat) async throws -> (TestHostingView, NSWindow) {
         ZeusFonts.registerBundled()
-        let host = NSHostingView(rootView: AnyView(view.accessibilityElement(children: .contain).environment(\.accessibilityEnabled, true)
+        let host = TestHostingView(rootView: AnyView(view.accessibilityElement(children: .contain).environment(\.accessibilityEnabled, true)
             .environment(\.zeusFontChoice, .system).environment(\.zeusAnimationsActive, false).buttonStyle(ZeusButtonStyle(.secondary, size: .small))))
         let window = LM2BLayoutPanel(contentRect: .init(x: -20000, y: -20000, width: width, height: height), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.ignoresMouseEvents = true; window.contentView = host; window.orderFront(nil)

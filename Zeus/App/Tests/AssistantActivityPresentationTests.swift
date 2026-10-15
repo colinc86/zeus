@@ -54,7 +54,7 @@ import ZeusDesign
     @Test func designerProgressHeightFeedsFollowingWithoutPassingTheMessageTop() throws {
         func height(progress: Double?) throws -> CGFloat {
             let presentation = try #require(ConversationActivityPresentation.make(activity(.working, progress: progress), panelVisible: true))
-            let host = NSHostingView(rootView: ConversationActivityRow(presentation: presentation)
+            let host = TestHostingView(rootView: ConversationActivityRow(presentation: presentation)
                 .environment(\.zeusAnimationsActive, false).environment(\.zeusFontChoice, .system).frame(width: 340))
             return host.fittingSize.height
         }

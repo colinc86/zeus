@@ -24,7 +24,7 @@ import ZeusProtocol
     let root: URL, defaults: UserDefaults, settings: AppSettings, cards: CardStore, model: ConversationModel
     let transport = StripTransport(), panel = ConversationPanelState(), activity = SurfaceActivity()
     let window: StripPanel
-    var host: NSHostingView<AnyView>?
+    var host: TestHostingView?
     init() throws {
         _ = ZeusFonts.registerBundled()
         defaults = try #require(UserDefaults(suiteName: suite))
@@ -44,7 +44,7 @@ import ZeusProtocol
         }
         let view = ConversationView(settings: settings, store: cards, model: model, messaging: transport, status: status,
             panel: panel, activity: activity, openSettings: {}, copySetup: {}, resize: { [weak window] height in window?.setContentSize(CGSize(width: 420, height: height)) })
-        let host = NSHostingView(rootView: AnyView(view.environment(\.accessibilityEnabled, true).transaction { $0.disablesAnimations = true }))
+        let host = TestHostingView(rootView: AnyView(view.environment(\.accessibilityEnabled, true).transaction { $0.disablesAnimations = true }))
         self.host = host; window.contentView = host; host.layoutSubtreeIfNeeded()
         panel.isVisible = true; model.openPanel(viewportManaged: true)
         activity.update(suspended: false, avatar: false, conversation: true, peek: false, settings: false)

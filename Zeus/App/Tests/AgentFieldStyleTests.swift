@@ -12,7 +12,7 @@ import ZeusDesign
 
 @MainActor private func fieldImage<V: View>(_ content: V, font: ZeusFontChoice, scheme: ColorScheme = .light) throws -> CGImage {
     ZeusFonts.registerBundled()
-    let view = NSHostingView(rootView: AnyView(content.environment(\.zeusFontChoice, font)
+    let view = TestHostingView(rootView: AnyView(content.environment(\.zeusFontChoice, font)
         .environment(\.colorScheme, scheme)
         .frame(width: 360, height: 72)))
     view.frame = CGRect(x: 0, y: 0, width: 360, height: 72)

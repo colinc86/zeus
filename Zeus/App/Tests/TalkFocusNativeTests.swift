@@ -34,7 +34,7 @@ import ZeusProtocol
             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.ignoresMouseEvents = true
         defer { panel.isVisible = false; window.orderOut(nil); window.contentView = nil; window.close() }
-        let host = NSHostingView(rootView: ConversationView(settings: settings, store: cards, model: model, messaging: transport,
+        let host = TestHostingView(rootView: ConversationView(settings: settings, store: cards, model: model, messaging: transport,
             status: AvatarStatusModel(cards: cards), panel: panel, activity: activity, openSettings: {}, copySetup: {}, resize: { _ in }))
         window.contentView = host; host.layoutSubtreeIfNeeded()
         panel.isVisible = true; model.openPanel(viewportManaged: true)

@@ -33,7 +33,7 @@ import ZeusProtocol
     let panel = ConversationPanelState()
     let activity = SurfaceActivity()
     let window: NSPanel
-    var host: NSHostingView<AnyView>?
+    var host: TestHostingView?
     var newestID: String?
 
     init(longNewest: Bool, newestBody: String? = nil) throws {
@@ -67,7 +67,7 @@ import ZeusProtocol
                 window.setContentSize(CGSize(width: 380, height: height))
             })
         let root = AnyView(view.transaction { $0.disablesAnimations = true })
-        let host = NSHostingView(rootView: accessibilityEnabled ? AnyView(root.environment(\.accessibilityEnabled, true)) : root)
+        let host = TestHostingView(rootView: accessibilityEnabled ? AnyView(root.environment(\.accessibilityEnabled, true)) : root)
         self.host = host; window.contentView = host
         // Establish the hidden host and its observation subscriptions before making it visible.
         // This mirrors ShellController.mountConversation -> position -> showInteractionPanel.

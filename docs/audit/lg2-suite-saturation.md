@@ -1,24 +1,87 @@
-# LG2 — full-suite saturation investigation
+# LG2 — full-suite saturation
 
-Status: investigation in progress; no proof runs yet.
+## Root cause and attribution
 
-## Evidence before the isolated runs
+Native test windows used AppKit's automatic show/hide transforms. These create
+`_NSWindowTransformAnimation` objects whose `_runBlocking` method occupies a
+user-interactive dispatch worker. In the affected host they remain blocked in an
+AppKit run loop after the test finishes. The prior ordinary appdev sample
+(`build/lm2d-standard-test-sample.txt`) has **64** such worker stacks and reports
+the dispatch soft limit. Async fixture work then cannot run promptly; managed
+`eventually` checks report `.deadline` even though their controller clocks are fake.
 
-The prior ordinary appdev sample (`build/lm2d-standard-test-sample.txt`) contains **64** `NSAnimation._runBlocking` worker stacks. This was a non-render-opt-in run. Each worker is parked in an AppKit animation run loop on the user-interactive dispatch root queue. The main thread continues pumping XCTest/AppKit. These stacks establish saturation, but do not identify the creation site.
+The quiet-machine LG2 trace identifies the animation subclass directly, without
+changing controller behavior. It recorded 68 transform starts before stopping
+the diagnostic run. Its intermediate one-second sample contains 34 blocked
+animation workers; the earlier 64-worker samples establish the saturation limit.
+This is native **window motion**, not the Zeus pixel renderer or agent timing.
 
-The earlier render-enabled sample also caught synchronous Vision OCR on the main actor; that OCR fixture has since moved its work off the main actor. Removing render opt-in did not remove the animation-worker failure.
+### Isolated measurements (one process per selected test)
 
-## Candidates and timing audit
+| Fixture | Native transform starts before | After static-host policy |
+|---|---:|---:|
+| `A12AccessibilityTests.auditNativeTrees` | 14 | 0 |
+| `privateAppPickerAnnouncesAddedAndAlreadyPrivateButNotCancel` | 2 | 0 |
+| `managedConfirmationsFocusLaterOrKeepRunningAndEscapeKeepsTheConversation` | 4 | 0 |
+| All 10 `A12AccessibilityTests` | 60 | 0 |
 
-- `PeekSizingTests.renderedPeekFitsWindowAcrossLinesFontsTitlesOptionsAndTailEdges`: 768 native panel/hosting-view pairs (2 fonts × 4 line counts × 2 title states × 2 option states × 4 tail edges × 3 reveal fractions). Explicit animation environment is enabled. Fractions are deterministic coverage and must be retained. Attribution awaits isolated measurement.
-- Managed unit controller timing uses `TestRuntimeClock`; the shared three-second `eventually` helper is an asynchronous scheduler/readiness bound, not the controller clock. Increasing this bound alone would hide the saturation.
-- `ZeusE2ETests` already has `.serialized`. `RuntimeHostBuilder` coalesces same-configuration builds, but its actor can run different configurations across suspension points.
-- `ManagedSettingsLiveTests` has synchronous `Thread.sleep` calls in private-process teardown. Its real-process launch/exit waits cannot be replaced by advancing a fake controller clock; teardown can instead await bounded process exit without blocking the main actor.
+The after counts come from the complete A12 suite: no transform starts in any
+of its tests. All accessibility assertions pass. Logs are under `build/lg2/`:
+`a12-tree-motion.log`, `a12-picker-motion.log`, `a12-confirmation-motion.log`,
+`a12-baseline.log`, `a12-default-off.log`, and `static-host-focused.log`.
+The 20-test A12/peek/SA2 run also has zero transform starts and passes.
 
-## Measurement plan
+`PeekSizingTests` was a separate resource issue, not the persistent-animation
+source: it constructed 768 panels in one synchronous method and logged an
+excessive live-window warning. Its isolated thread count was 9 before / 5 at
+return / 61 after two seconds; a longer observation drained to 5. No native
+transform starts were recorded. Each matrix cell now drains an autorelease pool
+and detaches its host before closing. All 768 combinations and their explicit
+0/0.5/1 reveal fractions remain covered.
 
-Run each selected native fixture alone with the opt-in LG2 audit: log thread counts before/after and after finite animations settle, plus native animation class/creation stack. Do not infer attribution from total thread count alone. Hold these runs until the PM main-checkout xcodebuild exits.
+## Changes
 
-## Current gate reservation
+- `TestHostDefaults.m` registers `NSAutomaticWindowAnimationsEnabled = false`
+  at **test-bundle startup**. Registration is process-local; no preferences are
+  written. Production app targets do not include this file. A selected motion
+  test can opt in with `TEST_RUNNER_ZEUS_TEST_WINDOW_ANIMATIONS=1`.
+- Native SwiftUI fixtures use `TestHostingView`: `zeusAnimationsActive = false`,
+  disabled SwiftUI transactions, and zero-duration/no-implicit-animation layout
+  by default. `animationsEnabled: true` explicitly preserves deterministic peek
+  reveal coverage. Replacing a root preserves the policy. Three regression
+  tests cover defaults, opt-in, and root replacement.
+- The real S3 fixture awaits private-process cleanup instead of `Thread.sleep`
+  or synchronous `waitUntilExit` on the main actor. Process startup/exit still
+  uses bounded wall time; it cannot be driven by a fake controller clock.
+- The E2E suite already uses `.serialized`; its builder now also chains
+  Debug/Release build tasks across actor suspension points. The Python live
+  hosts hold one worktree-local, close-on-exec file lease through cleanup, so
+  independent probes cannot overlap. An offline two-process regression verifies
+  blocking, release at exit, and same-probe reentrancy.
+- Managed unit fixtures retain `TestRuntimeClock`. The shared bounded
+  `eventually` remains **three seconds**; errors now include the caller's file
+  and line. No production timing, retry, assertion, or scheme concurrency cap
+  was changed.
 
-On 2026-10-15, the PM main-checkout `xcodebuild` PID 82112 and app-test host PID 85314 remained active after 15 minutes (both sleeping, xcodebuild 0% CPU). No LG2 build/test was started concurrently and neither PM process was stopped. The isolated audit is opt-in (`ZEUS_TEST_LG2_AUDIT=1`, select `LG2NativeWorkerTests`); it has not yet been compiled or run. Three quiet full passes and the parallel-build load check remain outstanding. No production fix or timeout change is included in this checkpoint.
+## Reproducing the diagnostic
+
+The temporary private-method tracer is retained only as
+`docs/audit/harness/LG2AnimationTrace.m`, outside every build target. To repeat
+attribution, temporarily copy it into the test target, regenerate the project,
+and select a single native test with `TEST_RUNNER_ZEUS_TEST_LG2_TRACE=1` and
+`TEST_RUNNER_ZEUS_TEST_WINDOW_ANIMATIONS=1`. Omit the latter for the fixed count.
+Remove the tracer before ordinary gates. Test selection requires the Swift
+Testing method's parentheses, e.g.
+`-only-testing:ZeusTests/A12AccessibilityTests/auditNativeTrees()`.
+
+No user window capture, real agent configuration, keychain, or default tmux
+server is involved. Temporary diagnostic instrumentation has been removed from
+ordinary tests.
+
+## Verification
+
+- Isolated A12/peek/SA2: 20 tests pass, zero native transform starts.
+- Final host-policy/SA2/shortcut/live-fixture selection: 12 tests pass; real-agent
+  opt-ins remain skipped, not falsely reported as executed.
+- `python3 -B Zeus/App/Tests/Runtime/LG2LiveHostLeaseTests.py`: 1 test passes.
+- Full-suite and load results are recorded below after the proof runs.

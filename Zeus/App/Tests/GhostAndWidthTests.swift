@@ -188,7 +188,7 @@ struct GhostAndWidthTests {
             try writeRender(host, name: "panel-\(Int(width))")
         }
         #expect(heights[1] < heights[0], "Widening must reflow the bubble, not just add blank panel space")
-        let settingsHost = NSHostingView(rootView: CharacterSettingsView(settings: settings, resetPosition: {})
+        let settingsHost = TestHostingView(rootView: CharacterSettingsView(settings: settings, resetPosition: {})
             .padding(24).frame(width: 572).buttonStyle(ZeusButtonStyle(.secondary, size: .small))
             .toggleStyle(ZeusCheckboxStyle()).environment(\.zeusFontChoice, .system).environment(\.zeusAnimationsActive, false))
         window.contentView = settingsHost

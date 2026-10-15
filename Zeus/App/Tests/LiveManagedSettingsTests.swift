@@ -64,8 +64,8 @@ import ZeusProtocol
         hub.runtime = controller
         model.refreshAvailability()
     }
-    func host<V: View>(_ view: V, height: CGFloat = 1300) -> NSHostingView<AnyView> {
-        let host = NSHostingView(rootView: AnyView(view.environment(\.accessibilityEnabled, true).environment(\.zeusFontChoice, .system).frame(width: 520)))
+    func host<V: View>(_ view: V, height: CGFloat = 1300) -> TestHostingView {
+        let host = TestHostingView(rootView: AnyView(view.environment(\.accessibilityEnabled, true).environment(\.zeusFontChoice, .system).frame(width: 520)))
         host.frame = CGRect(x: 0, y: 0, width: 520, height: height)
         let window = NSPanel(contentRect: CGRect(x: -10000, y: -10000, width: 520, height: height),
             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
@@ -77,7 +77,7 @@ import ZeusProtocol
         window.orderFront(nil)
         return host
     }
-    func assistantHost() -> NSHostingView<AnyView> {
+    func assistantHost() -> TestHostingView {
         host(AssistantSettingsView(settings: settings, managed: model, messaging: hub,
             testMessage: ComposeModel(cards: cards, messaging: hub)))
     }

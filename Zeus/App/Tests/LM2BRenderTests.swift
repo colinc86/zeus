@@ -92,7 +92,7 @@ import ZeusProtocol
     }
     private func render<V: View>(_ view: V, name: String, theme: ZeusThemeDefinition, scheme: ColorScheme, width: CGFloat, height: CGFloat) async throws {
         let actual = theme.fixedAppearance ?? scheme
-        let host = NSHostingView(rootView: view.padding(name.hasSuffix("-screen") || name.hasSuffix("-rules") ? 20 : 0).frame(width: width, height: height, alignment: .topLeading)
+        let host = TestHostingView(rootView: view.padding(name.hasSuffix("-screen") || name.hasSuffix("-rules") ? 20 : 0).frame(width: width, height: height, alignment: .topLeading)
             .environment(\.zeusTheme, theme).environment(\.zeusFontChoice, .system).zeusThemeAppearance(theme)
             .environment(\.colorScheme, actual).buttonStyle(ZeusButtonStyle(.secondary, size: .small)).toggleStyle(ZeusCheckboxStyle())
             .background(theme.palette(for: actual).panel))

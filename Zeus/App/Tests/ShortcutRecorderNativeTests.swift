@@ -39,7 +39,7 @@ import ZeusDesign
         defer { recorder.cancel(); window.orderOut(nil); window.contentView = nil; window.close(); hotKey.stop() }
         let panel = AnyView(ZeusShortcutRecorder(settings: settings, hotKey: hotKey, recorder: recorder).padding(24)
             .environment(\.accessibilityEnabled, true))
-        let host = NSHostingView(rootView: panel)
+        let host = TestHostingView(rootView: panel)
         window.contentView = host; window.orderFront(nil)
         func settle() async throws { for _ in 0..<8 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) } }
         func fields(_ view: NSView) -> [NSControl] {
@@ -65,7 +65,7 @@ import ZeusDesign
         }
         for scheme in evidence ? [ColorScheme.light,.dark] : [.light] {
             let palette = ZeusPalette.for(scheme)
-            host.rootView = AnyView(panel.background(palette.panel).environment(\.colorScheme, scheme))
+            host.setRootView(AnyView(panel.background(palette.panel).environment(\.colorScheme, scheme)))
             settings.talkHotKey = TalkHotKey(); try await settle()
             let field = try #require(fields(host).first)
             #expect(field.isAccessibilityElement() && field.accessibilityValue() as? String == "⌥⌘Z")
