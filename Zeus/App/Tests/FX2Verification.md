@@ -21,3 +21,10 @@ Run only the isolated dev build with a fixture question; stop the installed Zeus
 3. Put multiline text in the composer, click away, then click within its first line. The first click must place the caret there. Check Escape, Command shortcuts, Tab/Shift-Tab and VoiceOver activation remain correct.
 
 Those real activation-transition checks remain unverified while the console is locked. No LG1 case was added: local event injection does not demonstrate the cross-application WindowServer activation path, and must not be presented as that live gate.
+
+## Results
+
+- `scripts/build.sh`: passed, no new warnings (`build/fx2-build.log`).
+- Isolated focused click/focus/accessibility/shortcut run: 14 tests in four suites passed (`build/fx2-focused.log`); tests explicitly requiring an unlocked keyboard session retained their normal skips.
+- `TEST_RUNNER_HOME="$PWD/build/fx2-home" TEST_RUNNER_CFFIXED_USER_HOME="$PWD/build/fx2-home" scripts/test.sh`: passed, including 1,007 app tests in 209 suites (465.768 seconds), package suites and offline checks (`build/fx2-full-test.log`). The longer run progressed through the private reconnect/build fixtures; a sample had no animation-worker saturation. No process was stopped or deadline weakened.
+- Production change, native fixture and the task-authorized CONTRACT §10 sentence are committed. No global shortcut registration, user sessions, real credentials or installed-app launch was used for the reproduction attempt. Cross-app hand verification remains blocked on the locked console, and the original failure remains unreproduced.
