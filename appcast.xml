@@ -6,6 +6,25 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.1.11</title>
+      <pubDate>Thu, 15 Oct 2026 00:12:33 GMT</pubDate>
+      <sparkle:version>12</sparkle:version>
+      <sparkle:shortVersionString>0.1.11</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Pick any shortcut for Talk to Zeus.</strong> Settings › General now has a shortcut field: click it, press the keys you want, and that's the shortcut. Any key works, including function keys, arrows and Space; combinations macOS owns, or that another app already uses, are refused and the old shortcut stays. Delete clears it, the ↺ button restores the default ⌥⌘Z. Your current shortcut is kept.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.1.11/Zeus-0.1.11.zip" type="application/octet-stream" sparkle:edSignature="FmS11R5bKsn+U8fjlYmTj+ERTybaH/98m8JS6k9kgi+rkPskPpmCJhDPNdYohZ/NZ7HXY8I5kfRlQWGqh0PGDA==" length="9283605"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.1.10</title>
       <pubDate>Wed, 14 Oct 2026 23:18:41 GMT</pubDate>
       <sparkle:version>11</sparkle:version>
