@@ -121,7 +121,12 @@ New tools for acting rules. **Platform names and builds them; this is the behavi
 
 ## 6. Instructions in the assistant's folder (AssistantTemplate)
 
-**Status:** a draft for `Zeus/Resources/AssistantTemplate/AGENTS.md`. When Phase D merges, it replaces the template's "## Learnings" section. Until the tools exist, the Phase A–C parts can ship alone (drop the journal and acting paragraphs).
+**Status:** the Phase A–C part shipped in LM2-D5 as the template's "## Learnings and rules" section. It differs from the draft below in three places:
+- **At most two rules a night**, matching Zeus's reflection delivery.
+- **Every purchase asks first, every time**, the 2026-10-14 decision.
+- **No journal or acting-rule tools.**
+
+The draft below is the full Phase D version.
 
 > ## Learnings and rules
 >

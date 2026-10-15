@@ -5,6 +5,15 @@ Copy in quotes is final unless the code needs to shorten it, in which case ask t
 Settings uses the system font and the existing Settings components (`settingsTitle`, `settingsBody`, `settingsCaption`, `settingsError`, `SettingsSegments`, `KeyboardButton`, `SettingsDivider`). There are no new ZeusDesign tokens.
 Renders: `scripts/design-harness/render.sh "privacyMockups()"` → `build/q2-renders/lm2-*.png`, copied to `docs/design/lm2/`.
 
+**Status by section:**
+
+| Section | Phase | Status |
+|---|---|---|
+| §1–8: principles, Settings › Privacy levels 1–2, the coin and lists, What Zeus Kept, Settings › Rules, quiet lines, drop on Zeus, first run | A | ships in Phase A |
+| §9 Level 3 · Screen, Ask About This | B | designed, not built |
+| §10 Level 4 · Typing | C | designed, not built |
+| §11 Raw on request, journal answers, acting rules, outcomes in Why? | D | designed, not built |
+
 ## 1. The seven principles
 
 These are the README promise. Every surface below exists to keep one of them visible.
@@ -18,6 +27,8 @@ These are the README promise. Every surface below exists to keep one of them vis
 7. **Summaries go to your assistant's model provider**, like any message you send. The consent sheets say so.
 
 ## 2. Settings › Privacy
+
+> **Phase A: ships in Phase A.**
 
 Top to bottom:
 
@@ -92,6 +103,8 @@ Same frame as the L1 sheet.
 
 ## 3. The coin and the lists
 
+> **Phase A: ships in Phase A.**
+
 `SettingsSegments` labelled "Record in", with two choices:
 
 **1. "Everywhere except my private list"** (default)
@@ -117,6 +130,8 @@ Same frame as the L1 sheet.
   - Result line, existing L1 wording: "Added <App> to your private list." or "Added <App>."
 
 ## 4. What Zeus kept (viewer)
+
+> **Phase A: ships in Phase A.**
 
 **Entry point:** "Open What Zeus Kept…" button in Settings › Privacy. It opens a window titled "What Zeus Kept", about 720×520, resizable.
 
@@ -161,6 +176,8 @@ Same frame as the L1 sheet.
 - **No delete here:** the ledger records what has already been sent. Clearing it is part of "Delete Everything…".
 
 ## 5. Settings › Rules (new tab)
+
+> **Phase A: ships in Phase A.**
 
 - **Tab:** title "Rules", SF Symbol `list.bullet.rectangle`.
 - **Placement:** the tab sits after Privacy, and it's hidden until Learn from me is on at any level or a rule exists.
@@ -227,6 +244,8 @@ Weekdays from 18:00 · in Slack · held, not dropped    [caption: the trigger in
 
 ## 6. Quiet thread lines
 
+> **Phase A: ships in Phase A.**
+
 These are system lines in the thread: the existing notice style, the same as "Claude Code has an update · Restart assistant". There's no peek and no sound, and each line names the rule.
 
 | Moment | Line | Actions |
@@ -241,6 +260,8 @@ These are system lines in the thread: the existing notice style, the same as "Cl
 
 ## 7. Drop on Zeus
 
+> **Phase A: ships in Phase A.**
+
 - **While dragging over the avatar:** the avatar shows its `alert` state, and a peek-style label reads "Drop to attach". Nothing else changes.
 - **After the drop:** the panel opens with the composer focused and the items as removable chips above the text field. Chips use the existing attachment chip, with the file name or "Text" or "Image" or the URL's host.
   - Send works with no text.
@@ -249,11 +270,15 @@ These are system lines in the thread: the existing notice style, the same as "Cl
 
 ## 8. First run and welcome
 
+> **Phase A: ships in Phase A.**
+
 - The welcome and first-run copy say nothing about levels 2–4 until one is on (LM2-A §5).
 - The status strip doesn't change.
 - The Talk shortcut hint (KR1) is unaffected.
 
 ## 9. Level 3 · "Screen" (Phase B)
+
+> **Phase B: designed, not built.**
 
 Pipeline and costs: `docs/research/on-device-vision.md`. Renders: `scripts/design-harness/render.sh "screenMockups()"` → `docs/design/lm2/lm2b-*.png`.
 
@@ -369,6 +394,8 @@ This paragraph is used in the consent sheet and in SETUP.md:
 
 ## 10. Level 4 · "Typing" (Phase C)
 
+> **Phase C: designed, not built.**
+
 Pipeline, costs and the reasons behind these choices: `docs/research/on-device-keystrokes.md`. Renders: `scripts/design-harness/render.sh "typingMockups()"` → `docs/design/lm2/lm2c-*.png`.
 
 **What's kept:**
@@ -481,6 +508,8 @@ While secure input is on (a password field is active) and Level 4 is on:
 - "Delete Everything…" covers both.
 
 ## 11. Phase D · depth: journal questions, acting rules, outcomes
+
+> **Phase D: designed, not built.** The tools it relies on are in `AGENT_LEARNING.md` §3 and §5.
 
 The assistant's side of all this is `docs/design/AGENT_LEARNING.md`. Renders: `scripts/design-harness/render.sh "depthMockups()"` → `docs/design/lm2/lm2d-*.png`.
 

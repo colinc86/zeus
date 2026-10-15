@@ -28,6 +28,7 @@ Your assistant works in a terminal you're not watching. Zeus sits on your deskto
 - **Asks, and you answer in one click.** When your assistant needs a decision, a speech bubble pops up next to Zeus. Click an answer, or type one.
 - **Hands you finished work.** Files, folders and links, ready to open.
 - **Sends your replies back.** Type to Zeus and your message goes straight to your assistant.
+- **Takes anything you drop on it.** Drag files, folders, text, images or links onto Zeus and the conversation opens with them attached, ready to send. If Zeus runs your assistant, a dropped folder can become its working folder.
 - **Tells you what's waiting.** A strip above the message field says why Zeus shows "?" or "!" and takes you there in one click. **Skip** a question you'd rather not answer. Its four buttons open Terminal, start a new conversation, clear the conversation and open Settings.
 - **Knows when to be quiet.** Set quiet hours and Zeus won't bother you.
 
@@ -88,19 +89,37 @@ Every change shows up as one line in the conversation with an **Undo**:
 
 It can also check for updates and install one when you ask. Two switches in Settings › General turn this off: **Let my assistant control Zeus** and **Let my assistant install updates**.
 
-## Learn from me
+## Zeus learns how you work
 
-Off until you turn it on in Settings › Privacy. Zeus then notes which app is in front, apps opening and quitting, when you lock, sleep or step away, and how many displays you use. It never records what you type, copy or read, window titles, web addresses or file names. Time in apps on your private list (password managers, to start) counts only as private time.
+Off until you turn it on in **Settings › Privacy**. Learning works in levels, each with its own switch:
+- **Apps and timing:** which app is in front, apps opening and quitting, when you lock, sleep or step away.
+- **Windows and pages:** the title of the window in front, the file it shows, and the web address in Chrome and Edge. It never records what's inside a window, and it needs Accessibility permission.
 
-Each morning your assistant gets a short summary of the day before, and up to four short notes a day, such as when you're back from a break, so it can pick better moments to help. Settings › Privacy shows exactly what was recorded today, pauses it for the day and deletes everything.
+More levels are coming, each with its own switch.
 
-Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac.
+Each morning your assistant gets a short summary of the day before, so it can pick better moments to help and have the right things ready. The promise:
+1. What Zeus records never leaves your Mac. Your assistant gets summaries.
+2. Private details (names, emails, numbers, passwords) are removed on your Mac **before** anything is stored, using fixed patterns and Apple's on-device model.
+3. Every level is off until you turn it on, and shows an example of what it keeps first.
+4. Password fields, private browser windows, apps on your private list and a locked screen are never recorded. Safari records only that you used it, unless you add it yourself.
+5. **What Zeus Kept** shows every record exactly as stored, and everything Zeus sent your assistant.
+6. Deleting is immediate: one item, a day, an app, or everything.
+7. Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/readme/rules-dark.png">
+  <img src="docs/readme/rules-light.png" align="right" width="400" alt="Settings › Rules: the New rules dial set to Balanced, one active rule holding routine messages after 18:00, and one rule waiting for your OK.">
+</picture>
+
+**Rules.** Once a day, after your work winds down, your assistant looks over the summary and suggests rules about how to help you, like "Hold routine messages after 18:00". Rules about timing and tone start at once, with a quiet line in the conversation. Rules that would act for you first show what they'd have done and wait for your OK. **Settings › Rules** lists every rule with why it exists, and lets you turn it off, edit it, delete it or add your own. Zeus holds messages for timing rules itself, so your assistant can't talk over them.
+
+<br clear="right">
 
 ## How it works
 
 - `zeus-mcp` is an MCP server your assistant connects to. Its tools (`zeus_say`, `zeus_ask`, `zeus_present`, `zeus_set_status`, …) drive the character and the conversation panel.
 - Your replies go back to the session that asked: through its Terminal pane in tmux, Claude Code's channel or OpenCode's local server. Each one is acknowledged, so a message is never lost or delivered twice.
-- Everything stays on your Mac. Zeus never calls model APIs, never edits your agent's settings and never accepts prompts on your behalf. If you turn on Settings › Privacy › Learn from me, Zeus sends short summaries of when and in what apps you work to your assistant, which passes them to its model provider like any message; the raw activity never leaves your Mac.
+- Everything stays on your Mac. Zeus uses no cloud models of its own, only Apple's on-device model to remove private details. It never edits your agent's settings and never accepts prompts on your behalf. If you turn on Learn from me, Zeus sends your assistant short summaries with private details removed, which it passes to its model provider like any message; what Zeus records never leaves your Mac.
 
 The interfaces are documented in [docs/CONTRACT.md](docs/CONTRACT.md).
 

@@ -73,7 +73,11 @@ The 0.1.8 template also covers ending a turn (one short message when it did what
 
 ### Learn from me
 
-**Settings → Privacy → Learn from me** is off until you turn it on. The first time, Zeus explains what it records:
+**Settings → Privacy** starts with **Learn from me**, a few levels that are each off until you turn them on. More levels are coming, each with its own switch. The pane's first line says how private details are handled: "Private details are removed on this Mac before anything is kept."
+
+#### Apps and timing
+
+Turn on **Let Zeus learn when and in what I work**. The first time, Zeus explains what it records:
 
 > Zeus records how you use this Mac so your assistant can pick better moments to help. Each morning it sends a short summary of the day before.
 >
@@ -95,6 +99,47 @@ Choose **Turn On** or **Not Now**. Then, in the same pane:
 Each summary or note also adds a quiet line to the conversation, such as *Sent your daily summary · View*. **View** shows the exact text your assistant got.
 
 The template tells your assistant to use learnings for timing and tone only: when to speak and what to have ready. It never comments on your habits, never quotes the numbers back unless you ask, and never puts them in messages to other people.
+
+#### Windows and pages
+
+Turn on **Let Zeus keep window titles and web addresses**. The first time, Zeus shows what it keeps and an example of a stored record:
+
+> 09:41 · Mail · Subject: Lunch with ‹name› on Friday
+> 09:44 · Chrome · Q3 planning – Docs · docs.example.com/d/‹id›
+
+Names, emails, numbers and other private details become placeholders like ‹name› before anything is stored.
+
+- **Accessibility:** press **Continue**, and macOS asks you to allow Zeus under **Privacy & Security › Accessibility**. Zeus uses it only to read window titles. Until you allow it, the pane says *Waiting for Accessibility permission. · Open System Settings*.
+- **Record in:**
+  - **Everywhere except my private list** (the default) records in every app except your private ones. Your private list is the same list as above, and it always wins.
+  - **Only in apps I choose** records only in the apps you add with **Add App…**.
+- **What's kept from browsers:** the web address in Chrome and Edge, never from their private windows.
+  - Safari keeps only that you used it, because Zeus can't tell Safari's private windows apart.
+  - If you add Safari under **Only in apps I choose**, its titles and addresses are kept too, and so are those of its private windows. The pane says so under Safari's row.
+- **What's never kept:** what's inside a window, anything while a password field is active, private windows in Chrome and Edge, and apps on your private list.
+- **Keep for** 7, 30 or 90 days.
+
+#### What Zeus Kept
+
+**Open What Zeus Kept…** opens a window with two views:
+- **Kept on this Mac:** everything Zeus stored for a day, exactly as stored, with the removed details shown as placeholders.
+  - Filter by level or app, and search.
+  - Delete a single record (hover over it or right-click), a whole day, or everything from one app.
+  - **Export…** saves what's shown as JSON.
+- **Sent to your assistant:** every morning summary, note and evening reflection Zeus sent, with the exact text. Click a row to expand it.
+
+#### Rules
+
+Once a day, at your first quiet moment after 18:00, Zeus sends your assistant a summary of the day, and it may suggest **rules** about how to help you. Each new rule shows up as a quiet line in the conversation, such as *New rule: Hold routine messages after 18:00 · Review*.
+
+- **New rules** in **Settings › Rules** sets how they start:
+  - **Ask me first:** every new rule waits under **Suggested**.
+  - **Balanced** (the default): rules about timing and tone start at once, and rules that would act for you show what they'd have done once and wait for your OK.
+  - **Just do it:** rules start at once, but rules that act for you still show what they'd have done the first time.
+- **Each rule shows** when it applies, how sure Zeus is (*Sure*, *Fairly sure* or *Unsure*), and **Why?**: the records it came from.
+- **Changing rules:** turn a rule off, edit it, delete it (with Undo), or **Add Rule…** to write your own. Rules you write only change when and how Zeus talks to you. To have your assistant act for you, ask it, and it suggests a rule you can OK.
+- **Holding messages:** Zeus enforces timing rules itself. While one applies, routine messages still arrive in the conversation, but with no pop-up and no sound. Urgent ones still pop up.
+- **Retiring:** rules you keep skipping or turning off lose confidence and retire themselves.
 
 ## 3. Pick a character
 
@@ -202,6 +247,11 @@ When you answer a question or type a message, Zeus saves it before sending anyth
 
 - **An answer to a question** goes to the session that asked it.
 - **A message you start** goes to your assistant: the one Zeus runs, or the Assistant session you chose.
+- **Things you drop on Zeus:**
+  - Drag files, folders, text, images or links onto the character. Zeus shows *Drop to attach*, then opens the conversation with each item as a chip you can remove.
+  - **Send** works with no text.
+  - If Zeus runs your assistant, a dropped folder also offers **Work in this folder**, which asks before switching the assistant's folder.
+  - Nothing you drop is recorded by Learn from me.
 
 | How Zeus reaches it | Used for | What the agent sees |
 |---|---|---|
@@ -250,6 +300,8 @@ On the right: **Open in Terminal** (when there's a terminal to open), **Start Ne
 | Zeus looks asleep all day | Settings → Assistant → **Quiet hours**. Equal start and end times mean *all day*. |
 | I want a sound when Zeus pops up (or I don't) | Settings → General → **Sounds**: turn on **Play a sound when Zeus pops up** and pick the Zeus chime or a macOS sound. It plays at your alert volume (System Settings → Sound) and stays quiet while Zeus is hidden, during quiet hours and while the conversation is open. |
 | My own character doesn't show up | Run `zeus-sprites validate` on your folder (§3). Files with errors are skipped. |
+| Window titles aren't kept | Check that Zeus is switched on in **System Settings › Privacy & Security › Accessibility**. The line under **Windows and pages** in Settings › Privacy says what's missing. |
+| Messages arrive without a pop-up | A timing rule is holding them. See Settings › Rules, or the *New rule …* line in the conversation. Urgent messages still pop up. |
 | The assistant posts too often or too rarely | Edit "When to reach out" in your assistant folder's `AGENTS.md`. It's yours to tune. |
 
 ## Updates
