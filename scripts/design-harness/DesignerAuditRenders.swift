@@ -2087,12 +2087,14 @@ extension DesignerAuditRenders {
                          Attachment(kind: .folder, label: "Website", target: "/Users/alex/Projects/Website"),
                          Attachment(kind: .url, label: "docs.example.com", target: "https://docs.example.com/d/abc"),
                          Attachment(kind: .file, label: "Release notes draft with a long name.md", target: "/Users/alex/Documents/notes.md")]
+            let pictureThumb = ImageRenderer(content: LM2MockFrame(code: true).frame(width: 96, height: 60)).nsImage.map { Image(nsImage: $0) }
             try await Snap.render("lm2r-fix-chips", look: look, settle: 0.5) {
                 VStack(alignment: .leading, spacing: 8) {
                     ZeusChipFlow {
                         ForEach(items, id: \.id) { item in
                             ZeusAttachmentChip(item, actionTitle: item.kind == .folder ? "Work in this folder" : nil, onAction: {}, onRemove: {})
                         }
+                        ZeusAttachmentChip(Attachment(kind: .file, label: "Picture · Xcode", target: "/tmp/picture.heic"), thumbnail: pictureThumb, onRemove: {})
                     }
                     ZeusFieldChrome(isFocused: true) { Text("Message your assistant…").zeusFont(.body) }
                 }

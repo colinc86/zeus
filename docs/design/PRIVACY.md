@@ -305,8 +305,10 @@ Keep descriptions for   ( 7 days | 30 days | 90 days )        [default 90]
 Pictures are deleted after 7 days.                             [caption]
 ```
 
-- **Apple Intelligence off:** add the caption "Apple Intelligence is off, so Zeus keeps the covered pictures without descriptions."
+- **Apple Intelligence off:** add the caption "Apple Intelligence is off, so Zeus writes simpler descriptions." (CONTRACT §13: the `NLTagger` fallback still writes a description)
 - **Battery:** in Low Power Mode or below 30 % battery, Zeus still takes pictures but writes their descriptions later. There's no copy for this; it's invisible.
+
+**Safari in Level 3's allow list:** a caption under Safari's row reads "Private windows can't be told apart, so their pictures and descriptions are kept too." Level 2's caption is unchanged.
 
 ### 9.2 When Zeus looks ("smart timing")
 
@@ -332,6 +334,7 @@ This paragraph is used in the consent sheet and in SETUP.md:
   - It shows a browser page with two text lines covered by solid `fieldBorder` boxes with a 1-px `outline`, and a pixellated portrait.
   - Under it, monospaced: "10:12  Safari  Reviewing account information."
   - Caption: "Grey boxes are text Zeus covered. Pictures and faces are blurred. The picture is kept for 7 days, the description for 90."
+- **Safari** (caption, PM decision: same exception as Level 2): "Safari: Zeus takes no pictures of Safari unless you add it under Only in apps I choose. Zeus can't tell Safari's private windows apart, so those would be pictured too."
 - **Caveat** (caption): "Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself."
 - **Permission** (caption): "Next, macOS asks you to allow Zeus under Screen Recording. Zeus uses it only for these pictures."
 - **Buttons:** "Not Now" and "Continue".
