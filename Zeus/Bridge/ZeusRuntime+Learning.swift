@@ -136,7 +136,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
                 guard !rule.trigger.isEvaluable || matching.contains(where: { $0.id == rule.id }) else { continue }
                 _ = try tracking?.markShadowShown(id: rule.id)
                 let recorded = recorder.recordLearningNotice(.init(id: "shadow:" + rule.id, kind: .shadow, createdAt: rule.created,
-                    summary: "I'd have: \(rule.sentence)", actionTitle: "OK next time?", detail: rule.sentence, ruleID: rule.id), action: { [weak self] in
+                    summary: "I'd have acted on “\(rule.sentence)”", actionTitle: "OK next time?", detail: rule.sentence, ruleID: rule.id), action: { [weak self] in
                     guard let self, self.learningRules?.rules.first(where: { $0.id == rule.id })?.status == .shadow else { return }
                     do { try self.learningRules?.setStatus(.active, id: rule.id, at: self.clock.now); self.learningContextDidChange() }
                     catch { self.learningError = "Zeus couldn't activate this rule." }
@@ -152,9 +152,10 @@ extension ZeusRuntime: LearningRuntimeControlling {
                     do { try (self.learningRules as? any LearningRuleTracking)?.undoShadowApproval(id: rule.id, at: self.clock.now); self.learningContextDidChange() }
                     catch { self.learningError = "Zeus couldn't undo this rule approval." }
                 } }
+                if rule.status == .retired { action = { @MainActor [weak self] in self?.onReviewRule?(rule.id) } }
                 recorder.recordLearningNotice(.init(id: "shadow:" + rule.id, kind: .shadow, createdAt: rule.created,
-                    summary: approved ? "OK. I will do that from now on." : "Rule retired: \(rule.sentence)",
-                    actionTitle: approved ? "Undo" : nil, detail: rule.sentence, ruleID: rule.id), action: action)
+                    summary: approved ? "OK. I'll do that from now on." : (rule.status == .retired ? "Retired: “\(rule.sentence)”" : "Got it. I won't."),
+                    actionTitle: approved ? "Undo" : (rule.status == .retired ? "Review" : nil), detail: rule.sentence, ruleID: rule.id), action: action)
             }
         }
     }
@@ -223,6 +224,20 @@ extension ZeusRuntime: LearningRuntimeControlling {
                 _ = self.beginSend(id: id)
             } catch { self.learningError = "Zeus couldn't save its reflection delivery." }
         }
+    }
+    func recordContextDeliveryReceipt(id: String) {
+        guard let record = ledger?.record(id: id), record.delivery.kind != .reflection,
+              let at = record.transportDeliveredAt ?? record.delivery.ackedAt else { return }
+        emitContextDeliveryReceipt(deliveryID: id, cardID: record.delivery.cardID, sessionKey: record.delivery.sessionKey, at: at)
+    }
+    func emitContextDeliveryReceipt(deliveryID: String, cardID: String?, sessionKey: String, at date: Date) {
+        guard running, let recorder = cards as? any LearningContextReceiptRecording,
+              contextReceiptIDs.insert(cardID.map { "card:" + $0 } ?? "delivery:" + deliveryID).inserted else { return }
+        let agent = sessions.first { $0.sessionKey == sessionKey }?.agent.rawValue ?? String(sessionKey.split(separator: ":").first ?? "other")
+        let name = ["claude": "Claude", "codex": "Codex", "opencode": "OpenCode"][agent] ?? "Assistant"
+        let identity = SHA256.hash(data: Data(sessionKey.utf8)).map { String(format: "%02x", $0) }.joined()
+        recorder.recordLearningContextReceipt(.init(deliveryID: deliveryID, cardID: cardID, deliveredAt: date, agent: agent,
+            sessionLabel: name + (managedController.sessionKey == sessionKey ? " · Zeus" : " · Assistant"), sessionID: identity))
     }
     func recordReflectionReceipt(id: String) {
         guard let record = ledger?.record(id: id), record.delivery.kind == .reflection, !record.delivery.content.isEmpty else { return }

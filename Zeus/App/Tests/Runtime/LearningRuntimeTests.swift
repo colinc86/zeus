@@ -49,6 +49,38 @@ private struct FixtureLearningRedactor: Redactor {
         #expect(sent.kind == .reflection); #expect(sent.content.contains("Reviewing synthetic screen work"))
         #expect(!sent.content.contains("NEVER_FRAME_METADATA")); #expect(!sent.content.contains("heic"))
     }
+    @Test func contextAttachmentReceiptsRequireDeliveryAndUseActualTargetAcrossRelaunch() async throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        f.connector.fails = true
+        _ = await f.runtime.sendUserMessage("Explicit context body", deliveryID: "context_fixture")
+        #expect(f.cards.learningContextReceipts.isEmpty)
+        f.connector.fails = false; f.runtime.retryPendingDeliveries()
+        try await eventually { f.cards.learningContextReceipts.count == 1 }
+        let first = try #require(f.cards.learningContextReceipts.first)
+        #expect(first.deliveryID == "context_fixture" && first.cardID == nil)
+        #expect(first.sessionLabel == "Claude · Assistant" && !first.sessionID.contains("/fixture"))
+        _ = try f.runtime.acknowledge(ids: ["context_fixture"], sessionKey: "claude:/fixture#123.1")
+        #expect(f.cards.learningContextReceipts.count == 1)
+        f.runtime.stop(); try f.runtime.start()
+        #expect(f.cards.learningContextReceipts.count == 2) // deliberate replay; adapter deduplicates its durable intent ID
+        #expect(f.cards.learningContextReceipts.last?.deliveredAt == first.deliveredAt)
+    }
+    @Test func blockingContextAnswerReceiptRequiresActualWrittenToolResult() async throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        let client = BridgeClient(socketPath: f.runtime.socketPath)
+        do {
+            _ = try await client.start(hello: .init(agent: .claude, pid: 17, ppid: 19, cwd: "/fixture", client: .init(name: "Test", version: "1"), capabilities: .init(channel: true, toolResultWritten: true), parentStartTime: 3), onPush: { _ in })
+            let ask = Task { try await client.requestTool(name: "zeus_ask", arguments: ["text": "Synthetic context reply"]) }
+            try await eventually { !f.cards.values.isEmpty }
+            let card = try #require(f.cards.values.last); f.cards.respond(id: card.id, text: "Explicit context reply")
+            let answer = try await ask.value
+            #expect(f.cards.learningContextReceipts.isEmpty)
+            try await client.reportToolResultWritten(callID: answer.callID)
+            try await eventually { f.cards.learningContextReceipts.count == 1 }
+            #expect(f.cards.learningContextReceipts.first?.cardID == card.id)
+            await client.stop()
+        } catch { await client.stop(); throw error }
+    }
     @Test func proposalDefaultsValidationConsentAndQuietActions() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
         let output = await f.runtime.callTool("zeus_propose_rules", arguments: ["rules": [["sentence": "Stay quiet while tests fail", "trigger": ["state": "tests failing"]], ["sentence": "Send a recap", "kind": "acts"]]], sessionKey: "claude:/fixture#123.1")
@@ -107,6 +139,7 @@ private struct FixtureLearningRedactor: Redactor {
         _ = await f.runtime.callTool("zeus_propose_rules", arguments: ["rules": [["sentence": "Send a recap", "kind": "acts"], ["sentence": "Use short updates"]]], sessionKey: "claude:/fixture#123.1")
         let rule = try #require(f.rules.rules.first), id = "shadow:" + rule.id
         #expect(f.cards.learningNotices.contains { $0.summary == "2 new rules" })
+        #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "I'd have acted on “Send a recap”")
         let staleOK = try #require(f.cards.learningActions[id]); staleOK()
         #expect(f.rules.rules.first?.status == .active)
         #expect(f.cards.learningNotices.first { $0.id == id }?.actionTitle == "Undo")
@@ -115,9 +148,15 @@ private struct FixtureLearningRedactor: Redactor {
         #expect(f.rules.rules.first?.status == .shadow)
         #expect(abs((f.rules.rules.first?.confidence ?? 0) - 0.4) < 0.001)
         try f.rules.setStatus(.active, id: rule.id, at: f.clock.now); f.runtime.learningContextDidChange()
-        #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "OK. I will do that from now on.")
-        try f.rules.setStatus(.retired, id: rule.id, at: f.clock.now); f.runtime.learningContextDidChange()
+        #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "OK. I'll do that from now on.")
+        try f.rules.setStatus(.proposed, id: rule.id, at: f.clock.now); f.runtime.learningContextDidChange()
+        #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "Got it. I won't.")
         #expect(f.cards.learningActions[id] == nil)
+        try f.rules.setStatus(.retired, id: rule.id, at: f.clock.now); f.runtime.learningContextDidChange()
+        #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "Retired: “Send a recap”")
+        #expect(f.cards.learningNotices.first { $0.id == id }?.actionTitle == "Review")
+        var reviewed: String?; f.runtime.onReviewRule = { reviewed = $0 }
+        f.cards.learningActions[id]?(); #expect(reviewed == rule.id)
     }
     @Test func deletingEvidenceErasesPendingReflectionBodyWithoutRepeatingTheDay() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }

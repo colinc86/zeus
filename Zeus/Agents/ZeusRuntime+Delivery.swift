@@ -138,7 +138,14 @@ extension ZeusRuntime {
                 } catch { self.storageProblem = "Couldn't save the postponed delivery: \(error.localizedDescription)" }
             }
             self.recordUserMessageOutcome(id: id, outcome: outcome)
-            if outcome == .delivered { self.recordReflectionReceipt(id: id) }
+            if outcome == .delivered {
+                self.recordReflectionReceipt(id: id)
+                if self.ledger?.record(id: id)?.delivery.kind == .reply, self.ledger?.record(id: id)?.transportDeliveredAt == nil {
+                    do { try self.ledger?.updateRecord(id: id) { $0.transportDeliveredAt = self.clock.now } }
+                    catch { self.storageProblem = "Couldn't save the answer delivery receipt." }
+                }
+                self.recordContextDeliveryReceipt(id: id)
+            }
             if outcome == .delivered {
                 self.noteDeliveredActivity(sessionKey: session.sessionKey, deliveryID: id, token: activityToken, sessionID: session.id)
             } else { self.activityEarlyAcknowledgments.removeValue(forKey: id) }
@@ -310,7 +317,7 @@ extension ZeusRuntime {
         guard let ledger else { return [] }
         let acked = try ledger.acknowledge(ids: ids, sessionKey: sessionKey, at: clock.now)
         if !acked.isEmpty { noteActivityAcknowledgments(acked, sessionKey: sessionKey) }
-        for id in acked { recordReflectionReceipt(id: id) }
+        for id in acked { recordReflectionReceipt(id: id); recordContextDeliveryReceipt(id: id) }
         retainRuntimeHistory()
         if unsaved.isEmpty { storageProblem = nil }
         refreshProblem(); scheduleRetry()
