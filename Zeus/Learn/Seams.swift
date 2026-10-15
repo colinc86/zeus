@@ -157,6 +157,8 @@ struct RuleTimeWindow: Codable, Equatable, Sendable {
     var weekdays: Set<Int> = []
 }
 struct RuleTrigger: Codable, Equatable, Sendable {
+    /// Spending never grants standing payment authority; each purchase needs a separate answer.
+    var kind: String? = nil
     var time: RuleTimeWindow?
     /// Bundle identifiers. Empty means any app; specified dimensions combine with AND.
     var apps: Set<String> = []
@@ -184,8 +186,10 @@ struct LearnedRule: Codable, Equatable, Identifiable, Sendable {
     let created: Date
     var updated: Date
     var updatedBy: RuleAuthor
+    /// Original authorship; legacy rows conservatively use updatedBy. Toggles do not change this.
+    var author: RuleAuthor? = nil
 }
-enum RuleOutcome: String, Codable, Sendable { case accepted, skipped, undone, ignored, toggledOff, toggledOn, edited }
+enum RuleOutcome: String, Codable, Sendable { case accepted, skipped, undone, ignored, toggledOff, toggledOn, edited, stale }
 /// Shared by Settings and runtime. Concrete stores publish mutations with Observation.
 /// Agent proposals may only create passive/active or acts/shadow rules, never activate an act.
 @MainActor protocol RulesStore: AnyObject {
@@ -234,6 +238,8 @@ struct LearningNotice: Equatable, Identifiable, Sendable {
 @MainActor protocol LearningNoticeRecording: AnyObject {
     /// Repeated IDs reconnect the action after relaunch without duplicating the persisted line.
     @discardableResult func recordLearningNotice(_ notice: LearningNotice, action: (@MainActor () -> Void)?) -> Bool
+    @discardableResult func recordLearningNotice(_ notice: LearningNotice, action: (@MainActor () -> Void)?,
+                                                 secondaryTitle: String?, secondary: (@MainActor () -> Void)?) -> Bool
 }
 /// Optional runtime capability; no Shared seam edit is needed for Phase A composition.
 @MainActor protocol LearningRuntimeControlling: AnyObject {
@@ -360,4 +366,77 @@ struct LearningContextDeliveryReceipt: Sendable {
 @MainActor protocol LearningContextReceiptRecording: AnyObject {
     /// May replay after relaunch. Deduplicate by the app's stable context/card/delivery ID, never current routing settings.
     func recordLearningContextReceipt(_ receipt: LearningContextDeliveryReceipt)
+}
+
+
+// Phase D optional capabilities. All journal access is denied until the app installs a consent policy.
+struct JournalAccessPolicy: Equatable, Sendable {
+    var enabledLevels: Set<JournalLevel> = []
+    /// Only .screen and .typed are meaningful; even raw means covered pictures / redacted words.
+    var rawLevels: Set<JournalLevel> = []
+}
+@MainActor protocol LearningJournalAccessControlling: AnyObject {
+    var journalAccessPolicy: () -> JournalAccessPolicy { get set }
+    /// Opens the sent ledger at the durable answer ID supplied by the runtime.
+    var onViewJournalAnswer: ((String) -> Void)? { get set }
+}
+/// Two-action support is optional for older app adapters. Settings always remains a decline path.
+extension LearningNoticeRecording {
+    @discardableResult func recordLearningNotice(_ notice: LearningNotice, action: (@MainActor () -> Void)?,
+                                                 secondaryTitle: String?, secondary: (@MainActor () -> Void)?) -> Bool {
+        recordLearningNotice(notice, action: action)
+    }
+}
+
+/// A specific cause disambiguates explicit consent from implicit acceptance. IDs are durable and idempotent.
+enum RuleOutcomeSource: String, Codable, Sendable {
+    case explicit, actedUnchanged, heldRead, holdShown, timedQuestion, shadowDeclined, shadowIgnored, resultIgnored, stale
+}
+struct RuleOutcomeEvent: Codable, Equatable, Identifiable, Sendable {
+    let id: String
+    let ruleID: String
+    let at: Date
+    let outcome: RuleOutcome
+    let source: RuleOutcomeSource
+    let delta: Double
+}
+struct RuleSuppression: Codable, Equatable, Sendable {
+    let fingerprint: String
+    let sentence: String
+    let trigger: RuleTrigger
+    let until: Date
+    let reason: String
+}
+struct RuleActionRecord: Codable, Equatable, Identifiable, Sendable {
+    enum Kind: String, Codable, Sendable { case shadow, acted }
+    enum State: String, Codable, Sendable { case pending, approved, declined, undoRequested, off, ignored, settled }
+    var id: String
+    var ruleID: String
+    var sessionKey: String
+    var text: String
+    var undo: String?
+    var created: Date
+    var kind: Kind
+    var state: State = .pending
+    var approvalCardID: String? = nil
+    var amount: Double? = nil
+    var currency: String? = nil
+}
+/// Optional durable outcome/action API for runtime and the Rules "Why?" panel.
+@MainActor protocol RuleLifecycleStoring: RulesStore {
+    var outcomeEvents: [RuleOutcomeEvent] { get }
+    var suppressedRules: [RuleSuppression] { get }
+    var ruleActions: [RuleActionRecord] { get }
+    func recordSignal(_ outcome: RuleOutcome, source: RuleOutcomeSource, ruleIDs: [String], eventID: String, at: Date) throws
+    func recordAction(_ action: RuleActionRecord) throws
+    func resolveAction(id: String, state: RuleActionRecord.State, at: Date) throws
+    func declineRule(id: String, at: Date) throws
+    func noteMatches(ids: [String], at: Date) throws
+    func advanceOutcomes(at: Date) throws
+    var nextOutcomeBoundary: Date? { get }
+}
+
+/// Optional read-state adapter. Absence means unknown, never "unread" for confidence penalties.
+@MainActor protocol LearningCardReadState: AnyObject {
+    func learningCardWasRead(id: String) -> Bool
 }

@@ -1,18 +1,25 @@
 import Foundation
 import Observation
+import CryptoKit
 import ZeusProtocol
 
 /// Atomic encrypted rule state; user consent and confidence survive a restart.
-@MainActor @Observable final class PersistentRulesStore: RulesStore, LearningRuleTracking, LearningRuleOutcomeSource {
-    private struct State: Codable {
+@MainActor @Observable final class PersistentRulesStore: RulesStore, LearningRuleTracking, LearningRuleOutcomeSource, RuleLifecycleStoring, LearningStorageRecovering {
+    struct State: Codable {
         var rules: [LearnedRule] = []
         var autonomy = 0.5
         var outcomeIDs: Set<String> = []
         var shownShadowIDs: Set<String> = []
         var cardRules: [String: [String]] = [:]
         var batches: [[String]] = []
+        var outcomes: [RuleOutcomeEvent] = []
+        var suppressions: [RuleSuppression] = []
+        var actions: [RuleActionRecord] = []
+        var lastMatches: [String: Date] = [:]
+        var staleThrough: [String: Date] = [:]
+        var proposals: [Date] = []
         init() {}
-        private enum CodingKeys: String, CodingKey { case rules, autonomy, outcomeIDs, shownShadowIDs, cardRules, batches }
+        private enum CodingKeys: String, CodingKey { case rules, autonomy, outcomeIDs, shownShadowIDs, cardRules, batches, outcomes, suppressions, actions, lastMatches, staleThrough, proposals }
         init(from decoder: any Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             rules = try c.decodeIfPresent([LearnedRule].self, forKey: .rules) ?? []
@@ -21,12 +28,24 @@ import ZeusProtocol
             shownShadowIDs = try c.decodeIfPresent(Set<String>.self, forKey: .shownShadowIDs) ?? []
             cardRules = try c.decodeIfPresent([String: [String]].self, forKey: .cardRules) ?? [:]
             batches = try c.decodeIfPresent([[String]].self, forKey: .batches) ?? rules.map { [$0.id] }
+            outcomes = try c.decodeIfPresent([RuleOutcomeEvent].self, forKey: .outcomes) ?? []
+            suppressions = try c.decodeIfPresent([RuleSuppression].self, forKey: .suppressions) ?? []
+            actions = try c.decodeIfPresent([RuleActionRecord].self, forKey: .actions) ?? []
+            lastMatches = try c.decodeIfPresent([String: Date].self, forKey: .lastMatches) ?? [:]
+            staleThrough = try c.decodeIfPresent([String: Date].self, forKey: .staleThrough) ?? [:]
+            proposals = try c.decodeIfPresent([Date].self, forKey: .proposals) ?? rules.filter { ($0.author ?? $0.updatedBy) == .agent }.map(\.created)
         }
     }
     @ObservationIgnored var onRuleOutcome: ((RuleOutcome, [String], String, Date) -> Void)?
     private(set) var rules: [LearnedRule]
     private(set) var revision: UInt64 = 0
     private(set) var lastError: String?
+    private(set) var storageWaitingForUnlock = false
+    var pendingStorageWrites: Int { pendingState == nil ? 0 : 1 }
+    @ObservationIgnored private var pendingState: State?
+    @ObservationIgnored private var awaitingInitialRead = false
+    @ObservationIgnored private var durableOutcomeIDs: Set<String> = []
+    @ObservationIgnored private var recoveryTask: Task<Void, Never>?
     var autonomy: Double {
         get { _ = revision; return state.autonomy }
         set {
@@ -35,14 +54,43 @@ import ZeusProtocol
             do { try commit(next) } catch { /* Observable lastError is the nonthrowing setter's error channel. */ }
         }
     }
-    @ObservationIgnored private var state: State
+    @ObservationIgnored var state: State
     @ObservationIgnored private let fileURL: URL
     @ObservationIgnored private let keyProvider: any JournalKeyProviding
     init(fileURL: URL = ZeusPaths.appSupport.appendingPathComponent("Rules/rules.zrules"),
          keyProvider: any JournalKeyProviding = KeychainJournalKeyProvider(account: "rules-v1")) throws {
         self.fileURL = fileURL; self.keyProvider = keyProvider
-        let loaded = try LearningEncryption.read(State.self, at: fileURL, key: keyProvider) ?? State()
-        state = loaded; rules = loaded.rules
+        state = State(); rules = []
+        do {
+            let loaded = try LearningEncryption.read(State.self, at: fileURL, key: keyProvider) ?? State()
+            state = loaded; rules = loaded.rules; durableOutcomeIDs = Set(loaded.outcomes.map(\.id))
+        } catch where LearningStorageAvailability.isUnavailable(error) {
+            awaitingInitialRead = true; storageWaitingForUnlock = true
+            lastError = LearningStorageAvailability.waitingMessage; scheduleRecovery()
+        }
+    }
+    isolated deinit { recoveryTask?.cancel() }
+    private func scheduleRecovery() {
+        guard recoveryTask == nil else { return }
+        recoveryTask = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(3)) } catch { return }
+            guard let self else { return }; self.recoveryTask = nil; self.retryPendingWrites()
+        }
+    }
+    func retryPendingWrites() {
+        do {
+            if awaitingInitialRead {
+                let loaded = try LearningEncryption.read(State.self, at: fileURL, key: keyProvider) ?? State()
+                state = loaded; rules = loaded.rules; durableOutcomeIDs = Set(loaded.outcomes.map(\.id))
+                awaitingInitialRead = false; revision &+= 1
+            }
+            if let next = pendingState { try LearningEncryption.write(next, to: fileURL, key: keyProvider); didPersist(next) }
+            storageWaitingForUnlock = false; lastError = nil
+        } catch {
+            storageWaitingForUnlock = LearningStorageAvailability.isUnavailable(error)
+            lastError = storageWaitingForUnlock ? LearningStorageAvailability.waitingMessage : "Zeus couldn't recover your rules. Existing files have not been replaced."
+            if storageWaitingForUnlock { scheduleRecovery() }
+        }
     }
     func propose(_ proposals: [RuleProposal], at now: Date) throws -> [LearnedRule] {
         try create(proposals, author: .agent, at: now)
@@ -54,27 +102,52 @@ import ZeusProtocol
     }
     private func create(_ proposals: [RuleProposal], author: RuleAuthor, at now: Date) throws -> [LearnedRule] {
         guard !proposals.isEmpty, proposals.count <= 20, state.rules.count + proposals.count <= 500 else { throw LearningStorageError.invalidRule }
-        for proposal in proposals { try Self.validate(proposal) }
+        for proposal in proposals {
+            try Self.validate(proposal)
+            if author == .agent, state.suppressions.contains(where: { $0.until > now && $0.fingerprint == Self.fingerprint(proposal.sentence, trigger: proposal.trigger) }) {
+                throw ToolArgumentError("The user turned off, retired or deleted this rule. Do not propose it again for 30 days.")
+            }
+        }
+        if author == .agent {
+            guard state.proposals.filter({ Calendar.current.isDate($0, inSameDayAs: now) }).count + proposals.count <= 3 else {
+                throw ToolArgumentError("Propose at most three new rules per day.")
+            }
+        }
         let created = proposals.map { proposal in
             LearnedRule(id: "rule_" + UUID().uuidString, sentence: proposal.sentence.trimmingCharacters(in: .whitespacesAndNewlines),
                 trigger: proposal.trigger, kind: proposal.kind,
-                status: proposal.confidence < 0.2 ? .retired : (author == .user ? .active : (state.autonomy == 0 ? .proposed : (proposal.kind == .acts ? .shadow : .active))),
-                confidence: proposal.confidence, evidence: proposal.evidence, created: now, updated: now, updatedBy: author)
+                status: author == .user ? .active : (state.autonomy == 0 ? .proposed : (proposal.kind == .acts || proposal.trigger.kind == "spend" ? .shadow : .active)),
+                confidence: author == .user ? 0.75 : min(0.7, max(0.4, proposal.confidence)), evidence: proposal.evidence, created: now, updated: now, updatedBy: author, author: author)
         }
-        var next = state; next.rules += created; next.batches.append(created.map(\.id)); try commit(next); return created
+        var next = state; next.rules += created; next.batches.append(created.map(\.id))
+        if author == .agent { next.proposals = next.proposals.filter { now.timeIntervalSince($0) < 31 * 86400 } + created.map(\.created) }
+        try commit(next); return created
     }
-    /// A UI toggle is one atomic status/confidence mutation. Do not separately report toggledOn/Off.
+    /// A UI toggle/approval is a single durable outcome, never a second recordOutcome call.
     func setStatus(_ status: LearnedRuleStatus, id: String, at now: Date) throws {
+        guard let rule = state.rules.first(where: { $0.id == id }) else { throw LearningStorageError.missingRule }
+        guard rule.status != status else { return }
+        if rule.status == .shadow && (status == .proposed || status == .retired) { try declineRule(id: id, at: now); return }
         var next = state
-        guard let index = next.rules.firstIndex(where: { $0.id == id }) else { throw LearningStorageError.missingRule }
-        guard next.rules[index].status != status else { return }
-        let effective: LearnedRuleStatus = status == .active && next.rules[index].kind == .acts && !next.shownShadowIDs.contains(id) ? .shadow : status
-        next.rules[index].status = effective; next.rules[index].updatedBy = .user; next.rules[index].updated = now
-        adjust(&next.rules[index], outcome: status == .retired || status == .proposed ? .toggledOff : .toggledOn)
-        // Explicit user re-enablement is allowed even for a previously retired low-confidence rule.
-        if effective == .active { next.rules[index].confidence = max(0.2, next.rules[index].confidence); next.rules[index].status = .active }
+        let outcome: RuleOutcome = status == .retired || status == .proposed ? .toggledOff : (rule.status == .shadow && status == .active ? .accepted : .toggledOn)
+        applySignal(&next, outcome, source: .explicit, ids: [id], eventID: "toggle:" + UUID().uuidString, at: now)
+        guard let i = next.rules.firstIndex(where: { $0.id == id }) else { return }
+        let needsShadow = rule.kind == .acts || rule.trigger.kind == "spend"
+        next.rules[i].status = status
+        if status == .active && needsShadow && (!next.shownShadowIDs.contains(id) || rule.status == .retired || rule.trigger.kind == "spend") { next.rules[i].status = .shadow }
+        if rule.status == .retired && (status == .active || status == .shadow) {
+            next.rules[i].confidence = 0.5; next.staleThrough[id] = now
+            for j in next.actions.indices where next.actions[j].ruleID == id && next.actions[j].kind == .shadow && next.actions[j].amount == nil {
+                next.actions[j].state = .pending; next.actions[j].created = now
+            }
+        }
+        if (status == .proposed || status == .retired) && next.rules[i].confidence < 0.2 && (rule.author ?? rule.updatedBy) == .agent { next.rules[i].status = .retired }
+        next.rules[i].updatedBy = .user
+        for j in next.actions.indices where next.actions[j].ruleID == id && next.actions[j].kind == .shadow {
+            if next.rules[i].status == .active { next.actions[j].state = .approved }
+            else if next.rules[i].status == .proposed || next.rules[i].status == .retired { next.actions[j].state = .off }
+        }
         try commit(next)
-        onRuleOutcome?(status == .retired || status == .proposed ? .toggledOff : .toggledOn, [id], "toggle:" + UUID().uuidString, now)
     }
     func edit(id: String, sentence: String, trigger: RuleTrigger, at now: Date) throws {
         var next = state
@@ -82,32 +155,26 @@ import ZeusProtocol
         try Self.validate(.init(sentence: sentence, trigger: trigger))
         next.rules[index].sentence = sentence.trimmingCharacters(in: .whitespacesAndNewlines)
         next.rules[index].trigger = trigger; next.rules[index].updated = now; next.rules[index].updatedBy = .user
-        // User corrections preserve evidence/confidence; edited is an observation, not a rejection.
+        next.rules[index].author = .user
+        applySignal(&next, .edited, source: .explicit, ids: [id], eventID: "edit:" + UUID().uuidString, at: now)
         try commit(next)
-        onRuleOutcome?(.edited, [id], "edit:" + UUID().uuidString, now)
     }
     func restoreDeleted(_ rule: LearnedRule) throws {
         guard !state.rules.contains(where: { $0.id == rule.id }), state.rules.count < 500 else { throw LearningStorageError.invalidRule }
         try Self.validate(.init(sentence: rule.sentence, trigger: rule.trigger, kind: rule.kind, confidence: rule.confidence, evidence: rule.evidence))
-        var next = state; next.rules.append(rule); try commit(next)
+        var next = state; next.rules.append(rule)
+        next.suppressions.removeAll { $0.reason == "deleted" && $0.fingerprint == Self.fingerprint(rule.sentence, trigger: rule.trigger) }; try commit(next)
     }
     func delete(id: String) throws {
-        var next = state; next.rules.removeAll { $0.id == id }; try commit(next)
+        var next = state
+        if let rule = next.rules.first(where: { $0.id == id }) { suppress(&next, rule: rule, reason: "deleted", at: Date()) }
+        next.rules.removeAll { $0.id == id }; try commit(next)
     }
     func recordOutcome(_ outcome: RuleOutcome, ruleIDs: [String], at now: Date) throws {
         try recordOutcome(outcome, ruleIDs: ruleIDs, eventID: UUID().uuidString, at: now)
     }
     func recordOutcome(_ outcome: RuleOutcome, ruleIDs: [String], eventID: String, at now: Date) throws {
-        guard !state.outcomeIDs.contains(eventID) else { return }
-        var next = state
-        for index in next.rules.indices where ruleIDs.contains(next.rules[index].id) {
-            adjust(&next.rules[index], outcome: outcome); next.rules[index].updated = now
-            if outcome == .accepted && next.autonomy == 1 && next.rules[index].status == .shadow && next.shownShadowIDs.contains(next.rules[index].id) {
-                next.rules[index].status = .active; next.rules[index].updatedBy = .agent
-            }
-        }
-        next.outcomeIDs.insert(eventID); try commit(next)
-        onRuleOutcome?(outcome, ruleIDs, eventID, now)
+        try recordSignal(outcome, source: .explicit, ruleIDs: ruleIDs, eventID: eventID, at: now)
     }
     func associate(cardID: String, ruleIDs: [String]) throws {
         var next = state; next.cardRules[cardID] = ruleIDs; try commit(next)
@@ -120,14 +187,16 @@ import ZeusProtocol
         guard let i = next.rules.firstIndex(where: { $0.id == id }), next.rules[i].kind == .acts,
               next.rules[i].status == .active else { throw LearningStorageError.missingRule }
         next.rules[i].status = .shadow; next.rules[i].updated = now; next.rules[i].updatedBy = .user
-        adjust(&next.rules[i], outcome: .undone); try commit(next)
-        onRuleOutcome?(.undone, [id], "undo-approval:" + UUID().uuidString, now)
+        applySignal(&next, .undone, source: .explicit, ids: [id], eventID: "undo-approval:" + UUID().uuidString, at: now)
+        for j in next.actions.indices where next.actions[j].ruleID == id && next.actions[j].kind == .shadow { next.actions[j].state = .pending }
+        try commit(next)
     }
     func markShadowShown(id: String) throws -> Bool {
         guard !state.shownShadowIDs.contains(id) else { return false }
         var next = state; next.shownShadowIDs.insert(id); try commit(next); return true
     }
     static func validate(_ proposal: RuleProposal) throws {
+        guard proposal.trigger.kind == nil || proposal.trigger.kind == "spend" else { throw LearningStorageError.invalidRule }
         let text = proposal.sentence.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, text.count <= 500, proposal.confidence.isFinite, (0...1).contains(proposal.confidence),
               proposal.evidence.count <= 100, Set(proposal.evidence).count == proposal.evidence.count,
@@ -140,21 +209,21 @@ import ZeusProtocol
                   time.weekdays.allSatisfy({ (1...7).contains($0) }) else { throw LearningStorageError.invalidRule }
         }
     }
-    private func adjust(_ rule: inout LearnedRule, outcome: RuleOutcome) {
-        let delta: Double = switch outcome {
-        case .accepted, .toggledOn: 0.05
-        case .skipped: -0.15
-        case .undone, .toggledOff: -0.25
-        case .ignored: -0.1
-        case .edited: 0
-        }
-        rule.confidence = min(1, max(0, rule.confidence + delta))
-        if rule.confidence < 0.2 { rule.status = .retired }
-    }
-    private func commit(_ next: State) throws {
+    func commit(_ next: State) throws {
+        // Never replace unknown encrypted state with an empty launch snapshot.
+        guard !awaitingInitialRead else { throw LearningStorageError.keyUnavailable }
         do {
             try LearningEncryption.write(next, to: fileURL, key: keyProvider)
-            state = next; rules = next.rules; revision &+= 1; lastError = nil
+            didPersist(next)
+        } catch where LearningStorageAvailability.isUnavailable(error) {
+            pendingState = next; state = next; rules = next.rules; revision &+= 1
+            storageWaitingForUnlock = true; lastError = LearningStorageAvailability.waitingMessage; scheduleRecovery()
         } catch { lastError = "Zeus couldn't save your rules. Your previous rules are unchanged."; throw error }
+    }
+    private func didPersist(_ next: State) {
+        let events = next.outcomes.filter { !durableOutcomeIDs.contains($0.id) }
+        durableOutcomeIDs = Set(next.outcomes.map(\.id)); pendingState = nil
+        state = next; rules = next.rules; revision &+= 1; lastError = nil; storageWaitingForUnlock = false
+        for event in events { onRuleOutcome?(event.outcome, [event.ruleID], event.id, event.at) }
     }
 }

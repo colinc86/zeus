@@ -36,6 +36,11 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored let learningCalendar: Calendar
     var learningInterruptionHold = false
     var learningError: String?
+    @ObservationIgnored var journalAccessPolicy: () -> JournalAccessPolicy = { .init() }
+    @ObservationIgnored var onViewJournalAnswer: ((String) -> Void)?
+    @ObservationIgnored var journalCalls: [Date] = []
+    @ObservationIgnored var journalAnswerReceipts: [String: (ToolResult, String, UInt64, Bool)] = [:]
+    @ObservationIgnored var journalNoticeWindow: (Date, String, Int)?
     @ObservationIgnored var onReviewRule: ((String) -> Void)?
     /// ST1: opens Settings › Assistant ("Change" / "Open Settings" on admission lines).
     @ObservationIgnored var onOpenAssistantSettings: (() -> Void)?
@@ -290,6 +295,10 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
 
     func bridge(_ session: BridgeSession, finishedTool name: String, result: ToolResult, written: Bool) {
         guard running else { return }
+        if name == "zeus_get_journal" {
+            if written, !result.isError { recordJournalAnswerReceipt(result, sessionKey: session.sessionKey) }
+            else if case .string(let id) = result.structured?["answer_id"] { journalAnswerReceipts.removeValue(forKey: id) }
+        }
         if name == "zeus_get_learnings", written, !result.isError,
            case .array(let items) = result.structured?["learnings"], case .string(let id) = items.last?["id"] {
             learnings.markLearningsRead(through: id)

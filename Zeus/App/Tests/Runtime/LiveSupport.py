@@ -132,6 +132,8 @@ def finish_host_build(out,package):
     (package/"Sources/Host/ContextSendIntent.swift").write_text(context_intent.read_text())
     seam = REPO/"Zeus/Learn/Seams.swift"
     (package/"Sources/Host/LearningSeams.swift").write_text(seam.read_text())
+    if (package/"Sources/Host/PersistentRulesStore.swift").exists():
+        (package/"Sources/Host/RuleLifecycle.swift").write_text((REPO/"Zeus/Learn/RuleLifecycle.swift").read_text())
     fingerprint=hashlib.sha256()
     paths=list((package/"Sources").rglob("*.swift"))+[package/"Package.swift"]
     paths+=list((REPO/"Packages/ZeusKit/Sources").rglob("*.swift"))+[REPO/"Packages/ZeusKit/Package.swift"]

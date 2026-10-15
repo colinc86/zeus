@@ -4,14 +4,14 @@ import ZeusProtocol
 import ZeusLink
 @testable import Zeus
 
-private struct FixtureLearningRedactor: Redactor {
+struct FixtureLearningRedactor: Redactor {
     func redact(_ text: String) async -> Redacted<String> { .init(text) }
 }
-@MainActor private final class LearningBox {
+@MainActor final class LearningBox {
     var context = LearningContext()
     var enabled = false
 }
-@MainActor private final class LearningRuntimeFixture {
+@MainActor final class LearningRuntimeFixture {
     let root = URL(fileURLWithPath: "/tmp/lm2_" + String(UUID().uuidString.prefix(8)))
     let clock = TestRuntimeClock()
     let box = LearningBox()
@@ -20,7 +20,7 @@ private struct FixtureLearningRedactor: Redactor {
     let runtime: ZeusRuntime
     let journal: EncryptedJournalStore
     let rules: PersistentRulesStore
-    init(learnings: (any LearningsProviding)? = nil) throws {
+    init(learnings: (any LearningsProviding)? = nil, redactor: any Redactor = FixtureLearningRedactor()) throws {
         clock.now = ISO8601DateFormatter().date(from: "2026-10-14T18:15:00Z") ?? clock.now
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = .gmt
         cards = FakeCards(clock: clock)
@@ -29,10 +29,19 @@ private struct FixtureLearningRedactor: Redactor {
         let box = box
         runtime = ZeusRuntime(cards: cards, status: FakeStatus(), characters: FakeCharacters(), routing: FakeRouting(),
             clock: clock, socketPath: root.appendingPathComponent("bridge.sock").path, ledgerURL: root.appendingPathComponent("deliveries.json"),
-            connectors: [connector], targetIsDead: { _ in false }, learnings: learnings, rules: rules, journal: journal, redactor: FixtureLearningRedactor(),
+            connectors: [connector], targetIsDead: { _ in false }, learnings: learnings, rules: rules, journal: journal, redactor: redactor,
             learningContext: { box.context }, reflectionEnabled: { box.enabled }, learningCalendar: calendar)
         try runtime.start()
         runtime.registerSession(.init(id: UUID(), sessionKey: "claude:/fixture#123.1", agent: .claude, cwd: "/fixture", clientName: "Fixture", supportsChannel: true, tmuxPane: nil, connectedAt: clock.now))
+    }
+    func allowProposals() throws {
+        box.enabled = true
+        for (id, offset) in [("day1", -86400.0), ("day2", 0.0)] {
+            try journal.append(.init(id: id, time: clock.now.addingTimeInterval(offset), level: .focus, kind: .focus, payload: .init(.init(description: "Synthetic evidence"))))
+        }
+        var d = Delivery(id: "fixture_reflection", kind: .reflection, sessionKey: "claude:/fixture#123.1", content: "Fixture reflection", createdAt: clock.now)
+        d.meta["evidence"] = "day1,day2"
+        try runtime.ledger?.insert(.init(delivery: d))
     }
     func stop() { runtime.stop(); try? FileManager.default.removeItem(at: root) }
 }
@@ -94,9 +103,10 @@ private struct FixtureLearningRedactor: Redactor {
     }
     @Test func proposalDefaultsValidationConsentAndQuietActions() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
-        let output = await f.runtime.callTool("zeus_propose_rules", arguments: ["rules": [["sentence": "Stay quiet while tests fail", "trigger": ["state": "tests failing"]], ["sentence": "Send a recap", "kind": "acts"]]], sessionKey: "claude:/fixture#123.1")
+        try f.allowProposals()
+        let output = await f.runtime.callTool("zeus_propose_rules", arguments: ["rules": [["sentence": "Stay quiet while tests fail", "trigger": ["state": "tests failing"], "evidence": ["day1", "day2"]], ["sentence": "Send a recap", "kind": "acts"]]], sessionKey: "claude:/fixture#123.1")
         #expect(!output.isError); #expect(f.rules.rules.map(\.status) == [.active, .shadow])
-        #expect(f.cards.learningNotices.count == 2)
+        #expect(f.cards.learningNotices.count == 1)
         f.box.context.states = ["tests failing"]; f.runtime.learningContextDidChange()
         #expect(f.runtime.learningInterruptionHold)
         let invalid = await f.runtime.callTool("zeus_propose_rules", arguments: ["rules": [["sentence": "invented evidence", "evidence": ["missing"]]]], sessionKey: "claude:/fixture#123.1")
@@ -129,12 +139,12 @@ private struct FixtureLearningRedactor: Redactor {
         let card = try #require(f.cards.values.last)
         let response = CardResponse(respondedAt: f.clock.now, device: .mac, skipped: true)
         f.runtime.receivedResponse(card, response: response); f.runtime.receivedResponse(card, response: response)
-        #expect(abs((f.rules.rules.first?.confidence ?? 0) - 0.45) < 0.001)
+        #expect(abs((f.rules.rules.first?.confidence ?? 0) - 0.5) < 0.001)
         // Make a separate open question, then let it expire unanswered.
         _ = await f.runtime.callTool("zeus_ask", arguments: ["text": "Ignored", "wait_seconds": 0], sessionKey: "claude:/fixture#123.1")
         f.clock.advance(86401); f.runtime.learningContextDidChange(); f.runtime.learningContextDidChange()
         // Both fake cards remain open; the answered card's durable event must not also count as ignored.
-        #expect(f.rules.rules.first(where: { $0.id == rule.id })?.confidence ?? 1 <= 0.35)
+        #expect(f.rules.rules.first(where: { $0.id == rule.id })?.confidence ?? 1 <= 0.45)
     }
     @Test func unconstrainedGuidanceGetsOutcomeFeedbackWithoutHoldingNotifications() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
@@ -143,31 +153,27 @@ private struct FixtureLearningRedactor: Redactor {
         let card = try #require(f.cards.values.last)
         f.runtime.receivedResponse(card, response: .init(respondedAt: f.clock.now, device: .mac, skipped: true))
         #expect(!f.runtime.learningInterruptionHold)
-        #expect(abs((f.rules.rules.first?.confidence ?? 0) - 0.45) < 0.001)
+        #expect(abs((f.rules.rules.first?.confidence ?? 0) - 0.5) < 0.001)
     }
     @Test func shadowApprovalAndSettingsApprovalReplaceActionWithUndo() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
-        _ = await f.runtime.callTool("zeus_propose_rules", arguments: ["rules": [["sentence": "Send a recap", "kind": "acts"], ["sentence": "Use short updates"]]], sessionKey: "claude:/fixture#123.1")
-        let rule = try #require(f.rules.rules.first), id = "shadow:" + rule.id
-        #expect(f.cards.learningNotices.contains { $0.summary == "2 new rules" })
-        #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "I'd have acted on “Send a recap”")
+        let rule = try #require(f.rules.propose([.init(sentence: "Send a recap", kind: .acts)], at: f.clock.now).first)
+        let shadow = await f.runtime.callTool("zeus_rule_shadow", arguments: ["ruleID": .string(rule.id), "wouldHave": "Send a recap"], sessionKey: "claude:/fixture#123.1")
+        #expect(!shadow.isError)
+        let action = try #require(f.rules.ruleActions.first), id = "action:" + action.id
         let staleOK = try #require(f.cards.learningActions[id]); staleOK()
         #expect(f.rules.rules.first?.status == .active)
         #expect(f.cards.learningNotices.first { $0.id == id }?.actionTitle == "Undo")
         staleOK(); #expect(f.rules.rules.first?.status == .active)
-        let undo = try #require(f.cards.learningActions[id]); undo()
+        f.cards.learningActions[id]?()
         #expect(f.rules.rules.first?.status == .shadow)
         #expect(abs((f.rules.rules.first?.confidence ?? 0) - 0.4) < 0.001)
         try f.rules.setStatus(.active, id: rule.id, at: f.clock.now); f.runtime.learningContextDidChange()
         #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "OK. I'll do that from now on.")
-        try f.rules.setStatus(.proposed, id: rule.id, at: f.clock.now); f.runtime.learningContextDidChange()
+        try f.rules.declineRule(id: rule.id, at: f.clock.now); f.runtime.learningContextDidChange()
+        #expect(f.rules.rules.first?.status == .retired)
         #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "Got it. I won't.")
         #expect(f.cards.learningActions[id] == nil)
-        try f.rules.setStatus(.retired, id: rule.id, at: f.clock.now); f.runtime.learningContextDidChange()
-        #expect(f.cards.learningNotices.first { $0.id == id }?.summary == "Retired: “Send a recap”")
-        #expect(f.cards.learningNotices.first { $0.id == id }?.actionTitle == "Review")
-        var reviewed: String?; f.runtime.onReviewRule = { reviewed = $0 }
-        f.cards.learningActions[id]?(); #expect(reviewed == rule.id)
     }
     @Test func deletingEvidenceErasesPendingReflectionBodyWithoutRepeatingTheDay() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
@@ -232,7 +238,7 @@ private struct FixtureLearningRedactor: Redactor {
         f.runtime.learningTrackedChange(AppChange(summary: "A synthetic change", undoTitle: "Undo", undo: {})).undo()
         var query = JournalQuery(); query.kinds = [.outcome]
         let feedback = try f.journal.items(matching: query)
-        #expect(feedback.count == 4)
+        #expect(feedback.count == 2) // Only toggle/edit belong to this rule; the retired rule cannot receive unrelated skip/Undo signals.
         #expect(!String(decoding: try JSONEncoder().encode(feedback), as: UTF8.self).contains("Synthetic private question text"))
         try f.journal.delete(.all); f.runtime.learningContextDidChange()
         for _ in 0..<20 { await Task.yield() }

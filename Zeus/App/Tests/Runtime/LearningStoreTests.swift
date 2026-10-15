@@ -5,7 +5,7 @@ import Testing
 import Synchronization
 @testable import Zeus
 
-@MainActor final class FixtureJournalKey: JournalKeyProviding {
+@MainActor final class FixtureJournalKey: FixtureLearningKeyProviding {
     var bytes = Data(repeating: 42, count: 32)
     func key() throws -> Data { bytes }
 }
@@ -73,7 +73,7 @@ import Synchronization
         #expect(store.rules.count == 2)
         try store.recordOutcome(.skipped, ruleIDs: [rules[0].id], eventID: "skip1", at: now)
         try store.recordOutcome(.skipped, ruleIDs: [rules[0].id], eventID: "skip1", at: now)
-        #expect(abs(store.rules[0].confidence - 0.45) < 0.001)
+        #expect(abs(store.rules[0].confidence - 0.5) < 0.001)
         try store.recordOutcome(.undone, ruleIDs: [rules[0].id], eventID: "undo", at: now)
         try store.recordOutcome(.ignored, ruleIDs: [rules[0].id], eventID: "ignored", at: now)
         #expect(store.rules[0].status == .retired)
@@ -103,7 +103,7 @@ import Synchronization
         try store.recordOutcome(.accepted, ruleIDs: [shadow.id], at: Date())
         #expect(store.rules.last?.status == .shadow)
         _ = try store.markShadowShown(id: shadow.id)
-        try store.recordOutcome(.accepted, ruleIDs: [shadow.id], at: Date())
+        try store.setStatus(.active, id: shadow.id, at: Date())
         #expect(store.rules.last?.status == .active)
         let own = try store.addOwn(.init(sentence: "My rule", kind: .acts), at: Date())
         #expect(own.kind == .passive && own.updatedBy == .user && own.confidence == 0.75)

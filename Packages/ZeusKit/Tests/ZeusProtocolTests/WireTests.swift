@@ -76,7 +76,9 @@ import Testing
         ("zeus_move", ["position"], ["position"]), ("zeus_set_size", ["size"], ["size"]),
         ("zeus_hide", ["minutes", "until"], []),
         ("zeus_set_appearance", ["ghost_mode", "ghost_opacity", "ghost_delay_seconds", "popup_sound", "popup_sound_name", "font", "panel_width", "quiet_hours", "quiet_start_hour", "quiet_end_hour"], []),
-        ("zeus_check_for_updates", [], []), ("zeus_install_update", ["version"], ["version"]), ("zeus_get_learnings", [], []), ("zeus_get_rules", [], []), ("zeus_propose_rules", ["rules"], ["rules"])
+        ("zeus_check_for_updates", [], []), ("zeus_install_update", ["version"], ["version"]), ("zeus_get_learnings", [], []), ("zeus_get_journal", ["query", "from", "to", "kinds", "raw", "limit"], []),
+        ("zeus_rule_shadow", ["ruleID", "wouldHave", "amount", "currency"], ["ruleID", "wouldHave"]),
+        ("zeus_rule_acted", ["ruleID", "did", "undo", "approvalID"], ["ruleID", "did"]), ("zeus_get_rules", [], []), ("zeus_propose_rules", ["rules"], ["rules"])
     ]
     #expect(ZeusMCP.tools.count == expected.count)
     for (name, keys, required) in expected {
