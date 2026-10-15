@@ -177,9 +177,26 @@ final class LearnFromMe {
         let pending = files.recordedDays().filter { $0 < todayStart && $0 >= weekAgo && !learnings.isDigested(files.dayKey($0)) }
         guard let day = pending.last else { return }
         learnings.markDigested(pending.map(files.dayKey))
-        guard let text = LearningSummarizer.digest(day: day, events: files.events(on: day), previousStarts: previousStarts(before: day),
+        guard var text = LearningSummarizer.digest(day: day, events: files.events(on: day), previousStarts: previousStarts(before: day),
                                                     excluded: settings.excludedApps, calendar: calendar) else { return }
+        if let journal {
+            var query = JournalQuery(); query.from = calendar.startOfDay(for: day)
+            query.to = calendar.date(byAdding: .day, value: 1, to: query.from ?? day)
+            query.levels = [.screen]; query.kinds = [.description]; query.limit = 100_000
+            do {
+                let descriptions = try journal.items(matching: query)
+                let sample = Self.screenSummary(descriptions)
+                if !sample.isEmpty { text += "\n- On screen: " + sample }
+            } catch { writeError = "Zeus couldn't read the screen descriptions for its summary." }
+        }
         learnings.add(.digest, text: text, at: now)
+    }
+
+    /// Deterministic, evenly spaced description sampling; no image or OCR text reaches a summary.
+    static func screenSummary(_ descriptions: [JournalItem]) -> String {
+        let rows = descriptions.filter { $0.level == .screen && $0.kind == .description }
+        let indices = rows.count <= 4 ? Array(rows.indices) : (0..<4).map { $0 * (rows.count - 1) / 3 }
+        return indices.map { String(rows[$0].payload.value.description.prefix(240)) }.joined(separator: " · ")
     }
 
     private func send(_ moments: [Moment], at date: Date) {

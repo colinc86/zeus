@@ -169,7 +169,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let evening = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: today) ?? today
         // A catch-up and this evening cannot both send on the same local day.
         guard !(ledger?.records ?? []).contains(where: { $0.delivery.kind == .reflection && calendar.isDate($0.delivery.createdAt, inSameDayAs: now) }) else { return }
-        var query = JournalQuery(); query.levels = [.activity, .focus]
+        var query = JournalQuery(); query.levels = [.activity, .focus, .screen]
         query.kinds = [.activity, .focus, .description, .outcome]; query.limit = 100_000
         let available: [JournalItem]
         do { available = try journal.items(matching: query) }
