@@ -17,7 +17,7 @@ enum AvatarSize: String, CaseIterable, Identifiable {
 /// Settings-backed implementations of the character and routing seams.
 @MainActor
 @Observable
-final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSettings, OpenCodeSessionRouting, OpenCodeDestinationRouting, TmuxTargetRouting {
+final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSettings, OpenCodeSessionRouting, OpenCodeDestinationRouting, TmuxTargetRouting, AssistantAdmissionRouting {
     var managedSession: ManagedSessionConfig? {
         didSet {
             if oldValue != managedSession { managedAgentInitialized = true }
@@ -102,8 +102,24 @@ final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSet
             defaults.set(assistantSessionKey, forKey: "agent.assistantSessionKey")
             assistantSessionNotice = nil
             if oldValue != assistantSessionKey { setTmuxTarget(nil, socketPath: nil) }
+            // A session the user picks replaces whatever Auto adopted (ST1).
+            if assistantSessionKey != nil { adoptedAssistantSessionKey = nil }
         }
     }
+    /// ST1: who may use Zeus's tools. Only the assistant session by default.
+    enum WhoMayTalk: String, CaseIterable { case assistantOnly, anySession }
+    var whoMayTalk: WhoMayTalk {
+        didSet {
+            defaults.set(whoMayTalk.rawValue, forKey: "agent.whoMayTalk")
+            if whoMayTalk != .assistantOnly { adoptedAssistantSessionKey = nil }
+        }
+    }
+    var onlyAssistantMayTalk: Bool { whoMayTalk == .assistantOnly }
+    /// ST1: the session Auto adopted (the first eligible one to connect), kept across launches until it stops.
+    var adoptedAssistantSessionKey: String? {
+        didSet { defaults.set(adoptedAssistantSessionKey, forKey: "agent.adoptedAssistantSessionKey") }
+    }
+    func makeAssistant(_ sessionKey: String) { assistantSessionKey = sessionKey }
     private(set) var assistantSessionNotice: String?
     var backend: AssistantBackend {
         didSet {
@@ -147,6 +163,9 @@ final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSet
     }
     /// The effective Auto choice, even while the user has an explicit selection.
     func automaticAssistant(in sessions: [ConnectedSession]) -> ConnectedSession? {
+        if onlyAssistantMayTalk, let adopted = adoptedAssistantSessionKey, let session = sessions.first(where: { $0.sessionKey == adopted }) {
+            return session
+        }
         let candidates = assistantCandidates(sessions, preservingExplicit: false).filter { preferredAgent == nil || $0.agent == preferredAgent }
         return candidates.first { $0.supportsChannel } ?? candidates.first
     }
@@ -215,6 +234,8 @@ final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSet
         let width = (defaults.object(forKey: "conversation.width") as? Double) ?? Double(ConversationWidth.minimum)
         savedConversationWidth = width.isFinite ? max(Double(ConversationWidth.minimum), width.rounded()) : Double(ConversationWidth.minimum)
         assistantSessionKey = defaults.string(forKey: "agent.assistantSessionKey")
+        whoMayTalk = WhoMayTalk(rawValue: defaults.string(forKey: "agent.whoMayTalk") ?? "") ?? .assistantOnly
+        adoptedAssistantSessionKey = defaults.string(forKey: "agent.adoptedAssistantSessionKey")
         let backend = AssistantBackend(rawValue: defaults.string(forKey: "agent.backend") ?? "") ?? .claude
         self.backend = backend
         deliveryMethod = DeliveryMethod(rawValue: defaults.string(forKey: "agent.deliveryMethod") ?? "") ?? backend.defaultDeliveryMethod
@@ -397,6 +418,9 @@ final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSet
 
     /// Drops an obsolete process selection once the live runtime supplies its session list.
     func reconcileAssistantSession(with sessions: [ConnectedSession], isDead: (String) -> Bool = AgentSessionLiveness.isDead) {
+        if let adopted = adoptedAssistantSessionKey, !sessions.contains(where: { $0.sessionKey == adopted }), isDead(adopted) {
+            adoptedAssistantSessionKey = nil
+        }
         guard let selected = assistantSessionKey, !sessions.contains(where: { $0.sessionKey == selected }), isDead(selected) else { return }
         assistantSessionKey = nil
         assistantSessionNotice = "Saved assistant stopped. Switched to Auto."

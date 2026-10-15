@@ -5,6 +5,8 @@ extension ZeusRuntime {
     /// Shared tool boundary for wire dispatch and in-memory seam tests.
     func callTool(_ name: String, arguments: JSONValue, sessionKey: String, deferResultCommit: Bool = false) async -> ToolResult {
         guard running else { return toolError("Zeus runtime isn't running.") }
+        // ST1: only the assistant session may use Zeus. Checked before anything is noted or changed.
+        if let refusal = admissionRefusal(for: name, sessionKey: sessionKey) { return refusal }
         if let error = pendingUpdateErrors.removeValue(forKey: sessionKey) { return toolError(error) }
         activeToolCalls[sessionKey, default: 0] += 1
         let token = generation
@@ -218,4 +220,100 @@ extension ZeusRuntime {
         failure.isError = true
         return failure
     }
+
+    // MARK: - ST1: only the user's assistant may talk to Zeus
+
+    /// The refusal every non-assistant session gets, for every tool (CONTRACT §4).
+    static let notAssistantText = "Zeus only talks to its assistant. This session isn't it. Ask the user to pick this session in Zeus › Settings › Assistant, or stop calling Zeus tools."
+
+    /// True when `sessionKey` is the assistant: the managed session when Zeus runs it, else the session picked in
+    /// Settings › Assistant, else (Auto) the session Auto adopted. "Any session with the Zeus server" admits everyone.
+    func isAdmitted(_ sessionKey: String) -> Bool {
+        guard let admission = routing as? any AssistantAdmissionRouting, admission.onlyAssistantMayTalk else { return true }
+        if managedController.enabled { return managedController.sessionKey == sessionKey }
+        if let selected = routing.assistantSessionKey { return selected == sessionKey }
+        adoptAutoAssistantIfNeeded()
+        return admission.adoptedAssistantSessionKey == sessionKey
+    }
+
+    private func admissionRefusal(for name: String, sessionKey: String) -> ToolResult? {
+        guard !isAdmitted(sessionKey) else { return nil }
+        // A former assistant may still collect and confirm answers to its own earlier questions.
+        if ["zeus_ack", "zeus_get_responses"].contains(name),
+           (ledger?.records ?? []).contains(where: { $0.delivery.sessionKey == sessionKey }) { return nil }
+        noteRefusedSession(sessionKey)
+        return toolError(Self.notAssistantText)
+    }
+
+    /// Auto in "Only my assistant": the first eligible session to connect is adopted and kept; a later one isn't.
+    /// Eligible means the chosen backend's agent and, when Zeus reaches it directly, a session that takes direct messages.
+    func adoptAutoAssistantIfNeeded() {
+        guard let admission = routing as? any AssistantAdmissionRouting, admission.onlyAssistantMayTalk,
+              !managedController.enabled, routing.assistantSessionKey == nil else { return }
+        if let adopted = admission.adoptedAssistantSessionKey, !targetIsDead(adopted) { return }
+        let eligible = assistantCandidates.filter { routing.preferredAgent == nil || $0.agent == routing.preferredAgent }
+            .filter { routing.deliveryMethod != .channel || $0.supportsChannel }
+        // `sessions` is newest first, so the last eligible session connected first.
+        guard let first = eligible.last else {
+            if admission.adoptedAssistantSessionKey != nil { admission.adoptedAssistantSessionKey = nil }
+            return
+        }
+        admission.adoptedAssistantSessionKey = first.sessionKey
+        guard let recorder = cards as? any AdmissionNoticeRecording else { return }
+        recorder.recordAdmissionNotice(AdmissionNotice(id: "adopted:" + first.sessionKey, createdAt: clock.now,
+            summary: "Talking to \(Self.sessionPhrase(first))",
+            primary: .init(title: "Change", doneTitle: nil) { [weak self] in self?.onOpenAssistantSettings?() }, secondary: nil))
+    }
+
+    /// At most one quiet line per refused session per day; never a peek, a sound or an unread mark.
+    private func noteRefusedSession(_ sessionKey: String) {
+        let day = learningCalendar.dateComponents([.year, .month, .day], from: clock.now)
+        let id = "refused:\(sessionKey):\(day.year ?? 0)-\(day.month ?? 0)-\(day.day ?? 0)"
+        guard admissionNoticeIDs.insert(id).inserted, let recorder = cards as? any AdmissionNoticeRecording else { return }
+        let session = sessions.first { $0.sessionKey == sessionKey }
+        let who = session.map(Self.sessionPhrase) ?? "a session Zeus doesn't know"
+        let primary: AdmissionNotice.Action = managedController.enabled
+            ? .init(title: "Open Settings", doneTitle: nil) { [weak self] in self?.onOpenAssistantSettings?() }
+            : .init(title: "Make it my assistant", doneTitle: "Now your assistant") { [weak self] in
+                (self?.routing as? any AssistantAdmissionRouting)?.makeAssistant(sessionKey)
+            }
+        recorder.recordAdmissionNotice(AdmissionNotice(id: id, createdAt: clock.now, summary: "Another session tried to reach Zeus: \(who)",
+            primary: primary, secondary: .init(title: "Ignore", doneTitle: "Ignored") {}))
+    }
+
+    /// "Codex in ~/work".
+    static func sessionPhrase(_ session: ConnectedSession) -> String {
+        let agent: String = switch session.agent { case .claude: "Claude"; case .codex: "Codex"; case .opencode: "OpenCode"; case .other: "Another agent" }
+        return "\(agent) in \((session.cwd as NSString).abbreviatingWithTildeInPath)"
+    }
+}
+
+/// ST1: inbound admission, implemented by Settings. A routing without it admits every session (tests, previews).
+@MainActor protocol AssistantAdmissionRouting: AnyObject {
+    /// "Only my assistant" (the default) when true; "Any session with the Zeus server" when false.
+    var onlyAssistantMayTalk: Bool { get }
+    /// The session Auto adopted: the first eligible one to connect. Cleared when the user picks a session.
+    var adoptedAssistantSessionKey: String? { get set }
+    /// The same as picking `sessionKey` in Settings › Assistant.
+    func makeAssistant(_ sessionKey: String)
+}
+
+/// A quiet two-action thread line about who may talk to Zeus (ST1). It never peeks, sounds or counts as unread.
+struct AdmissionNotice {
+    struct Action {
+        var title: String
+        /// Replaces the actions once this one runs, e.g. "Ignored"; nil keeps the line as it was.
+        var doneTitle: String?
+        var run: @MainActor () -> Void
+    }
+    var id: String
+    var createdAt: Date
+    var summary: String
+    var primary: Action
+    var secondary: Action?
+}
+
+@MainActor protocol AdmissionNoticeRecording: AnyObject {
+    /// Records the line once per id; later calls with the same id only reconnect its actions.
+    @discardableResult func recordAdmissionNotice(_ notice: AdmissionNotice) -> Bool
 }

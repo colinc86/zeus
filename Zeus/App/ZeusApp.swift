@@ -59,6 +59,7 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
                                   learningContext: { [weak learning = shell.learning] in learning?.context ?? .init(isPrivate: true) },
                                   reflectionEnabled: { [weak learning = shell.learning] in learning?.enabled == true })
         shell.connectLearningRuntime(runtime)
+        runtime.onOpenAssistantSettings = { [weak shell] in shell?.showSettings(tab: .agent) }
         do {
             try runtime.start()
             self.runtime = runtime

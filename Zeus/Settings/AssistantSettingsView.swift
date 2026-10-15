@@ -38,6 +38,8 @@ struct AssistantSettingsView: View {
                 AgentSettingsView(settings: settings, messaging: messaging, testMessage: testMessage)
             }
             SettingsDivider()
+            WhoMayTalkSettingsView(settings: settings)
+            SettingsDivider()
             QuietHoursSettingsView(settings: settings)
         }
         .onAppear { managed.refreshAvailability() }
@@ -194,5 +196,24 @@ struct ManagedFolderField: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Folder")
         .accessibilityValue(folder.isEmpty ? "Choose a folder" : folder)
+    }
+}
+
+/// ST1: which sessions may use Zeus's tools. Only the assistant by default; "Any session" is for people who run several
+/// agents on purpose and want them all to post here.
+struct WhoMayTalkSettingsView: View {
+    @Bindable var settings: AppSettings
+    static let title = "Who may talk to Zeus"
+    static let caption = "Only your assistant can post here. Another session with the Zeus server gets a refusal, and the conversation shows a quiet line so you can make it your assistant instead."
+    static let anyCaption = "Every session with the Zeus server can post here, whichever one you picked as your assistant."
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ZeusTheme.Spacing.xs) {
+            Text(Self.title).settingsTitle()
+            SettingsSegments(label: "", options: [(AppSettings.WhoMayTalk.assistantOnly, "Only my assistant"),
+                                                  (.anySession, "Any session with the Zeus server")], selection: $settings.whoMayTalk)
+                .accessibilityLabel(Self.title)
+            Text(settings.whoMayTalk == .assistantOnly ? Self.caption : Self.anyCaption).settingsCaption()
+        }
     }
 }

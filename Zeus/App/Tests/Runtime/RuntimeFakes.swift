@@ -34,8 +34,13 @@ final class TestRuntimeClock: RuntimeClock {
 }
 
 @MainActor
-final class FakeCards: CardStoring, LocalCardActionHandling, AppChangeRecording, LearningNoticeRecording, LearningContextReceiptRecording {
+final class FakeCards: CardStoring, LocalCardActionHandling, AppChangeRecording, LearningNoticeRecording, LearningContextReceiptRecording, AdmissionNoticeRecording {
     var learningNotices: [LearningNotice] = []
+    var admissionNotices: [AdmissionNotice] = []
+    func recordAdmissionNotice(_ notice: AdmissionNotice) -> Bool {
+        if let i = admissionNotices.firstIndex(where: { $0.id == notice.id }) { admissionNotices[i] = notice; return false }
+        admissionNotices.append(notice); return true
+    }
     var learningContextReceipts: [LearningContextDeliveryReceipt] = []
     func recordLearningContextReceipt(_ receipt: LearningContextDeliveryReceipt) { learningContextReceipts.append(receipt) }
     var learningActions: [String: @MainActor () -> Void] = [:]
@@ -91,8 +96,12 @@ final class FakeCharacters: CharacterControlling {
 
 @MainActor
 @Observable
-final class FakeRouting: AgentRoutingSettings, OpenCodeSessionRouting, OpenCodeDestinationRouting, TmuxTargetRouting {
-    var assistantSessionKey: String?
+final class FakeRouting: AgentRoutingSettings, OpenCodeSessionRouting, OpenCodeDestinationRouting, TmuxTargetRouting, AssistantAdmissionRouting {
+    var assistantSessionKey: String? { didSet { if assistantSessionKey != nil { adoptedAssistantSessionKey = nil } } }
+    /// ST1: off by default so every existing fixture keeps admitting all sessions.
+    var onlyAssistantMayTalk = false
+    var adoptedAssistantSessionKey: String?
+    func makeAssistant(_ sessionKey: String) { assistantSessionKey = sessionKey }
     var managedSession: ManagedSessionConfig?
     var preferredAgent: AgentKind?
     var openCodeServerPassword: String?

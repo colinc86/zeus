@@ -29,6 +29,8 @@ final class CardStore: CardStoring {
     private(set) var notices: [ThreadNotice] = [] { didSet { if notices != oldValue { threadRevision &+= 1 } } }
     private var noticeActionRevision: UInt64 = 0
     @ObservationIgnored private var noticeActions: [String: (run: @MainActor () -> Void, doneTitle: String?)] = [:]
+    /// ST1: the second action of an admission line ("Ignore"). Running either action resolves the line.
+    @ObservationIgnored private var noticeSecondaryActions: [String: (run: @MainActor () -> Void, doneTitle: String?)] = [:]
     @ObservationIgnored private var pendingAppChanges: [(notice: ThreadNotice, action: @MainActor () -> Void)] = []
     // Definitive app-owned send outcomes survive a failed caption write in this process.
     // They are published only when the complete history transaction can be saved.
@@ -287,6 +289,19 @@ final class CardStore: CardStoring {
         guard let (action, doneTitle) = noticeActions[id],
               updateNotice(id: id, { $0.resolvedTitle = doneTitle ?? $0.resolvedTitle }) else { return }
         noticeActions.removeValue(forKey: id); noticeActionRevision &+= 1
+        // An admission line resolves as a whole: its other action goes too (ST1).
+        if noticeSecondaryActions.removeValue(forKey: id) != nil, doneTitle != nil { _ = updateNotice(id: id) { $0.secondaryTitle = nil } }
+        action()
+    }
+    /// ST1: the second action ("Ignore") of an admission line.
+    func hasSecondaryNoticeAction(id: String) -> Bool {
+        _ = noticeActionRevision
+        return noticeSecondaryActions[id] != nil
+    }
+    func performSecondaryNoticeAction(id: String) {
+        guard let (action, doneTitle) = noticeSecondaryActions[id],
+              updateNotice(id: id, { $0.resolvedTitle = doneTitle ?? $0.resolvedTitle; $0.secondaryTitle = nil }) else { return }
+        noticeSecondaryActions.removeValue(forKey: id); noticeActions.removeValue(forKey: id); noticeActionRevision &+= 1
         action()
     }
     @discardableResult func updateNotice(id: String, _ mutate: (inout ThreadNotice) -> Void) -> Bool {
@@ -524,9 +539,10 @@ extension CardStore: AppChangeRecording {
     }
     private func pruneNoticeActions() {
         let ids = Set(notices.map(\.id))
-        let previousCount = noticeActions.count
+        let previousCount = noticeActions.count + noticeSecondaryActions.count
         noticeActions = noticeActions.filter { ids.contains($0.key) }
-        if previousCount != noticeActions.count { noticeActionRevision &+= 1 }
+        noticeSecondaryActions = noticeSecondaryActions.filter { ids.contains($0.key) }
+        if previousCount != noticeActions.count + noticeSecondaryActions.count { noticeActionRevision &+= 1 }
     }
 }
 
@@ -571,5 +587,37 @@ extension CardStore: CardHistoryRetaining {
                             outgoingDeliveryIDs: outgoingDeliveryIDs.filter { ids.contains($0.key) }, notices: notices)
         guard commit(next) else { return }
         onHistoryCleared?() // Also prune transient reveals and labels after successful retention.
+    }
+}
+
+// MARK: - ST1: who may talk to Zeus
+
+extension CardStore: AdmissionNoticeRecording {
+    /// The line is persisted once; its closures live only in memory and are reconnected on later calls.
+    @discardableResult func recordAdmissionNotice(_ notice: AdmissionNotice) -> Bool {
+        let line = ThreadNotice(id: notice.id, kind: .admission, createdAt: notice.createdAt, summary: notice.summary,
+                                actionTitle: notice.primary.title, secondaryTitle: notice.secondary?.title)
+        // An action with no done title stays available after it runs ("Change", "Open Settings").
+        func reinstalling(_ action: AdmissionNotice.Action, primary: Bool) -> @MainActor () -> Void {
+            { [weak self] in
+                action.run()
+                guard action.doneTitle == nil, let self, self.notices.contains(where: { $0.id == notice.id && $0.resolvedTitle == nil }) else { return }
+                if primary { self.noticeActions[notice.id] = (reinstalling(action, primary: true), nil) }
+                else { self.noticeSecondaryActions[notice.id] = (reinstalling(action, primary: false), nil) }
+                self.noticeActionRevision &+= 1
+            }
+        }
+        if let existing = notices.first(where: { $0.id == notice.id }) {
+            guard existing.resolvedTitle == nil else { return false }
+            noticeActions[notice.id] = (reinstalling(notice.primary, primary: true), notice.primary.doneTitle)
+            if let secondary = notice.secondary { noticeSecondaryActions[notice.id] = (reinstalling(secondary, primary: false), secondary.doneTitle) }
+            noticeActionRevision &+= 1
+            return false
+        }
+        guard recordNotice(line, action: reinstalling(notice.primary, primary: true), doneTitle: notice.primary.doneTitle) else { return false }
+        if let secondary = notice.secondary {
+            noticeSecondaryActions[notice.id] = (reinstalling(secondary, primary: false), secondary.doneTitle); noticeActionRevision &+= 1
+        }
+        return true
     }
 }

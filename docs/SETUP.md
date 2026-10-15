@@ -247,6 +247,7 @@ When you answer a question or type a message, Zeus saves it before sending anyth
 
 - **An answer to a question** goes to the session that asked it.
 - **A message you start** goes to your assistant: the one Zeus runs, or the Assistant session you chose.
+- **Only your assistant may talk to Zeus.** Any other session that registers the Zeus server (your MCP config usually adds it to every Claude session) gets a refusal when it tries to post, and nothing from it appears in the conversation. With **Auto**, the first session of your chosen agent to connect becomes the assistant and the conversation says *Talking to Claude in ~/Zeus · Change*. Settings → Assistant → **Who may talk to Zeus** switches this off.
 - **Things you drop on Zeus:**
   - Drag files, folders, text, images or links onto the character. Zeus shows *Drop to attach*, then opens the conversation with each item as a chip you can remove.
   - **Send** works with no text.
@@ -296,6 +297,7 @@ On the right: **Open in Terminal** (when there's a terminal to open), **Start Ne
 | **Send Test Message** says it's waiting, for Codex or OpenCode | Choose that session under **Assistant session**, and check **How Zeus reaches it**. |
 | A message appears in the agent twice | That's a retry: the agent didn't confirm it. Make sure it reads the `AGENTS.md` from Zeus's folder template. |
 | A tool says *"Zeus app isn't running"* | Open Zeus. It reconnects by itself. |
+| An agent says *"Zeus only talks to its assistant"* | Only the session you picked (or the one Zeus runs) may post here. The conversation shows *Another session tried to reach Zeus: … · Make it my assistant · Ignore*. To let every session post, choose **Any session with the Zeus server** under Settings → Assistant → **Who may talk to Zeus**. |
 | The character is gone | ⚡ → **Show Zeus**, or open Zeus again from Spotlight or Launchpad (this also works with the menu bar icon off). If it's off screen: Settings → Character → **Reset Avatar Position**. |
 | Zeus looks asleep all day | Settings → Assistant → **Quiet hours**. Equal start and end times mean *all day*. |
 | I want a sound when Zeus pops up (or I don't) | Settings → General → **Sounds**: turn on **Play a sound when Zeus pops up** and pick the Zeus chime or a macOS sound. It plays at your alert volume (System Settings → Sound) and stays quiet while Zeus is hidden, during quiet hours and while the conversation is open. |
