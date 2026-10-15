@@ -94,6 +94,7 @@ import Testing
         var rule = try #require(store.rules.first)
         #expect(rule.status == .active); #expect(rule.updatedBy == .user); #expect(rule.trigger.time?.startMinute == 1080)
         #expect(RulesPaneModel.triggerText(rule.trigger).contains("18:00–09:00"))
+        #expect(RulesPaneModel.triggerText(rule.trigger, appName: { $0 == "test.editor" ? "Editor" : "Browser" }).contains("in Browser, Editor"))
         actual.approve(rule); #expect(store.rules[0].status == .active); #expect(store.outcomes.isEmpty)
         rule = store.rules[0]; actual.beginEdit(rule); actual.sentence = "Prepare a careful draft"; #expect(actual.save())
         #expect(store.rules.count == 1); #expect(store.rules[0].id == rule.id); #expect(store.rules[0].evidence == rule.evidence)

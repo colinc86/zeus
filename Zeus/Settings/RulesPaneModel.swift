@@ -78,13 +78,13 @@ final class RulesPaneModel {
         do { try action(); error = nil; return true }
         catch { self.error = "Couldn't save this rule. Try again."; return false }
     }
-    static func triggerText(_ trigger: RuleTrigger) -> String {
+    static func triggerText(_ trigger: RuleTrigger, appName: (String) -> String = { $0 }) -> String {
         var pieces: [String] = []
         if let time = trigger.time {
             let days = time.weekdays.sorted().map { Calendar.current.weekdaySymbols[max(0, min(6, $0 - 1))] }.joined(separator: ", ")
             pieces.append((time.startMinute == time.endMinute ? "All day" : "\(clockText(time.startMinute))–\(clockText(time.endMinute))") + (days.isEmpty ? " every day" : " on " + days))
         }
-        if !trigger.apps.isEmpty { pieces.append("in " + trigger.apps.sorted().joined(separator: ", ")) }
+        if !trigger.apps.isEmpty { pieces.append("in " + trigger.apps.sorted().map(appName).joined(separator: ", ")) }
         if let state = trigger.state { pieces.append("when " + state) }
         return pieces.isEmpty ? "Any time" : pieces.joined(separator: "; ")
     }

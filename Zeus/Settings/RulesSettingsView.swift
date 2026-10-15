@@ -63,7 +63,7 @@ struct RulesSettingsView: View {
                 }
                 actions(rule)
             }
-            Text(RulesPaneModel.triggerText(rule.trigger)).settingsCaption()
+            Text(RulesPaneModel.triggerText(rule.trigger, appName: JournalDisplay.appName)).settingsCaption()
             if rule.status == .shadow { Text("Seen once. Zeus didn't act.").settingsCaption() }
             HStack(spacing: 6) {
                 RuleConfidence(confidence: rule.confidence)

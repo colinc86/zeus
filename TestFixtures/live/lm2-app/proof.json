@@ -1,0 +1,42 @@
+{
+  "launch": {
+    "ax_trusted": true,
+    "private_home": true,
+    "ready": true
+  },
+  "xcode": {
+    "captured": false,
+    "document_read_from_ax": false,
+    "email_redacted": false,
+    "engine": "none",
+    "front_owned": false,
+    "locked": false,
+    "ok": true,
+    "owned_process_terminated": true,
+    "safari_app_only": false,
+    "secure_input": false,
+    "stored_count": 0,
+    "synthetic_email_in_ax_title": false,
+    "status": "blocked_existing_instance"
+  },
+  "native_editor": {
+    "captured": true,
+    "document_read_from_ax": true,
+    "email_redacted": true,
+    "engine": "naturalLanguage",
+    "front_owned": true,
+    "locked": false,
+    "ok": true,
+    "owned_process_terminated": false,
+    "safari_app_only": false,
+    "secure_input": false,
+    "stored_count": 1,
+    "synthetic_email_in_ax_title": true,
+    "status": "passed"
+  },
+  "safari": {
+    "status": "not_run",
+    "reason": "No verified disposable Safari profile; no user browser or history was accessed."
+  },
+  "required_native_gate": "incomplete"
+}
