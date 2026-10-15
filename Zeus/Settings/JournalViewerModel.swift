@@ -5,6 +5,21 @@ import Observation
 @MainActor @Observable
 final class JournalViewerModel {
     @ObservationIgnored let journal: any JournalStore
+    @ObservationIgnored var learningEnabled: () -> Bool = { true }
+    private(set) var hasReceivedItems = false
+    var emptyCaption: String {
+        if !search.isEmpty || (!sentOnly && (level != 0 || !app.isEmpty)) { return "Nothing matches." }
+        if !sentOnly { return "Nothing kept on this day." }
+        if hasReceivedItems || deliveries?.pending.isEmpty == false { return "Nothing received on this day." }
+        return learningEnabled() ? "Nothing yet. Zeus sends a summary each morning and notes during the day."
+            : "Nothing yet. Learn from me is off, so Zeus has nothing to send."
+    }
+    var deliveries: LearningDeliveryModel?
+    var waiting: [PendingLearningDelivery] {
+        guard sentOnly else { return [] }
+        return (deliveries?.pending ?? []).filter { search.isEmpty || $0.text.localizedCaseInsensitiveContains(search) }
+            .sorted { $0.preparedAt == $1.preparedAt ? $0.id < $1.id : $0.preparedAt > $1.preparedAt }
+    }
     let pictures: JournalPictureModel
     private(set) var timeline: [JournalTimelineRow] = []
     @ObservationIgnored private let calendar: Calendar
@@ -55,6 +70,8 @@ final class JournalViewerModel {
     }
     func reload() {
         do {
+            var received = JournalQuery(); received.kinds = [.sentToAssistant]; received.limit = 1
+            hasReceivedItems = try !journal.items(matching: received).isEmpty
             items = try journal.items(matching: query).sorted { $0.time == $1.time ? $0.id < $1.id : $0.time > $1.time }
             var all = query; all.apps = []; all.levels = []; all.text = ""
             applications = Array(Set(try journal.items(matching: all).compactMap(\.app))).sorted()

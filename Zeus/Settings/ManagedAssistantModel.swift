@@ -33,11 +33,17 @@ final class ManagedAssistantModel {
         case newConversation
         case switchConversation
         case restartForUpdate(ManagedPermissionMode)
+        case restartForSetup(ManagedPermissionMode)
     }
     static let agents: [AgentKind] = [.claude, .codex, .opencode]
     let settings: AppSettings
     var createFolder: (() throws -> URL)?
     @ObservationIgnored var hasPendingQuestion: () -> Bool = { false }
+    var templateReplacement: ManagedTemplateReplacement?
+    @ObservationIgnored private var replacementProvider: ObjectIdentifier?
+    @ObservationIgnored private var setupConfirmationConfiguration: ManagedSessionConfig?
+    @ObservationIgnored private var setupConfirmationProvider: ObjectIdentifier?
+    @ObservationIgnored private var setupConfirmationConversation: String?
     var confirmation: Confirmation?
     private(set) var switching = false
     private(set) var actionError: String?
@@ -84,6 +90,53 @@ final class ManagedAssistantModel {
         if let mode, mode.isUnrestricted { updateConfirmationConversation = agentUpdater?.managedAgentUpdateConversationID; confirmation = .restartForUpdate(mode); return }
         agentUpdater?.restartManagedAgentForUpdate()
     }
+    var setupProvider: (any LearningDeliveryPresenting)? { controller as? any LearningDeliveryPresenting }
+    var setupStale: ManagedSetupStaleness { setupProvider?.managedSetupStale ?? .init() }
+    var setupNeedsRestart: Bool { enabled && (setupStale.tools || setupStale.template) }
+    var setupCanRestart: Bool {
+        setupNeedsRestart && hasActiveSession && settingsApplier?.managedCanResumeSettings == true
+            && settingsApplier?.managedSettingsApplication == nil && !switching && !hasPendingQuestion()
+    }
+    var setupNote: String? {
+        if agentUpdateRestartPending && setupNeedsRestart { return agentUpdateWaitingText }
+        if setupStale.template && setupStale.templateEdited { return "Your assistant's instructions are older than Zeus's template. Open the folder to compare, or use the new template." }
+        guard setupNeedsRestart else { return nil }
+        return "Zeus has new \(Self.setupContent(setupStale)) for \(agentName). Restart to use them; the conversation is kept."
+    }
+    static func setupContent(_ stale: ManagedSetupStaleness) -> String {
+        stale.tools && stale.template ? "tools and instructions" : stale.tools ? "tools" : "instructions"
+    }
+    func requestSetupRestart() {
+        guard setupCanRestart, let provider = setupProvider, let applied = currentConfiguration else { return }
+        let modes = controller?.permissionModes(for: applied.agent) ?? []
+        let mode = modes.first { $0.id == applied.permissionModeID } ?? modes.first { $0.isDefault && applied.permissionModeID == nil }
+        if let mode, mode.isUnrestricted {
+            setupConfirmationConfiguration = applied; setupConfirmationProvider = ObjectIdentifier(provider)
+            setupConfirmationConversation = agentUpdater?.managedAgentUpdateConversationID
+            confirmation = .restartForSetup(mode); return
+        }
+        provider.restartManagedAssistantForSetup()
+    }
+    func requestTemplateReplacement() {
+        guard setupCanRestart, let provider = setupProvider, provider.managedSetupStale.template && provider.managedSetupStale.templateEdited else { return }
+        actionError = nil
+        templateReplacement = provider.managedTemplateReplacement
+        replacementProvider = ObjectIdentifier(provider)
+        if templateReplacement == nil { actionError = "Couldn't read the instructions. Try again." }
+    }
+    func confirmTemplateReplacement() {
+        guard let snapshot = templateReplacement else { return }
+        templateReplacement = nil
+        guard setupCanRestart,
+              let provider = setupProvider, replacementProvider == ObjectIdentifier(provider),
+              provider.managedTemplateReplacement == snapshot else {
+            actionError = "The instructions changed. Review them before replacing them."; return
+        }
+        do {
+            try provider.replaceEditedManagedTemplates(snapshot)
+            requestSetupRestart()
+        } catch { actionError = "Couldn't replace the instructions. \(error.localizedDescription)" }
+    }
     var config: ManagedSessionConfig { settings.managedSession ?? AppSettings.newManagedSession(enabled: false) }
     var enabled: Bool { config.enabled }
     var status: ManagedSessionStatus { controller?.managedStatus ?? .off }
@@ -113,6 +166,9 @@ final class ManagedAssistantModel {
     var canStart: Bool { enabled && controller != nil && !config.folder.isEmpty && requirementsProblem == nil && !permissionModes.isEmpty && !switching }
     var disabledActions: Set<ZeusManagedPresentation.Action> {
         var actions: Set<ZeusManagedPresentation.Action> = canStart ? [] : [.start, .tryAgain, .restart, .restartNow, .newConversation]
+        if setupNeedsRestart {
+            if setupCanRestart { actions.remove(.restart) } else { actions.insert(.restart) }
+        }
         if agentUpdatePending || agentUpdateRestartPending {
             if agentUpdateCanRestart { actions.remove(.restart) }
             else { actions.insert(.restart) }
@@ -191,6 +247,7 @@ final class ManagedAssistantModel {
             }
             return "\(agentName) picks up your changes when it finishes what it's doing."
         }
+        if let setupNote { return setupNote }
         if agentUpdatePending { return "\(agentName) has an update. Restart to use it; the conversation is kept." }
         if needsNewConversation { return "Switches to \(Self.name(config.agent)) in \(folderLabel) the next time it starts." }
         if instructionsAreDebouncing { return "Your instruction changes are saved." }
@@ -247,7 +304,7 @@ final class ManagedAssistantModel {
             result.detail = ZeusRuntimeCopy.Managed.cantResume(agent: recoveryAgentName)
             result.menuStatus = ZeusRuntimeCopy.Managed.cantResumeTitle
             result.actions = [.newConversation] + (attachCommand == nil ? [] : [.openInTerminal])
-        } else if agentUpdatePending || (needsRestart && settingsApplier?.managedSettingsApplication == nil && !instructionsAreDebouncing) {
+        } else if setupNeedsRestart || agentUpdatePending || (needsRestart && settingsApplier?.managedSettingsApplication == nil && !instructionsAreDebouncing) {
             switch status {
             case .running, .starting:
                 result.actions.removeAll { $0 == .restart }; result.actions.insert(.restart, at: 0)
@@ -380,6 +437,12 @@ final class ManagedAssistantModel {
             controller.stopManagedSession()
             // An async Stop may still expose the previous failure until its operation starts.
             if status != previousStatus || (status == .stopped && controller.managedTmuxSessionName == nil) { reconcileStatus() }
+        case .restartForSetup:
+            guard setupCanRestart, let provider = setupProvider,
+                  setupConfirmationProvider == ObjectIdentifier(provider), setupConfirmationConfiguration == currentConfiguration,
+                  setupConfirmationConversation == agentUpdater?.managedAgentUpdateConversationID else { return }
+            setupConfirmationProvider = nil; setupConfirmationConfiguration = nil
+            provider.restartManagedAssistantForSetup()
         case .restartForUpdate:
             // Revalidate after the confirmation; a different conversation or resolved update is not authorized.
             guard agentUpdateCanRestart, updateConfirmationConversation == agentUpdater?.managedAgentUpdateConversationID else { return }
@@ -412,6 +475,7 @@ final class ManagedAssistantModel {
             if requiresFreshConversation { confirmation = .newConversation; return }
             launchedConfig = config; controller.startManagedSession()
         case .restart, .restartNow:
+            if setupNeedsRestart { requestSetupRestart(); return }
             if agentUpdatePending || agentUpdateRestartPending { requestAgentUpdateRestart(); return }
             refreshAvailability()
             guard canStart else { return }

@@ -38,6 +38,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     /// "Learn from me" (L1, CONTRACT §13). Its `learnings` is the runtime's `LearningsProviding`.
     let learn: LearnFromMe
     let learning: LearningPresentation
+    let learningDeliveries: LearningDeliveryModel
     @ObservationIgnored let learningServices: LearningServices?
     @ObservationIgnored private var contextCaptureTask: Task<Void, Never>?
     private(set) var isVisible = false
@@ -109,9 +110,11 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
                     && policies.policy(1).allows(bundleID: app, name: event.name, privateApps: learnSettings.excludedApps)
             })
         learning = LearningPresentation(defaults: defaults, learn: learn, policies: policies)
+        learningDeliveries = LearningDeliveryModel(cards: cards, source: { [weak messaging] in messaging?.runtime as? any LearningDeliveryPresenting })
         status = AvatarStatusModel(cards: cards, quietHours: { [weak settings] in settings?.isQuiet(at: $0) ?? false },
                                    assistantActivity: { [weak messaging] in messaging?.assistantActivity })
         super.init()
+        learning.deliveries = learningDeliveries
         if let services = learningServices {
             learning.install(journal: services.journal, rules: services.rules, redactor: services.redactor, source: services.source)
             learning.screen?.privacy.reopen = { Self.reopenForScreenPermission() }
@@ -124,6 +127,32 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         managed.hasPendingQuestion = { [weak cards] in cards?.hasOpenQuestion == true }
         managedUpdates = ManagedAgentUpdateModel(managed: managed, cards: cards)
         managedUpdates?.onConfirmation = { [weak self] in self?.showSettings(tab: .agent) }
+        learningDeliveries.receivedDeliveryIDs = { [weak learning] in learning?.receivedLearningDeliveryIDs }
+        learningDeliveries.openTerminal = { [weak managed] in managed?.controller?.openManagedSessionInTerminal() }
+        learningDeliveries.restartAssistant = { [weak self] in
+            self?.managed.requestSetupRestart(); self?.showSettings(tab: .agent)
+        }
+        learningDeliveries.openFolder = { [weak managed] in
+            if let path = managed?.setupProvider?.managedTemplateReplacement?.folder { NSWorkspace.shared.open(URL(fileURLWithPath: path)) }
+        }
+        learningDeliveries.replaceTemplate = { [weak self] in
+            self?.managed.requestTemplateReplacement(); self?.showSettings(tab: .agent)
+        }
+        learningDeliveries.agentName = { [weak managed] in
+            guard let managed else { return "your assistant" }
+            return ZeusAgentName.short((managed.currentConfiguration ?? managed.config).agent)
+        }
+        learningDeliveries.conversationID = { [weak managed] in managed?.enabled == true ? managed?.agentUpdater?.managedAgentUpdateConversationID : nil }
+        learningDeliveries.canStart = { [weak managed] in
+            guard let managed else { return false }
+            return managed.canStart && (managed.status == .off || managed.status == .stopped)
+        }
+        learningDeliveries.startAssistant = { [weak self] in self?.managed.perform(.start); self?.showSettings(tab: .agent) }
+        learningDeliveries.setupError = { [weak managed] in managed?.agentUpdateRestartError }
+        learningDeliveries.setupProgress = { [weak managed] in
+            guard let managed, managed.setupNeedsRestart, managed.agentUpdateRestartPending else { return nil }
+            return managed.agentUpdateWaitingText
+        }
         cards.onHistoryCleared = { [weak self] in
             guard let self else { return }
             self.conversation.pruneClearedHistory()
@@ -131,7 +160,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             self.settings.pruneSessionLabels(keeping: Set(self.cards.cards.compactMap(\.sessionKey) + self.messaging.sessions.map(\.sessionKey)))
         }
         cards.onAdd = { [weak self] newCard in self?.receivedCard(newCard) }
-        learn.learnings?.onRecorded = { [weak cards] in cards?.recordNotice(.learning($0)) }
+        learn.learnings?.onRecorded = { [weak cards] in cards?.recordNotice(LearningDeliveryModel.preparedNotice($0)) }
         learn.onDeleteEverything = { [weak cards] in cards?.removeNotices(kind: .learning) }
     }
 
@@ -139,6 +168,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     var menuStatus: String {
         if let detail = (messaging.runtime as? any ManagedDraftAlertControlling)?.managedDraftStatusDetail { return detail }
+        if let waiting = learningDeliveries.menuStatus { return waiting }
         let usual = MenuPresentation.status(state: status.state, unread: cards.unseenCount, activity: messaging.assistantActivity, sessionLabel: messaging.assistantActivity.map { settings.sessionLabels.label($0.sessionKey) })
         if managed.prioritizesMenuStatus { return managed.menuStatus(usual: usual, unread: cards.unseenCount) }
         if cards.unseenCount > 0 { return usual }
@@ -158,6 +188,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     func start() {
         settings.startWatchingUserFolders()
         learn.start()
+        learningDeliveries.start()
         configure(avatar)
         // Ghost mode changes only alpha; it never makes Zeus click-through.
         avatar.ignoresMouseEvents = false
@@ -255,6 +286,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         settings.stopWatchingUserFolders()
         learn.stop()
         learning.stop()
+        learningDeliveries.stop()
         contextCaptureTask?.cancel(); contextCaptureTask = nil
         if let access = learningRuntime as? any LearningJournalAccessControlling {
             access.journalAccessPolicy = { .init() }; access.onViewJournalAnswer = nil
@@ -758,10 +790,10 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     static func makeDraftCancellationAlert(count: Int) -> NSAlert {
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = "Cancel \(count) queued messages?"
-        alert.informativeText = "These messages won't be sent. The unsent text in your assistant's Terminal will stay there."
-        alert.addButton(withTitle: "Keep Messages").keyEquivalent = "\r"
-        alert.addButton(withTitle: "Cancel \(count) Messages").keyEquivalent = ""
+        alert.messageText = count == 1 ? "Cancel this queued message?" : "Cancel \(count) queued messages?"
+        alert.informativeText = (count == 1 ? "This message won't be sent." : "These messages won't be sent.") + " The unsent text in your assistant's Terminal will stay there."
+        alert.addButton(withTitle: count == 1 ? "Keep Message" : "Keep Messages").keyEquivalent = "\r"
+        alert.addButton(withTitle: count == 1 ? "Cancel Message" : "Cancel \(count) Messages").keyEquivalent = ""
         return alert
     }
 

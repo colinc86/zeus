@@ -48,12 +48,22 @@ struct JournalViewerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(model.sentOnly ? "Everything Zeus sent your assistant about you. Your assistant's model provider received these like any message." : "Exactly as stored on this Mac, with redactions visible.").settingsCaption()
-            if model.items.isEmpty {
-                Text(model.level == 0 && model.app.isEmpty && model.search.isEmpty ? "Nothing kept on this day." : "Nothing matches.").settingsCaption()
+            if model.items.isEmpty && model.waiting.isEmpty {
+                Text(model.emptyCaption).settingsCaption()
             }
             ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
+            if !model.waiting.isEmpty, let deliveries = model.deliveries {
+                Text("Waiting").settingsHeading().accessibilityAddTraits(.isHeader)
+                Text("Your assistant hasn't received these yet.").settingsCaption()
+                ForEach(model.waiting) { item in
+                    WaitingLearningRow(item: item, hold: deliveries.holds.first { $0.deliveryID == item.id }, now: deliveries.now,
+                        openTerminal: deliveries.openTerminal, restart: deliveries.restartAssistant, canStart: deliveries.canStart(), start: deliveries.startAssistant)
+                    SettingsDivider()
+                }
+                if !model.items.isEmpty { Text("Received").settingsHeading().accessibilityAddTraits(.isHeader) }
+            }
             ForEach(model.timeline) { row in
                 if case .picture(let picture) = row {
                     JournalPictureRow(picture: picture, model: model.pictures)
@@ -97,7 +107,7 @@ struct JournalViewerView: View {
                 }
                 KeyboardButton("Export…", action: export).accessibilityLabel("Export journal selection").disabled(model.items.isEmpty)
             }
-            Text("Exports what's shown, as stored.").settingsCaption()
+            Text(model.sentOnly ? "Exports the received items shown, as stored." : "Exports what's shown, as stored.").settingsCaption()
             if pendingDelete != nil || pendingTypingGroup != nil {
                 Text(deleteTitle).settingsBody()
                 HStack {
@@ -205,6 +215,7 @@ struct JournalItemView: View {
 }
 
 private struct JournalRecordRow: View {
+    @Environment(\.zeusPalette) private var palette
     let item: JournalItem
     let sent: Bool
     let expanded: Bool
@@ -216,7 +227,7 @@ private struct JournalRecordRow: View {
             if sent {
                 KeyboardButton(action: toggle) {
                     HStack(spacing: 8) {
-                        Text(expanded ? "\u{25BE}" : "\u{25B8}").settingsCaption()
+                        ZeusGlyph(.right).rotationEffect(.degrees(expanded ? 90 : 0)).foregroundStyle(palette.secondaryText).accessibilityHidden(true)
                         Text(item.time.formatted(date: .omitted, time: .shortened)).settingsCaption()
                         Text(JournalDisplay.ledgerTitle(item)).settingsBody()
                         ZeusSessionLabel(item.payload.value.details["sessionLabel"] ?? item.payload.value.details["session"] ?? "Assistant",

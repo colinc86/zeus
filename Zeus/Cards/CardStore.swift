@@ -318,6 +318,13 @@ final class CardStore: CardStoring {
         next.notices[index].id = id
         return commit(next)
     }
+    /// Removes one transient status notice without clearing unrelated learning history.
+    @discardableResult func removeNotice(id: String) -> Bool {
+        guard notices.contains(where: { $0.id == id }) else { return true }
+        var next = snapshot; next.notices.removeAll { $0.id == id }
+        guard commit(next) else { return false }
+        pruneNoticeActions(); return true
+    }
     /// "Delete everything" in Settings › Privacy also removes the summaries' thread lines.
     @discardableResult func removeNotices(kind: ThreadNotice.Kind) -> Bool {
         guard notices.contains(where: { $0.kind == kind }) else { return true }

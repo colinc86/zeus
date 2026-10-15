@@ -10,6 +10,7 @@ final class LearningPresentation {
     let policies: ObservationSettings
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored let learn: LearnFromMe
+    var deliveries: LearningDeliveryModel? { didSet { viewer?.deliveries = deliveries } }
     private(set) var viewer: JournalViewerModel?
     private(set) var rules: RulesPaneModel?
     private(set) var focus: FocusObserver?
@@ -86,6 +87,14 @@ final class LearningPresentation {
         }
         return JournalAccessPolicy(enabledLevels: enabled, rawLevels: Set(enabled.filter { policies.rawAllowed($0.rawValue) }))
     }
+    /// Exact durable receipts outrank a pending snapshot after a ledger write failure.
+    /// Nil means the journal is unavailable, not that no receipt exists.
+    var receivedLearningDeliveryIDs: Set<String>? {
+        guard let journal else { return nil }
+        _ = journal.revision
+        var query = JournalQuery(); query.kinds = [.sentToAssistant]; query.limit = 100_000
+        return try? Set(journal.items(matching: query).compactMap { $0.payload.value.details["delivery_id"] })
+    }
     var enabled: Bool { learn.settings.enabled || (2...4).contains { policies.policy($0).enabled && policies.policy($0).consented } }
     /// Read only when building the menu; no notification, announcement, avatar state or thread entry is emitted.
     var privateInputMenuLine: String? {
@@ -113,6 +122,8 @@ final class LearningPresentation {
         // Apply local retention before a viewer can cache any words under a longer/default preference.
         pruneExpired()
         let viewer = JournalViewerModel(journal: journal)
+        viewer.deliveries = deliveries
+        viewer.learningEnabled = { [weak self] in self?.enabled ?? false }
         self.viewer = viewer; self.rules = RulesPaneModel(store: rules, journal: viewer)
         focus = FocusObserver(source: source, policies: policies,
             privateApps: { [weak learn] in learn?.settings.excludedApps ?? ExcludedApp.defaults },

@@ -76,7 +76,7 @@ struct ConversationNoticeLine: View {
                     .padding(ZeusTheme.Spacing.s)
                     .background(palette.field)
                     .overlay(Rectangle().strokeBorder(palette.fieldBorder, lineWidth: ZeusTheme.pixel))
-                    .accessibilityLabel("Sent text: \(detail)")
+                    .accessibilityLabel("Exact text: \(detail)")
             }
         }
         .frame(maxWidth: maxWidth, alignment: .leading)
