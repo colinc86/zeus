@@ -15,12 +15,16 @@ import Testing
     }
     @Test func tableCoversEveryShippedTemplateInGit() async throws {
         let runner = FoundationProcessRunner()
+        let home = FileManager.default.temporaryDirectory.appendingPathComponent("lm4-git-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: home) }
+        let environment = ["HOME": home.path, "PATH": "/usr/bin:/bin", "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null"]
         let path = "Zeus/Resources/AssistantTemplate/"
         for name in ManagedTemplateSetup.names {
-            let result = try await runner.run(executable: URL(fileURLWithPath: "/usr/bin/git"), arguments: ["-C", root.path, "log", "--format=%H", "--", path + name], input: nil)
+            let result = try await runner.run(executable: URL(fileURLWithPath: "/usr/bin/git"), arguments: ["-C", root.path, "log", "--format=%H", "--", path + name], input: nil, environment: environment)
             #expect(result.status == 0)
             for commit in String(decoding: result.stdout, as: UTF8.self).split(separator: "\n") {
-                let bytes = try await runner.run(executable: URL(fileURLWithPath: "/usr/bin/git"), arguments: ["-C", root.path, "show", String(commit) + ":" + path + name], input: nil)
+                let bytes = try await runner.run(executable: URL(fileURLWithPath: "/usr/bin/git"), arguments: ["-C", root.path, "show", String(commit) + ":" + path + name], input: nil, environment: environment)
                 #expect(bytes.status == 0)
                 #expect(ManagedTemplateSetup.isShipped(ManagedTemplateSetup.hash(bytes.stdout), name: name))
             }
