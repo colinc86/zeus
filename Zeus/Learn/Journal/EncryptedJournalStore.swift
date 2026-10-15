@@ -70,7 +70,12 @@ import ZeusProtocol
             var after: [JournalItem] = []
             if !includingDescription {
                 after = before.filter { $0.kind == .description }.map { item in
-                    var payload = item.payload.value; payload.details["picture_not_kept"] = "deletedByUser"
+                    var payload = item.payload.value
+                    // Deferred model processing removes private frames through this same atomic path.
+                    // Keep its reason rather than describing an automatic removal as a user action.
+                    if payload.details["picture_not_kept"] != "private" {
+                        payload.details["picture_not_kept"] = "deletedByUser"
+                    }
                     return JournalItem(id: item.id, time: item.time, level: item.level, app: item.app, kind: item.kind,
                                        payload: .init(payload, report: item.payload.report))
                 }
