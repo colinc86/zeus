@@ -90,12 +90,12 @@ struct ProseRedaction {
     var text: String
     var kind: ProseKind
 }
-@Generable enum ProseKind { case personName, health, money, secret }
+@Generable enum ProseKind { case personName, health, finance, secret }
 ```
 
 Instructions: *"Text arrives with some details already replaced by ‹…› placeholders. Find what is still private: names of private people, health (illness, medication, therapy, medical appointments), personal money (amounts, salary, debts, card or account hints), and secrets written in words (a password or PIN given in prose). Copy each exactly. Ignore placeholders. Ignore work topics, products, apps and companies."*
 
-Placeholders: `‹name›`, `‹health›`, `‹money›`, `‹secret›`, alongside stage 1's `‹email›`, `‹phone›`, `‹card›`, `‹address›`.
+Placeholders follow platform's `RedactionKind` (`Zeus/Learn/Seams.swift`): `personName` → `‹name›`, `health` → `‹health›`, `finance` → `‹finance›`, `secret` → `‹secret›`, alongside stage 1's `‹email›`, `‹phone›`, `‹card›`, `‹iban›`, `‹identity›`, `‹address›`.
 
 Phase B:
 
