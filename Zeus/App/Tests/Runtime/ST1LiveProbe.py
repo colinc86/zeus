@@ -18,7 +18,7 @@ def build_host():
     return finish_host_build(OUT,package)
 
 def main():
-    host=build_host(); pane=Pane('claude',prefix='zst1_',output=OUT); process=None
+    host=build_host(); pane=Pane('claude',prefix='zlv1_',output=OUT); process=None
     second=pane.root/'project2'; second.mkdir()
     calls=[]
     def action(body):
@@ -31,8 +31,16 @@ def main():
         return None,{}
     Model.action=action; Model.stage=0; Model.requests=[]; Model.completion_text='ST1 DONE'
     def tool_results():
-        return [json.dumps(block.get('content')) for body in Model.requests for message in body.get('messages',[])
-                if isinstance(message.get('content'),list) for block in message['content'] if block.get('type')=='tool_result']
+        """The tool_result texts the real CLIs sent back to the model, decoded (never JSON-escaped)."""
+        texts=[]
+        for body in Model.requests:
+            for message in body.get('messages',[]):
+                if not isinstance(message.get('content'),list): continue
+                for block in message['content']:
+                    if block.get('type')!='tool_result': continue
+                    content=block.get('content')
+                    texts.append(content if isinstance(content,str) else ' '.join(part.get('text','') for part in content if isinstance(part,dict)))
+        return texts
     def screen(target):
         return re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]','',pane.tm('capture-pane','-p','-e','-t',target))
     def send(target,text):

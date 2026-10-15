@@ -56,7 +56,7 @@ private struct ST1Runner: ProcessRunning {
 @main struct ST1Host {
     @MainActor static func main() async throws {
         let root = URL(fileURLWithPath: CommandLine.arguments[1]), tmux = URL(fileURLWithPath: CommandLine.arguments[2])
-        guard root.path.hasPrefix("/private/tmp/zst1_") || root.path.hasPrefix("/tmp/zst1_") else { throw ManagedSessionError.command("Refused fixture root: " + root.path) }
+        guard root.path.hasPrefix("/private/tmp/zlv1_") || root.path.hasPrefix("/tmp/zlv1_") else { throw ManagedSessionError.command("Refused fixture root: " + root.path) }
         let routing = ST1Routing(), cards = ST1Cards(), clock = ST1Clock()
         let socket = root.appendingPathComponent("tmux.sock").path
         let live = ZeusRuntime(cards: cards, status: ST1Status(), characters: ST1Characters(), routing: routing, clock: clock,
