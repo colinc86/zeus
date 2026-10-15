@@ -92,6 +92,16 @@ private struct ScreenFastDescriber: ScreenDescribing {
     }
 }
 @Suite @MainActor struct ScreenLearningTests {
+    // Vision can synchronously wait on its workers. Keep the test host's main actor free
+    // for native window teardown and managed-session timers, just as production does.
+    private func fixtureTextLines(_ image: CGImage) async throws -> [(String, CGRect)] {
+        let captured = CapturedScreenFrame(image: image)
+        return try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .utility).async {
+                continuation.resume(with: Result { try FrameRedactor.textLines(captured.image) })
+            }
+        }
+    }
     @Test func unchangedAndScrolledFingerprints() throws {
         let base = try ScreenFingerprint(image: ScreenTestImages.draw())
         #expect(try ScreenFingerprint(image: ScreenTestImages.draw()).isUnchanged(from: base))
@@ -99,13 +109,13 @@ private struct ScreenFastDescriber: ScreenDescribing {
     }
     @Test func syntheticBankRedactionSurvivesEncodingAndReOCR() async throws {
         let image = try ScreenTestImages.draw(bank: true)
-        let original = try FrameRedactor.textLines(image).map(\.0).joined(separator: "\n")
+        let original = try await fixtureTextLines(image).map(\.0).joined(separator: "\n")
         #expect(original.contains("4401")); #expect(original.contains("example.person@example.com"))
         let context = ScreenContext(bundleID: "com.apple.Safari", appName: "Safari", windowTitle: "Account 4401 2233 9876", windowID: 1, processID: 1)
         let covered = try await FrameRedactor(redactor: LocalRedactor(useOnDeviceModel: false)).redact(.init(image: image), context: context)
         let source = try #require(CGImageSourceCreateWithData(covered.frame.value.heic as CFData, nil))
         let output = try #require(CGImageSourceCreateImageAtIndex(source, 0, nil))
-        let final = try FrameRedactor.textLines(output).map(\.0).joined(separator: "\n")
+        let final = try await fixtureTextLines(output).map(\.0).joined(separator: "\n")
         for privateText in ["4401", "2233", "9876", "12,480", "example.person", "123456789", "4242"] { #expect(!final.contains(privateText)) }
         #expect(covered.frame.value.boxes.filter { $0.kind == .text }.count >= 5)
         #expect(!covered.text.contains("4401"))
