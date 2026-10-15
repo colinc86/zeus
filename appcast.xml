@@ -6,6 +6,29 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.2.1</title>
+      <pubDate>Thu, 15 Oct 2026 05:09:15 GMT</pubDate>
+      <sparkle:version>14</sparkle:version>
+      <sparkle:shortVersionString>0.2.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Only your assistant can talk to Zeus.</strong> Other agent sessions that happen to have the Zeus server configured are refused with a clear message and never reach your conversation. If one tries, Zeus shows at most one quiet line a day: "Another session tried to reach Zeus · Make it my assistant · Ignore". Settings › Assistant › "Who may talk to Zeus" switches back to "Any session" if you run several agents on purpose.</li>
+<li><strong>Level 3: Zeus can see your screen, privately.</strong> Settings › Privacy › Screen, off by default. When you switch apps or documents, every few minutes in the same place, or when you ask, Zeus takes a picture of the window in front and describes it on your Mac with Apple's on-device model. Text that looks private is blurred, pictures and faces are pixellated, and password dialogs, Keychain, banking apps, video calls, presentations and private browser windows are never captured. Pictures are kept for a week, descriptions for up to 90 days; everything is in What Zeus Kept.</li>
+<li><strong>Ask about this.</strong> Press Shift with your Talk shortcut in any app and the conversation opens with what you're looking at attached: the window, the file or page, and (with Screen Recording on) a picture, each a chip you can remove before sending.</li>
+<li><strong>Phase A polish.</strong> Settings and What Zeus Kept follow a fixed-appearance theme; dropped attachments are chips; the Privacy pane groups each level's controls; rule triggers read naturally; rule notices say "I'd have acted on…", "OK. I'll do that…" and "Got it. I won't."</li>
+<li><strong>Fixes.</strong> Receipts are kept for retry when writing history fails; "Pause for today" resumes on its own at the deadline.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.2.1/Zeus-0.2.1.zip" type="application/octet-stream" sparkle:edSignature="6Fhn25IqX2MYgcH+UXl2qGPxOsffRyXNCvU3kavcXXJrdKXFArduspTkbsusHpT7ZFtMY01g+hYIbZc/ap60CA==" length="11220503"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.2.0</title>
       <pubDate>Thu, 15 Oct 2026 03:27:13 GMT</pubDate>
       <sparkle:version>13</sparkle:version>
