@@ -170,8 +170,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let evening = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: today) ?? today
         // A catch-up and this evening cannot both send on the same local day.
         guard !(ledger?.records ?? []).contains(where: { $0.delivery.kind == .reflection && calendar.isDate($0.delivery.createdAt, inSameDayAs: now) }) else { return }
-        var query = JournalQuery(); query.levels = [.activity, .focus, .screen]
-        query.kinds = [.activity, .focus, .description, .outcome]; query.limit = 100_000
+        var query = JournalQuery(); query.levels = [.activity, .focus, .screen, .typed]
+        query.kinds = [.activity, .focus, .description, .typedText, .outcome]; query.limit = 100_000
         let available: [JournalItem]
         do { available = try journal.items(matching: query) }
         catch { learningError = "Zeus couldn't read the day's journal for reflection."; return }
@@ -188,12 +188,19 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let descriptions = dayItems.filter { $0.level == .screen && $0.kind == .description }
         let indices = descriptions.count <= 4 ? Array(descriptions.indices) : (0..<4).map { $0 * (descriptions.count - 1) / 3 }
         let sampled = Set(indices.map { descriptions[$0].id })
-        let items = dayItems.filter { $0.level != .screen || sampled.contains($0.id) }
+        let typed = dayItems.filter { $0.level == .typed && $0.kind == .typedText && $0.payload.value.topic != nil }
+        let typedIndices = typed.count <= 4 ? Array(typed.indices) : (0..<4).map { $0 * (typed.count - 1) / 3 }
+        let sampledTopics = Set(typedIndices.map { typed[$0].id })
+        let items = dayItems.filter { item in
+            if item.level == .typed { return sampledTopics.contains(item.id) }
+            return item.level != .screen || sampled.contains(item.id)
+        }
         guard !items.isEmpty else { return }
         // Bound the summary and include only evidence actually presented to the model.
         var lines: [String] = [], evidence: [String] = [], bytes = 0
         for item in items.reversed() {
-            let line = "\(item.time.ISO8601Format()) \(item.payload.value.description)"
+            let summary = item.level == .typed ? (item.payload.value.topic ?? "") : item.payload.value.description
+            let line = "\(item.time.ISO8601Format()) \(summary)"
             guard bytes + line.utf8.count <= 8000 else { break }
             lines.append(line); evidence.append(item.id); bytes += line.utf8.count
         }

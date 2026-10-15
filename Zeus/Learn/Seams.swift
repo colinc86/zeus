@@ -31,6 +31,7 @@ extension Redactor {
     func redact(_ payload: JournalPayload) async -> Redacted<JournalPayload> {
         let description = await redact(payload.description)
         let text = await payload.text.asyncMap { await redact($0) }
+        let topic = await payload.topic.asyncMap { await redact($0) }
         var details: [String: String] = [:]
         var report = description.report
         func merge(_ other: RedactionReport) {
@@ -39,12 +40,13 @@ extension Redactor {
             else if report.semanticEngine == .patternsOnly { report.semanticEngine = other.semanticEngine }
         }
         if let text { merge(text.report) }
+        if let topic { merge(topic.report) }
         // Keys can contain captured text too; redact both halves. Collisions retain no raw value.
         for key in payload.details.keys.sorted() {
             let safeKey = await redact(key), safeValue = await redact(payload.details[key] ?? "")
             details[safeKey.value] = safeValue.value; merge(safeKey.report); merge(safeValue.report)
         }
-        return .init(.init(description: description.value, text: text?.value, details: details), report: report)
+        return .init(.init(description: description.value, text: text?.value, topic: topic?.value, details: details), report: report)
     }
 }
 private extension Optional where Wrapped == String {
