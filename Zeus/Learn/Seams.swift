@@ -55,7 +55,7 @@ private extension Optional where Wrapped == String {
 
 enum JournalLevel: Int, Codable, CaseIterable, Sendable { case activity = 1, focus = 2, screen = 3, typed = 4 }
 enum JournalKind: String, Codable, CaseIterable, Sendable {
-    case activity, focus, description, frame, typedText, outcome, reflection
+    case activity, focus, description, frame, typedText, outcome, reflection, sentToAssistant
 }
 /// Phase A stores text only. Frames require the Phase B image-redaction path; .frame is reserved and rejected for now.
 struct JournalPayload: Codable, Equatable, Sendable {
@@ -97,12 +97,16 @@ struct JournalRetention: Codable, Equatable, Sendable {
     var typedDays = 30
 }
 /// Per-day authenticated encryption; implementations inject their key provider in tests (never use the real Keychain).
-protocol JournalStore: Sendable {
-    func append(_ item: JournalItem) async throws
-    func items(matching query: JournalQuery) async throws -> [JournalItem]
-    func delete(_ selection: JournalDeletion) async throws
-    func export(matching query: JournalQuery) async throws -> Data
-    func prune(retention: JournalRetention, now: Date) async throws
+@MainActor protocol JournalStore: AnyObject {
+    /// Concrete stores use Observation. Changes and errors are independently observable.
+    var revision: UInt64 { get }
+    var lastError: String? { get }
+    /// Revalidate capture guards after redaction, then append in the SAME main-actor turn (no intervening await).
+    func append(_ item: JournalItem) throws
+    func items(matching query: JournalQuery) throws -> [JournalItem]
+    func delete(_ selection: JournalDeletion) throws
+    func export(matching query: JournalQuery) throws -> Data
+    func prune(retention: JournalRetention, now: Date) throws
 }
 
 struct RuleTimeWindow: Codable, Equatable, Sendable {
@@ -146,6 +150,8 @@ enum RuleOutcome: String, Codable, Sendable { case accepted, skipped, undone, ig
 /// Agent proposals may only create passive/active or acts/shadow rules, never activate an act.
 @MainActor protocol RulesStore: AnyObject {
     var rules: [LearnedRule] { get }
+    var revision: UInt64 { get }
+    var lastError: String? { get }
     /// 0 = Ask me first, 1 = Just do it. Never bypasses shadow approval or app authority boundaries.
     var autonomy: Double { get set }
     func propose(_ proposals: [RuleProposal], at now: Date) throws -> [LearnedRule]
@@ -153,4 +159,40 @@ enum RuleOutcome: String, Codable, Sendable { case accepted, skipped, undone, ig
     func edit(id: String, sentence: String, trigger: RuleTrigger, at now: Date) throws
     func delete(id: String) throws
     func recordOutcome(_ outcome: RuleOutcome, ruleIDs: [String], at now: Date) throws
+}
+
+/// Current permitted context only. Supply explicit facts; unknown/private context never matches an app/state trigger.
+struct LearningContext: Equatable, Sendable {
+    var frontmostApp: String?
+    var states: Set<String> = []
+    var idleSince: Date?
+    var isLocked = false
+    var isPrivate = false
+}
+struct LearningNotice: Equatable, Identifiable, Sendable {
+    enum Kind: String, Sendable { case newRule, shadow, reflection }
+    let id: String
+    let kind: Kind
+    let createdAt: Date
+    let summary: String
+    let actionTitle: String?
+    let detail: String?
+    let ruleID: String?
+}
+/// App-owned adapter to CardStore.recordNotice; these lines NEVER peek, badge or play a sound.
+@MainActor protocol LearningNoticeRecording: AnyObject {
+    /// Repeated IDs reconnect the action after relaunch without duplicating the persisted line.
+    @discardableResult func recordLearningNotice(_ notice: LearningNotice, action: (@MainActor () -> Void)?) -> Bool
+}
+/// Optional runtime capability; no Shared seam edit is needed for Phase A composition.
+@MainActor protocol LearningRuntimeControlling: AnyObject {
+    var learningInterruptionHold: Bool { get }
+    var learningError: String? { get }
+    var onReviewRule: ((String) -> Void)? { get set }
+    /// App replays the newest still-unread held card, with normal visibility/quiet-hours checks.
+    var onLearningHoldCleared: (([String]) -> Void)? { get set }
+    /// Call after context/enable changes. Runtime also schedules time-window/idle boundaries itself.
+    func learningContextDidChange()
+    /// App-owned Undo paths may report an outcome without exposing their action closures to the agent.
+    func recordLearningOutcome(_ outcome: RuleOutcome, ruleIDs: [String])
 }
