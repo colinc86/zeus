@@ -14,9 +14,9 @@ struct TypingPrivacyView: View {
             Text("Zeus notes what you were typing about, like \"replying to a doctor about rescheduling\", so your assistant can help with it. Only in the apps you choose, and never in password fields.").settingsCaption()
             if let caption = model.statusCaption, model.policy.enabled || !model.modelAvailable {
                 Text(caption).settingsCaption()
-                if model.permission == .reopenRequired {
+                if model.modelAvailable && model.permission == .reopenRequired {
                     KeyboardButton("Reopen Zeus") { model.reopen() }.accessibilityLabel("Reopen Zeus to start noting typing")
-                } else if model.modelAvailable && [.waiting, .denied, .revoked].contains(model.permission) {
+                } else if model.modelAvailable && [.notRequested, .waiting, .denied, .revoked].contains(model.permission) {
                     KeyboardButton("Open System Settings") { model.openPermissionSettings() }.accessibilityLabel("Open Input Monitoring settings")
                 }
             }

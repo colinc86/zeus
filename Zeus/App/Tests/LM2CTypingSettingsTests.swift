@@ -73,4 +73,14 @@ import Testing
         model.permission = .reopenRequired; #expect(model.statusCaption == "Allowed. Reopen Zeus to start.")
         model.secureInput = false; #expect(!model.showsPrivateInput)
     }
+    @Test func interruptedFirstPickerStillExplainsMissingPermissionWithoutRequestingOnRelaunch() throws {
+        let (name, defaults, settings, _) = try fixture(); defer { defaults.removePersistentDomain(forName: name) }
+        settings.edit(4) { $0.enabled = true; $0.consented = true }
+        let restored = ObservationSettings(defaults: defaults)
+        let model = TypingPrivacyModel(policies: restored, privacy: LearnSettings(defaults: defaults))
+        model.modelAvailable = true; var requests = 0; model.requestPermission = { requests += 1 }
+        #expect(!restored.typingPermissionRequested); #expect(model.permission == .notRequested)
+        #expect(model.statusCaption == "Input Monitoring is off for Zeus, so nothing you type is noted.")
+        #expect(requests == 0)
+    }
 }

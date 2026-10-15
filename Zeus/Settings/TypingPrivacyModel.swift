@@ -37,6 +37,7 @@ enum TypingPermissionPresentation: Equatable {
     var statusCaption: String? {
         if !modelAvailable { return Self.modelCaption }
         if let caption = permission.caption { return caption }
+        if isEnabled && permission == .notRequested { return TypingPermissionPresentation.denied.caption }
         if showsPrivateInput { return "Paused: private input." }
         return isEnabled && paused() ? "Paused until tomorrow." : nil
     }
