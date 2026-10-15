@@ -189,6 +189,7 @@ Same frame as the L1 sheet.
 
     "Terminal" is the app, capitalised as everywhere else in Zeus; "unsent text" matches the draft card ("Your assistant has unsent text in Terminal") and the menu line ("Waiting on unsent text in Terminal").
   - When the hold clears and the delivery is acked, the row moves into its day with the usual session label. The group disappears when nothing is waiting.
+  - "Export…" on this segment writes received rows only, never waiting ones; its caption reads "Exports the received items shown, as stored."
   - VoiceOver: "Morning summary, 212 words, waiting since 00:12, your assistant isn't connected", then the action's own label.
 - **Empty states (LM4-A):**
   - Nothing was ever prepared: "Nothing yet. Zeus sends a summary each morning and notes during the day."
@@ -313,7 +314,7 @@ The thread line says "Restart assistant" (sentence case, as the UP1 line does); 
 
 **"Use the new template"** asks first, in the Settings sheet style (Replace / Cancel, as for imports):
 - Title: "Replace your edits?"
-- Body: "AGENTS.md in your assistant folder differs from the template Zeus shipped. Using the new template replaces that file; everything else in the folder stays. Your assistant restarts to read it."
+- Body: "Using the new templates replaces AGENTS.md and CLAUDE.md in your assistant folder, including your edits. Everything else in the folder stays. Your assistant restarts to read them." (Replace restores both files from the shipped snapshot, so the body names both and never claims which one differs.)
 - Buttons: "Replace" (confirms), "Cancel". After Replace the restart follows the stale-setup path above.
 
 **Menu.** While a hold is older than 10 minutes the status line under the assistant reads "Waiting to deliver to Claude" (the agent's short name). The draft case keeps the existing "Waiting on unsent text in Terminal", which already says why.
