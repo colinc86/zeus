@@ -22,6 +22,7 @@ private actor RuntimeHostBuilder {
         try FileManager.default.createDirectory(at: sources, withIntermediateDirectories: true)
         var inputs = [root.appendingPathComponent("TestFixtures/E2EHost/RuntimeHost.swift"),
                       root.appendingPathComponent("Zeus/Shared/AppSeams.swift"),
+                      root.appendingPathComponent("Zeus/Learn/Seams.swift"),
                       root.appendingPathComponent("Zeus/Cards/AttachmentTarget.swift"),
                       root.appendingPathComponent("Zeus/Cards/CardStore.swift"),
                       root.appendingPathComponent("Zeus/Cards/ThreadNotice.swift")]

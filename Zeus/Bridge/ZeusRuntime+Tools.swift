@@ -33,6 +33,9 @@ extension ZeusRuntime {
             guard unexpected.isEmpty else {
                 throw ToolArgumentError("Unexpected arguments for \(name): \(unexpected.joined(separator: ", ")). Allowed: \(properties.keys.sorted().joined(separator: ", ")).")
             }
+            if ["zeus_get_rules", "zeus_propose_rules"].contains(name) {
+                return try await callRuleTool(name, args: args, sessionKey: sessionKey)
+            }
             if Self.appToolNames.contains(name) {
                 return try await callAppTool(name, args: args, sessionKey: sessionKey, deferResultCommit: deferResultCommit)
             }
@@ -171,7 +174,9 @@ extension ZeusRuntime {
     }
     private func addCard(_ card: Card) throws {
         if !card.options.isEmpty || card.input != nil { try responseJournal?.prepare(card.id) }
+        try prepareLearningCard(card)
         cards.add(card)
+        learningContextDidChange()
         try checkCardPersistence()
     }
     /// Budget the complete doubly encoded result (text plus structured JSON),
