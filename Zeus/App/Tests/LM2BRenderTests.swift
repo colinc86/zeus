@@ -30,14 +30,19 @@ import ZeusProtocol
         try journal.append(.init(id: "description", time: now, level: .screen, app: "com.example.Editor", kind: .description,
             payload: .init(.init(description: "Reviewing source changes.", details: ["frame_id": "picture", "window": "Example.swift"])) ))
         let viewer = JournalViewerModel(journal: journal, now: now), policies = ObservationSettings(defaults: defaults)
-        let learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil), rules = LM2RulesFake()
+        let learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: root.appendingPathComponent("activity"), source: { RenderActivitySource() }), rules = LM2RulesFake()
         learn.settings.enabled = true
         policies.edit(2) { $0.enabled = true; $0.consented = true }
-        policies.edit(3) { $0.enabled = true; $0.consented = true }
+        // Render enabled controls without starting real capture/permission work.
+        policies.edit(3) { $0.enabled = true; $0.consented = false }
+        policies.edit(4) { $0.enabled = true; $0.consented = false }
         let screen = ScreenPrivacyModel(policies: policies, privacy: learn.settings); screen.permission = .granted
         let learning = LearningPresentation(defaults: defaults, learn: learn, policies: policies)
-        learning.install(journal: LM2JournalFake(), rules: rules, redactor: LocalRedactor(useOnDeviceModel: false), source: LM2FocusSource())
+        learning.install(journal: journal, rules: rules, redactor: LocalRedactor(useOnDeviceModel: false), source: LM2FocusSource())
         defer { learning.stop() }
+        #expect(learn.isAvailable)
+        #expect(learning.screen != nil)
+        #expect(learning.typing != nil)
         let fixed = now.addingTimeInterval(-3 * 86_400)
         _ = try rules.propose([.init(sentence: "Hold routine messages after 18:00", trigger: .init(time: .init(startMinute: 1080, endMinute: 540, weekdays: Set(2...6)))), .init(sentence: "Send a short update to the team", kind: .acts)], at: fixed)
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json"))
@@ -59,7 +64,7 @@ import ZeusProtocol
                 try await render(SettingsView(settings: settings, managed: shell.managed, cards: cards, status: shell.status, messaging: shell.messaging,
                     preview: shell.messaging, testMessage: shell.testMessage, injectDemo: { _ in }, resetPosition: {}, navigation: navigation,
                     login: shell.login, hotKey: shell.hotKey, activity: shell.surfaceActivity, learn: learn, learning: learning),
-                    name: suffix + "-privacy", theme: theme, scheme: scheme, width: 980, height: 1600)
+                    name: suffix + "-privacy", theme: theme, scheme: scheme, width: 980, height: 3000)
                 let composition = ConversationModel(cards: cards, messaging: shell.messaging)
                 let pictureFile = root.appendingPathComponent("covered.heic"); try frame.value.heic.write(to: pictureFile)
                 composition.attachContext(.init(items: [
@@ -104,4 +109,12 @@ import ZeusProtocol
             try #require(bitmap.representation(using: .png, properties: [:])).write(to: out.appendingPathComponent(name + "-\(scale)x.png"))
         }
     }
+}
+
+@MainActor private final class RenderActivitySource: ActivityEventSource {
+    var secondsSinceLastInput: TimeInterval { 0 }
+    var frontmostApp: (bundleID: String?, name: String?)? { ("com.example.Editor", "Editor") }
+    var displayCount: Int { 1 }
+    func start(_ handler: @escaping @MainActor (ActivitySignal) -> Void) {}
+    func stop() {}
 }
