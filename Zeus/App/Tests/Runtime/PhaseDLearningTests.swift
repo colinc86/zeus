@@ -9,6 +9,23 @@ import ZeusProtocol
         try f.journal.append(.init(id: "focus", time: f.clock.now.addingTimeInterval(-1), level: .focus, kind: .focus, payload: .init(.init(description: "Editor", text: "Stored title ‹name›"))))
         try f.journal.append(.init(id: "typing", time: f.clock.now.addingTimeInterval(-1), level: .typed, kind: .typedText, payload: .init(.init(description: "NEVER_DESCRIPTION", text: "NEVER_WORDS ‹secret›", topic: "Drafting a project update"))))
     }
+    @Test func reflectionIncludesOutcomeSourcesAndSuppressionWithoutRetainedWords() async throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        try seed(f)
+        let rule = try f.rules.addOwn(.init(sentence: "Keep synthetic updates short"), at: f.clock.now)
+        try f.rules.setStatus(.proposed, id: rule.id, at: f.clock.now)
+        f.box.enabled = true; f.box.context.idleSince = f.clock.now.addingTimeInterval(-601)
+        f.runtime.learningContextDidChange()
+        try await eventually { !f.connector.deliveries.isEmpty }
+        let reflection = try #require(f.connector.deliveries.first)
+        #expect(reflection.kind == .reflection)
+        #expect(reflection.content.contains("signal=toggledOff"))
+        #expect(reflection.content.contains("source=explicit"))
+        #expect(reflection.content.contains("Do not re-propose fingerprint="))
+        #expect(reflection.content.contains("Drafting a project update"))
+        #expect(!reflection.content.contains("NEVER_WORDS"))
+        #expect(reflection.content.utf8.count < 24_000)
+    }
     @Test func journalDefaultsDenyAndReturnsOnlyPermittedSummariesWithExactReceipt() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }; try seed(f)
         let off = await f.runtime.callTool("zeus_get_journal", arguments: [:], sessionKey: session)
