@@ -82,6 +82,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         case .toggledOff: "Turned off or deferred a learned rule"
         case .toggledOn: "Approved a learned rule"
         case .edited: "Edited a learned rule"
+        case .stale: "A learned rule has not applied for a month"
         }
         let payload = JournalPayload(description: description, details: ["outcome": outcome.rawValue, "rule_ids": ruleIDs.joined(separator: ",")])
         do { try journal.append(.init(id: "outcome:" + eventID, time: date, level: .activity, kind: .outcome, payload: .init(payload))) }

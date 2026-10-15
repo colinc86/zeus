@@ -145,7 +145,7 @@ import ZeusProtocol
         case .accepted, .toggledOn: 0.05
         case .skipped: -0.15
         case .undone, .toggledOff: -0.25
-        case .ignored: -0.1
+        case .ignored, .stale: -0.1
         case .edited: 0
         }
         rule.confidence = min(1, max(0, rule.confidence + delta))
