@@ -184,7 +184,11 @@ extension ZeusRuntime: LearningRuntimeControlling {
         } else { return }
         let dayKey = reflectionDayKey(day), id = "d_reflection_" + dayKey
         guard ledger?.record(id: id) == nil else { learningCatchUpPending = false; return }
-        let items = available.filter { calendar.isDate($0.time, inSameDayAs: day) }
+        let dayItems = available.filter { calendar.isDate($0.time, inSameDayAs: day) }
+        let descriptions = dayItems.filter { $0.level == .screen && $0.kind == .description }
+        let indices = descriptions.count <= 4 ? Array(descriptions.indices) : (0..<4).map { $0 * (descriptions.count - 1) / 3 }
+        let sampled = Set(indices.map { descriptions[$0].id })
+        let items = dayItems.filter { $0.level != .screen || sampled.contains($0.id) }
         guard !items.isEmpty else { return }
         // Bound the summary and include only evidence actually presented to the model.
         var lines: [String] = [], evidence: [String] = [], bytes = 0

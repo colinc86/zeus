@@ -41,13 +41,18 @@ private struct FixtureLearningRedactor: Redactor {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
         let frame = Redacted(FrameItem(heic: Data([1, 2, 3]), width: 100, height: 100, boxes: [], appName: "Fixture", windowTitle: "NEVER_FRAME_METADATA"))
         try f.journal.appendFrame(frame, item: .init(id: "frame", time: f.clock.now, level: .screen, kind: .frame, payload: .init(.init(description: "NEVER_FRAME_METADATA"))))
-        try f.journal.append(.init(id: "screen-description", time: f.clock.now, level: .screen, kind: .description, payload: .init(.init(description: "Reviewing synthetic screen work", details: ["frame_id": "frame"]))))
+        for index in 0..<10 {
+            try f.journal.append(.init(id: "screen-description-\(index)", time: f.clock.now.addingTimeInterval(Double(index - 10)), level: .screen,
+                kind: .description, payload: .init(.init(description: "Reviewing synthetic screen work sample-\(index)", details: ["frame_id": "frame"]))))
+        }
         f.box.enabled = true; f.box.context.idleSince = f.clock.now.addingTimeInterval(-601)
         f.runtime.learningContextDidChange()
         try await eventually { !f.connector.deliveries.isEmpty }
         let sent = try #require(f.connector.deliveries.first)
         #expect(sent.kind == .reflection); #expect(sent.content.contains("Reviewing synthetic screen work"))
         #expect(!sent.content.contains("NEVER_FRAME_METADATA")); #expect(!sent.content.contains("heic"))
+        for index in [0, 3, 6, 9] { #expect(sent.content.contains("sample-\(index)")) }
+        for index in [1, 2, 4, 5, 7, 8] { #expect(!sent.content.contains("sample-\(index)")) }
     }
     @Test func contextAttachmentReceiptsRequireDeliveryAndUseActualTargetAcrossRelaunch() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
