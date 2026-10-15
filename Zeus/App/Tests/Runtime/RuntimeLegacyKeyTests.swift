@@ -56,8 +56,17 @@ struct RuntimeLegacyKeyTests {
         for record in [legacy] + controls { try f.runtime.ledger?.insert(record) }
         f.runtime.stop(); try f.runtime.start()
         var expected = legacy; expected.delivery.sessionKey = currentKey; expected.stateUpdatedAt = f.clock.now
+        expected.holdSince = f.clock.now; expected.holdReason = "disconnected"
         #expect(f.runtime.ledger?.record(id: legacy.delivery.id) == expected)
-        for record in controls { #expect(f.runtime.ledger?.record(id: record.delivery.id) == record) }
+        for record in controls {
+            var expectedControl = record
+            // LM4 adds hold metadata to pending assistant-bound messages, without
+            // changing their target, content, attempt budget, or migration eligibility.
+            if record.isPending && record.delivery.kind == .userMessage {
+                expectedControl.holdSince = f.clock.now; expectedControl.holdReason = "disconnected"
+            }
+            #expect(f.runtime.ledger?.record(id: record.delivery.id) == expectedControl)
+        }
         let persisted = try DeliveryLedger(location: f.runtime.ledgerURL)
         #expect(persisted.record(id: legacy.delivery.id) == expected)
         f.runtime.stop(); try f.runtime.start()
