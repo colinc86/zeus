@@ -6,8 +6,12 @@ import Observation
 @Observable
 final class GlobalHotKey {
     private(set) var error: String?
+    private(set) var contextError: String?
     @ObservationIgnored var onPressed: (() -> Void)?
+    @ObservationIgnored var onAskAboutThis: (() -> Void)?
     @ObservationIgnored private var hotKey: EventHotKeyRef?
+    @ObservationIgnored private var contextHotKey: EventHotKeyRef?
+    private(set) var isContextRegistered = false
     @ObservationIgnored private var configured: TalkHotKey?
     @ObservationIgnored private var suspended = false
     @ObservationIgnored private var stopped = false
@@ -23,7 +27,7 @@ final class GlobalHotKey {
         if configured == shortcut, hotKey != nil, !suspended { return }
         unregister()
         configured = shortcut
-        error = nil
+        error = nil; contextError = nil
         guard !suspended else { return }
         guard shortcut.enabled else { return }
         guard shortcut.isValid else {
@@ -38,20 +42,28 @@ final class GlobalHotKey {
         }
         let id = EventHotKeyID(signature: Self.signature, id: 1)
         let status = RegisterEventHotKey(shortcut.keyCode, shortcut.modifiers, id, GetApplicationEventTarget(), UInt32(kEventHotKeyExclusive), &hotKey)
-        if status != noErr { error = "That shortcut is taken by another app." }
+        if status != noErr { error = "That shortcut is taken by another app."; return }
+        if let context = shortcut.askAboutThis {
+            let contextID = EventHotKeyID(signature: Self.signature, id: 2)
+            let result = RegisterEventHotKey(context.keyCode, context.modifiers, contextID, GetApplicationEventTarget(), UInt32(kEventHotKeyExclusive), &contextHotKey)
+            isContextRegistered = result == noErr
+            if result != noErr { contextError = "The Ask About This shortcut is taken by another app. Use the Zeus menu." }
+        }
     }
 
-    func suspend() { guard !stopped else { return }; suspended = true; error = nil; unregister() }
+    func suspend() { guard !stopped else { return }; suspended = true; error = nil; contextError = nil; unregister() }
     func resume(_ shortcut: TalkHotKey) { guard !stopped else { return }; suspended = false; configure(shortcut) }
     private func unregister() {
+        isContextRegistered = false
         if let hotKey { UnregisterEventHotKey(hotKey); self.hotKey = nil }
+        if let contextHotKey { UnregisterEventHotKey(contextHotKey); self.contextHotKey = nil }
     }
 
     func stop() {
-        stopped = true; suspended = false; configured = nil; error = nil
+        stopped = true; suspended = false; configured = nil; error = nil; contextError = nil
         unregister()
         if let handler { RemoveEventHandler(handler); self.handler = nil }
-        onPressed = nil
+        onPressed = nil; onAskAboutThis = nil
     }
 
     private nonisolated static let receive: EventHandlerUPP = { _, event, context in
@@ -59,9 +71,14 @@ final class GlobalHotKey {
         var id = EventHotKeyID()
         let status = GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID),
                                        nil, MemoryLayout<EventHotKeyID>.size, nil, &id)
-        guard status == noErr, id.signature == signature, id.id == 1 else { return OSStatus(eventNotHandledErr) }
+        guard status == noErr, id.signature == signature, (id.id == 1 || id.id == 2) else { return OSStatus(eventNotHandledErr) }
         let controller = Unmanaged<GlobalHotKey>.fromOpaque(context).takeUnretainedValue()
-        Task { @MainActor [weak controller] in if let controller, !controller.suspended, controller.hotKey != nil { controller.onPressed?() } }
+        let isContext = id.id == 2
+        Task { @MainActor [weak controller] in
+            guard let controller, !controller.suspended, !controller.stopped else { return }
+            if isContext, controller.contextHotKey != nil { controller.onAskAboutThis?() }
+            else if !isContext, controller.hotKey != nil { controller.onPressed?() }
+        }
         return noErr
     }
 }

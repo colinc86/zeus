@@ -36,6 +36,11 @@ struct TalkHotKey: Codable, Equatable {
     var displayName: String {
         (control ? "\u{2303}" : "") + (option ? "⌥" : "") + (shift ? "\u{21E7}" : "") + (command ? "⌘" : "") + key
     }
+    /// Shift is added only when it creates a distinct shortcut. A shifted Talk key keeps its original action.
+    var askAboutThis: TalkHotKey? {
+        guard enabled, isValid, !shift else { return nil }
+        var value = self; value.shift = true; return value
+    }
     var menuKey: Character? { Self.keys.first { $0.code == keyCode }?.equivalent }
     var menuShortcut: KeyboardShortcut? {
         guard enabled, isValid, let menuKey else { return nil }
