@@ -1,0 +1,60 @@
+{
+  "agent": "2.1.300 (Claude Code)",
+  "isolation": "private tmux, disposable HOME/config, localhost synthetic model; no user credentials",
+  "path": "two real Claude CLIs -> real zeus-mcp -> production ZeusRuntime admission",
+  "tool_calls": [
+    "zeus_say",
+    "zeus_say",
+    "zeus_say",
+    "zeus_say"
+  ],
+  "refusal_received_by_other_session": true,
+  "state": {
+    "picked": "claude:/FIXTURE/project2#23776.1792039366180264",
+    "adopted": null,
+    "notices": [
+      {
+        "primaryDone": null,
+        "summary": "Talking to Claude in /FIXTURE/project",
+        "secondary": null,
+        "id": "adopted:claude:/FIXTURE/project#23696.1792039365141879",
+        "primary": "Change"
+      },
+      {
+        "primaryDone": "Now your assistant",
+        "summary": "Another session tried to reach Zeus: Claude in /FIXTURE/project2",
+        "secondary": "Ignore",
+        "id": "refused:claude:/FIXTURE/project2#23776.1792039366180264:2026-10-14",
+        "primary": "Make it my assistant"
+      }
+    ],
+    "assistantTarget": "claude:/FIXTURE/project2#23776.1792039366180264",
+    "cards": [
+      {
+        "body": "ST1 hello through Zeus",
+        "session": "claude:/FIXTURE/project#23696.1792039365141879"
+      },
+      {
+        "body": "ST1 hello through Zeus",
+        "session": "claude:/FIXTURE/project2#23776.1792039366180264"
+      }
+    ],
+    "sessions": [
+      {
+        "key": "claude:/FIXTURE/project2#23776.1792039366180264",
+        "cwd": "/FIXTURE/project2",
+        "channel": true
+      },
+      {
+        "key": "claude:/FIXTURE/project#23696.1792039365141879",
+        "cwd": "/FIXTURE/project",
+        "channel": true
+      }
+    ],
+    "ok": true
+  },
+  "panes": {
+    "assistant": "\n \u2590\u259b\u2588\u2588\u2588\u259b\u2588   Claude Code v2.1.300\n\u259d\u259c\u2588\u2588\u2588\u2588\u2588\u2588\u2580  Haiku 4.5 \u00b7 API Usage Billing\n \u259d\u259d   \u259d\u259d   /FIXTURE/project\n\n\n\u276f ST1 ping\n\n  Called zeus \n\n\u23fa ST1 DONE\n\n\u273b Churned for 0s \u00b7 done 11:42 PM\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n                     tmux detected \u00b7 scroll with PgUp/PgDn \u00b7 or add 'set -g mouse on' to ~/.tmux.conf for wheel scroll\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\u276f\u00a0 \n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  \u23f8 manual mode on \u00b7 ? for shortcuts \u00b7 \u2190 for agents\n",
+    "other": "\n \u2590\u259b\u2588\u2588\u2588\u259b\u2588   Claude Code v2.1.300\n\u259d\u259c\u2588\u2588\u2588\u2588\u2588\u2588\u2580  Haiku 4.5 \u00b7 API Usage Billing\n \u259d\u259d   \u259d\u259d   /FIXTURE/project2\n\n\n\u276f ST1 ping\n\n  Called zeus \n\n\u23fa ST1 DONE\n\n\u273b Brewed for 0s \u00b7 done 11:42 PM\n\n\u276f ST1 ping\n\n  Called zeus \n\n\u23fa ST1 DONE\n\n\u273b Baked for 0s \u00b7 done 11:42 PM\n\n\u276f ST1 ping\n\n  Called zeus \n\n\u23fa ST1 DONE\n\n\u273b Brewed for 0s \u00b7 done 11:42 PM\n\n\n\n\n\n\n                     tmux detected \u00b7 scroll with PgUp/PgDn \u00b7 or add 'set -g mouse on' to ~/.tmux.conf for wheel scroll\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\u276f\u00a0 \n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  \u23f8 manual mode on \u00b7 ? for shortcuts \u00b7 \u2190 for agents\n"
+  }
+}
