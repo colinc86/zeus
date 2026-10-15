@@ -38,7 +38,8 @@ import Testing
         fake.permission = .granted; fake.privateInput = true; model.syncPresentation()
         #expect(model.privacy.statusCaption == "Paused: private input.")
         fake.permission = .revoked; model.syncPresentation(); #expect(model.privacy.permission == .revoked)
-        fake.lastPermissionRequestGranted = true; model.syncPresentation(); #expect(model.privacy.permission == .reopenRequired)
+        fake.lastPermissionRequestGranted = true; model.syncPresentation(); #expect(model.privacy.permission == .revoked)
+        fake.permission = .denied; model.syncPresentation(); #expect(model.privacy.permission == .reopenRequired)
         model.privacy.setEnabled(false); #expect(fake.stops > 0); #expect(fake.requests == 1)
     }
     @Test func pauseExpiresWithoutLevelOneAndSafariRequiresExplicitChoice() async throws {
