@@ -67,6 +67,7 @@ private struct ScreenFastDescriber: ScreenDescribing {
     func capture(_ context: ScreenContext) async throws -> CapturedScreenFrame { captures += 1; return .init(image: image) }
 }
 @MainActor private final class ScreenFixture {
+    var idleSeconds: TimeInterval = 0
     var now = Date(timeIntervalSince1970: 1_800_000_000)
     var policy = ScreenPolicy(enabled: true, consented: true)
     var context = ScreenContext(bundleID: "com.example.Editor", appName: "Fixture", windowTitle: "Synthetic", windowID: 1, processID: 42)
@@ -78,7 +79,7 @@ private struct ScreenFastDescriber: ScreenDescribing {
         source = try ScreenFixtureSource(); journal = .init(root: root, keyProvider: FixtureJournalKey())
         observer = ScreenObserver(journal: journal, redactor: LocalRedactor(useOnDeviceModel: false), policy: { [unowned self] in policy },
             context: { [unowned self] in context }, source: source, processor: processor ?? ScreenFastRedactor(),
-            describer: describer ?? ScreenFastDescriber(), coveredTextReader: ScreenFixtureCoveredReader(), clock: { [unowned self] in now })
+            describer: describer ?? ScreenFastDescriber(), coveredTextReader: ScreenFixtureCoveredReader(), clock: { [unowned self] in now }, secondsSinceInput: { [unowned self] in idleSeconds })
     }
     func close() { observer.stop(); try? FileManager.default.removeItem(at: root) }
     func finish(_ count: Int = 2) async throws {
@@ -306,6 +307,12 @@ private struct ScreenFastDescriber: ScreenDescribing {
         #expect((ScreenWindowContextSource.frontWindow(processID: 42, windows: [overlay, other, front])?[kCGWindowNumber as String] as? NSNumber)?.intValue == 3)
         #expect(ScreenWindowContextSource.isBrowser("com.apple.SafariTechnologyPreview"))
         #expect(!ScreenWindowContextSource.isBrowser("com.example.Editor"))
+    }
+    @Test func returnFromIdleTriggersWithoutLevelOneOrWorkspaceSwitch() async throws {
+        let f = try ScreenFixture(); defer { f.close() }; f.idleSeconds = 600
+        f.observer.start(); for _ in 0..<30 { await Task.yield() }
+        f.idleSeconds = 0; f.observer.tick(); try await f.finish()
+        #expect(f.source.captures == 1)
     }
     @Test func summarySamplesDescriptionsNeverFrames() {
         let rows = (0..<10).map { JournalItem(id: "\($0)", level: .screen, kind: .description, payload: .init(.init(description: "Description \($0)"))) }

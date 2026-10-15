@@ -278,7 +278,8 @@ extension FrameJournalStoring {
         var query = JournalQuery(); query.levels = [.screen]; query.limit = 100_000
         for item in try items(matching: query) {
             let days = item.kind == .frame ? 7 : ([7, 30, 90].contains(descriptionDays) ? descriptionDays : 90)
-            if item.time < Calendar.current.startOfDay(for: now).addingTimeInterval(-Double(days) * 86400) { try delete(.item(item.id)) }
+            let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Calendar.current.startOfDay(for: now)) ?? now
+            if item.time < cutoff { try delete(.item(item.id)) }
         }
     }
 }
