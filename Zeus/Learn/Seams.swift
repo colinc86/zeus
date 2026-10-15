@@ -1,6 +1,6 @@
 import Foundation
 
-// LM2 Phase A integration seams. Platform-owned until the PM promotes them to CONTRACT §13.
+// Learning integration seams (CONTRACT §13). Platform-owned; app adapters remain optional.
 
 /// Placeholders carry a category, never the removed text.
 enum RedactionKind: String, Codable, CaseIterable, Sendable {
@@ -57,7 +57,7 @@ enum JournalLevel: Int, Codable, CaseIterable, Sendable { case activity = 1, foc
 enum JournalKind: String, Codable, CaseIterable, Sendable {
     case activity, focus, description, frame, typedText, outcome, reflection, sentToAssistant
 }
-/// Phase A stores text only. Frames require the Phase B image-redaction path; .frame is reserved and rejected for now.
+/// Text metadata only. Image bytes require FrameJournalStoring.appendFrame after image redaction.
 struct JournalPayload: Codable, Equatable, Sendable {
     var description: String
     var text: String?
@@ -241,4 +241,42 @@ extension RuleTrigger {
 /// Runtime subscribes while active. Feedback contains generated categories/IDs only, never card text or raw observations.
 @MainActor protocol LearningRuleOutcomeSource: AnyObject {
     var onRuleOutcome: ((RuleOutcome, [String], String, Date) -> Void)? { get set }
+}
+
+// Phase B values stay Foundation-only so headless runtime hosts can compile these seams.
+/// Normalized top-left coordinates, relative to the kept preview (0...1).
+struct FrameBox: Codable, Equatable, Sendable {
+    enum Kind: String, Codable, Sendable { case text, picture, face }
+    var x: Double
+    var y: Double
+    var width: Double
+    var height: Double
+    var kind: Kind
+}
+/// Already-covered preview bytes only. No source image or removed OCR text is retained.
+struct FrameItem: Codable, Equatable, Sendable {
+    var heic: Data
+    var width: Int
+    var height: Int
+    var boxes: [FrameBox]
+    var appName: String
+    var windowTitle: String
+}
+/// Optional journal capability. Frame IDs equal their .frame JournalItem IDs; descriptions link via details["frame_id"].
+/// Query/export return text metadata, never image bytes. Only explicit local viewer/attachment actions read a frame.
+@MainActor protocol FrameJournalStoring: JournalStore {
+    func appendFrame(_ frame: Redacted<FrameItem>, item: JournalItem) throws
+    func frame(id: String) throws -> Redacted<FrameItem>?
+    /// Applies only screen retention; never changes another capture level's retention.
+    func pruneScreens(descriptionDays: Int, now: Date) throws
+}
+
+extension FrameJournalStoring {
+    func pruneScreens(descriptionDays: Int, now: Date) throws {
+        var query = JournalQuery(); query.levels = [.screen]; query.limit = 100_000
+        for item in try items(matching: query) {
+            let days = item.kind == .frame ? 7 : ([7, 30, 90].contains(descriptionDays) ? descriptionDays : 90)
+            if item.time < Calendar.current.startOfDay(for: now).addingTimeInterval(-Double(days) * 86400) { try delete(.item(item.id)) }
+        }
+    }
 }
