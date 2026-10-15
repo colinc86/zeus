@@ -335,7 +335,7 @@ This paragraph is used in the consent sheet and in SETUP.md:
   - Under it, monospaced: "10:12  Safari  Reviewing account information."
   - Caption: "Grey boxes are text Zeus covered. Pictures and faces are blurred. The picture is kept for 7 days, the description for 90."
 - **Safari** (caption, PM decision: same exception as Level 2): "Safari: Zeus takes no pictures of Safari unless you add it under Only in apps I choose. Zeus can't tell Safari's private windows apart, so those would be pictured too."
-- **Caveat** (caption): "Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself."
+- **Caveat** (caption): "Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself or let your assistant see them when it asks (off until you turn it on)."
 - **Permission** (caption): "Next, macOS asks you to allow Zeus under Screen Recording. Zeus uses it only for these pictures."
 - **Buttons:** "Not Now" and "Continue".
 
@@ -457,7 +457,7 @@ Topics are kept for <N> days. The words, with private details removed, are kept 
   ```
   - Caption under it: "The first line is the words as kept for 24 hours. The second is the topic kept for 30 days, and the only part your assistant sees."
 - **Safari** (caption, the same exception as Levels 2 and 3): "Safari: Zeus notes nothing you type in Safari unless you add it under Only in apps I choose. Zeus can't tell Safari's private windows apart, so typing in those would be kept too."
-- **Caveat** (caption): "Topics go to your assistant in summaries, like any message. The words never leave this Mac."
+- **Caveat** (caption): "Topics go to your assistant in summaries, like any message. The words never leave this Mac unless you let your assistant see them when it asks (off until you turn it on)."
 - **Permission** (caption): "Next, macOS asks you to allow Zeus under Input Monitoring. Zeus uses it only to read keys in the apps you choose."
 - **Suggestion** (caption): "If you'd rather keep no words, choose Don't keep after turning this on. Topics still work."
 - **Buttons:** "Not Now" and "Continue".
@@ -550,6 +550,7 @@ When the assistant calls `zeus_get_journal`, the thread gets a quiet notice line
 | Case | Line |
 |---|---|
 | Descriptions, titles and topics only | "Looked at your journal: Tue 14:00–15:30 · View" |
+| | "View" opens Sent to your assistant at that answer's row (the sent-answer callback), never a journal date range. |
 | It also got pictures or words | "Looked at your journal, including 2 pictures: Tue 14:00–15:30 · View" (or "including your words") |
 | It asked for raw and was refused | "Looked at your journal: Tue 14:00–15:30 (descriptions only) · View" |
 | Nothing matched | "Looked at your journal: nothing for Tue 14:00–15:30" (no action) |
@@ -565,7 +566,7 @@ A new kind in Sent to your assistant: "Journal answer". The row reads "▸ 14:32
 
 ### 11.4 Lines for acting rules
 
-The shadow line first. One action, "OK next time?" (§6). The verb follows what the rule would have done:
+The shadow line first. Two plain actions once the thread line supports a second one (ST1 added `ThreadNotice.secondaryTitle`): "OK next time?" and "Not this". Until then, one action, with "Not This" in Settings › Rules (§6). The verb follows what the rule would have done:
 
 | Verb | Shadow line |
 |---|---|
@@ -577,6 +578,7 @@ The shadow line first. One action, "OK next time?" (§6). The verb follows what 
 | booked | "I'd have booked the 8:10 train to the office · OK next time?" |
 
 - After **OK:** "OK. I'll do that from now on. · Undo". Undo puts the rule back in shadow.
+- After **Not this:** the line resolves to "Got it. I won't." with no action. The rule retires (PM decision for Phase D; the core's `declineRule`), and no separate "Retired …" line is posted for it.
 - **The acted line** appears once a rule is active and the assistant has acted, as a quiet line:
   - Reversible: "Sent “Running late, 10 min” to the team chat · Undo"
   - Not reversible: "Sent “Running late, 10 min” to the team chat · Not again"
@@ -608,14 +610,16 @@ Based on:
 Proposed by your assistant on Wed 14 Oct
 
 What happened since
-  ✓ Wed 15 Oct 18:05 · Held 2 messages; you read them at 19:10   (accepted)
-  ↶ Thu 16 Oct 18:30 · You pressed Show before 19:00             (undone)
-  – Fri 17 Oct · The prepared list wasn't opened                  (ignored)
-  ✕ Sat 18 Oct · You pressed Skip on its question                 (skipped)
-Fairly sure · was Sure on 15 Oct
+  ✓ Wed 15 Oct 18:05 · Accepted · held messages read
+  ↶ Thu 16 Oct 18:30 · Undone · you pressed Show
+  – Fri 17 Oct · Ignored · prepared list unopened
+  ✕ Sat 18 Oct · Skipped · its question
+Fairly sure
 ```
+
+The core records each outcome as a category, a source, a date and a confidence change, with no prose and no history of the confidence word. So each entry is `<glyph> <date> · <Label> · <source>`, where the source is the event's category in plain words (held messages read, you pressed Show, prepared list unopened, its question, turned off in Settings, …). The change in confidence is never shown as a number, and the last line is only the current word.
 
 - Glyphs: ✓ accepted, ↶ undone, – ignored, ✕ skipped, ○ turned off, ● turned on, ✎ edited. Each also has a text label in parentheses, and VoiceOver reads the label.
 - Newest first, at most 10 entries, then "and 6 earlier".
-- The last line is the current confidence word and its most recent change ("was Sure on 15 Oct"). It's never a number.
+- The last line is the current confidence word only. It's never a number, and there's no "was …" history.
 - With no outcomes yet: "Nothing has happened with this rule yet."
