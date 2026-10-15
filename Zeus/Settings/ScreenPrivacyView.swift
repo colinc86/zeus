@@ -42,6 +42,7 @@ private struct ScreenPolicyControls: View {
             SettingsSegments(label: "Keep descriptions for", options: [7, 30, 90].map { ($0, "\($0) days") },
                 selection: Binding(get: { model.policy.retentionDays }, set: { value in model.policies.edit(3) { $0.retentionDays = value }; model.changed() }))
             Text("Pictures are deleted after 7 days.").settingsCaption()
+            RawJournalAccessView(settings: model.policies, level: .screen)
         }
     }
 }
@@ -91,7 +92,7 @@ struct ScreenConsentSheet: View {
     /// The disclosure and permission caption remain visible even on a short display.
     private var footer: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself.").settingsCaption()
+            Text("Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself or let your assistant see them when it asks (off until you turn it on).").settingsCaption()
             Text("Next, macOS asks you to allow Zeus under Screen Recording. Zeus uses it only for these pictures.").settingsCaption()
             HStack {
                 Spacer()

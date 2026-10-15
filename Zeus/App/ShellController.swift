@@ -256,6 +256,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         learn.stop()
         learning.stop()
         contextCaptureTask?.cancel(); contextCaptureTask = nil
+        if let access = learningRuntime as? any LearningJournalAccessControlling {
+            access.journalAccessPolicy = { .init() }; access.onViewJournalAnswer = nil
+        }
         learningRuntime?.onReviewRule = nil; learningRuntime?.onLearningHoldCleared = nil
         learning.contextDidChange = {}; learning.runtimeProblem = { nil }
         journalWindow?.close()
@@ -844,6 +847,14 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         learningRuntime = runtime
         learning.contextDidChange = { [weak runtime] in runtime?.learningContextDidChange() }
         learning.runtimeProblem = { [weak runtime] in runtime?.learningError }
+        if let access = runtime as? any LearningJournalAccessControlling {
+            access.journalAccessPolicy = { [weak learning] in learning?.journalAccessPolicy ?? .init() }
+            access.onViewJournalAnswer = { [weak self] id in
+                guard let self else { return }
+                self.learning.viewer?.showAnswer(id: id)
+                self.showJournal()
+            }
+        }
         runtime.onReviewRule = { [weak self] in self?.showRule($0) }
         runtime.onLearningHoldCleared = { [weak self] ids in self?.replayHeldCards(ids) }
     }

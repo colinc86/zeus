@@ -278,6 +278,13 @@ final class CardStore: CardStoring {
         else { noticeActions.removeValue(forKey: id) }
         if wasAvailable != (action != nil) { noticeActionRevision &+= 1 }
     }
+    func setSecondaryNoticeAction(id: String, action: (@MainActor () -> Void)?) {
+        guard notices.contains(where: { $0.id == id }) else { return }
+        let wasAvailable = noticeSecondaryActions[id] != nil
+        if let action { noticeSecondaryActions[id] = (action, nil) }
+        else { noticeSecondaryActions.removeValue(forKey: id) }
+        if wasAvailable != (action != nil) { noticeActionRevision &+= 1 }
+    }
     /// Whether the line's in-memory action is still available.
     func hasNoticeAction(id: String) -> Bool {
         _ = noticeActionRevision

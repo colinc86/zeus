@@ -45,6 +45,7 @@ struct TypingPrivacyView: View {
                 SettingsSegments(label: "Keep the words", options: [(0, "Don't keep"), (24, "24 hours"), (168, "7 days")],
                     selection: Binding(get: { model.policies.typingWordsHours }, set: model.setWords))
                 Text(model.keepCaption).settingsCaption()
+                RawJournalAccessView(settings: model.policies, level: .typed)
             }.disabled(!model.policy.enabled)
         }
         .sheet(isPresented: $model.showsConsent, onDismiss: {
@@ -98,7 +99,7 @@ struct TypingConsentSheet: View {
     }
     private var footer: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Topics go to your assistant in summaries, like any message. The words never leave this Mac.").settingsCaption()
+            Text("Topics go to your assistant in summaries, like any message. The words never leave this Mac unless you let your assistant see them when it asks (off until you turn it on).").settingsCaption()
             Text("Next, macOS asks you to allow Zeus under Input Monitoring. Zeus uses it only to read keys in the apps you choose.").settingsCaption()
             HStack {
                 Spacer()

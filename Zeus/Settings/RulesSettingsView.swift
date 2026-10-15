@@ -64,9 +64,10 @@ struct RulesSettingsView: View {
                 actions(rule)
             }
             Text(RulesPaneModel.triggerText(rule.trigger, appName: JournalDisplay.appName)).settingsCaption()
-            if rule.status == .shadow { Text("Seen once. Zeus didn't act.").settingsCaption() }
+            if rule.status == .shadow { Text(model.shadowCaption(rule)).settingsCaption() }
             HStack(spacing: 6) {
-                RuleConfidence(confidence: rule.confidence)
+                if RulesPaneModel.alwaysAsks(rule) { Text("Always asks").settingsCaption() }
+                else { RuleConfidence(confidence: rule.confidence) }
                 Text("· \(rule.updatedBy == .agent ? "from your assistant" : rule.created == rule.updated ? "added by you" : "edited by you") · \(rule.updated.formatted(.relative(presentation: .named)))").settingsCaption()
             }
             HStack {
@@ -115,7 +116,7 @@ struct RuleConfidence: View {
     }
 }
 
-private struct RuleEvidenceView: View {
+struct RuleEvidenceView: View {
     let model: RulesPaneModel
     let rule: LearnedRule
     var body: some View {
@@ -126,7 +127,18 @@ private struct RuleEvidenceView: View {
             if evidence.count > 5 { Text("and \(evidence.count - 5) more").settingsCaption() }
             if evidence.count < rule.evidence.count { Text("Some of the reasons were deleted.").settingsCaption() }
             if evidence.isEmpty { Text("No stored evidence remains for this rule.").settingsCaption() }
-            Text("\(rule.updatedBy == .agent ? "Proposed by your assistant" : "Added by you") on \(rule.created.formatted(date: .abbreviated, time: .omitted))").settingsCaption()
+            Text("\((rule.author ?? rule.updatedBy) == .agent ? "Proposed by your assistant" : "Added by you") on \(rule.created.formatted(date: .abbreviated, time: .omitted))").settingsCaption()
+            SettingsDivider()
+            Text("What happened since").settingsHeading()
+            let events = model.outcomes(for: rule)
+            if events.isEmpty { Text("Nothing has happened with this rule yet.").settingsCaption() }
+            ForEach(Array(events.prefix(10))) { event in
+                Text("\(RulesPaneModel.outcomeGlyph(event.outcome)) \(event.at.formatted(date: .abbreviated, time: .shortened)) · \(RulesPaneModel.outcomeLabel(event.outcome)) · \(RulesPaneModel.outcomeSource(event))").settingsCaption()
+                    .accessibilityLabel("\(event.at.formatted(date: .abbreviated, time: .shortened)), \(RulesPaneModel.outcomeLabel(event.outcome)), \(RulesPaneModel.outcomeSource(event))")
+            }
+            if events.count > 10 { Text("and \(events.count - 10) earlier").settingsCaption() }
+            if RulesPaneModel.alwaysAsks(rule) { Text("Always asks").settingsCaption() }
+            else { RuleConfidence(confidence: rule.confidence) }
         }.padding(20).frame(width: 440).environment(\.zeusFontChoice, .system)
     }
 }

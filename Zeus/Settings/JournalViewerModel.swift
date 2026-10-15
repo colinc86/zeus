@@ -14,6 +14,17 @@ final class JournalViewerModel {
     var app = "" { didSet { reload() } }
     var search = "" { didSet { reload() } }
     var sentOnly = false { didSet { if sentOnly { level = 0; app = "" }; reload() } }
+    private(set) var selectedAnswerID: String?
+    private(set) var answerSelectionRevision: UInt64 = 0
+    func showAnswer(id: String) {
+        var lookup = JournalQuery(); lookup.kinds = [.sentToAssistant]; lookup.limit = 100_000
+        do {
+            guard let answer = try journal.items(matching: lookup).first(where: { $0.id == id }) else {
+                error = "This journal answer is no longer kept."; return
+            }
+            search = ""; sentOnly = true; day = answer.time; selectedAnswerID = id; answerSelectionRevision &+= 1
+        } catch { self.error = "Couldn't read this journal answer. Try again." }
+    }
     private(set) var items: [JournalItem] = []
     private(set) var applications: [String] = []
     private(set) var error: String?

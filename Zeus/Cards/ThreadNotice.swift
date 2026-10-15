@@ -26,16 +26,18 @@ struct ThreadNotice: Codable, Equatable, Identifiable, Sendable {
     var detail: String?
     /// Replaces the action once it's done, e.g. "Undone".
     var resolvedTitle: String?
-    /// A second plain action after the first ("Ignore"); admission lines only.
+    /// A second plain action after the first ("Ignore"); admission or learning lines.
     var secondaryTitle: String?
+    /// Optional rule context, displayed only on hover; never treated as sent content.
+    var help: String?
     /// Durable edge bookkeeping, only for agent-update lines; hidden from the conversation copy.
     var isAgentUpdateCurrent: Bool?
 
     init(id: String = "n_" + UUID().uuidString.prefix(8).lowercased(), kind: Kind, createdAt: Date, summary: String,
          actionTitle: String? = nil, detail: String? = nil, resolvedTitle: String? = nil, isAgentUpdateCurrent: Bool? = nil,
-         secondaryTitle: String? = nil) {
+         secondaryTitle: String? = nil, help: String? = nil) {
         self.id = id; self.kind = kind; self.createdAt = createdAt; self.summary = summary
         self.actionTitle = actionTitle; self.detail = detail; self.resolvedTitle = resolvedTitle
-        self.isAgentUpdateCurrent = isAgentUpdateCurrent; self.secondaryTitle = secondaryTitle
+        self.isAgentUpdateCurrent = isAgentUpdateCurrent; self.secondaryTitle = secondaryTitle; self.help = help
     }
 }

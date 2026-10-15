@@ -28,6 +28,13 @@ struct ObservationPolicy: Codable, Equatable, Sendable {
 final class ObservationSettings {
     @ObservationIgnored private let defaults: UserDefaults
     private var policies: [Int: ObservationPolicy]
+    private var rawLevels: Set<Int>
+    func rawAllowed(_ level: Int) -> Bool { [3, 4].contains(level) && rawLevels.contains(level) }
+    func setRawAllowed(_ allowed: Bool, level: Int) {
+        guard [3, 4].contains(level) else { return }
+        if allowed { rawLevels.insert(level) } else { rawLevels.remove(level) }
+        defaults.set(rawLevels.sorted(), forKey: "learn.rawLevels")
+    }
     var screenPerHour: Int {
         didSet {
             let bounded = [4, 12, 30].contains(screenPerHour) ? screenPerHour : 12
@@ -46,6 +53,7 @@ final class ObservationSettings {
     }
     init(defaults: UserDefaults) {
         self.defaults = defaults
+        rawLevels = Set((defaults.array(forKey: "learn.rawLevels") as? [Int] ?? []).filter { [3, 4].contains($0) })
         let cap = defaults.object(forKey: "learn.screenPerHour") as? Int ?? 12
         screenPerHour = [4, 12, 30].contains(cap) ? cap : 12
         screenPermissionRequested = defaults.bool(forKey: "learn.screenPermissionRequested")
