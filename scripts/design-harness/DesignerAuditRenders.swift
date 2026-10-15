@@ -1193,3 +1193,282 @@ extension DesignerAuditRenders {
         }
     }
 }
+
+// MARK: - LM2: privacy, journal and rules mock-ups (docs/design/PRIVACY.md)
+
+/// Settings chrome for the LM2 mock-ups: the system font and Settings' own button and checkbox styles.
+private struct LM2Settings<Content: View>: View {
+    var width: CGFloat = 524
+    @ViewBuilder let content: () -> Content
+    var body: some View {
+        VStack(alignment: .leading, spacing: ZeusTheme.Spacing.s) { content() }
+            .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).toggleStyle(ZeusCheckboxStyle()).settingsBody()
+            .frame(width: width, alignment: .leading).padding(24)
+            .environment(\.zeusFontChoice, .system)
+            .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+/// A record as stored: placeholders (‹…›) in secondary text so redactions stand out.
+private struct StoredText: View {
+    let text: String
+    @Environment(\.zeusPalette) private var palette
+    var body: some View {
+        var result = AttributedString()
+        var rest = Substring(text)
+        while let open = rest.firstIndex(of: "‹"), let close = rest[open...].firstIndex(of: "›") {
+            result += AttributedString(String(rest[..<open]))
+            var tag = AttributedString(String(rest[open...close])); tag.foregroundColor = palette.secondaryText
+            result += tag
+            rest = rest[rest.index(after: close)...]
+        }
+        result += AttributedString(String(rest))
+        return Text(result)
+    }
+}
+
+private struct LM2AppList: View {
+    let apps: [String]
+    var body: some View {
+        VStack(alignment: .leading, spacing: ZeusTheme.Spacing.xs) {
+            ForEach(apps, id: \.self) { app in
+                HStack(spacing: ZeusTheme.Spacing.s) {
+                    Image(systemName: "app.dashed").frame(width: 16, height: 16)
+                    Text(app).settingsBody()
+                    Spacer()
+                    Button("–") {}.accessibilityLabel("Remove \(app)")
+                }
+            }
+            Button("Add App…") {}
+        }
+    }
+}
+
+private struct LM2PrivacyPane: View {
+    @State var coin = 1
+    @State var keep = 90
+    var body: some View {
+        LM2Settings {
+            Text("Learn from me").settingsTitle()
+            Text("Private details are removed on this Mac before anything is kept.").settingsCaption()
+            SettingsDivider()
+            Text("Apps and timing").settingsHeading()
+            Toggle("Let Zeus learn when and in what I work", isOn: .constant(true))
+            Text("Zeus notes which app is in front, app launches and quits, when you lock, sleep or step away, and how many displays you use.").settingsCaption()
+            SettingsDivider()
+            Text("Windows and pages").settingsHeading()
+            Toggle("Let Zeus keep window titles and web addresses", isOn: .constant(true))
+            Text("Zeus keeps the title of the window in front, the file it shows, and the address of the web page, so your assistant knows what you were working on. Never what's inside the window.").settingsCaption()
+            HStack(spacing: 0) {
+                Text("Waiting for Accessibility permission. · ").settingsCaption()
+                Text("Open System Settings").settingsCaption().underline()
+            }
+            SettingsSegments(label: "Record in", options: [(0, "Everywhere except my private list"), (1, "Only in apps I choose")], selection: $coin)
+            Text(coin == 0 ? "Apps on your private list are never recorded at any level. Time in them counts only as private."
+                           : "Zeus records this level only in these apps.").settingsCaption()
+            LM2AppList(apps: coin == 0 ? ["Banking", "Messages"] : ["Xcode", "Chrome", "Mail"])
+            SettingsSegments(label: "Keep for", options: [(7, "7 days"), (30, "30 days"), (90, "90 days")], selection: $keep)
+            SettingsDivider()
+            Text("What Zeus kept").settingsHeading()
+            Text("Every record exactly as stored, and everything sent to your assistant.").settingsCaption()
+            Button("Open What Zeus Kept…") {}
+        }
+    }
+}
+
+private struct LM2ConsentSheet: View {
+    @Environment(\.zeusPalette) private var palette
+    let keeps = ["The title of the window in front, when it changes", "The file a document window shows",
+                 "The web address in Chrome and Edge", "The subject of the Mail message you're reading"]
+    let never = ["What's inside a window: text, pictures, messages", "Anything while a password field is active",
+                 "Private browser windows", "Apps on your private list"]
+    var body: some View {
+        LM2Settings(width: 460) {
+            Text("Windows and pages").settingsTitle()
+            Text("Zeus keeps the title of the window in front, the file it shows and the web address, so your assistant can tell what you were working on and help at the right moment.")
+                .fixedSize(horizontal: false, vertical: true)
+            list("Zeus keeps", keeps)
+            list("Zeus never keeps", never)
+            Text("An example of what's stored").settingsHeading()
+            ZeusFieldChrome {
+                VStack(alignment: .leading, spacing: 2) {
+                    StoredText(text: "09:41  Mail    Subject: Lunch with ‹name› on Friday")
+                    StoredText(text: "09:44  Chrome  Q3 planning – Docs · docs.example.com/d/‹id›")
+                    StoredText(text: "09:52  Xcode   ManagedSessionController.swift — Zeus")
+                }.font(.system(size: 11, design: .monospaced))
+            }
+            Text("Names, emails, numbers and other private details become placeholders like ‹name› before anything is stored.").settingsCaption()
+            Text("Safari: Zeus keeps only that you used Safari, because it can't tell private windows apart.").settingsCaption()
+            Text("Summaries of this go to your assistant, which sends them to its model provider like any message. The records themselves stay on this Mac.").settingsCaption()
+            Text("Next, macOS asks you to allow Zeus under Accessibility. Zeus uses it only to read window titles.").settingsCaption()
+            HStack { Spacer(); Button("Not Now") {}; Button("Continue") {}.buttonStyle(ZeusButtonStyle(.primary, size: .small)) }
+        }
+    }
+    func list(_ title: String, _ items: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).settingsHeading()
+            ForEach(items, id: \.self) { Text("· " + $0).settingsBody() }
+        }
+    }
+}
+
+private struct LM2KeptWindow: View {
+    let sent: Bool
+    @Environment(\.zeusPalette) private var palette
+    let rows: [(String, String, String)] = [
+        ("09:52", "Xcode", "ManagedSessionController.swift — Zeus"),
+        ("09:44", "Chrome", "Q3 planning – Docs · docs.example.com/d/‹id›"),
+        ("09:41", "Mail", "Subject: Lunch with ‹name› on Friday"),
+        ("09:30", "Private", "Private · 12 min"),
+        ("09:12", "Safari", "Safari · details not kept"),
+        ("09:05", "Slack", "#design-review · thread with ‹name›"),
+        ("08:58", "Things", "Things — Today"),
+    ]
+    var body: some View {
+        LM2Settings(width: 672) {
+            HStack {
+                Button("Kept on this Mac") {}.buttonStyle(ZeusButtonStyle(sent ? .secondary : .primary, size: .small))
+                Button("Sent to your assistant") {}.buttonStyle(ZeusButtonStyle(sent ? .primary : .secondary, size: .small))
+                Spacer()
+            }
+            if sent {
+                Text("Everything Zeus sent your assistant about you. Your assistant's model provider received these like any message.").settingsCaption()
+                ledger("08:00", "Morning summary", "■ Claude · Zeus", "212 words", expanded: true)
+                ledger("Yesterday 18:42", "Day reflection", "■ Claude · Zeus", "388 words", expanded: false)
+                ledger("Yesterday 14:05", "Note", "■ Claude · Zeus", "31 words", expanded: false)
+            } else {
+                HStack {
+                    Button("‹") {}; Text("Today").settingsBody(); Button("›") {}.disabled(true)
+                    Spacer()
+                    Button("All levels ▾") {}; Button("All apps ▾") {}
+                    ZeusFieldChrome { Text("Search what Zeus kept").foregroundStyle(palette.secondaryText) }.frame(width: 190)
+                }
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
+                        HStack(alignment: .firstTextBaseline, spacing: ZeusTheme.Spacing.s) {
+                            Text(row.0).settingsCaption().frame(width: 44, alignment: .leading)
+                            Text(row.1).settingsBody().frame(width: 70, alignment: .leading)
+                            StoredText(text: row.2).settingsBody().foregroundStyle(row.1 == "Private" || row.1 == "Safari" ? palette.secondaryText : palette.text)
+                            Spacer()
+                            if i == 1 { Button("Delete") {} }
+                        }
+                        .padding(.vertical, 5).padding(.horizontal, 6)
+                        .background(i == 1 ? palette.field : .clear)
+                        if i < rows.count - 1 { SettingsDivider() }
+                    }
+                }
+                HStack {
+                    Text("Deleted. · Undo").settingsCaption()
+                    Spacer()
+                    Button("Delete This Day…") {}
+                    Button("Export…") {}
+                }
+                Text("Exports what's shown, as stored.").settingsCaption()
+            }
+        }
+    }
+    func ledger(_ time: String, _ kind: String, _ session: String, _ size: String, expanded: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: ZeusTheme.Spacing.s) {
+                Text(expanded ? "▾" : "▸").settingsCaption()
+                Text(time).settingsCaption().frame(width: 104, alignment: .leading)
+                Text(kind).settingsBody()
+                Text(session).settingsCaption()
+                Spacer()
+                Text(size).settingsCaption()
+            }
+            if expanded {
+                ZeusFieldChrome {
+                    Text("Monday, 12 October. Mostly Xcode (4 h 10 min) on ManagedSessionController.swift, Chrome on “Q3 planning – Docs”, Mail at 09:41. Away 12:30–13:15. A private app for 12 min. You skipped one question (release notes) and pressed Undo once.")
+                        .font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+}
+
+private struct LM2Meter: View {
+    let cells: Int
+    @Environment(\.zeusPalette) private var palette
+    var body: some View {
+        HStack(spacing: 1) {
+            ForEach(0..<5, id: \.self) { i in Rectangle().fill(i < cells ? palette.focusRing : palette.fieldBorder).frame(width: 6, height: 9) }
+        }.accessibilityHidden(true)
+    }
+}
+
+private struct LM2RulesPane: View {
+    @State var dial = 1
+    let captions = ["Every new rule waits in Suggested until you turn it on.",
+                    "Rules about timing and tone start at once. Rules that act for you show what they'd have done once, and wait for your OK.",
+                    "Rules start at once. Rules that act for you still show what they'd have done the first time, then act without asking. Undo is always there."]
+    var body: some View {
+        LM2Settings {
+            Text("Rules").settingsTitle()
+            SettingsSegments(label: "New rules", options: [(0, "Ask me first"), (1, "Balanced"), (2, "Just do it")], selection: $dial)
+            Text(captions[dial]).settingsCaption()
+            SettingsDivider()
+            Text("Active · 2").settingsHeading()
+            rule("Hold Slack messages after 18:00 on weekdays", "Weekdays from 18:00 · in Slack · held, not dropped", cells: 3, word: "Fairly sure", source: "from your assistant · 3 days ago")
+            rule("Don't interrupt while tests are failing in Xcode", "When tests fail · in Xcode · until they pass", cells: 5, word: "Sure", source: "added by you")
+            SettingsDivider()
+            Text("Waiting for your OK · 1").settingsHeading()
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Tell the team chat when I'm running late for stand-up").settingsBody()
+                Text("Weekdays 09:55–10:05 · when you're not at your Mac").settingsCaption()
+                Text("Seen once: would have sent “Running late, 10 min” to the team chat").settingsCaption()
+                HStack { Button("OK") {}.buttonStyle(ZeusButtonStyle(.primary, size: .small)); Button("Not This") {} }
+            }
+            SettingsDivider()
+            Text("Suggested · 1").settingsHeading()
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Have the open pull requests ready at 8:50 on Mondays").settingsBody()
+                HStack(spacing: 6) { LM2Meter(cells: 2); Text("Unsure · from your assistant · today").settingsCaption() }
+                HStack { Button("Turn On") {}; Button("Dismiss") {} }
+            }
+            SettingsDivider()
+            Button("Show 3 retired") {}
+            Button("Add Rule…") {}
+        }
+    }
+    func rule(_ sentence: String, _ trigger: String, cells: Int, word: String, source: String) -> some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(sentence).settingsBody().lineLimit(2)
+                Text(trigger).settingsCaption()
+                HStack(spacing: 6) { LM2Meter(cells: cells); Text("\(word) · \(source)").settingsCaption() }
+                    .accessibilityElement(children: .combine).accessibilityLabel("Confidence: \(word)")
+            }
+            Spacer()
+            Toggle("", isOn: .constant(true)).labelsHidden().accessibilityLabel(sentence)
+            Button("⋯") {}.accessibilityLabel("More for this rule")
+        }
+    }
+}
+
+extension DesignerAuditRenders {
+    /// LM2-D: Settings › Privacy levels, the Level 2 consent sheet, What Zeus Kept, Settings › Rules and the quiet thread lines.
+    @Test func privacyMockups() async throws {
+        for look in Snap.Look.basic {
+            try await Snap.render("lm2-privacy-pane", look: look, padding: 0, settle: 0.5) { LM2PrivacyPane() }
+            try await Snap.render("lm2-privacy-pane-everywhere", look: look, padding: 0, settle: 0.5) { LM2PrivacyPane(coin: 0) }
+            try await Snap.render("lm2-consent-level2", look: look, padding: 0, settle: 0.5) { LM2ConsentSheet() }
+            try await Snap.render("lm2-kept", look: look, padding: 0, settle: 0.5) { LM2KeptWindow(sent: false) }
+            try await Snap.render("lm2-sent", look: look, padding: 0, settle: 0.5) { LM2KeptWindow(sent: true) }
+            try await Snap.render("lm2-rules", look: look, padding: 0, settle: 0.5) { LM2RulesPane() }
+            let f = Fixture(font: look.font); defer { f.cleanup() }
+            f.store.add(Card(id: "c_m1", kind: .message, body: "Tests passed. I'll hold the release notes until tomorrow morning.", sessionKey: AuditMessaging.claude.sessionKey, createdAt: t0, updatedAt: t0))
+            f.messaging.sessions = [AuditMessaging.claude]
+            let lines = ["New rule: Hold Slack messages after 18:00 · Review",
+                         "I'd have sent “Running late, 10 min” to the team chat · OK next time?",
+                         "Held 2 messages for your rule “No interruptions while tests fail” · Show",
+                         "3 new rules · Review"]
+            for (i, line) in lines.enumerated() {
+                let parts = line.components(separatedBy: " · ")
+                f.store.recordNotice(ThreadNotice(kind: .learning, createdAt: t0.addingTimeInterval(Double(i + 1) * 60),
+                                                  summary: parts[0], actionTitle: parts.count > 1 ? parts[1] : nil), action: {})
+            }
+            try await Snap.render("lm2-thread-lines", look: look, settle: 0.6) { f.conversation() }
+        }
+    }
+}
