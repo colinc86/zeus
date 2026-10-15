@@ -221,7 +221,9 @@ extension RuleTrigger {
     /// Unconstrained rules guide the assistant, never hold the UI indefinitely.
     var isEvaluable: Bool { time != nil || !apps.isEmpty || state != nil }
     func matches(_ context: LearningContext, at date: Date, calendar: Calendar = .current) -> Bool {
-        guard isEvaluable, !context.isLocked, !context.isPrivate else { return false }
+        guard isEvaluable else { return false }
+        // Civil time remains known with capture off/private; only app/state facts require permitted context.
+        if (!apps.isEmpty || state != nil) && (context.isLocked || context.isPrivate) { return false }
         if !apps.isEmpty, !apps.contains(context.frontmostApp ?? "") { return false }
         if let state, !context.states.contains(state) { return false }
         if let time {
