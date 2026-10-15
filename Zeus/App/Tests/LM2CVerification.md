@@ -11,6 +11,13 @@ All app tests use private defaults, paths and fake keys. Observer tests inject a
 - `TEST_RUNNER_LM2C_RENDER=1 xcodebuild -project Zeus.xcodeproj -scheme Zeus -configuration Debug -destination platform=macOS -derivedDataPath build/DerivedData -clonedSourcePackagesDirPath build/SourcePackages test -only-testing:ZeusTests/LM2CTypingRenderTests`
 - `python3 Zeus/App/Tests/LM2CNativeProbe.py` (after building the app tests)
 
+## Final results
+
+- `scripts/build.sh`: passed with no new compiler warnings (the existing ambiguous-destination notice remains). Log: `build/lm2c-build-gate.log`.
+- `scripts/test.sh`: all ZeusKit suites passed; app result: 954 tests in 195 suites, 931 passed, 23 intentionally skipped, zero failures. Log: `build/lm2c-test-gate.log`; result summary: `build/lm2c-test-gate-summary.json`.
+- Focused model/viewer/adapter/native-layout and all-theme render run: 21 tests in five suites passed. Log: `build/lm2c-review-final.log`. The final full suite additionally covers filtered group deletion and interrupted-picker recovery.
+- `scripts/check-public.sh`: passed. Log: `build/lm2c-public-gate.log`.
+
 ## Coverage
 
 - Typing starts off; only an allow list is accepted, and the shared private list wins. Apple Intelligence is required before first consent. Consent cancellation never enables capture or requests permission. First use picks apps before Input Monitoring is requested; picker cancellation leaves the level on with an empty, safe allow list.
