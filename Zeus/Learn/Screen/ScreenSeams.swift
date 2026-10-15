@@ -29,6 +29,7 @@ struct ScreenPolicy: Equatable, Sendable {
         !privateApps.contains(context.bundleID) && (scope == .onlyChosen ? apps.contains(context.bundleID) : !apps.contains(context.bundleID))
     }
 }
+enum BrowserWindowPrivacy: String, Sendable { case normal, `private`, unknown }
 enum ScreenPermission: String, Sendable { case notDetermined, denied, granted, revoked }
 enum ScreenPause: String, Sendable {
     case disabled, permission, privateContext, locked, secureInput, camera, presenting, sensitiveApp, cap
@@ -36,6 +37,8 @@ enum ScreenPause: String, Sendable {
 /// Presentation is observable on the concrete observer. Settings owns consent, app lists and macOS permission requests.
 @MainActor protocol ScreenObserving: AnyObject {
     var permission: ScreenPermission { get }
+    var lastPermissionRequestGranted: Bool? { get }
+    var permissionGrantedRequiresReopen: Bool { get }
     var pause: ScreenPause? { get }
     var lastError: String? { get }
     func start()
@@ -64,4 +67,9 @@ struct ScreenCaptureResult: Sendable {
     let descriptionID: String?
     let frame: Redacted<FrameItem>?
     let description: Redacted<JournalPayload>?
+}
+
+extension ScreenObserving {
+    var lastPermissionRequestGranted: Bool? { nil }
+    var permissionGrantedRequiresReopen: Bool { false }
 }

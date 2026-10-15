@@ -11,6 +11,7 @@ import ZeusProtocol
     @ObservationIgnored private let keyProvider: any JournalKeyProviding
     @ObservationIgnored private let calendar: Calendar
     @ObservationIgnored private var index: [String: String] = [:]
+    @ObservationIgnored private var forgetEpoch = UUID()
     init(root: URL = ZeusPaths.appSupport.appendingPathComponent("Journal", isDirectory: true),
          keyProvider: any JournalKeyProviding = KeychainJournalKeyProvider(), calendar: Calendar = .current) {
         self.root = root; self.keyProvider = keyProvider; self.calendar = calendar
@@ -58,6 +59,50 @@ import ZeusProtocol
             return try LearningEncryption.read(Redacted<FrameItem>.self, at: frameFile(id), key: keyProvider)
         }
     }
+    @discardableResult func deleteFrame(id: String, includingDescription: Bool) throws -> FrameDeletionReceipt {
+        try perform {
+            let rows = try all()
+            let before = rows.filter { ($0.id == id && $0.kind == .frame) || ($0.kind == .description && $0.payload.value.details["frame_id"] == id) }
+            guard let first = before.first, includingDescription || before.contains(where: { $0.id == id && $0.kind == .frame }) else { throw FrameJournalError.notFound }
+            let url = file(first.time)
+            guard before.allSatisfy({ file($0.time) == url }) else { throw LearningStorageError.invalidItem }
+            let image = try frame(id: id)
+            var after: [JournalItem] = []
+            if !includingDescription {
+                after = before.filter { $0.kind == .description }.map { item in
+                    var payload = item.payload.value; payload.details["picture_not_kept"] = "deletedByUser"
+                    return JournalItem(id: item.id, time: item.time, level: item.level, app: item.app, kind: item.kind,
+                                       payload: .init(payload, report: item.payload.report))
+                }
+                if after.isEmpty {
+                    var details = first.payload.value.details; details["frame_id"] = id; details["picture_not_kept"] = "deletedByUser"
+                    after = [.init(id: "description_" + id, time: first.time, level: .screen, app: first.app, kind: .description,
+                                   payload: .init(.init(description: "Picture deleted by you", details: details)))]
+                }
+            }
+            let ids = Set(before.map(\.id)); let day = try read(url)
+            try LearningEncryption.write(day.filter { !ids.contains($0.id) } + after, to: url, key: keyProvider)
+            // The atomic day rewrite is the commit marker. A failed unlink leaves only unreachable encrypted bytes,
+            // reclaimed by prune/Delete Everything, never a readable picture or a half-deleted description pair.
+            try? FileManager.default.removeItem(at: frameFile(id))
+            index.removeAll(); revision &+= 1
+            return .init(frameID: id, epoch: forgetEpoch, frame: image, before: before, after: after)
+        }
+    }
+    func restoreFrame(_ receipt: FrameDeletionReceipt) throws {
+        try perform {
+            guard receipt.epoch == forgetEpoch else { throw FrameJournalError.conflict }
+            guard let first = receipt.before.first, receipt.before.allSatisfy({ file($0.time) == file(first.time) }) else { throw LearningStorageError.invalidItem }
+            let ids = Set((receipt.before + receipt.after).map(\.id)), rows = try all()
+            let current = rows.filter { ids.contains($0.id) }.sorted { $0.id < $1.id }
+            guard current == receipt.after.sorted(by: { $0.id < $1.id }) else { throw FrameJournalError.conflict }
+            let url = file(first.time)
+            if let image = receipt.frame { try LearningEncryption.write(image, to: frameFile(receipt.frameID), key: keyProvider) }
+            do { try LearningEncryption.write(try read(url).filter { !ids.contains($0.id) } + receipt.before, to: url, key: keyProvider) }
+            catch { if receipt.frame != nil { try? FileManager.default.removeItem(at: frameFile(receipt.frameID)) }; throw error }
+            index.removeAll(); revision &+= 1
+        }
+    }
     private func frameFile(_ id: String) -> URL {
         // IDs never become path components; no raw title, app name or user-controlled slash reaches disk.
         root.appendingPathComponent(SHA256.hash(data: Data(id.utf8)).map { String(format: "%02x", $0) }.joined() + ".zframe")
@@ -86,6 +131,13 @@ import ZeusProtocol
     }
     func delete(_ selection: JournalDeletion) throws {
         try perform {
+            if case .item(let id) = selection, try all().contains(where: { $0.id == id && $0.kind == .frame }) {
+                _ = try deleteFrame(id: id, includingDescription: false); return
+            }
+            switch selection {
+            case .all, .app, .day: forgetEpoch = UUID()
+            case .item: break
+            }
             if case .all = selection {
                 // Forget works even with an unavailable key or damaged ciphertext.
                 for url in try files() + frameFiles() { try FileManager.default.removeItem(at: url); revision &+= 1 }
@@ -130,7 +182,7 @@ import ZeusProtocol
         try perform {
             for url in try files() {
                 let old = try read(url)
-                let kept = old.filter { item in
+                var kept = old.filter { item in
                     if item.kind == .sentToAssistant || (onlyScreen && item.level != .screen) { return true }
                     let days: Int
                     switch item.level {
@@ -142,7 +194,14 @@ import ZeusProtocol
                     let cutoff = calendar.date(byAdding: .day, value: -max(0, days), to: calendar.startOfDay(for: now)) ?? now
                     return item.time >= cutoff
                 }
-                guard kept.count != old.count else { continue }
+                let expired = Set(old.filter { $0.kind == .frame && !kept.contains($0) }.map(\.id))
+                kept = kept.map { item in
+                    guard item.kind == .description, let id = item.payload.value.details["frame_id"], expired.contains(id) else { return item }
+                    var payload = item.payload.value; payload.details["picture_not_kept"] = "expired"
+                    return JournalItem(id: item.id, time: item.time, level: item.level, app: item.app, kind: item.kind,
+                                       payload: .init(payload, report: item.payload.report))
+                }
+                guard kept != old else { continue }
                 if kept.isEmpty { try FileManager.default.removeItem(at: url) }
                 else { try LearningEncryption.write(kept, to: url, key: keyProvider) }
                 index.removeAll(); revision &+= 1
