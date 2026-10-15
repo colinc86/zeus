@@ -447,7 +447,7 @@ Topics are kept for <N> days. The words, with private details removed, are kept 
   - "The words, with private details removed, for 24 hours (you can change this, or keep no words at all)"
 - **"Zeus never keeps"**
   - "Anything you type into a password field"
-  - "Typing in apps you haven't chosen, or in private windows"
+  - "Typing in apps you haven't chosen, or in private windows in Chrome and Edge"
   - "What you paste: Zeus only notes that you pasted"
   - "Typing made by other apps, such as a password manager filling in a form"
 - **"An example"**, in the field chrome:
@@ -456,6 +456,7 @@ Topics are kept for <N> days. The words, with private details removed, are kept 
          → Replying to a doctor about rescheduling an appointment
   ```
   - Caption under it: "The first line is the words as kept for 24 hours. The second is the topic kept for 30 days, and the only part your assistant sees."
+- **Safari** (caption, the same exception as Levels 2 and 3): "Safari: Zeus notes nothing you type in Safari unless you add it under Only in apps I choose. Zeus can't tell Safari's private windows apart, so typing in those would be kept too."
 - **Caveat** (caption): "Topics go to your assistant in summaries, like any message. The words never leave this Mac."
 - **Permission** (caption): "Next, macOS asks you to allow Zeus under Input Monitoring. Zeus uses it only to read keys in the apps you choose."
 - **Suggestion** (caption): "If you'd rather keep no words, choose Don't keep after turning this on. Topics still work."
