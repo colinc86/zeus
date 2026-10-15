@@ -7,6 +7,9 @@ import ZeusDesign
 /// apps, how long activity is kept, Pause for Today and Delete Everything.
 struct PrivacySettingsView: View {
     let learn: LearnFromMe
+    var observations: ObservationSettings?
+    var onObservationChange: @MainActor @Sendable () -> Void = {}
+    var deleteAll: (() -> Void)?
     @Bindable var settings: LearnSettings
     @State private var showsIntro = false
     @State private var confirmingDelete = false
@@ -22,9 +25,12 @@ struct PrivacySettingsView: View {
     static let caveat = "Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac."
     static let scope = "Zeus notes which app is in front, app launches and quits, when you lock, sleep or step away, and how many displays you use. Never what you type, copy, read or open."
 
-    init(learn: LearnFromMe, pickApp: (@MainActor (@escaping @MainActor (URL?) -> Void) -> Void)? = nil,
+    init(learn: LearnFromMe, observations: ObservationSettings? = nil,
+         onObservationChange: @escaping @MainActor @Sendable () -> Void = {}, deleteAll: (() -> Void)? = nil,
+         pickApp: (@MainActor (@escaping @MainActor (URL?) -> Void) -> Void)? = nil,
          announce: @escaping @MainActor (String) -> Void = AccessibilityFeedback.announce) {
         self.learn = learn
+        self.observations = observations; self.onObservationChange = onObservationChange; self.deleteAll = deleteAll
         settings = learn.settings
         self.pickApp = pickApp
         self.announce = announce
@@ -32,7 +38,7 @@ struct PrivacySettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Learn from me").settingsTitle()
+            Text(observations == nil ? "Learn from me" : "Apps and timing").settingsTitle()
             Toggle("Let Zeus learn when and in what I work", isOn: Binding(get: { settings.enabled }, set: switchChanged))
                 .accessibilityLabel("Let Zeus learn when and in what I work")
                 .disabled(!learn.isAvailable)
@@ -55,6 +61,10 @@ struct PrivacySettingsView: View {
             }
 
             SettingsDivider()
+            if let observations {
+                ObservationScopeView(settings: observations, privacy: settings, level: 1, onChange: onObservationChange)
+                    .disabled(!settings.enabled)
+            } else {
             Text("Private apps").settingsTitle()
             Text("Time in these apps is recorded as private: how long, never which app.").settingsCaption()
             VStack(alignment: .leading, spacing: ZeusTheme.Spacing.s) {
@@ -71,6 +81,7 @@ struct PrivacySettingsView: View {
                 .disabled(choosingApp)
             if let appSelectionResult { Text(appSelectionResult).settingsCaption() }
 
+            }
             SettingsDivider()
             SettingsSegments(label: "Keep activity for", options: LearnSettings.retentionChoices.map { ($0, "\($0) days") },
                              selection: $settings.retentionDays)
@@ -102,10 +113,10 @@ struct PrivacySettingsView: View {
 
     private var deleteConfirmation: some View {
         VStack(alignment: .leading, spacing: ZeusTheme.Spacing.s) {
-            Text("Delete all recorded activity and every summary? This can't be undone.")
+            Text(observations == nil ? "Delete all recorded activity and every summary? This can't be undone." : "Delete everything Zeus kept and sent? This can't be undone.")
                 .zeusFont(.caption).foregroundStyle(palette.text).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: ZeusTheme.Spacing.s) {
-                KeyboardButton("Delete") { learn.deleteEverything(); confirmingDelete = false }
+                KeyboardButton("Delete") { if let deleteAll { deleteAll() } else { learn.deleteEverything() }; confirmingDelete = false }
                     .buttonStyle(ZeusButtonStyle(.destructive, size: .small)).accessibilityLabel("Delete")
                 KeyboardButton("Cancel", focus: $cancelFocused) { confirmingDelete = false }
                     .accessibilityLabel("Cancel")

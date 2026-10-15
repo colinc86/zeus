@@ -33,6 +33,9 @@ final class LearnSettings {
     static let retentionChoices = [7, 14, 30, 60, 90]
     @ObservationIgnored private let defaults: UserDefaults
 
+    /// App-side per-level scope, shared with the L1 recorder; the private list always wins.
+    @ObservationIgnored var permitsApp: ((String?, String?) -> Bool)?
+
     var enabled: Bool { didSet { defaults.set(enabled, forKey: "learn.enabled") } }
     /// The one-time sheet was answered.
     var introShown: Bool { didSet { defaults.set(introShown, forKey: "learn.introShown") } }
@@ -63,13 +66,13 @@ final class LearnSettings {
             ?? ExcludedApp.defaults
         momentKinds = (defaults.stringArray(forKey: "learn.moments")).map { Set($0.compactMap(MomentKind.init(rawValue:))) }
             ?? Set(MomentKind.allCases)
-        retentionDays = Self.clampRetention(defaults.object(forKey: "learn.retentionDays") as? Int ?? 30)
+        retentionDays = Self.clampRetention(defaults.object(forKey: "learn.retentionDays") as? Int ?? 90)
         pausedUntil = defaults.object(forKey: "learn.pausedUntil") as? Date
     }
 
     func isPaused(at date: Date) -> Bool { pausedUntil.map { date < $0 } ?? false }
     func isExcluded(bundleID: String?, name: String?) -> Bool {
-        excludedApps.contains { $0.matches(bundleID: bundleID, name: name) }
+        excludedApps.contains { $0.matches(bundleID: bundleID, name: name) } || (permitsApp.map { !$0(bundleID, name) } ?? false)
     }
     static func clampRetention(_ days: Int) -> Int { min(90, max(7, days)) }
 }

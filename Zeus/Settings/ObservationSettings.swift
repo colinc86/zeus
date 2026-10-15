@@ -13,12 +13,14 @@ struct ObservationPolicy: Codable, Equatable, Sendable {
     var apps: [ExcludedApp] = []
     var retentionDays = 90
 
+    var permitsSafariDetails: Bool { scope == .chosenApps && apps.contains { $0.matches(bundleID: "com.apple.Safari", name: nil) } }
+
     /// The shared private list always wins, including in allow-list mode. Unknown apps fail closed.
     func allows(bundleID: String?, name: String?, privateApps: [ExcludedApp]) -> Bool {
         guard let bundleID, !bundleID.isEmpty,
               !privateApps.contains(where: { $0.matches(bundleID: bundleID, name: name) }) else { return false }
         let listed = apps.contains { $0.matches(bundleID: bundleID, name: name) }
-        return scope == .chosenApps ? listed : !listed
+        return scope == .chosenApps ? listed : true
     }
 }
 

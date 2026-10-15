@@ -20,7 +20,12 @@ struct ZeusApp: App {
 
 @MainActor
 final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
-    let shell = ShellController()
+    lazy var shell: ShellController = {
+        let testing = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil || NSClassFromString("XCTestCase") != nil
+        guard !testing else { return ShellController() }
+        do { return ShellController(learningServices: try LearningServices.production(), requirePrivateJournal: true) }
+        catch { return ShellController(requirePrivateJournal: true) }
+    }()
     private(set) var runtime: ZeusRuntime?
 
 

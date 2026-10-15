@@ -36,6 +36,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     @ObservationIgnored private var managedUpdates: ManagedAgentUpdateModel?
     /// "Learn from me" (L1, CONTRACT §13). Its `learnings` is the runtime's `LearningsProviding`.
     let learn: LearnFromMe
+    let learning: LearningPresentation
+    @ObservationIgnored let learningServices: LearningServices?
     private(set) var isVisible = false
     /// The composition point can set this when ZeusRuntime.start() fails.
     var runtimeError: String? { didSet { messaging.startupError = runtimeError } }
@@ -66,6 +68,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     @ObservationIgnored private var closingTask: Task<Void, Never>?
     @ObservationIgnored private var keyMonitor: Any?
     private var settingsWindow: NSWindow?
+    private var journalWindow: NSWindow?
     private var previousApplication: NSRunningApplication?
     private var renderedAnchorOffset = CGPoint.zero
     @ObservationIgnored private var tickTask: Task<Void, Never>?
@@ -76,7 +79,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     @ObservationIgnored private var resizeFixedX: CGFloat?
 
     init(defaults: UserDefaults = .standard, cards: CardStore? = nil, settings: AppSettings? = nil,
-         popupSound: any PopupSoundPlaying = SystemPopupSoundPlayer.shared) {
+         popupSound: any PopupSoundPlaying = SystemPopupSoundPlayer.shared,
+         learningServices: LearningServices? = nil, requirePrivateJournal: Bool = false) {
+        self.learningServices = learningServices
         self.defaults = defaults
         self.popupSound = popupSound
         visibility = AvatarVisibilityModel(defaults: defaults)
@@ -90,12 +95,26 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         testMessage = ComposeModel(cards: cards, messaging: messaging)
         // ZeusPaths.activity in the app; next to a test's own Characters folder otherwise, and none when a test passes no
         // folder, so tests never see the real one.
-        learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: settings.userCharacterDirectory.map {
+        let learnSettings = LearnSettings(defaults: defaults), policies = ObservationSettings(defaults: defaults)
+        let learnRoot = (requirePrivateJournal && learningServices == nil) ? nil : settings.userCharacterDirectory.map {
             $0 == ZeusPaths.userCharacters ? ZeusPaths.activity : $0.deletingLastPathComponent().appendingPathComponent("Activity", isDirectory: true)
-        })
+        }
+        learn = LearnFromMe(settings: learnSettings, root: learnRoot, journal: learningServices?.journal, redactor: learningServices?.redactor,
+            captureAllowed: { event in
+                guard let source = learningServices?.source, !source.isSecure, !source.isLocked else { return learningServices == nil && !requirePrivateJournal }
+                guard let app = event.app else { return true }
+                return app != "com.colinc86.Zeus" && !app.hasPrefix("local.zeus.")
+                    && policies.policy(1).allows(bundleID: app, name: event.name, privateApps: learnSettings.excludedApps)
+            })
+        learning = LearningPresentation(defaults: defaults, learn: learn, policies: policies)
         status = AvatarStatusModel(cards: cards, quietHours: { [weak settings] in settings?.isQuiet(at: $0) ?? false },
                                    assistantActivity: { [weak messaging] in messaging?.assistantActivity })
         super.init()
+        if let services = learningServices {
+            learning.install(journal: services.journal, rules: services.rules, redactor: services.redactor, source: services.source)
+        } else if requirePrivateJournal { learning.reportStoreError() }
+        learning.presentationChanged = { [weak self] in self?.refreshRulesTab() }
+        refreshRulesTab()
         managed.hasPendingQuestion = { [weak cards] in cards?.hasOpenQuestion == true }
         managedUpdates = ManagedAgentUpdateModel(managed: managed, cards: cards)
         managedUpdates?.onConfirmation = { [weak self] in self?.showSettings(tab: .agent) }
@@ -228,6 +247,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         dismissDraftCancellation()
         settings.stopWatchingUserFolders()
         learn.stop()
+        learning.stop()
+        journalWindow?.close()
         tickTask?.cancel()
         closingTask?.cancel()
         peekExitTask?.cancel()
@@ -956,7 +977,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
                                                                       messaging: messaging, preview: messaging, testMessage: testMessage,
                                                                       injectDemo: { [weak self] in self?.injectDemo($0) },
                                                                       resetPosition: { [weak self] in self?.resetPosition() },
-                                                                      navigation: settingsNavigation, login: login, hotKey: hotKey, activity: surfaceActivity, updater: updater, learn: learn))
+                                                                      navigation: settingsNavigation, login: login, hotKey: hotKey, activity: surfaceActivity, updater: updater, learn: learn, learning: learning, openJournal: { [weak self] in self?.showJournal() }))
             host.sizingOptions = []
             window.contentView = host
             SettingsWindowSize.restore(window, from: defaults, screen: NSScreen.main)
@@ -967,6 +988,31 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         NSApplication.shared.activate()
         settingsWindow?.makeKeyAndOrderFront(nil)
         refreshSurfaceActivity()
+    }
+
+    private func refreshRulesTab() {
+        settingsNavigation.showsRules = learning.enabled || !(learning.rules?.rules.isEmpty ?? true)
+        if !settingsNavigation.showsRules && settingsNavigation.tab == .rules { settingsNavigation.tab = .privacy }
+    }
+    func showRule(_ id: String) {
+        guard let rules = learning.rules else { return }
+        rules.selectedRuleID = id
+        settingsNavigation.showsRules = true
+        showSettings(tab: .rules)
+    }
+
+    func showJournal() {
+        guard let viewer = learning.viewer else { return }
+        viewer.reload()
+        if journalWindow == nil {
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 720, height: 520),
+                styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
+            window.title = "What Zeus Kept"; window.isReleasedWhenClosed = false
+            window.minSize = NSSize(width: 600, height: 400)
+            window.contentView = NSHostingView(rootView: JournalWindowView(model: viewer))
+            window.center(); journalWindow = window
+        }
+        NSApp.activate(); journalWindow?.makeKeyAndOrderFront(nil)
     }
 
     func windowDidResize(_ notification: Notification) {

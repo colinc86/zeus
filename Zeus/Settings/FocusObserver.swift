@@ -22,9 +22,10 @@ final class FocusObserver {
     init(source: any FocusCaptureSource, policies: ObservationSettings, privateApps: @escaping () -> [ExcludedApp],
          paused: @escaping () -> Bool = { false },
          prepare: @escaping (FocusApplication, FocusRecord) async throws -> (@MainActor () throws -> Void)) {
+        self.hasPermission = source.isTrusted
         self.source = source; self.policies = policies; self.privateApps = privateApps; self.paused = paused; self.prepare = prepare
     }
-    var hasPermission: Bool { source.isTrusted }
+    private(set) var hasPermission: Bool
     func start() {
         guard task == nil else { return }
         isRunning = true
@@ -45,6 +46,7 @@ final class FocusObserver {
             && policy.allows(bundleID: app.bundleID, name: app.name, privateApps: privateApps())
     }
     func sample() async {
+        if hasPermission != source.isTrusted { hasPermission = source.isTrusted }
         guard !sampling else { return }
         guard let app = source.application, allowed(app) else { last = nil; lastApplication = nil; return }
         sampling = true; defer { sampling = false }

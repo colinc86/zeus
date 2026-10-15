@@ -268,7 +268,7 @@ final class ConversationModel {
     /// Retry the same outgoing bubble, never consuming a newly arrived question or duplicating history.
     func retry(entryID: String) async {
         guard !isSending, let entry = thread.first(where: { $0.id == entryID }),
-              case .userMessage = entry.content, case .delivery(.failed)? = entry.outcome else { return }
+              case .userMessage(let sentCard) = entry.content, case .delivery(.failed)? = entry.outcome else { return }
         isSending = true
         defer { isSending = false }
         guard let deliveryID = cards.deliveryIDForRetry(cardID: entry.sourceCardID),
@@ -278,7 +278,11 @@ final class ConversationModel {
         _ = cards.setOutgoingState(.init(outcome), cardID: entry.sourceCardID)
         _ = cards.reconcileOutgoingDeliveries(messaging.userMessageDeliveries)
         sendingIDs.remove(entry.sourceCardID)
-        if case .failed = outcome {} else { clearMatchingDraft(entry.body) }
+        if case .failed = outcome {} else {
+            if Self.message(draft, attaching: draftAttachments) == entry.body {
+                clearMatchingDraft(MessageText.submitted(draft), attachments: sentCard.attachments)
+            }
+        }
     }
 
     func pruneClearedHistory() {
@@ -296,8 +300,10 @@ final class ConversationModel {
     }
 
     func attach(_ items: [Attachment]) {
-        let existing = Set(draftAttachments.map(\.target))
-        draftAttachments.append(contentsOf: items.filter { !existing.contains($0.target) }.prefix(max(0, AvatarDrop.maximumItems - draftAttachments.count)))
+        var existing = Set(draftAttachments.map(\.target))
+        for item in items where draftAttachments.count < AvatarDrop.maximumItems {
+            if existing.insert(item.target).inserted { draftAttachments.append(item) }
+        }
     }
     func removeAttachment(id: String) { draftAttachments.removeAll { $0.id == id } }
     private static func cardEntryID(_ id: String) -> String { "card:\(id)" }

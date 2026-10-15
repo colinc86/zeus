@@ -263,7 +263,7 @@ struct ConversationView: View {
                                 KeyboardButton("Remove") { model.removeAttachment(id: item.id) }
                                     .accessibilityLabel("Remove \(item.label)")
                             }
-                            if item.kind == .folder {
+                            if item.kind == .folder && managed?.enabled == true {
                                 KeyboardButton("Work in this folder") { workInFolder(item.target) }
                                     .accessibilityLabel("Work in \(item.label)")
                             }

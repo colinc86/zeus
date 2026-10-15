@@ -27,9 +27,9 @@ import Testing
         func title(_ n: NSObject) -> String { ((n as AnyObject).accessibilityTitle?() ?? nil) ?? "" }
         func selected(_ n: NSObject) -> Bool { (n as AnyObject).isAccessibilitySelected?() ?? false }
         func tabs() -> [NSObject] {
-            nodes(host).filter { ((($0 as AnyObject).accessibilityRole?() ?? nil) == .button) && SettingsTab.allCases.map(\.rawValue).contains(title($0)) }
+            nodes(host).filter { ((($0 as AnyObject).accessibilityRole?() ?? nil) == .button) && navigation.tabs.map(\.rawValue).contains(title($0)) }
         }
-        #expect(tabs().map(title) == SettingsTab.allCases.map(\.rawValue))
+        #expect(tabs().map(title) == navigation.tabs.map(\.rawValue))
         #expect(tabs().filter(selected).map(title) == [navigation.tab.rawValue])
 
         let appearance = try #require(tabs().first { title($0) == SettingsTab.appearance.rawValue })
