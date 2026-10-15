@@ -10,9 +10,9 @@ Renders: `scripts/design-harness/render.sh "privacyMockups()"` → `build/q2-ren
 | Section | Phase | Status |
 |---|---|---|
 | §1–8: principles, Settings › Privacy levels 1–2, the coin and lists, What Zeus Kept, Settings › Rules, quiet lines, drop on Zeus, first run | A | ships in Phase A |
-| §9 Level 3 · Screen, Ask About This | B | designed, not built |
-| §10 Level 4 · Typing | C | designed, not built |
-| §11 Raw on request, journal answers, acting rules, outcomes in Why? | D | designed, not built |
+| §9 Level 3 · Screen, Ask About This | B | shipped (LM2-B-A) |
+| §10 Level 4 · Typing | C | shipped (LM2-C-A) |
+| §11 Raw on request, journal answers, acting rules, outcomes in Why? | D | shipped (LM2-D-A) |
 
 ## 1. The seven principles
 
@@ -280,7 +280,7 @@ These are system lines in the thread: the existing notice style, the same as "Cl
 
 ## 9. Level 3 · "Screen" (Phase B)
 
-> **Phase B: designed, not built.**
+> **Phase B: shipped (LM2-B-A).**
 
 Pipeline and costs: `docs/research/on-device-vision.md`. Renders: `scripts/design-harness/render.sh "screenMockups()"` → `docs/design/lm2/lm2b-*.png`.
 
@@ -404,7 +404,7 @@ This paragraph is used in the consent sheet and in SETUP.md:
 
 ## 10. Level 4 · "Typing" (Phase C)
 
-> **Phase C: designed, not built.**
+> **Phase C: shipped (LM2-C-A).**
 
 Pipeline, costs and the reasons behind these choices: `docs/research/on-device-keystrokes.md`. Renders: `scripts/design-harness/render.sh "typingMockups()"` → `docs/design/lm2/lm2c-*.png`.
 
@@ -523,7 +523,7 @@ While secure input is on (a password field is active) and Level 4 is on:
 
 ## 11. Phase D · depth: journal questions, acting rules, outcomes
 
-> **Phase D: designed, not built.** The tools it relies on are in `AGENT_LEARNING.md` §3 and §5.
+> **Phase D: shipped (LM2-D-A).** The tools are in `AGENT_LEARNING.md` §3 and §5; the shipped tool fields are `wouldHave` / `did`.
 
 The assistant's side of all this is `docs/design/AGENT_LEARNING.md`. Renders: `scripts/design-harness/render.sh "depthMockups()"` → `docs/design/lm2/lm2d-*.png`.
 
@@ -581,6 +581,7 @@ The shadow line first. Two plain actions once the thread line supports a second 
 - After **OK:** "OK. I'll do that from now on. · Undo". Undo puts the rule back in shadow.
 - After **Not this:** the line resolves to "Got it. I won't." with no action. The rule retires (PM decision for Phase D; the core's `declineRule`), and no separate "Retired …" line is posted for it.
 - **The acted line** appears once a rule is active and the assistant has acted, as a quiet line:
+  - **Shipped wording (PM task, LM2-D):** "Did: ‹what the assistant reported› · Undo" (or "· Not again" when it can't be undone). The verb forms below are the target once the tools carry a verb; see `review-lm2-bcd.md` P1.
   - Reversible: "Sent “Running late, 10 min” to the team chat · Undo"
   - Not reversible: "Sent “Running late, 10 min” to the team chat · Not again"
   - After Undo: "Undoing…", then the assistant's own one-line reply ("Done: message deleted." / "Couldn't unsend it; it was delivered.").
