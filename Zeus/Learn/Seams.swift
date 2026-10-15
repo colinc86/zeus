@@ -155,10 +155,21 @@ enum RuleOutcome: String, Codable, Sendable { case accepted, skipped, undone, ig
     /// 0 = Ask me first, 1 = Just do it. Never bypasses shadow approval or app authority boundaries.
     var autonomy: Double { get set }
     func propose(_ proposals: [RuleProposal], at now: Date) throws -> [LearnedRule]
+    /// Explicit user creation, atomically marked .user.
+    func addOwn(_ proposal: RuleProposal, at now: Date) throws -> LearnedRule
     func setStatus(_ status: LearnedRuleStatus, id: String, at now: Date) throws
     func edit(id: String, sentence: String, trigger: RuleTrigger, at now: Date) throws
+    /// Restores a user-deleted rule exactly (including identity and evidence) for Undo.
+    func restoreDeleted(_ rule: LearnedRule) throws
     func delete(id: String) throws
     func recordOutcome(_ outcome: RuleOutcome, ruleIDs: [String], at now: Date) throws
+    /// Stable event IDs prevent re-counting a recovered Skip/Undo/ignored result.
+    func recordOutcome(_ outcome: RuleOutcome, ruleIDs: [String], eventID: String, at now: Date) throws
+}
+extension RulesStore {
+    func recordOutcome(_ outcome: RuleOutcome, ruleIDs: [String], eventID: String, at now: Date) throws {
+        try recordOutcome(outcome, ruleIDs: ruleIDs, at: now)
+    }
 }
 
 /// Current permitted context only. Supply explicit facts; unknown/private context never matches an app/state trigger.
