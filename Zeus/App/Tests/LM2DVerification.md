@@ -58,3 +58,7 @@ Both already-failed app runs were stopped after sampling. Samples are `build/lm2
 Designer approved the storage-warning renders. Their small fixture uses `settingsHeading` for context; the real Privacy pane retains `settingsTitle` and places the warning after its optional model status caption. No ZeusDesign changes.
 
 Final isolated focused verification after the approved wording: **18 tests in five suites passed**, including all nine render surfaces (**252 PNGs**) (`build/lm2d-recovery-final-focused.log`). No test process remains from this appdev verification.
+
+## Final core follow-ups
+
+Adopted platform through `e813439` by original-history merge `a776e8f`: exact-boundary Claude Undo paste verification (`53a860b`), queued typing retention frozen/purged before unlock (`405d658`), and reflection-source/suppression coverage plus fixture OCR moved off MainActor (`e813439`). The integrated `scripts/build.sh` passed with no new warnings (`build/lm2d-final-core-build.log`). Platform reports **72 focused tests in ten suites passed** on these commits; that is owner-reported verification, not a second appdev run. The previously passing 18 app-focused tests are unchanged. No further full-suite attempt was made, as requested; the documented NSAnimation worker-saturation gate remains. The final live Claude Undo acknowledgement proof was still in progress when these commits were adopted.
