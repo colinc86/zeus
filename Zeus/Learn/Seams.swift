@@ -207,3 +207,31 @@ struct LearningNotice: Equatable, Identifiable, Sendable {
     /// App-owned Undo paths may report an outcome without exposing their action closures to the agent.
     func recordLearningOutcome(_ outcome: RuleOutcome, ruleIDs: [String])
 }
+
+/// Durable runtime bookkeeping, kept out of the UI mutation API.
+@MainActor protocol LearningRuleTracking: AnyObject {
+    func associate(cardID: String, ruleIDs: [String]) throws
+    func associatedRuleIDs(cardID: String) -> [String]
+    func markShadowShown(id: String) throws -> Bool
+    func hasShadowShown(id: String) -> Bool
+    func ruleNoticeGroups() -> [[String]]
+    func undoShadowApproval(id: String, at now: Date) throws
+}
+extension RuleTrigger {
+    /// Unconstrained rules guide the assistant, never hold the UI indefinitely.
+    var isEvaluable: Bool { time != nil || !apps.isEmpty || state != nil }
+    func matches(_ context: LearningContext, at date: Date, calendar: Calendar = .current) -> Bool {
+        guard isEvaluable, !context.isLocked, !context.isPrivate else { return false }
+        if !apps.isEmpty, !apps.contains(context.frontmostApp ?? "") { return false }
+        if let state, !context.states.contains(state) { return false }
+        if let time {
+            let minute = calendar.component(.hour, from: date) * 60 + calendar.component(.minute, from: date)
+            let wraps = time.startMinute > time.endMinute
+            let inside = time.startMinute == time.endMinute || (wraps ? minute >= time.startMinute || minute < time.endMinute : minute >= time.startMinute && minute < time.endMinute)
+            guard inside else { return false }
+            let weekdayDate = wraps && minute < time.endMinute ? calendar.date(byAdding: .day, value: -1, to: date) ?? date : date
+            if !time.weekdays.isEmpty, !time.weekdays.contains(calendar.component(.weekday, from: weekdayDate)) { return false }
+        }
+        return true
+    }
+}

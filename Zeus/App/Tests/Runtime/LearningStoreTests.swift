@@ -86,6 +86,25 @@ import Testing
         let reopened = try PersistentRulesStore(fileURL: url, keyProvider: key)
         #expect(reopened.rules == store.rules && reopened.autonomy == 0)
     }
+    @Test func dialNeverSkipsFirstShadowAndUserCreationIsPassive() throws {
+        let root = folder(); defer { try? FileManager.default.removeItem(at: root) }
+        let store = try PersistentRulesStore(fileURL: root.appendingPathComponent("rules.zrules"), keyProvider: FixtureJournalKey())
+        store.autonomy = 0
+        let proposed = try store.propose([.init(sentence: "Send recap", kind: .acts)], at: Date())[0]
+        #expect(proposed.status == .proposed)
+        try store.setStatus(.active, id: proposed.id, at: Date())
+        #expect(store.rules[0].status == .shadow)
+        store.autonomy = 1
+        let shadow = try store.propose([.init(sentence: "Post recap", kind: .acts)], at: Date())[0]
+        #expect(shadow.status == .shadow)
+        try store.recordOutcome(.accepted, ruleIDs: [shadow.id], at: Date())
+        #expect(store.rules.last?.status == .shadow)
+        _ = try store.markShadowShown(id: shadow.id)
+        try store.recordOutcome(.accepted, ruleIDs: [shadow.id], at: Date())
+        #expect(store.rules.last?.status == .active)
+        let own = try store.addOwn(.init(sentence: "My rule", kind: .acts), at: Date())
+        #expect(own.kind == .passive && own.updatedBy == .user && own.confidence == 0.75)
+    }
     @Test func triggerANDPrivateAndOvernightWeekday() throws {
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = try #require(TimeZone(secondsFromGMT: 0))
         let date = try #require(calendar.date(from: .init(year: 2026, month: 10, day: 13, hour: 1)))
