@@ -136,7 +136,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
                 guard !rule.trigger.isEvaluable || matching.contains(where: { $0.id == rule.id }) else { continue }
                 _ = try tracking?.markShadowShown(id: rule.id)
                 let recorded = recorder.recordLearningNotice(.init(id: "shadow:" + rule.id, kind: .shadow, createdAt: rule.created,
-                    summary: "I'd have: \(rule.sentence)", actionTitle: "OK next time?", detail: rule.sentence, ruleID: rule.id), action: { [weak self] in
+                    summary: "I'd have acted on “\(rule.sentence)”", actionTitle: "OK next time?", detail: rule.sentence, ruleID: rule.id), action: { [weak self] in
                     guard let self, self.learningRules?.rules.first(where: { $0.id == rule.id })?.status == .shadow else { return }
                     do { try self.learningRules?.setStatus(.active, id: rule.id, at: self.clock.now); self.learningContextDidChange() }
                     catch { self.learningError = "Zeus couldn't activate this rule." }
@@ -152,9 +152,10 @@ extension ZeusRuntime: LearningRuntimeControlling {
                     do { try (self.learningRules as? any LearningRuleTracking)?.undoShadowApproval(id: rule.id, at: self.clock.now); self.learningContextDidChange() }
                     catch { self.learningError = "Zeus couldn't undo this rule approval." }
                 } }
+                if rule.status == .retired { action = { @MainActor [weak self] in self?.onReviewRule?(rule.id) } }
                 recorder.recordLearningNotice(.init(id: "shadow:" + rule.id, kind: .shadow, createdAt: rule.created,
-                    summary: approved ? "OK. I will do that from now on." : "Rule retired: \(rule.sentence)",
-                    actionTitle: approved ? "Undo" : nil, detail: rule.sentence, ruleID: rule.id), action: action)
+                    summary: approved ? "OK. I'll do that from now on." : (rule.status == .retired ? "Retired: “\(rule.sentence)”" : "Got it. I won't."),
+                    actionTitle: approved ? "Undo" : (rule.status == .retired ? "Review" : nil), detail: rule.sentence, ruleID: rule.id), action: action)
             }
         }
     }
@@ -169,7 +170,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let evening = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: today) ?? today
         // A catch-up and this evening cannot both send on the same local day.
         guard !(ledger?.records ?? []).contains(where: { $0.delivery.kind == .reflection && calendar.isDate($0.delivery.createdAt, inSameDayAs: now) }) else { return }
-        var query = JournalQuery(); query.levels = [.activity, .focus]
+        var query = JournalQuery(); query.levels = [.activity, .focus, .screen]
         query.kinds = [.activity, .focus, .description, .outcome]; query.limit = 100_000
         let available: [JournalItem]
         do { available = try journal.items(matching: query) }
@@ -183,7 +184,11 @@ extension ZeusRuntime: LearningRuntimeControlling {
         } else { return }
         let dayKey = reflectionDayKey(day), id = "d_reflection_" + dayKey
         guard ledger?.record(id: id) == nil else { learningCatchUpPending = false; return }
-        let items = available.filter { calendar.isDate($0.time, inSameDayAs: day) }
+        let dayItems = available.filter { calendar.isDate($0.time, inSameDayAs: day) }
+        let descriptions = dayItems.filter { $0.level == .screen && $0.kind == .description }
+        let indices = descriptions.count <= 4 ? Array(descriptions.indices) : (0..<4).map { $0 * (descriptions.count - 1) / 3 }
+        let sampled = Set(indices.map { descriptions[$0].id })
+        let items = dayItems.filter { $0.level != .screen || sampled.contains($0.id) }
         guard !items.isEmpty else { return }
         // Bound the summary and include only evidence actually presented to the model.
         var lines: [String] = [], evidence: [String] = [], bytes = 0
@@ -223,6 +228,20 @@ extension ZeusRuntime: LearningRuntimeControlling {
                 _ = self.beginSend(id: id)
             } catch { self.learningError = "Zeus couldn't save its reflection delivery." }
         }
+    }
+    func recordContextDeliveryReceipt(id: String) {
+        guard let record = ledger?.record(id: id), record.delivery.kind != .reflection,
+              let at = record.transportDeliveredAt ?? record.delivery.ackedAt else { return }
+        emitContextDeliveryReceipt(deliveryID: id, cardID: record.delivery.cardID, sessionKey: record.delivery.sessionKey, at: at)
+    }
+    func emitContextDeliveryReceipt(deliveryID: String, cardID: String?, sessionKey: String, at date: Date) {
+        guard running, let recorder = cards as? any LearningContextReceiptRecording,
+              contextReceiptIDs.insert(cardID.map { "card:" + $0 } ?? "delivery:" + deliveryID).inserted else { return }
+        let agent = sessions.first { $0.sessionKey == sessionKey }?.agent.rawValue ?? String(sessionKey.split(separator: ":").first ?? "other")
+        let name = ["claude": "Claude", "codex": "Codex", "opencode": "OpenCode"][agent] ?? "Assistant"
+        let identity = SHA256.hash(data: Data(sessionKey.utf8)).map { String(format: "%02x", $0) }.joined()
+        recorder.recordLearningContextReceipt(.init(deliveryID: deliveryID, cardID: cardID, deliveredAt: date, agent: agent,
+            sessionLabel: name + (managedController.sessionKey == sessionKey ? " · Zeus" : " · Assistant"), sessionID: identity))
     }
     func recordReflectionReceipt(id: String) {
         guard let record = ledger?.record(id: id), record.delivery.kind == .reflection, !record.delivery.content.isEmpty else { return }
