@@ -67,3 +67,11 @@ Adopted platform through `e813439` by original-history merge `a776e8f`: exact-bo
 ## Final live evidence adoption
 
 Merged platform proof/report `5caba97` by original history (`0bf2a9e`). The private real-Claude fixture confirms journal answers, purchase shadow handling, and actual Undo submission and acknowledgement; reflection and Undo both delivered on attempt 1. Evidence is in `TestFixtures/live/lm2d/proof.json`, `transcript.md`, and `docs/research/lm2-phase-d-core.md`. Platform reports 72 focused core tests, 247 package tests, final build with no new warnings, and public check passing; all probe-owned processes were cleaned up. This final adoption changes test hosts, probe fixtures and reporting only, not production code. No further full-suite attempt was made. The sole outstanding gate remains ordinary full-suite NSAnimation/64-worker saturation, not storage or the core/live checks.
+
+## LM2-D-A2 main integration
+
+Merged main `d1e0bd3` by merge `b99cda7`. Despite the rebased platform history, Git resolved the merge without conflicts. Verified zero content differences against main for `Zeus/Learn`, `Zeus/Bridge`, `Zeus/App/Tests/Runtime`, `TestFixtures/live/lm2d`, and `docs/research/lm2-phase-d-core.md`; app changes remain intact. The only incoming content change was main's project version (0.2.2 / 15).
+
+- `scripts/build.sh`: passed with no new warnings (`build/lm2d-a2-build.log`).
+- Focused app tests: **17 tests in four suites passed** (`build/lm2d-a2-focused.log`): LM2StoragePresentationTests, LM2DAppTests, LM2DRulesTests, LM2DNativeTests. This includes recovery warnings, raw consent, durable notices/read state, rules outcomes, native actions and older-answer navigation, using isolated fixtures while locked.
+- No full-suite rerun: PM will run it on main after console unlock. Earlier full-suite failure evidence remains recorded above; these focused results do not replace that gate.
