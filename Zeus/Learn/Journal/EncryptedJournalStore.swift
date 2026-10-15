@@ -4,7 +4,8 @@ import Observation
 import ZeusProtocol
 
 /// Per-day AES-GCM storage. Full-text matching is indexed in memory only; no plaintext index is written.
-@MainActor @Observable final class EncryptedJournalStore: JournalStore, FrameJournalStoring, TypingJournalStoring, LearningStorageRecovering {
+@MainActor @Observable final class EncryptedJournalStore: JournalStore, FrameJournalStoring, TypingJournalStoring, LearningStorageRecovering, JournalDeletionObserving {
+    @ObservationIgnored var onJournalDeletion: ((Set<String>?) -> Void)?
     private(set) var revision: UInt64 = 0
     private(set) var lastError: String?
     private(set) var storageWaitingForUnlock = false
@@ -157,6 +158,7 @@ import ZeusProtocol
             // reclaimed by prune/Delete Everything, never a readable picture or a half-deleted description pair.
             try? FileManager.default.removeItem(at: frameFile(id))
             index.removeAll(); revision &+= 1
+            onJournalDeletion?(ids.subtracting(Set(after.map(\.id))))
             return .init(frameID: id, epoch: forgetEpoch, frame: image, before: before, after: after)
         }
     }
@@ -204,14 +206,18 @@ import ZeusProtocol
     }
     func delete(_ selection: JournalDeletion) throws {
         // Forget is authoritative over queued data even when protected files cannot yet be read.
+        var removed = Set<String>()
+        defer { if !removed.isEmpty { onJournalDeletion?(removed) } }
         pendingEntries.removeAll { entry in
             let item = entry.0
-            switch selection {
-            case .all: return true
-            case .item(let id): return item.kind != .sentToAssistant && item.id == id
-            case .app(let app): return item.kind != .sentToAssistant && item.app == app
-            case .day(let day): return item.kind != .sentToAssistant && calendar.isDate(item.time, inSameDayAs: day)
+            let matches: Bool = switch selection {
+            case .all: true
+            case .item(let id): item.kind != .sentToAssistant && item.id == id
+            case .app(let app): item.kind != .sentToAssistant && item.app == app
+            case .day(let day): item.kind != .sentToAssistant && calendar.isDate(item.time, inSameDayAs: day)
             }
+            if matches { removed.insert(item.id) }
+            return matches
         }
         if pendingEntries.isEmpty { recoveryTask?.cancel(); recoveryTask = nil; storageWaitingForUnlock = false }
         try perform {
@@ -226,7 +232,8 @@ import ZeusProtocol
                 // Forget works even with an unavailable key or damaged ciphertext.
                 for url in try files() + frameFiles() { try FileManager.default.removeItem(at: url); revision &+= 1 }
                 index.removeAll(); typingExpiryTask?.cancel(); typingExpiryTask = nil
-                nextTypingExpiry = nil; typingExpiryInitialized = true; return
+                nextTypingExpiry = nil; typingExpiryInitialized = true
+                onJournalDeletion?(nil); return
             }
             for url in try files() {
                 let old = try read(url)
@@ -244,7 +251,7 @@ import ZeusProtocol
                 guard kept.count != old.count else { continue }
                 if kept.isEmpty { try FileManager.default.removeItem(at: url) }
                 else { try LearningEncryption.write(kept, to: url, key: keyProvider) }
-                for item in old where !kept.contains(where: { $0.id == item.id }) { index.removeValue(forKey: item.id) }
+                for item in old where !kept.contains(where: { $0.id == item.id }) { index.removeValue(forKey: item.id); removed.insert(item.id) }
                 revision &+= 1
             }
             try removeOrphanFrames()
@@ -303,6 +310,7 @@ import ZeusProtocol
             guard selected.allSatisfy({ file($0.time) == url }) else { throw TypingJournalError.conflict }
             try LearningEncryption.write(try read(url).filter { !ids.contains($0.id) }, to: url, key: keyProvider)
             index.removeAll(); revision &+= 1
+            onJournalDeletion?(ids)
             return .init(epoch: typingForgetEpoch, items: selected)
         }
     }

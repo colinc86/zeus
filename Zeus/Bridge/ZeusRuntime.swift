@@ -56,6 +56,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored var reflectionTask: Task<Void, Never>?
     @ObservationIgnored var learningCatchUpPending = true
     @ObservationIgnored var learningObservationToken = UUID()
+    @ObservationIgnored var erasedLearningDeliveryIDs = Set<String>()
     @ObservationIgnored var checkedUpdateVersions: [String: Set<String>] = [:]
     @ObservationIgnored var pendingUpdateErrors: [String: String] = [:]
     @ObservationIgnored var installingSessions: Set<String> = []
@@ -307,7 +308,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         }
         if name == "zeus_get_learnings", written, !result.isError,
            case .array(let items) = result.structured?["learnings"], case .string(let id) = items.last?["id"] {
-            learnings.markLearningsRead(through: id)
+            if !learningWasErased(id) { learnings.markLearningsRead(through: id) }
             recordLearningToolReceipts(items, sessionKey: session.sessionKey)
         }
         if name == "zeus_get_responses", written, case .array(let items) = result.structured?["items"] {
