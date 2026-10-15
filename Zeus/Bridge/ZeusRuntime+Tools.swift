@@ -283,7 +283,8 @@ extension ZeusRuntime {
 
     /// "Codex in ~/work".
     static func sessionPhrase(_ session: ConnectedSession) -> String {
-        "\(SessionLabels.agentName(session.agent)) in \((session.cwd as NSString).abbreviatingWithTildeInPath)"
+        let agent: String = switch session.agent { case .claude: "Claude"; case .codex: "Codex"; case .opencode: "OpenCode"; case .other: "Another agent" }
+        return "\(agent) in \((session.cwd as NSString).abbreviatingWithTildeInPath)"
     }
 }
 
