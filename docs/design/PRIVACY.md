@@ -13,6 +13,7 @@ Renders: `scripts/design-harness/render.sh "privacyMockups()"` → `build/q2-ren
 | §9 Level 3 · Screen, Ask About This | B | shipped (LM2-B-A) |
 | §10 Level 4 · Typing | C | shipped (LM2-C-A) |
 | §11 Raw on request, journal answers, acting rules, outcomes in Why? | D | shipped (LM2-D-A) |
+| §4.2 Waiting group and empty states, §6.1 delivery, hold and stale-setup lines | LM4 | building (LM4-A, on LM4-P's seams) |
 
 ## 1. The seven principles
 
@@ -175,6 +176,23 @@ Same frame as the L1 sheet.
   - Click to expand the exact text that was sent, read-only and selectable.
 - **Caption at the top:** "Everything Zeus sent your assistant about you. Your assistant's model provider received these like any message."
 - **No delete here:** the ledger records what has already been sent. Clearing it is part of "Delete Everything…".
+- **Waiting group (LM4-A).** A row appears in the ledger only when the assistant has acked the delivery. Items Zeus has prepared but the assistant hasn't received yet sit above the day groups under one heading, "Waiting", newest first, so an empty "Sent" list is never a mystery.
+  - A waiting row reads: kind · size · "Waiting since 00:12 · <reason>". No session label: no session has received it. The time is today's clock time, or "Tue 00:12" from another day. Click expands the exact text that will be sent, as for a received row.
+  - The reason comes from the platform's `DeliveryHold.reason`, and at most one action follows it:
+
+    | Reason | Text after "Waiting since 00:12 · " | Action |
+    |---|---|---|
+    | `.disconnected` | "your assistant isn't connected" | "Start Assistant" when Zeus runs the assistant and it's off; otherwise none |
+    | `.draft` | "unsent text in its Terminal" | "Open in Terminal" |
+    | `.busy` | "it's busy" | none |
+    | `.olderSetup` | "it was started with an older setup" | "Restart Assistant" |
+
+    "Terminal" is the app, capitalised as everywhere else in Zeus; "unsent text" matches the draft card ("Your assistant has unsent text in Terminal") and the menu line ("Waiting on unsent text in Terminal").
+  - When the hold clears and the delivery is acked, the row moves into its day with the usual session label. The group disappears when nothing is waiting.
+  - VoiceOver: "Morning summary, 212 words, waiting since 00:12, your assistant isn't connected", then the action's own label.
+- **Empty states (LM4-A):**
+  - Nothing was ever prepared: "Nothing yet. Zeus sends a summary each morning and notes during the day."
+  - With every level off: "Nothing yet. Learn from me is off, so Zeus has nothing to send."
 
 ## 5. Settings › Rules (new tab)
 
@@ -259,6 +277,46 @@ These are system lines in the thread: the existing notice style, the same as "Cl
 
 - Several new rules from one reflection collapse to one line: "3 new rules · Review".
 - Everything quoted inside a line has already been through the Redactor.
+
+### 6.1 Delivery lines (LM4-A)
+
+A line says "Sent" only once the assistant has acked the delivery. Until then the same line says "ready", and it changes in place when the ack arrives: one line, in its original place in the thread, never a second line. View always shows the exact text.
+
+| Moment | While waiting | Once received |
+|---|---|---|
+| A morning digest | "Daily summary ready for your assistant · View" | "Sent your daily summary · View" |
+| A note (moment) | "Note ready: back from a break · View" | "Sent a note: back from a break · View" |
+| A reflection | "Daily reflection ready · View" | "Sent a daily reflection · View" |
+
+VoiceOver follows the A12 pattern: "View: Daily summary ready for your assistant", "Hide: …", with Collapsed/Expanded.
+
+**A hold older than 10 minutes** adds one quiet line per hold, which updates in place and clears itself when the delivery goes through. Under 10 minutes nothing is said; the draft card (CONTRACT §12, P2) already covers a user message stuck behind a draft, so this line is for learnings and reflections and never doubles that card.
+
+| Reason | Line | Actions |
+|---|---|---|
+| `.draft` | "Zeus is waiting to deliver to your assistant: unsent text in Terminal · Open in Terminal · Don't send" | Open in Terminal; "Don't send" is the existing cancellation path (`respondToDraftCancellation`) and asks first. It is not called "Deliver anyway": Zeus never clears or submits the user's draft, so there is no way to deliver past it |
+| `.busy` | "Zeus is waiting to deliver to your assistant: it's been busy for 12 min · Open in Terminal" | the minutes update in place, at most once a minute; past an hour "1 h 5 min" |
+| `.disconnected` | "Zeus is waiting to deliver to your assistant: it isn't connected · Start Assistant" | "Start Assistant" only when Zeus runs the assistant and it's off; otherwise no action |
+| `.olderSetup` | none of its own: the stale-setup line below is the notice | |
+
+**Stale setup** (`managedSetupStale`), one line per conversation nonce like the UP1 update line, never while a question is pending:
+
+| State | Line | Settings › Assistant |
+|---|---|---|
+| tools and template | "Zeus has new tools and instructions for your assistant · Restart assistant" | status box "Zeus has new tools and instructions for Claude Code. Restart to use them; the conversation is kept." with the Restart button |
+| tools only | "Zeus has new tools for your assistant · Restart assistant" | "Zeus has new tools for Claude Code. Restart to use them; the conversation is kept." |
+| template only | "Zeus has new instructions for your assistant · Restart assistant" | "Zeus has new instructions for Claude Code. Restart to use them; the conversation is kept." |
+| after pressing | "Restarting when Claude is idle…" (the UP1 text, `agentUpdateWaitingText`) | same |
+| `templateEdited` | "Your assistant's instructions are older than Zeus's template · Open Folder · Use the new template" | the same sentence as the status note, with "Open Folder" and "Use the new template" buttons |
+
+The thread line says "Restart assistant" (sentence case, as the UP1 line does); buttons in Settings and the menu say "Restart Assistant" (`ZeusManagedCopy`). The agent's name comes from `agentName`; "Claude Code" above is the example.
+
+**"Use the new template"** asks first, in the Settings sheet style (Replace / Cancel, as for imports):
+- Title: "Replace your edits?"
+- Body: "AGENTS.md in your assistant folder differs from the template Zeus shipped. Using the new template replaces that file; everything else in the folder stays. Your assistant restarts to read it."
+- Buttons: "Replace" (confirms), "Cancel". After Replace the restart follows the stale-setup path above.
+
+**Menu.** While a hold is older than 10 minutes the status line under the assistant reads "Waiting to deliver to Claude" (the agent's short name). The draft case keeps the existing "Waiting on unsent text in Terminal", which already says why.
 
 ## 7. Drop on Zeus
 

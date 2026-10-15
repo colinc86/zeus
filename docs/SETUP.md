@@ -109,7 +109,7 @@ Choose **Turn On** or **Not Now**. Then, in the same pane:
 - **What Zeus has recorded** lists today's events in plain words, newest first.
 - **Notes to your assistant:** besides the morning summary, up to four notes a day: first activity of the day, back from a break of 2 hours or more, a later start than usual, and the day winding down. Untick any you don't want.
 
-Each summary or note also adds a quiet line to the conversation, such as *Sent your daily summary · View*. **View** shows the exact text your assistant got.
+Each summary or note also adds a quiet line to the conversation: *Daily summary ready for your assistant · View* while it waits, which becomes *Sent your daily summary · View* once your assistant has received it. **View** shows the exact text. If it can't be delivered for ten minutes (unsent text in the assistant's Terminal, or the assistant is busy or not connected), the line says why, and **What Zeus Kept › Sent to your assistant** lists it under **Waiting**. When a Zeus update brings new tools or instructions for your assistant, the conversation says *Zeus has new tools and instructions for your assistant · Restart assistant*; nothing restarts until you press it.
 
 The template tells your assistant to use learnings for timing and tone only: when to speak and what to have ready. It never comments on your habits, never quotes the numbers back unless you ask, and never puts them in messages to other people.
 
@@ -337,6 +337,7 @@ On the right: **Open in Terminal** (when there's a terminal to open), **Start Ne
 |---|---|
 | The status box says **Waiting for you in Terminal** | Press **Open in Terminal** and answer the prompt there (a sign-in, a folder-trust question or a permission). |
 | The status box says **Couldn't keep it running** | Press **Open in Terminal** to see why it quit (often a sign-in or a missing model setting), fix it, then **Try Again**. |
+| A summary says **ready** for a long time, or **Sent to your assistant** stays empty | Open **What Zeus Kept › Sent to your assistant**. The **Waiting** group says why (not connected, unsent text in Terminal, busy, or started with an older setup) and what to press. |
 | An agent says it isn't installed | Install it, then press **Check Again**. Zeus looks in the usual places, such as `/opt/homebrew/bin` and `~/.local/bin`. |
 | The menu says **No assistant connected** (Connect your own) | Run `claude mcp list` (or `codex mcp list`, `opencode mcp list`) and check that zeus is connected. Start a new agent session after adding it. |
 | Claude gets your messages late (Connect your own) | Start it with `--dangerously-load-development-channels server:zeus` and choose **Yes** when it asks. On Team or Enterprise, ask your admin about `channelsEnabled`. |
