@@ -179,6 +179,18 @@ private struct LM2FixtureRedactor: Redactor {
     func redact(_ text: String) async -> Redacted<String> { Redacted(text) }
 }
 @MainActor struct LM2PresentationTests {
+    @Test func restoredL1ScopeHookKeepsPrivateAppsExcludedAndPreservesSavedRetention() throws {
+        let suite = "zeus-lm2-merge-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let settings = LearnSettings(defaults: defaults)
+        #expect(settings.retentionDays == 90)
+        settings.permitsApp = { id, _ in id == "test.editor" || id == "com.apple.Passwords" }
+        #expect(!settings.isExcluded(bundleID: "test.editor", name: "Editor"))
+        #expect(settings.isExcluded(bundleID: "test.other", name: "Other"))
+        #expect(settings.isExcluded(bundleID: "com.apple.Passwords", name: "Passwords"))
+        settings.retentionDays = 14
+        #expect(LearnSettings(defaults: defaults).retentionDays == 14)
+    }
     @Test func l2ContextUsesItsOwnScopeEvenWhenL1AllowListIsEmptyAndRetentionUsesEachLevel() throws {
         let suite = "zeus-lm2-presentation-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
