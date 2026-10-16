@@ -47,3 +47,9 @@ Measured with the installed English NLEmbedding sentence model against:
 | Lunch reminder / Take a break and have something to eat. | -0.158162 |
 
 Runtime clamps negative scores to zero. The initial uncalibrated 0.80 missed even identical text with a new label; 0.35 separates the proved paraphrase from these unrelated examples. This small synthetic calibration does not establish general precision/recall: the pager-duty example remains a false negative. Every hold records its engine/threshold and supports a per-card correction. If the installed language has no sentence embedding, exact matching still works; no remote model or download is used.
+
+## Final quick gate
+
+`scripts/live.sh --quick` passed **20/20 probe/agent rows**, no skips, in **475.62 s**, on implementation `5969830`. Manifest: `build/live/20261016T173917.491714Z/summary.json`. Includes FB1 and LM4 real Claude, app control/card lifecycle, Claude/Codex/OpenCode activity and turn completion, own-session screens, classifiers, Connect Your Own, and the private-tmux E2E suite. The gate rebuilt the app/test host before running.
+
+The first attempt exposed missing concrete redactor dependencies in older headless host source lists. `LiveSupport.py` and the app-owner-authorized E2E source list now include those dependencies; the complete final gate above passed from the corrected source state. No production behavior was weakened or test deadline changed. `scripts/check-public.sh` and `git diff --check` also pass.
