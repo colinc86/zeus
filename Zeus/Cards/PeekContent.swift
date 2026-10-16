@@ -58,9 +58,13 @@ struct PeekContent: View {
                 Button("More") { open(.message) }.buttonStyle(.plain).zeusFont(.caption)
                     .foregroundStyle(palette.title).accessibilityLabel("Read the full message")
             }
-            if !card.attachments.isEmpty {
-                Text(card.attachments.count == 1 ? "1 attachment" : "\(card.attachments.count) attachments")
-                    .zeusFont(.caption).foregroundStyle(palette.secondaryText)
+            if let attachment = card.attachments.first {
+                AttachmentChip(attachment: attachment, compact: true)
+                if card.attachments.count > 1 {
+                    Button(card.attachments.count == 2 ? "and 1 more attachment" : "and \(card.attachments.count - 1) more attachments") { open(.message) }
+                        .buttonStyle(.plain).zeusFont(.caption).foregroundStyle(palette.secondaryText)
+                        .accessibilityLabel("Show all attachments")
+                }
             }
             if inline > 0 || reply {
                 ViewThatFits(in: .horizontal) {
