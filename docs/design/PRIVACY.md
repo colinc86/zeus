@@ -721,7 +721,7 @@ Label **"Your assistant's folder"**, then one line and actions by state:
 
 ### 12.3 "Cover pictures and faces" (Screen level section, after retention)
 
-- **Checkbox:** "Cover pictures and faces". On by default. Caption: "Private text is covered and pictures and faces are pixellated before a screenshot is kept."
+- **Checkbox:** "Cover pictures and faces". On by default. Caption while on: "Private text is covered and pictures and faces are pixellated before a screenshot is kept." While off: "Screenshots are kept as they are. Passwords, keys, card and account numbers and ID numbers are still covered."
 - **Turning it off** shows a sheet first:
   - **Title:** "Keep pictures uncovered?"
   - **Body:** "Zeus will keep screenshots as they are, with pictures, faces and text uncovered. Passwords, keys, card and account numbers and ID numbers are still covered, and Zeus still never takes a picture of a password dialog, a private window or an app on your private list. Pictures already kept stay covered."
@@ -742,7 +742,7 @@ Label **"Your assistant's folder"**, then one line and actions by state:
 ### 12.5 What Zeus Kept
 
 - Header under the segments: "Kept in ~/Zeus Assistant/Zeus" with "Show in Finder" (hidden when no folder is kept).
-- Each row and each day gets "Show in Finder" beside "Delete" (hover and context menu; VoiceOver custom action "Show in Finder"). It selects the item's file; a missing file (deleted in Finder) shows the day folder instead.
+- Each row gets "Show in Finder" beside "Delete" (hover and context menu; VoiceOver custom action "Show in Finder"). It selects the item's file; a missing file (deleted in Finder) shows the day folder instead. The footer button for the day is "Show Day in Finder", so it can't be confused with the header's folder button.
 - The Raw on request switches and their sheets are removed from the Screen and Typing sections. `JournalAnswerDisplay.rawCaption` stays for old ledger rows.
 
 ### 12.6 Delete Everything
