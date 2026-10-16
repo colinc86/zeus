@@ -128,6 +128,8 @@ struct PixelTailShape: Shape {
 public struct ZeusGlyph: View {
     public enum Symbol: String, CaseIterable, Sendable {
         case check, close, reply, left, right, up
+        /// The rating affordance (⋯) and the two rating choices (FB1, CONVERSATION.md §17): the font has no emoji.
+        case more, thumbUp, thumbDown
 
         /// Rows of the bitmap, top to bottom; "#" is filled. All are 7 px tall, the font's cap height.
         public var rows: [String] {
@@ -138,6 +140,9 @@ public struct ZeusGlyph: View {
             case .left: ["...#", "..##", ".###", "####", ".###", "..##", "...#"]
             case .right: ["#...", "##..", "###.", "####", "###.", "##..", "#..."]
             case .up: ["...##...", "..####..", ".######.", "###..###", "...##...", "...##...", "...##..."]
+            case .more: ["..........", "..........", "..........", "##..##..##", "##..##..##", "..........", ".........."]
+            case .thumbUp: ["....#...", "...##...", "...#....", ".#####..", ".#....#.", ".#....#.", "..####.."]
+            case .thumbDown: ["..####..", ".#....#.", ".#....#.", ".#####..", "...#....", "...##...", "....#..."]
             }
         }
         /// What VoiceOver should say when the glyph stands alone.
@@ -149,6 +154,9 @@ public struct ZeusGlyph: View {
             case .left: "previous"
             case .right: "next"
             case .up: "send"
+            case .more: "rate"
+            case .thumbUp: "more like this"
+            case .thumbDown: "stop these"
             }
         }
     }

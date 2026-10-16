@@ -192,6 +192,7 @@ All keys work while the panel is key. Only ⌥⌘Z is global.
 | ⌘K | panel | Clear the reply chip (handled by `ZeusComposer`) |
 | ⌘1 … ⌘9 | panel | Pick option N on the **newest open question or content card that has options**; only that bubble shows the ⌘N hints. Works even while typing. |
 | ⌘↓ | panel | Jump to latest (handled by `ZeusJumpToLatest`; add a hidden button with the same shortcut when the pill isn't shown) |
+| ⌘R | panel | Rate the focused assistant message, or the newest message the assistant sent on its own: opens its rating row (§17). Esc closes the row only. |
 | Tab / ⇧Tab | panel | Native key-view traversal; Zeus doesn't intercept Tab. Focus moves in reading order through every control in the loaded thread, then the composer, and wraps. See the note below. |
 | Space | a focused button | Activate it (standard) |
 | Esc | panel | Close the panel and return focus. If the warning popover is open, close only the popover. |
@@ -533,3 +534,87 @@ The full copy and the reasons behind it are in `PRIVACY.md` §6–7. This sectio
   - "Retired a rule …"
 
   None peeks, sounds or counts as unread. Several journal looks within 10 minutes collapse into one line. The assistant's reply to an Undo is an ordinary agent card.
+
+## 17. Rating what the assistant tells you (FB1)
+
+> **Status: building (FB1-A on FB1-P's seams; copy here is final).** User decision 2026-10-16: a subtle "⋯" on the assistant's own messages offers More like this / Neutral / Stop these, applied to the message's *kind*. Storage, delivery and the folder file are in `PRIVACY.md` §13.
+
+The assistant labels each message it sends on its own with `about`, a short name for its kind ("On-call reminder"). The user rates the kind, not the message. Zeus decides what counts as a reply (`CardOrigin.reply`: posted while a response row for the user's own message or answer was open); replies never get a menu. Nothing here peeks, sounds, badges or counts as unread.
+
+### 17.1 The "⋯" affordance
+
+- **Where:** inside the bubble, at its top-trailing corner, on the header line beside the time: `ZeusGlyph(.more)` (three 2 × 2 px squares) in a 22 pt square target, `Spacing.s` left of the frame. The time moves 22 pt + `Spacing.s` to the left on every unprompted bubble, rated or not, so nothing shifts on hover. An unprompted bubble without a title shows the header anyway, with the time alone, so the slot has a line to sit on.
+- **Which bubbles:** `message`, `question` and `content` cards with `CardOrigin.unprompted`, high priority included. Never replies, progress cards, Zeus's own cards (Welcome, blocked), notice lines or user bubbles.
+- **Colors** (palette tokens only, so every theme works; never opacity): drawn in `secondaryText` while the pointer is over the bubble or focus is inside it; `title` while the glyph itself is hovered or focused, and while its row is open. At rest it isn't drawn, with one exception for discoverability: until a rating row has been opened once on this Mac, the newest unprompted bubble draws it at rest in `secondaryText`.
+- **Peek bubble:** the same glyph left of "+N more" and ✕, drawn while the peek is hovered (hover already pauses auto-hide). Clicking it opens the panel scrolled to this card with its rating row open; the peek is too small for the row.
+- **Tooltip and label:** "Rate this kind of message (⌘R)". It's a first-click target (CONTRACT §10.1).
+- **Rated bubbles** keep the glyph; clicking it reopens the row with the current choice marked (17.2).
+
+### 17.2 The inline row
+
+Clicking ⋯ (or ⌘R) opens the row inside the bubble, under everything else in it, after a 1 px `divider` line with `Spacing.s` above and below. No popover.
+
+```
+┌ On-call tonight ──────────── 21:40  ⋯ ┐
+│ You're on call from 22:00. The pager   │
+│ is set to loud.                        │
+│ ─────────────────────────────────────  │
+│ [👍 More like this] [Neutral] [👎 Stop these] │  small secondary ZeusButtonStyle; wraps to two lines when they don't fit
+│ For all “On-call reminders” · Edit · Just this one │  caption, secondaryText; links in title
+└────────────────────────────────────────┘
+```
+
+- **The three choices**, left to right: "More like this" with `ZeusGlyph(.thumbUp)` leading, "Neutral", "Stop these" with `ZeusGlyph(.thumbDown)` leading. Neutral's tooltip and VoiceOver hint: "Only when I need to know". Rules that act are elsewhere; these three never do anything to the message itself.
+- **The kind line:** "For all “<label>” · Edit · Just this one". The label is the card's `about`; without one it's the card's title, else the first 30 characters of the body with "…". Edit turns the line into a one-line field holding the label (1–60 characters, Return saves, Esc cancels, blank reverts). "Just this one" flips the line to "For this message only · All of this kind", and the three choices then rate only this message.
+- **Choosing** collapses the row to one caption line in the same place (`secondaryText`, Undo in `title`), which stays as long as the rating exists:
+
+| Choice | For the kind | Just this one |
+|---|---|---|
+| More like this | "More like this: On-call reminders · Undo" | "More like this one · Undo" |
+| Neutral | "Only when I need to know: On-call reminders · Undo" | "Only when I need to know, this one · Undo" |
+| Stop these | "Stopped: On-call reminders · Undo" | "Not this one · Undo" |
+
+- **Undo** removes the rating and the line; the bubble is back to ⋯. There's no time limit: the line is the record.
+- **Reopening** a rated bubble's row shows the current choice as a "✓ Stop these" chip (the `.answered` style) with the other two live; picking another changes the rating in place, and the kind line gains "· Remove rating". A rating changed or removed in Settings updates the bubble's line.
+- **Keyboard:** ⌘R opens the row on the focused bubble, or on the newest unprompted bubble when nothing in the thread is focused, and focuses "More like this". Tab and the arrow keys move through the choices and the links; Return activates; Esc closes the row and nothing else; ⌘R again closes it. ⌘1–9 keep answering questions.
+- **VoiceOver:** the bubble gains custom actions "Rate: more like this", "Rate: only when I need to know", "Rate: stop these", "Rate this message only" and "Edit the kind label". The collapsed line reads as written, with "Undo" as its button.
+
+### 17.3 Muted messages
+
+A new unprompted card whose kind is stopped is held: it lands in the thread at its time as one collapsed notice line, never deleted.
+
+- **Collapsed:** "Muted: On-call reminder · Show", using the card's own `about` (or the matched kind's label when it has none). Notice style (§16): `secondaryText`, no peek, no sound, no badge, not unread; the status strip ignores it.
+- **Show** expands it in place: the full bubble in the muted style (§4, `muted: true`), options still live, with a caption under it:
+  - exact match: "Stopped kind: On-call reminders · Not this kind · Change rating"
+  - look-alike: "Looks like On-call reminders · Not this kind · Change rating"
+  - The reason carries a tooltip with the decision: "Matched by the on-device model, 0.82" (engine and score from FB1-P), or "Same label".
+- **Not this kind** unmutes this card (normal bubble, with ⋯) and records the correction. Its caption becomes "Shown. Zeus won't count this as On-call reminders · Undo".
+- **Change rating** opens the rating row on this bubble with the matched kind's label filled in.
+- **End of day:** once a day, when quiet hours start (or at 21:00 when none are set), if anything was muted that day: a notice line "3 muted messages today · Show" ("1 muted message today · Show"). Show expands every muted row of the day and scrolls to the first. Expanded rows stay expanded.
+- Muted cards are never high-priority gold, even if marked `priority: high`: the hold wins.
+
+### 17.4 Settings › Rules › "What you hear about"
+
+The last section of the Rules pane, after a `SettingsDivider`: `settingsTitle` "What you hear about" with a count ("What you hear about · 6"). While something is muted today, a line under the title: "Muted today: 3 · Show" (opens the panel with them shown).
+
+Rows are grouped under `settingsBody` subheads "More like this", "Need-to-know" and "Stopped"; empty groups are hidden.
+
+| Part | Content |
+|---|---|
+| title | the kind label |
+| caption 1 | the example, quoted and redacted, cut at 80 characters with "…" |
+| caption 2 | "Last matched Tue 14:02", or "Not seen since you rated it" |
+| switcher | `SettingsSegments` with three stops: thumb-up glyph, "Neutral", thumb-down glyph; VoiceOver "More like this", "Only when I need to know", "Stop these" |
+| buttons | "Edit Label" (inline field, as 17.2) and "Remove" (no confirmation; the bubble's line goes with it) |
+
+- **Empty state:** "Nothing rated yet. Hover a message your assistant sent on its own and click ⋯ to say whether you want more of that kind, none, or only when you need to know."
+- **Footer caption:** "Your assistant gets each rating as a message and keeps the list in its folder as Zeus/preferences.md. Stopped kinds are held by Zeus even if your assistant still sends them."
+- "Just this one" ratings aren't rows; they're in What Zeus Kept (`PRIVACY.md` §13).
+
+### 17.5 The suggestion line
+
+When FB1-P exposes a `RatingSuggestion` (five quiet signals in seven days for one unrated kind): one notice line, once per kind, "Getting a lot of On-call reminders · Rate them · Not now". "Rate them" scrolls to the newest unprompted card of that kind and opens its rating row; "Not now" dismisses it for good. Two actions, so it fits `ThreadNotice` (primary and secondary) as it is; the four-button draft is dropped.
+
+### 17.6 Renders
+
+`build/fb1-renders/` (FB1-A): the glyph at rest, hovered and open; the row and each collapsed line; a muted row collapsed and expanded, both reasons; the Settings section with all three groups and empty; the suggestion line. Light and dark, both fonts, and the row in every bundled theme.
