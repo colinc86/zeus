@@ -1008,6 +1008,7 @@ extension DesignerAuditRenders {
             try await Readme.frames("roster-\(look.name)", appearance: look.appearance, size: ReadmeRoster.size, seconds: ReadmeRoster.seconds) { ReadmeRoster(time: $0) }
             try await Readme.still("peek-\(look.name)", appearance: look.appearance, ReadmePeek())
             try await conversation(look)
+            try await learningConversation(look)
             try await settings(look)
             try await themes(look)
         }
@@ -1057,6 +1058,27 @@ extension DesignerAuditRenders {
         f.messaging.assistantActivity = AssistantActivity(phase: .working, sessionKey: s, agentName: "Claude Code",
                                                           detail: "Exporting a PDF copy for the team", progress: 0.6, since: at(7))
         try await Readme.still("conversation-\(look.name)", appearance: look.appearance, settle: 0.8, f.conversation().padding(2))
+    }
+
+    /// RD1: a short learning story in the real conversation, with synthetic journal and rule notices.
+    private func learningConversation(_ look: (name: String, appearance: NSAppearance.Name)) async throws {
+        let f = Fixture(font: .pixel); defer { f.cleanup() }
+        let s = Readme.session.sessionKey
+        let base = Calendar.current.startOfDay(for: Date()).addingTimeInterval(9 * 3600)
+        func at(_ minutes: Double) -> Date { base.addingTimeInterval(minutes * 60) }
+        f.messaging.sessions = [Readme.session]
+        f.store.recordLearningNotice(.init(id: "readme-summary", kind: .reflection, createdAt: at(0),
+            summary: "Sent your daily summary", actionTitle: "View",
+            detail: "Mostly Notes and Mail yesterday, with a long break at 12:30.", ruleID: nil), action: {})
+        f.store.recordLearningNotice(.init(id: "readme-rule", kind: .newRule, createdAt: at(1),
+            summary: "New rule: Hold routine messages after 18:00", actionTitle: "Review", detail: nil, ruleID: "readme-rule"), action: {})
+        f.store.add(Card(id: "readme-user", kind: .userMessage, body: "What was I working on before lunch?", createdAt: at(2), updatedAt: at(2)))
+        f.store.recordLearningNotice(.init(id: "readme-journal", kind: .reflection, createdAt: at(2.1),
+            summary: "Looked at your journal: Wed 14 Oct 09:00–Wed 14 Oct 12:00", actionTitle: "View", detail: nil, ruleID: nil), action: {})
+        f.store.add(Card(id: "readme-answer", kind: .message,
+            body: "The Q3 planning notes. You were reviewing the launch timeline and collecting questions for the design review.",
+            sessionKey: s, createdAt: at(2.2), updatedAt: at(2.2)))
+        try await Readme.still("learning-\(look.name)", appearance: look.appearance, settle: 0.8, f.conversation().padding(2))
     }
 
     /// Settings › Assistant with "Zeus runs it": Claude Code running in ~/Assistant.
