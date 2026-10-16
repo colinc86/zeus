@@ -712,7 +712,7 @@ Label **"Your assistant's folder"**, then one line and actions by state:
 | Zeus runs the assistant | "Kept in ~/Zeus Assistant/Zeus" (path abbreviated with ~) | "Show in Finder" |
 | Connect your own, folder chosen | "Kept in ~/Assistant/Zeus" | "Show in Finder", "Choose…", "Stop keeping a folder" |
 | Connect your own, none | "Not kept in a folder. Choose one and Zeus writes what it keeps there for your assistant." | "Choose…" |
-| Write failed (any state) | the line above, then a second quiet line "Zeus can't write to this folder · Choose…" (`settingsError` colour; "Choose…" only for Connect your own, otherwise "Show in Finder") | |
+| Write failed (any state) | the line above and its buttons, then a second line "Zeus can't write to this folder." in `settingsError` colour, with no button of its own: the row's buttons already offer the next step | |
 
 - Caption under the row: "Where this folder lives is up to you. If it syncs, what Zeus keeps syncs with it."
 - "Stop keeping a folder" asks nothing and leaves the folder's files alone; the line becomes the none state.
@@ -727,7 +727,7 @@ Label **"Your assistant's folder"**, then one line and actions by state:
   - **Body:** "Zeus will keep screenshots as they are, with pictures, faces and text uncovered. Passwords, keys, card and account numbers and ID numbers are still covered, and Zeus still never takes a picture of a password dialog, a private window or an app on your private list. Pictures already kept stay covered."
   - **Buttons:** "Keep Covering" (default, Escape) and "Turn Off".
 - **Turning it on** needs no sheet and applies to new pictures only.
-- The level caption (§9.1) and the consent sheet example are unchanged; with the box off, the §9.1 "Zeus keeps" row reads "The picture of the window in front, as it is, for 7 days".
+- With the box off, the level caption (§9.1) drops its covering clause: "Zeus takes a picture of the window in front at sensible moments and keeps a one-line description of what you were doing. Never the whole screen." The consent sheet example is unchanged, and the §9.1 "Zeus keeps" row reads "The picture of the window in front, as it is, for 7 days".
 - VoiceOver: "Cover pictures and faces", value On/Off; the sheet's title is its accessibility label.
 
 ### 12.4 The Privacy caption and the per-level caveats
