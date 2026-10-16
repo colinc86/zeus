@@ -36,7 +36,7 @@ Top to bottom:
 
 1. **Status line** (caption). Shown only when at least one level is on. Exact wording:
    - Apple Intelligence on: "Private details are removed on this Mac before anything is kept."
-   - Apple Intelligence off: "Private details are removed on this Mac before anything is kept. Apple Intelligence is off, so only fixed patterns (emails, card numbers, passwords…) are caught."
+   - Apple Intelligence off: "Private details are removed on this Mac before anything is kept. Apple Intelligence is off, so Zeus catches names, emails, phone numbers, addresses, passwords, keys, card and account numbers and ID numbers, and may miss private details written in other ways."
 1b. **Storage problem** (`settingsError`, under the status line, only while the journal or rules store can't be opened): "Zeus can't open its journal and rules right now. New records are kept only in memory until it can; quitting Zeus before then loses them." It clears by itself.
 2. **Level 1 · "Apps and timing"**: the existing L1 section (switch "Let Zeus learn when and in what I work", private list, notes, retention). Its title changes from "Learn from me" to "Apps and timing", and the pane's first title is now "Learn from me" above all levels.
 3. **Level 2 · "Windows and pages"**: §2.1.
@@ -214,9 +214,9 @@ Same frame as the L1 sheet.
 |---|---|
 | "Ask me first" | "Every new rule waits in Suggested until you turn it on." |
 | "Balanced" (default) | "Rules about timing and tone start at once. Rules that act for you show what they'd have done once, and wait for your OK." |
-| "Just do it" | "Rules start at once. Rules that act for you still show what they'd have done the first time, then act without asking. Undo is always there." |
+| "Just do it" | "Rules start at once. Rules that act for you show what they'd have done and wait for your OK, then act without asking. Undo is always there." |
 
-Rules that send, post or spend never skip their first "I'd have…" line, at any stop.
+Rules that act for you (send, post or spend) never skip their first "I'd have…" line, at any stop, and stay in Waiting for your OK until you approve them; the stops differ only in what happens to the rest. "Just do it" also counts the first shadow line as an accepted result, so the rule's confidence rises sooner.
 
 ### 5.2 Sections
 
@@ -519,7 +519,7 @@ Topics are kept for <N> days. The words, with private details removed, are kept 
   14:05  Mail  hi dr ‹name› can we move thursday to 3pm my ‹health› is still sore
          → Replying to a doctor about rescheduling an appointment
   ```
-  - Caption under it: "The first line is the words as kept for 24 hours. The second is the topic kept for 30 days, and the only part your assistant sees."
+  - Caption under it: "The first line is the words as kept for 24 hours. The second is the topic kept for 30 days. Your assistant can read both while they're kept."
 - **Safari** (caption, the same exception as Levels 2 and 3): "Safari: Zeus notes nothing you type in Safari unless you add it under Only in apps I choose. Zeus can't tell Safari's private windows apart, so typing in those would be kept too."
 - **Caveat** (caption, LF1 wording): "Topics and the words, as kept, go into your assistant's folder, and topics into summaries. Where that goes depends on the assistant you chose."
 - **Permission** (caption): "Next, macOS asks you to allow Zeus under Input Monitoring. Zeus uses it only to read keys in the apps you choose."
