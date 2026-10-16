@@ -61,6 +61,23 @@ import ZeusDesign
         let delete = try #require(lf1Nodes(host).first { lf1Label($0) == "Delete" })
         #expect((delete as AnyObject).accessibilityPerformPress?() == true && state.submitted == true)
     }
+    @Test func journalRowsExposeFinderToVoiceOver() async throws {
+        let fake = LF1FolderFake(), folder = LearningFolderModel(provider: fake), journal = LM2JournalFake()
+        fake.ownFolder = URL(fileURLWithPath: "/Fixture/Assistant")
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let item = JournalItem(id: "finder", time: now, level: .activity, kind: .activity, payload: .init(.init(description: "Synthetic editor activity")))
+        try journal.append(item)
+        fake.files[item.id] = fake.ownFolder?.appendingPathComponent("Zeus/days/2027-01-15/activity.md")
+        let viewer = JournalViewerModel(journal: journal, now: now); viewer.folder = folder
+        let (host, window) = try await mount(JournalViewerView(model: viewer).padding(24))
+        defer { window.contentView = nil; window.close() }
+        let actions = lf1Nodes(host).flatMap { node -> [NSAccessibilityCustomAction] in
+            let selector = NSSelectorFromString("accessibilityCustomActions")
+            return node.responds(to: selector) ? (node.perform(selector)?.takeUnretainedValue() as? [NSAccessibilityCustomAction] ?? []) : []
+        }
+        #expect(actions.contains { $0.name == "Show in Finder" })
+        #expect(actions.contains { $0.name == "Delete" })
+    }
     @Test(.enabled(if: ProcessInfo.processInfo.environment["TEST_RUNNER_LF1_RENDER"] == "1" || ProcessInfo.processInfo.environment["LF1_RENDER"] == "1"))
     func lightAndDarkFolderFixtures() async throws {
         let name = "lf1-renders-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
