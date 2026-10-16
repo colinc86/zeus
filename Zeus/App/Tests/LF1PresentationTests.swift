@@ -8,9 +8,13 @@ import ZeusDesign
     var visited: Set<ObjectIdentifier> = []
     func walk(_ value: Any) -> [NSObject] {
         guard let node = value as? NSObject, visited.insert(ObjectIdentifier(node)).inserted else { return [] }
-        let selector = NSSelectorFromString("accessibilityChildren")
-        let children = node.responds(to: selector) ? (node.perform(selector)?.takeUnretainedValue() as? [Any] ?? []) : []
-        return [node] + (children + ((node as? NSView)?.subviews ?? [])).flatMap(walk)
+        func children(_ method: String, _ attribute: String? = nil) -> [Any] {
+            let selector = NSSelectorFromString(method)
+            guard node.responds(to: selector) else { return [] }
+            return node.perform(selector, with: attribute)?.takeUnretainedValue() as? [Any] ?? []
+        }
+        return [node] + (children("accessibilityChildren") + children("accessibilityAttributeValue:", "AXChildren")
+            + children("accessibilityAttributeValue:", "AXContents") + ((node as? NSView)?.subviews ?? [])).flatMap(walk)
     }
     return walk(root)
 }
@@ -71,11 +75,18 @@ import ZeusDesign
         let viewer = JournalViewerModel(journal: journal, now: now); viewer.folder = folder
         let (host, window) = try await mount(JournalViewerView(model: viewer).padding(24))
         defer { window.contentView = nil; window.close() }
+        let legacyActions = lf1Nodes(host).flatMap { node -> [String] in
+            let selector = NSSelectorFromString("accessibilityActionNames")
+            return node.responds(to: selector) ? (node.perform(selector)?.takeUnretainedValue() as? [String] ?? []) : []
+        }
         let actions = lf1Nodes(host).flatMap { node -> [NSAccessibilityCustomAction] in
             let selector = NSSelectorFromString("accessibilityCustomActions")
-            return node.responds(to: selector) ? (node.perform(selector)?.takeUnretainedValue() as? [NSAccessibilityCustomAction] ?? []) : []
+            let direct = node.responds(to: selector) ? (node.perform(selector)?.takeUnretainedValue() as? [NSAccessibilityCustomAction] ?? []) : []
+            let attribute = NSSelectorFromString("accessibilityAttributeValue:")
+            let legacy = node.responds(to: attribute) ? (node.perform(attribute, with: "AXCustomActions")?.takeUnretainedValue() as? [NSAccessibilityCustomAction] ?? []) : []
+            return direct + legacy
         }
-        #expect(actions.contains { $0.name == "Show in Finder" })
+        #expect(actions.contains { $0.name == "Show in Finder" }, "Actions: \(actions.map(\.name)); legacy: \(legacyActions); nodes: \(lf1Nodes(host).map { "\(type(of: $0)): \(lf1Label($0))" })")
         #expect(actions.contains { $0.name == "Delete" })
     }
     @Test(.enabled(if: ProcessInfo.processInfo.environment["TEST_RUNNER_LF1_RENDER"] == "1" || ProcessInfo.processInfo.environment["LF1_RENDER"] == "1"))
@@ -106,6 +117,7 @@ import ZeusDesign
             try await render(TypingConsentSheet(enable: {}, cancel: {}, heightLimit: 1000), name: prefix + "-typing-consent", scheme: scheme, width: 540, height: 1000)
             fake.lastWriteError = nil; fake.ownFolder = URL(fileURLWithPath: "/Fixture/Assistant")
             fake.files[item.id] = fake.ownFolder?.appendingPathComponent("Zeus/days/2027-01-15/activity.md")
+            fake.dayFolder = fake.files[item.id]?.deletingLastPathComponent()
             try await render(JournalWindowView(model: viewer), name: prefix + "-journal", scheme: scheme, height: 420)
             screen.privacy.coverPictures = true
             try await render(ScreenPrivacyView(model: screen).padding(24), name: prefix + "-screen", scheme: scheme, height: 760)

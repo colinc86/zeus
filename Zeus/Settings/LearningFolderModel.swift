@@ -19,5 +19,8 @@ import Observation
     func choose() { if let folder = pickFolder() { provider?.setFolder(folder) } }
     func stopKeepingFolder() { provider?.setFolder(nil) }
     func showFolder() { if let recordURL { reveal(recordURL) } }
-    func show(_ item: JournalItem) { if let url = provider?.fileURL(forJournalItem: item) { reveal(url) } }
+    func destination(for item: JournalItem) -> URL? {
+        provider?.fileURL(forJournalItem: item) ?? provider?.dayFolderURL(for: item.time)
+    }
+    func show(_ item: JournalItem) { if let url = destination(for: item) { reveal(url) } }
 }

@@ -117,6 +117,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         learning.deliveries = learningDeliveries
         if let services = learningServices {
             learning.folder.provider = services.folder
+            if let writer = services.folder as? LearningFolderWriter {
+                writer.enabledLevels = { [weak learning] in learning?.journalAccessPolicy.enabledLevels ?? [] }
+            }
             learning.install(journal: services.journal, rules: services.rules, redactor: services.redactor, source: services.source)
             learning.screen?.privacy.reopen = { Self.reopenForScreenPermission() }
             learning.typing?.privacy.reopen = { Self.reopenForScreenPermission() }

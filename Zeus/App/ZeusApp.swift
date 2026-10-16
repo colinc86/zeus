@@ -56,6 +56,7 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
                                   appControl: shell.appControl, learnings: shell.learn.learnings,
                                   rules: shell.learningServices?.rules, journal: shell.learningServices?.journal,
                                   redactor: shell.learningServices?.redactor,
+                                  learningFolder: shell.learningServices?.folder as? any LearningFolderRecording,
                                   learningContext: { [weak learning = shell.learning] in learning?.context ?? .init(isPrivate: true) },
                                   reflectionEnabled: { [weak learning = shell.learning] in learning?.enabled == true })
         shell.connectLearningRuntime(runtime)

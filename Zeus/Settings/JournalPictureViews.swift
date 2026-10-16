@@ -38,7 +38,7 @@ struct JournalPictureRow: View {
             Button("Delete Picture") { model.delete(picture, includingDescription: false) }.disabled(model.frame(picture) == nil)
             Button("Delete Both…") { model.selectedID = picture.id; model.confirmsDeleteBoth = true }
         }
-        .accessibilityAction(named: "Show in Finder") { if let item = picture.frameRecord ?? picture.descriptionRecord { folder?.show(item) } }
+        .modifier(JournalFinderAccessibility(folder: folder, item: picture.frameRecord ?? picture.descriptionRecord))
         .accessibilityAction(named: "Delete Picture") { model.delete(picture, includingDescription: false) }
     }
 }

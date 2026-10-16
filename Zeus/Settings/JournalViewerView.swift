@@ -105,7 +105,7 @@ struct JournalViewerView: View {
                 Spacer()
                 if !model.sentOnly {
                     KeyboardButton("Show Day in Finder", action: model.showDayInFinder)
-                        .disabled(model.dayFiles.isEmpty).accessibilityLabel("Show this journal day in Finder")
+                        .disabled(model.dayFolderURL == nil).accessibilityLabel("Show this journal day in Finder")
                     KeyboardButton("Delete This Day…") { requestDelete(.day(model.day), "Delete everything Zeus kept on \(model.day.formatted(date: .abbreviated, time: .omitted))? This can't be undone.") }
                         .accessibilityLabel("Delete this journal day")
                     if !model.app.isEmpty {
@@ -269,6 +269,7 @@ private struct JournalRecordRow: View {
             if let folder { Button("Show in Finder") { folder.show(item) } }
             Button("Delete", action: delete)
         } }
+        .accessibilityElement(children: .contain)
         .modifier(JournalDeleteAccessibility(enabled: !sent, delete: delete))
         .modifier(JournalFinderAccessibility(folder: sent ? nil : folder, item: item))
     }
@@ -286,9 +287,9 @@ private struct JournalDeleteAccessibility: ViewModifier {
 /// Adds the same Finder operation to VoiceOver without grouping or hiding the row's children.
 struct JournalFinderAccessibility: ViewModifier {
     let folder: LearningFolderModel?
-    let item: JournalItem
+    let item: JournalItem?
     @ViewBuilder func body(content: Content) -> some View {
-        if let folder { content.accessibilityAction(named: Text("Show in Finder")) { folder.show(item) } }
+        if let folder, let item { content.accessibilityAction(named: Text("Show in Finder")) { folder.show(item) } }
         else { content }
     }
 }

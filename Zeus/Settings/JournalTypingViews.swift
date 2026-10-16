@@ -74,6 +74,7 @@ struct JournalTypingRunView: View {
                 if let folder { Button("Show in Finder") { folder.show(run.item) } }
                 Button("Delete", action: delete)
             }
+            .accessibilityElement(children: .contain)
             .accessibilityAction(named: Text("Delete typing stretch"), delete)
             .modifier(JournalFinderAccessibility(folder: folder, item: run.item))
     }

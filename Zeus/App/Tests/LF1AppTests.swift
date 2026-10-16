@@ -9,6 +9,8 @@ import Testing
     var folderURL: URL? { managedFolder ?? ownFolder }
     var lastWriteError: String?
     var files: [String: URL] = [:]
+    var dayFolder: URL?
+    func dayFolderURL(for date: Date) -> URL? { dayFolder }
     var erased: [Bool] = []
     var beforeErase: () -> Void = {}
     func setFolder(_ folder: URL?) { ownFolder = folder }
@@ -53,14 +55,41 @@ import Testing
         let item = JournalItem(id: "kept", time: now, level: .activity, kind: .activity, payload: .init(.init(description: "Fixture")))
         try journal.append(item)
         let model = JournalViewerModel(journal: journal, now: now); model.folder = folder
-        var revealed: [URL] = []; folder.reveal = { revealed.append($0) }; model.revealFiles = { revealed += $0 }
+        var revealed: [URL] = []; folder.reveal = { revealed.append($0) }
         folder.show(item); model.showDayInFinder(); #expect(revealed.isEmpty)
         let url = URL(fileURLWithPath: "/fixture/Zeus/days/2027-01-15/activity.md")
         fake.files[item.id] = url
+        let dayURL = url.deletingLastPathComponent(); fake.dayFolder = dayURL
         model.search = "no match"; model.level = 4
-        #expect(model.items.isEmpty && model.dayFiles == [url])
-        folder.show(item); model.showDayInFinder(); #expect(revealed == [url, url])
-        fake.files = [:]; model.showDayInFinder(); #expect(revealed == [url, url])
+        #expect(model.items.isEmpty && model.dayFolderURL == dayURL)
+        folder.show(item); model.showDayInFinder(); #expect(revealed == [url, dayURL])
+        fake.files = [:]; folder.show(item); #expect(revealed == [url, dayURL, dayURL])
+        fake.dayFolder = nil; folder.show(item); model.showDayInFinder(); #expect(revealed == [url, dayURL, dayURL])
+    }
+    @Test func shellSharesConcreteWriterAndSuppliesLiveConsentPolicyWithoutStartingIt() throws {
+        let name = "lf1-wiring-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let journal = LM2JournalFake(), rules = LM2RulesFake(), redactor = LocalRedactor(useOnDeviceModel: false)
+        let writer = LearningFolderWriter(journal: journal, rules: rules, stateURL: root.appendingPathComponent("state.json"), enabledLevels: { [] }, redactor: redactor)
+        let services = LearningServices(journal: journal, rules: rules, redactor: redactor, source: LM2FocusSource(), folder: writer)
+        let shell = ShellController(defaults: defaults, cards: CardStore(fileURL: root.appendingPathComponent("cards.json")),
+            settings: AppSettings(defaults: defaults, userDirectory: nil, passwordStore: LF1NoCredentials()), learningServices: services)
+        defer { shell.stop() }
+        #expect(shell.learning.folder.provider === writer)
+        #expect(shell.learning.viewer?.folder === shell.learning.folder)
+        #expect(writer.enabledLevels().isEmpty)
+        shell.learning.policies.edit(3) { $0.enabled = true }
+        #expect(writer.enabledLevels().isEmpty)
+        shell.learning.policies.edit(3) { $0.consented = true }
+        #expect(writer.enabledLevels() == [.screen])
+        let own = root.appendingPathComponent("assistant", isDirectory: true)
+        shell.learning.folder.pickFolder = { own }; shell.learning.folder.choose()
+        #expect(writer.folderURL?.path == own.path)
+        let restored = LearningFolderWriter(journal: journal, rules: rules, stateURL: root.appendingPathComponent("state.json"), enabledLevels: { [] }, redactor: redactor)
+        #expect(restored.folderURL?.path == own.path)
+        #expect(!FileManager.default.fileExists(atPath: own.appendingPathComponent("Zeus").path))
     }
     @Test func deleteEverythingDefaultsToKeepingNotesAndPassesExplicitChoiceAfterJournalErasure() throws {
         let name = "lf1-delete-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
@@ -79,4 +108,9 @@ import Testing
         model.deleteEverything(includeAssistantNotes: true)
         #expect(fake.erased == [false, true]); #expect(model.error != nil)
     }
+}
+
+@MainActor private struct LF1NoCredentials: OpenCodePasswordStoring {
+    func read() -> String? { nil }
+    func save(_ password: String?) {}
 }

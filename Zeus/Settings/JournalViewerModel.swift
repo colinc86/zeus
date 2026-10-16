@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import Observation
 
@@ -59,18 +58,9 @@ final class JournalViewerModel {
         pictures.didChange = { [weak self] in self?.reload() }
         reload(); observe()
     }
-    /// Reveal actual existing files for the selected day, without guessing the writer's layout.
-    var dayFiles: [URL] {
-        guard let provider = folder?.provider else { return [] }
-        var selection = JournalQuery()
-        selection.from = calendar.startOfDay(for: day)
-        selection.to = calendar.date(byAdding: .day, value: 1, to: selection.from ?? day)
-        selection.limit = 100_000
-        let records = (try? journal.items(matching: selection)) ?? []
-        return Array(Set(records.compactMap { provider.fileURL(forJournalItem: $0) })).sorted { $0.path < $1.path }
-    }
-    @ObservationIgnored var revealFiles: ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) }
-    func showDayInFinder() { let files = dayFiles; if !files.isEmpty { revealFiles(files) } }
+    /// Ask the writer for its existing day directory, preserving its calendar and missing-file policy.
+    var dayFolderURL: URL? { folder?.provider?.dayFolderURL(for: day) }
+    func showDayInFinder() { if let url = dayFolderURL { folder?.reveal(url) } }
     var query: JournalQuery {
         var query = JournalQuery()
         query.from = calendar.startOfDay(for: day)
