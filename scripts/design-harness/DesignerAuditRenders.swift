@@ -1403,7 +1403,7 @@ private struct LM2RulesPane: View {
     @State var dial = 1
     let captions = ["Every new rule waits in Suggested until you turn it on.",
                     "Rules about timing and tone start at once. Rules that act for you show what they'd have done once, and wait for your OK.",
-                    "Rules start at once. Rules that act for you still show what they'd have done the first time, then act without asking. Undo is always there."]
+                    "Rules start at once. Rules that act for you show what they'd have done and wait for your OK, then act without asking. Undo is always there."]
     var body: some View {
         LM2Settings {
             Text("Rules").settingsTitle()
@@ -1750,7 +1750,7 @@ private struct LM2TypingConsent: View {
                     Text("       → Replying to a doctor about rescheduling an appointment")
                 }.font(.system(size: 11, design: .monospaced)).fixedSize(horizontal: false, vertical: true)
             }
-            Text("The first line is the words as kept for 24 hours. The second is the topic kept for 30 days, and the only part your assistant sees.").settingsCaption()
+            Text("The first line is the words as kept for 24 hours. The second is the topic kept for 30 days. Your assistant can read both while they're kept.").settingsCaption()
             Text("Topics go to your assistant in summaries, like any message. The words never leave this Mac.").settingsCaption()
             Text("Next, macOS asks you to allow Zeus under Input Monitoring. Zeus uses it only to read keys in the apps you choose.").settingsCaption()
             Text("If you'd rather keep no words, choose Don't keep after turning this on. Topics still work.").settingsCaption()
