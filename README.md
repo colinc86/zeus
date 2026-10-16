@@ -109,7 +109,7 @@ Each level records **everywhere except my private list** or **only in apps I cho
 
 <br clear="right">
 
-**What your assistant gets.** Each morning, a short summary of the day before, so it can pick better moments to help and have the right things ready. When you ask it about your day ("what was I reading at 3?"), it can look in the journal and gets summaries, descriptions and topics. It gets a picture or the words only if you turn on **Raw on request** for that level, and even then only the covered picture or the redacted words, never the original. Every answer appears in the conversation (*Looked at your journal: Tue 14:00–15:30 · View*) and in the **Sent to your assistant** ledger, exactly as sent. Your assistant sends what it gets to its model provider, like any message.
+**What your assistant gets.** Everything Zeus keeps is written into your assistant's folder, under `Zeus/`, after the filtering: a file per day for activity, window titles, covered pictures with their descriptions, and typing topics, plus the summaries, reflections and rules. It accumulates whether or not it was sent, and the assistant reads it when it needs context; each morning summary and note ends with a *Files:* line naming what to look at. When you ask it about your day ("what was I reading at 3?"), it reads that day or asks the journal, and every look appears in the conversation (*Looked at your journal: Tue 14:00–15:30 · View*) and in the **Sent to your assistant** ledger. The template asks it to learn your habits and routines, to keep its own conclusions in `Notes/` beside the record, and never to quote private details back or put them in messages to others. Where the folder lives, synced or not, is up to you. Zeus never sends your data anywhere itself; your assistant reads its folder and what Zeus sends it, and where that goes depends on the assistant you chose.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/readme/rules-dark.png">
@@ -127,7 +127,7 @@ Each level records **everywhere except my private list** or **only in apps I cho
   <img src="docs/readme/kept-light.png" align="right" width="400" alt="What Zeus Kept for one day: window titles with ‹name› placeholders, a covered picture with its description and days left, private time, and a stretch of typing in Mail with its topic and the words as kept.">
 </picture>
 
-**Your controls.** **What Zeus Kept** shows every record exactly as stored, with the placeholders visible, and deletes one record, a day, an app or everything at once. **Sent to your assistant** is the ledger of everything it got. Every level shows an example of what it keeps before it asks for anything, **Pause for Today** stops all of it until midnight, and if your keychain is locked, new records wait in memory and the Privacy pane says so.
+**Your controls.** **What Zeus Kept** shows every record exactly as stored, with the placeholders visible, opens any of them in Finder, and deletes one record, a day, an app or everything at once (the matching files go too; **Delete Everything…** asks before touching your assistant's notes). **Cover pictures and faces** is on by default; turn it off, after a confirmation, and screenshots are kept as they are, except that passwords, keys, card numbers and ID numbers stay covered. **Sent to your assistant** is the ledger of everything it got. Every level shows an example of what it keeps before it asks for anything, **Pause for Today** stops all of it until midnight, and if your keychain is locked, new records wait in memory and the Privacy pane says so.
 
 **Only your assistant may talk to Zeus.** Any other session that has the Zeus server is refused and never reaches the conversation; the first time, a quiet line says which one tried, with *Make it my assistant · Ignore*.
 
@@ -137,7 +137,7 @@ Each level records **everywhere except my private list** or **only in apps I cho
 
 - `zeus-mcp` is an MCP server your assistant connects to. Its tools (`zeus_say`, `zeus_ask`, `zeus_present`, `zeus_set_status`, …) drive the character and the conversation panel.
 - Your replies go back to the session that asked: through its Terminal pane in tmux, Claude Code's channel or OpenCode's local server. Each one is acknowledged, so a message is never lost or delivered twice.
-- Everything stays on your Mac. Zeus uses no cloud models of its own, only Apple's on-device models to remove private details, describe pictures and name typing topics. It never edits your agent's settings and never accepts prompts on your behalf.
+- Zeus uses no cloud models of its own, only Apple's on-device models to remove private details, describe pictures and name typing topics. It never sends your data anywhere itself: what it learns goes into your assistant's folder, and summaries to your assistant. It never edits your agent's settings and never accepts prompts on your behalf.
 - With Learn from me on, your assistant gets summaries, descriptions and topics with private details already removed, and covered pictures or redacted words only when you allow that for a level and it asks. It passes them to its model provider like any message. The journal itself is encrypted and never leaves your Mac.
 
 The interfaces are documented in [docs/CONTRACT.md](docs/CONTRACT.md).

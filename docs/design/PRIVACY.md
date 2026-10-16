@@ -14,12 +14,13 @@ Renders: `scripts/design-harness/render.sh "privacyMockups()"` → `build/q2-ren
 | §10 Level 4 · Typing | C | shipped (LM2-C-A) |
 | §11 Raw on request, journal answers, acting rules, outcomes in Why? | D | shipped (LM2-D-A) |
 | §4.2 Waiting group and empty states, §6.1 delivery, hold and stale-setup lines | LM4 | building (LM4-A, on LM4-P's seams) |
+| §12 The assistant folder: folder row, Cover pictures and faces, the new caption, Show in Finder, Delete Everything | LF1 | building (LF1-A, on LF1-P's seams); §11.1 retired |
 
 ## 1. The seven principles
 
 These are the README promise. Every surface below exists to keep one of them visible.
 
-1. **Raw observation never leaves your Mac.** Your assistant gets summaries, rules and, when it asks, a redacted excerpt.
+1. **Nothing leaves your Mac by Zeus's hand.** What Zeus keeps goes into your assistant's folder after the safeguards (§12); your assistant decides what it reads and where it sends it.
 2. **Private details are removed before anything is stored**, not just before it's sent. Nothing goes to disk unredacted.
 3. **Every level is its own switch, off by default.** Turning one on shows exactly what it keeps, with an example record.
 4. **Some things are never recorded:** password fields (secure input), private browser windows, apps on your private list, and a locked screen.
@@ -86,7 +87,7 @@ Same frame as the L1 sheet.
   ```
   - Caption under it: "Names, emails, numbers and other private details become placeholders like ‹name› before anything is stored."
 - **Safari line** (caption): "Safari: Zeus keeps only that you used it. To keep its titles and web addresses too, add Safari under Only in apps I choose. Zeus can't tell Safari's private windows apart, so those would be kept too."
-- **Caveat** (caption): "Summaries of this go to your assistant, which sends them to its model provider like any message. The records themselves stay on this Mac."
+- **Caveat** (caption, LF1 wording): "The records go into your assistant's folder, and summaries of them go to your assistant like any message. Where that goes depends on the assistant you chose."
 - **Permission** (caption): "Next, macOS asks you to allow Zeus under Accessibility. Zeus uses it only to read window titles."
 - **Buttons:** "Not Now" (cancel, Escape) and "Continue" (default).
   - Continue turns the level on and starts the permission flow (§2.3).
@@ -398,7 +399,7 @@ This paragraph is used in the consent sheet and in SETUP.md:
   - Under it, monospaced: "10:12  Safari  Reviewing account information."
   - Caption: "Grey boxes are text Zeus covered. Pictures and faces are pixellated. The picture is kept for 7 days, the description for 90."
 - **Safari** (caption, PM decision: same exception as Level 2): "Safari: Zeus takes no pictures of Safari unless you add it under Only in apps I choose. Zeus can't tell Safari's private windows apart, so those would be pictured too."
-- **Caveat** (caption): "Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself or let your assistant see them when it asks (off until you turn it on)."
+- **Caveat** (caption, LF1 wording): "Covered pictures and their descriptions go into your assistant's folder, and descriptions into summaries. Where that goes depends on the assistant you chose."
 - **Permission** (caption): "Next, macOS asks you to allow Zeus under Screen Recording. Zeus uses it only for these pictures."
 - **Buttons:** "Not Now" and "Continue".
 
@@ -520,7 +521,7 @@ Topics are kept for <N> days. The words, with private details removed, are kept 
   ```
   - Caption under it: "The first line is the words as kept for 24 hours. The second is the topic kept for 30 days, and the only part your assistant sees."
 - **Safari** (caption, the same exception as Levels 2 and 3): "Safari: Zeus notes nothing you type in Safari unless you add it under Only in apps I choose. Zeus can't tell Safari's private windows apart, so typing in those would be kept too."
-- **Caveat** (caption): "Topics go to your assistant in summaries, like any message. The words never leave this Mac unless you let your assistant see them when it asks (off until you turn it on)."
+- **Caveat** (caption, LF1 wording): "Topics and the words, as kept, go into your assistant's folder, and topics into summaries. Where that goes depends on the assistant you chose."
 - **Permission** (caption): "Next, macOS asks you to allow Zeus under Input Monitoring. Zeus uses it only to read keys in the apps you choose."
 - **Suggestion** (caption): "If you'd rather keep no words, choose Don't keep after turning this on. Topics still work."
 - **Buttons:** "Not Now" and "Continue".
@@ -590,6 +591,8 @@ While secure input is on (a password field is active) and Level 4 is on:
 The assistant's side of all this is `docs/design/AGENT_LEARNING.md`. Renders: `scripts/design-harness/render.sh "depthMockups()"` → `docs/design/lm2/lm2d-*.png`.
 
 ### 11.1 "Raw on request" (per level)
+
+> **Retired by LF1 (§12):** the folder follows the enabled levels, so these switches and sheets are removed. Kept for the history of the ledger rows.
 
 - **Which levels:** only Level 3 (pictures) and Level 4 (words) have anything rawer than what the assistant already gets.
   - Level 1 and 2 records are already the stored form, so they have no switch.
@@ -689,3 +692,61 @@ The core records each outcome as a category, a source, a date and a confidence c
 - Newest first, at most 10 entries, then "and 6 earlier".
 - The last line is the current confidence word only. It's never a number, and there's no "was …" history.
 - With no outcomes yet: "Nothing has happened with this rule yet."
+
+## 12. LF1 · The assistant folder is the record
+
+> **Status: building (LF1-P writes the folder, LF1-A the settings; copy here is final).** User decision 2026-10-15: everything Zeus keeps is written, after the safeguards, into the assistant's folder, accumulating whether or not it was sent. Where that folder lives, synced or not, is the user's choice, and Zeus never warns about it.
+
+### 12.1 What the folder holds
+
+`<assistant folder>/Zeus/`, written by Zeus from the journal: `README.md`, `days/<yyyy-mm-dd>/` (`activity.md`, `focus.md`, `screen/<HHmmss>-<app>.jpg` + `.md`, `typing.md`, `summary.md`, `moments.md`), `reflections/<yyyy-mm-dd>.md`, `rules.md`. Content is exactly what the journal stores, redacted and covered; the per-level "Raw on request" switches (§11.1) are retired, and `zeus_get_journal` follows the levels too. Retention pruning and every delete remove the matching files (Undo restores them). A file the user deleted in Finder is not re-created. Zeus never touches anything else in the folder, including the assistant's own `Notes/`.
+
+`Zeus/README.md` opens with: "Zeus writes this folder. It holds what Zeus learned about how you use your Mac, with private details already removed. Zeus overwrites and prunes these files; don't edit them. Delete a file and it stays deleted."
+
+### 12.2 The folder row (Settings › Privacy, top of the pane under the caption)
+
+Label **"Your assistant's folder"**, then one line and actions by state:
+
+| State | Line | Actions |
+|---|---|---|
+| Zeus runs the assistant | "Kept in ~/Zeus Assistant/Zeus" (path abbreviated with ~) | "Show in Finder" |
+| Connect your own, folder chosen | "Kept in ~/Assistant/Zeus" | "Show in Finder", "Choose…", "Stop keeping a folder" |
+| Connect your own, none | "Not kept in a folder. Choose one and Zeus writes what it keeps there for your assistant." | "Choose…" |
+| Write failed (any state) | the line above, then a second quiet line "Zeus can't write to this folder · Choose…" (`settingsError` colour; "Choose…" only for Connect your own, otherwise "Show in Finder") | |
+
+- Caption under the row: "Where this folder lives is up to you. If it syncs, what Zeus keeps syncs with it."
+- "Stop keeping a folder" asks nothing and leaves the folder's files alone; the line becomes the none state.
+- Settings › Assistant, under the folder picker: "Zeus keeps what it learns in Zeus/ inside this folder, and your assistant keeps its notes in Notes/."
+- VoiceOver: "Your assistant's folder, kept in ~/Zeus Assistant/Zeus", then the buttons' own labels.
+
+### 12.3 "Cover pictures and faces" (Screen level section, after retention)
+
+- **Checkbox:** "Cover pictures and faces". On by default. Caption: "Private text is covered and pictures and faces are pixellated before a screenshot is kept."
+- **Turning it off** shows a sheet first:
+  - **Title:** "Keep pictures uncovered?"
+  - **Body:** "Zeus will keep screenshots as they are, with pictures, faces and text uncovered. Passwords, keys, card and account numbers and ID numbers are still covered, and Zeus still never takes a picture of a password dialog, a private window or an app on your private list. Pictures already kept stay covered."
+  - **Buttons:** "Keep Covering" (default, Escape) and "Turn Off".
+- **Turning it on** needs no sheet and applies to new pictures only.
+- The level caption (§9.1) and the consent sheet example are unchanged; with the box off, the §9.1 "Zeus keeps" row reads "The picture of the window in front, as it is, for 7 days".
+- VoiceOver: "Cover pictures and faces", value On/Off; the sheet's title is its accessibility label.
+
+### 12.4 The Privacy caption and the per-level caveats
+
+- The pane caption (`PrivacySettingsView.caveat`) becomes: "Zeus never sends your data anywhere itself. Your assistant reads its folder and what Zeus sends it. Where that goes depends on the assistant you chose."
+- Level caveats follow the same shape (replace §2.2, §9.1 and §10.1's lines and the code they describe):
+  - Level 2: "The records go into your assistant's folder, and summaries of them go to your assistant like any message. Where that goes depends on the assistant you chose."
+  - Level 3: "Covered pictures and their descriptions go into your assistant's folder, and descriptions into summaries. Where that goes depends on the assistant you chose."
+  - Level 4: "Topics and the words, as kept, go into your assistant's folder, and topics into summaries. Where that goes depends on the assistant you chose."
+- Principle 1 (§1) now reads: "Nothing leaves your Mac by Zeus's hand. What Zeus keeps goes into your assistant's folder after the safeguards; your assistant decides what it reads and where it sends it."
+
+### 12.5 What Zeus Kept
+
+- Header under the segments: "Kept in ~/Zeus Assistant/Zeus" with "Show in Finder" (hidden when no folder is kept).
+- Each row and each day gets "Show in Finder" beside "Delete" (hover and context menu; VoiceOver custom action "Show in Finder"). It selects the item's file; a missing file (deleted in Finder) shows the day folder instead.
+- The Raw on request switches and their sheets are removed from the Screen and Typing sections. `JournalAnswerDisplay.rawCaption` stays for old ledger rows.
+
+### 12.6 Delete Everything
+
+- The confirmation reads: "Delete everything Zeus kept and sent, here and in your assistant's folder? This can't be undone."
+- A checkbox under it, off by default: "Also delete your assistant's notes", caption "Its Notes folder, where it keeps what it has concluded about you." Passed as `includeAssistantNotes`.
+- Buttons unchanged: "Cancel" (default) and "Delete" (destructive).

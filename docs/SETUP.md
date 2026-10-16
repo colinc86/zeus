@@ -100,7 +100,7 @@ Turn on **Let Zeus learn when and in what I work**. The first time, Zeus explain
 >
 > Apps on your private list count only as private time, with no name.
 >
-> Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac.
+> Zeus never sends your data anywhere itself. Your assistant reads its folder and what Zeus sends it. Where that goes depends on the assistant you chose.
 
 Choose **Turn On** or **Not Now**. Then, in the same pane:
 - **Record in:** **Everywhere except my private list** (the default) or **Only in apps I choose**. Every level has this choice; your private list is shared by all of them and always wins.
@@ -138,7 +138,7 @@ Turn on **Let Zeus look at the window in front now and then**. The consent sheet
 - **What's kept:** the picture of the window in front with private text covered and every picture and face in it pixellated, for 7 days; and a one-line description of what you were doing, for 7, 30 or 90 days (**Keep descriptions for**). Never the rest of your screen, other windows, or sound.
 - **Screen Recording:** press **Continue**, and macOS asks you to allow Zeus under **Privacy & Security › Screen & System Audio Recording**. Then the pane says *Allowed. Reopen Zeus to start taking pictures. · Reopen Zeus*; the relaunch keeps your conversation. While the level is on, the pane reminds you that macOS may show its screen-recording indicator for a moment when Zeus takes a picture.
 - **Up to** 4, 12 or 30 pictures an hour (12 by default). Pictures that look the same as the last one don't count.
-- **Let my assistant see the pictures when it asks** (off by default) is the Raw on request switch for this level; see below.
+- **Cover pictures and faces** (on by default) covers private text and pixellates pictures and faces before a screenshot is kept. Turning it off asks first (*Keep pictures uncovered?*): screenshots are then kept as they are, except that passwords, keys, card and account numbers and ID numbers stay covered, and Zeus still never takes a picture of a password dialog, a private window or an app on your private list. Pictures already kept stay covered.
 
 #### Typing
 
@@ -148,11 +148,16 @@ Turn on **Let Zeus keep what I type in apps I choose**. This level needs Apple I
 - **Input Monitoring:** macOS asks you to allow Zeus under **Privacy & Security › Input Monitoring**, then needs Zeus reopened once (*Allowed. Reopen Zeus to start. · Reopen Zeus*).
 - **What's never kept:** anything you type into a password field (macOS secure input is on, so the keys never reach Zeus), typing in private windows in Chrome and Edge, what you paste (Zeus notes only that you pasted), and typing made by other apps, such as a password manager filling in a form. While a password field is active, the pane says *Paused: private input.* and the Zeus menu shows *Private input: Zeus isn't noting typing*.
 - **Keep topics** 7, 30 or 90 days (30 by default), and **Keep the words** for 24 hours (the default), 7 days, or **Don't keep**, which keeps topics only. Choosing a shorter time deletes the older ones at once.
-- **Let my assistant see the words when it asks** (off by default) is the Raw on request switch for this level.
+
+#### Your assistant's folder
+
+Everything Zeus keeps is also written into your assistant's folder, under `Zeus/`, after the filtering above: a folder per day with `activity.md`, `focus.md`, covered pictures with their descriptions under `screen/`, `typing.md`, and the day's `summary.md` and `moments.md`, plus `reflections/` and `rules.md`. It accumulates whether or not it was sent, so your assistant has the full record when it needs it, and each summary and note ends with a *Files:* line naming what to look at. Zeus writes and prunes these files; a file you delete in Finder stays deleted. Your assistant keeps its own conclusions in `Notes/` beside them, which Zeus never writes or reads.
+
+The top of the Privacy pane shows where it is (*Kept in ~/Zeus Assistant/Zeus · Show in Finder*). When Zeus runs your assistant, it's the assistant's folder. With **Connect your own**, press **Choose…** to pick one, or leave it off and nothing is written. Where the folder lives is up to you; if it syncs, what Zeus keeps syncs with it. If Zeus can't write there, the pane says so.
 
 #### What your assistant can ask for
 
-Besides the morning summary, your assistant can look in the journal when you ask it about your day ("what was I reading at 3?") or to prepare something you asked for. It gets summaries, window titles, descriptions and topics, as stored. It gets a picture or the words of a stretch of typing only when **Let my assistant see the pictures / the words when it asks** is on for that level, and even then only the covered picture or the redacted words, never the original. Turning either on shows a sheet first, because those go to your assistant's model provider like anything you send.
+Besides the morning summary, your assistant can read its folder or look in the journal when you ask it about your day ("what was I reading at 3?") or to prepare something you asked for. It gets summaries, window titles, descriptions and topics, as stored, and the covered pictures and redacted words for the levels you turned on, never the originals.
 
 Every look adds a quiet line to the conversation, such as *Looked at your journal: Tue 14:00–15:30 · View* (or *…including 2 pictures*, or *(descriptions only)* when it asked for more than you allow). **View** opens the answer in **Sent to your assistant**, exactly as sent.
 
@@ -171,7 +176,7 @@ Add ⇧ to the Talk shortcut (⇧⌥⌘Z by default; the shortcut's caption in S
   - **Export…** saves what's shown as JSON.
 - **Sent to your assistant:** every morning summary, note, evening reflection, journal answer and Ask About This attachment Zeus sent, with the exact text. Click a row to expand it.
 
-At the end of the Privacy pane, **Pause for Today** stops every level until midnight, and **Delete Everything…** removes the whole journal and everything sent, after asking. If your keychain is locked, the pane says Zeus can't open its journal and rules; new records wait in memory until it can, and quitting Zeus before then loses them.
+At the end of the Privacy pane, **Pause for Today** stops every level until midnight, and **Delete Everything…** removes the whole journal, everything sent and the `Zeus/` folder, after asking; tick **Also delete your assistant's notes** to remove its `Notes/` too. If your keychain is locked, the pane says Zeus can't open its journal and rules; new records wait in memory until it can, and quitting Zeus before then loses them.
 
 #### Rules
 
