@@ -55,12 +55,16 @@ public struct Attachment: Codable, Sendable, Equatable {
     /// File or directory path (including ~), or URL string.
     public var target: String
 
+    /// Assistant-written synopsis; absent on legacy attachments and optional for links.
+    public var summary: String?
+
     /// Creates Attachment.
-    public init(id: String = UUID().uuidString, kind: Kind, label: String, target: String) {
+    public init(id: String = UUID().uuidString, kind: Kind, label: String, target: String, summary: String? = nil) {
         self.id = id
         self.kind = kind
         self.label = label
         self.target = target
+        self.summary = summary
     }
     /// How the attachment target is interpreted.
     public enum Kind: String, Codable, Sendable, CaseIterable { case file, folder, url }

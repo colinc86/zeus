@@ -58,7 +58,7 @@ All types are `Codable, Sendable` and public. JSON uses camelCase keys and ISO-8
   - `response: CardResponse?`
 - **`CardOption`**: `{ id, label, style: primary | secondary | destructive }`.
 - **`InputSpec`**: `{ placeholder?, multiline }`.
-- **`Attachment`**: `{ id, kind: file | folder | url, label, target }`. For files, `target` is a path and `~` is allowed.
+- **`Attachment`**: `{ id, kind: file | folder | url, label, target, summary? }`. For files, `target` is a path and `~` is allowed. `summary` is an assistant-written synopsis; legacy stored attachments decode without it. New tool-created file/folder attachments require at least 20 non-whitespace characters, at most 400 total characters; link summaries are optional (at most 400 characters).
 - **`CardResponse`**: `{ optionID?, optionLabel?, text?, skipped: Bool, respondedAt, device: "mac" | "ios" }`, plus `summary`. `skipped` defaults to false and a missing legacy field decodes as false; a skipped response has no `optionID` (TB1, 2026-10-14).
 - **`Delivery`** (§5): `{ id ("d_"+8), kind: reply | userMessage, cardID?, sessionKey, content, meta: [String:String], createdAt, attempts, lastAttemptAt?, ackedAt?, failedAt? }`.
 - **`ZeusPaths`**:
