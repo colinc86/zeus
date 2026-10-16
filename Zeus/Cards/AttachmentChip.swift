@@ -55,7 +55,9 @@ struct AttachmentChip: View {
                                     .zeusFont(.caption).foregroundStyle(palette.secondaryText)
                             }
                         }.frame(maxWidth: .infinity, alignment: .leading)
-                    }.frame(minHeight: 22).padding(6).contentShape(Rectangle())
+                    }.frame(minHeight: 22).padding(.horizontal, 6).padding(.top, 6)
+                        .padding(.bottom, !compact && summary != nil && (overflow || isExpanded) ? ZeusTheme.Spacing.xxs : 6)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusable(false).focusable(interactions: .edit).focusEffectDisabled()
                 .focused($focused, equals: .open).id(target(.open))
@@ -93,7 +95,7 @@ struct AttachmentChip: View {
                 if revealIcon {
                     Button { activate(.reveal) } label: {
                         Image(systemName: "magnifyingglass").font(.system(size: 11)).frame(width: 20, height: 20)
-                            .foregroundStyle(revealHovered ? palette.title : palette.secondaryText)
+                            .foregroundStyle(previewInteraction == nil && revealHovered ? palette.title : palette.secondaryText)
                             .opacity(isHovered || isFocused ? 1 : 0).contentShape(Rectangle())
                     }.buttonStyle(.plain).focusable(false).accessibilityHidden(true)
                         .onHover { revealHovered = $0 }.help("Show in Finder").padding(6)
