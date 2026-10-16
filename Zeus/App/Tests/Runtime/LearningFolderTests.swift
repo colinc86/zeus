@@ -2,6 +2,8 @@ import AppKit
 import ImageIO
 import Foundation
 import Testing
+import Observation
+import os
 import ZeusProtocol
 @testable import Zeus
 
@@ -190,6 +192,38 @@ import ZeusProtocol
         try f.journal.pruneTyping(words: .none, topicsDays: 30, now: f.now); await f.writer.flush()
         let retained = try String(contentsOf: typing, encoding: .utf8)
         #expect(retained.contains("Working on fixtures") && !retained.contains("Redacted retained words"))
+    }
+    @Test func finderAvailabilityIsObservableAfterBackgroundExport() async throws {
+        let f = try FolderFixture(); defer { f.stop() }
+        let item = f.item("one")
+        let observed = OSAllocatedUnfairLock(initialState: false)
+        withObservationTracking {
+            _ = f.writer.fileURL(forJournalItem: item)
+            _ = f.writer.dayFolderURL(for: item.time)
+        } onChange: { observed.withLock { $0 = true } }
+        try f.journal.append(item); await f.writer.flush()
+        #expect(observed.withLock { $0 })
+        #expect(f.writer.fileURL(forJournalItem: item) != nil)
+    }
+    @Test func immutableFramesReuseExportButUndoInvalidatesTheirCache() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("lf1-cache-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let disk = try LearningFolderDisk(stateURL: root.appendingPathComponent("state.json"))
+        let path = "Zeus/days/fixture/screen/covered.jpg", token = disk.invalidate()
+        #expect(try !disk.reuseFrame(root: root, path: path, id: "frame", token: token))
+        try disk.apply([.init(path: path, data: Data([1,2,3]), ids: ["frame"])], root: root, token: token)
+        #expect(try disk.reuseFrame(root: root, path: path, id: "frame", token: token))
+        try disk.erase(root: root, ids: ["frame"])
+        #expect(try !disk.reuseFrame(root: root, path: path, id: "frame", token: disk.invalidate()))
+    }
+    @Test func failedExportDoesNotAdvertiseAnOlderSummaryAsTheNewFile() async throws {
+        let f = try FolderFixture(); defer { f.stop() }
+        let first = Learning(id: "summary", kind: .digest, createdAt: f.now, text: "Safe first summary")
+        #expect(await f.writer.recordLearning(first).count == 1)
+        let oversized = Learning(id: first.id, kind: .digest, createdAt: f.now, text: String(repeating: "x", count: 16_000_001))
+        #expect(await f.writer.recordLearning(oversized).isEmpty)
+        #expect(f.writer.lastWriteError != nil)
     }
     @Test func mandatoryCoverageNeverDependsOnPicturePreference() {
         #expect(FrameRedactor.mandatoryCover(original: "token", redacted: "‹secret›"))

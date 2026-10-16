@@ -8,6 +8,7 @@ import UniformTypeIdentifiers
 @MainActor @Observable final class LearningFolderWriter: LearningFolderRecording, LearningFolderErasing {
     private(set) var folderURL: URL?
     private(set) var lastWriteError: String?
+    private var exportRevision: UInt64 = 0
     @ObservationIgnored var enabledLevels: () -> Set<JournalLevel>
     @ObservationIgnored private let journal: any JournalStore
     @ObservationIgnored private let rules: (any RulesStore)?
@@ -72,14 +73,16 @@ import UniformTypeIdentifiers
     func deleteFolderContents(includeAssistantNotes: Bool) throws {
         work?.cancel(); disk?.invalidate(); safeLearnings.removeAll(); reflections.removeAll()
         guard let root = folderURL, let disk else { return }
-        do { try disk.erase(root: root, ids: nil, includeNotes: includeAssistantNotes); itemPaths.removeAll(); lastWriteError = nil }
+        do { try disk.erase(root: root, ids: nil, includeNotes: includeAssistantNotes); itemPaths.removeAll(); lastWriteError = nil; exportRevision &+= 1 }
         catch { lastWriteError = "Zeus couldn't empty its learnings folder."; throw error }
     }
     func dayFolderURL(for date: Date) -> URL? {
+        _ = exportRevision
         guard let root = folderURL else { return nil }
         return disk?.existing(root, path: "Zeus/days/" + day(date))
     }
     func fileURL(forJournalItem item: JournalItem) -> URL? {
+        _ = exportRevision
         guard let root = folderURL, enabledLevels().contains(item.level) else { return nil }
         return disk?.existing(root, path: itemPaths[item.id] ?? path(for: item))
     }
@@ -121,7 +124,7 @@ import UniformTypeIdentifiers
                 }
                 let keep = kept
                 try await Task.detached(priority: .utility) { try disk.prune(root: root, keeping: keep, token: token) }.value
-                self.lastWriteError = nil
+                self.lastWriteError = nil; self.exportRevision &+= 1
             } catch is CancellationError { }
             catch LearningFolderError.stale { }
             catch { self.lastWriteError = "Zeus couldn't update its learnings folder. The retained journal is unchanged." }
@@ -140,7 +143,7 @@ import UniformTypeIdentifiers
         safeLearnings[learning.id] = learning
         await flush()
         let path = learningPath(learning)
-        guard let root = folderURL, enabledLevels().contains(.activity), disk?.existing(root, path: path) != nil else { return [] }
+        guard lastWriteError == nil, let root = folderURL, enabledLevels().contains(.activity), disk?.existing(root, path: path) != nil else { return [] }
         return [path]
     }
     func setReflections(_ records: [LearningFolderReflection]) {
@@ -152,7 +155,7 @@ import UniformTypeIdentifiers
         reflections[id] = .init(id: id, text: text, time: at)
         await flush()
         let path = "Zeus/reflections/" + day(at) + ".md"
-        guard let root = folderURL, !enabledLevels().isEmpty, disk?.existing(root, path: path) != nil else { return [] }
+        guard lastWriteError == nil, let root = folderURL, !enabledLevels().isEmpty, disk?.existing(root, path: path) != nil else { return [] }
         return [path]
     }
     private func formatted(_ date: Date, _ pattern: String) -> String {
@@ -198,6 +201,9 @@ import UniformTypeIdentifiers
             try Task.checkCancellation()
             let path = path(for: item); paths[item.id] = path
             if item.kind == .frame {
+                if try disk.reuseFrame(root: root, path: path, id: item.id, token: token) {
+                    streamed.insert(path); continue
+                }
                 if let store = journal as? any FrameJournalStoring, let image = try store.frame(id: item.id) {
                     let jpeg = try await Task.detached(priority: .utility) { try Self.jpeg(image.value.heic) }.value
                     try Task.checkCancellation()
