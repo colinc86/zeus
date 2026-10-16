@@ -16,15 +16,15 @@ import ZeusProtocol
 }
 
 @Suite(.serialized) @MainActor struct ComposerGrowthTests {
-    @Test(arguments: [ZeusFontChoice.system, .pixel])
-    func fieldGrowsToItsLineCapAndReturnsToOneLineAfterSend(font: ZeusFontChoice) async throws {
+    @Test(arguments: [ZeusFontChoice.system, .pixel], [ZeusFontScale.default, .larger])
+    func fieldGrowsToItsLineCapAndReturnsToOneLineAfterSend(font: ZeusFontChoice, scale: ZeusFontScale) async throws {
         #expect(ZeusFonts.registerBundled())
         let suite = "zeus-composer-growth-\(UUID())"
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
         defer { try? FileManager.default.removeItem(at: root) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
-        settings.fontChoice = font; settings.typewriterEnabled = false
+        settings.fontChoice = font; settings.fontScale = scale; settings.typewriterEnabled = false
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json")), messaging = GrowthMessaging()
         for index in 0..<30 { cards.add(Card(kind: .message, body: "History \(index)")) }
         let model = ConversationModel(cards: cards, messaging: messaging), panel = ConversationPanelState(), activity = SurfaceActivity()

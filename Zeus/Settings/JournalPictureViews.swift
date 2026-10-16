@@ -100,7 +100,7 @@ struct JournalPictureDetail: View {
                 HStack { Text("Deleted.").settingsCaption(); KeyboardButton("Undo") { model.undoDelete() }.accessibilityLabel("Undo picture deletion") }
             }
             if let error = model.error { Text(error).settingsError() }
-        }.padding(24).frame(width: 820).environment(\.zeusFontChoice, .system)
+        }.padding(24).frame(width: 820).environment(\.zeusFontChoice, .system).environment(\.zeusFontScale, .default)
             .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
             .onKeyPress(.leftArrow) { guard !model.confirmsDeleteBoth else { return .ignored }; model.step(1); return .handled }
             .onKeyPress(.rightArrow) { guard !model.confirmsDeleteBoth else { return .ignored }; model.step(-1); return .handled }

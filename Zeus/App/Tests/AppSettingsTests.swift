@@ -1,11 +1,27 @@
 import Foundation
 import Testing
+import ZeusDesign
 import ZeusProtocol
 import ZeusSprites
 @testable import Zeus
 
 @MainActor
 struct AppSettingsTests {
+    @Test func fontScaleDefaultsPersistsAndRecoversUnknownValues() throws {
+        let suite = "zeus-font-scale-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        #expect(AppSettings(defaults: defaults, userDirectory: nil).fontScale == .default)
+        for scale in ZeusFontScale.allCases {
+            let settings = AppSettings(defaults: defaults, userDirectory: nil)
+            settings.fontScale = scale
+            #expect(defaults.string(forKey: "appearance.fontScale") == scale.rawValue)
+            #expect(AppSettings(defaults: defaults, userDirectory: nil).fontScale == scale)
+        }
+        defaults.set("unknown", forKey: "appearance.fontScale")
+        #expect(AppSettings(defaults: defaults, userDirectory: nil).fontScale == .default)
+    }
+
     @Test func settingsPersistCharacterSizeAndRoutingAndRejectUnknownCharacters() throws {
         let suite = "zeus-settings-tests-\(UUID())"
         let defaults = try #require(UserDefaults(suiteName: suite))

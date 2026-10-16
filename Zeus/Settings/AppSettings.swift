@@ -170,6 +170,7 @@ final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSet
         return candidates.first { $0.supportsChannel } ?? candidates.first
     }
     var openCodeURLText: String { didSet { defaults.set(openCodeURLText, forKey: "agent.openCodeBaseURL") } }
+    var fontScale: ZeusFontScale { didSet { defaults.set(fontScale.rawValue, forKey: "appearance.fontScale") } }
     var fontChoice: ZeusFontChoice { didSet { defaults.set(fontChoice.rawValue, forKey: "appearance.font") } }
     var talkHotKey: TalkHotKey {
         didSet { if let data = try? JSONEncoder().encode(talkHotKey) { defaults.set(data, forKey: "general.talkHotKey") } }
@@ -244,6 +245,7 @@ final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSet
         else { tmuxDestination = nil }
         legacyTmuxTarget = defaults.string(forKey: "agent.tmuxTarget")
         openCodeURLText = defaults.string(forKey: "agent.openCodeBaseURL") ?? "http://127.0.0.1:4096"
+        fontScale = ZeusFontScale(rawValue: defaults.string(forKey: "appearance.fontScale") ?? "") ?? .default
         fontChoice = ZeusFontChoice(rawValue: defaults.string(forKey: "appearance.font") ?? "") ?? .pixel
         if let data = defaults.data(forKey: "general.talkHotKey"), let shortcut = try? JSONDecoder().decode(TalkHotKey.self, from: data), (shortcut.isValid || !shortcut.enabled) {
             talkHotKey = shortcut

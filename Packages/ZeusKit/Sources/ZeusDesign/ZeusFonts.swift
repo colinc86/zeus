@@ -20,6 +20,16 @@ public enum ZeusFontChoice: String, Codable, Sendable, CaseIterable, Identifiabl
     }
 }
 
+/// Conversation text-size preset. Pixel sizes stay on the font grid; desktop badges do not scale.
+public enum ZeusFontScale: String, Codable, Sendable, CaseIterable, Identifiable {
+    case small, `default`, large, larger
+    public var id: String { rawValue }
+    public var displayName: String {
+        switch self { case .small: "Small"; case .default: "Default"; case .large: "Large"; case .larger: "Larger" }
+    }
+    public var accessibilityLabel: String { displayName + " text" }
+}
+
 /// Where a piece of text sits in the hierarchy.
 public enum ZeusTextRole: Sendable, Hashable, CaseIterable {
     case title, body, caption, button, badge
@@ -27,19 +37,20 @@ public enum ZeusTextRole: Sendable, Hashable, CaseIterable {
     /// Point size per font. Departure Mono is drawn on an 11 px/em grid, so it's only crisp at multiples of
     /// 5.5 pt (one font pixel = whole device pixels on 2× displays): 11 for text, 16.5 for titles.
     /// Its x-height at 11 pt matches the old 15 pt body; hierarchy comes from size and color (one weight).
-    func size(for choice: ZeusFontChoice) -> CGFloat {
-        switch (self, choice) {
-        case (.title, .pixel): 16.5
-        case (.title, .system): 14
-        case (.body, .pixel): 11
-        case (.body, .system): 12.5
-        case (.caption, .pixel): 11
-        case (.caption, .system): 11
-        case (.button, .pixel): 11
-        case (.button, .system): 12
-        case (.badge, .pixel): 11
-        case (.badge, .system): 10
+    func size(for choice: ZeusFontChoice, scale: ZeusFontScale = .default) -> CGFloat {
+        let index = switch scale { case .small: 0; case .default: 1; case .large: 2; case .larger: 3 }
+        let sizes: [CGFloat] = switch (self, choice) {
+        case (.title, .pixel): [11, 16.5, 22, 22]
+        case (.body, .pixel), (.button, .pixel): [11, 11, 16.5, 16.5]
+        case (.caption, .pixel): [11, 11, 11, 16.5]
+        case (.badge, .pixel): [11, 11, 11, 11]
+        case (.title, .system): [12, 14, 16.5, 19]
+        case (.body, .system): [10.5, 12.5, 15, 17]
+        case (.caption, .system): [9.5, 11, 13, 15]
+        case (.button, .system): [10, 12, 14, 16.5]
+        case (.badge, .system): [10, 10, 10, 10]
         }
+        return sizes[index]
     }
 
     /// The pixel font's grid step: pixel sizes must be multiples of this to render crisp on 2× displays.
@@ -85,14 +96,22 @@ public enum ZeusFonts {
         return (CTFontCopyFamilyName(font) as String) == pixelFamily
     }
 
+    /// Native line metrics for layout that must reserve space before displaying text.
+    public static func lineHeight(_ role: ZeusTextRole, choice: ZeusFontChoice, scale: ZeusFontScale = .default) -> CGFloat {
+        let font = choice == .pixel && isPixelFontAvailable
+            ? pixelCTFont(size: role.size(for: .pixel, scale: scale))
+            : CTFontCreateWithName("SFMono-Regular" as CFString, role.size(for: .system, scale: scale), nil)
+        return ceil(CTFontGetAscent(font) + CTFontGetDescent(font) + CTFontGetLeading(font))
+    }
+
     /// The font for a text role. Falls back to SF Mono if the pixel font isn't registered.
-    public static func font(_ role: ZeusTextRole, choice: ZeusFontChoice) -> Font {
-        let size = role.size(for: choice)
+    public static func font(_ role: ZeusTextRole, choice: ZeusFontChoice, scale: ZeusFontScale = .default) -> Font {
+        let size = role.size(for: choice, scale: scale)
         switch choice {
         case .pixel where isPixelFontAvailable:
             return Font(pixelCTFont(size: size))
         case .pixel, .system:
-            return .system(size: role.size(for: .system), weight: role.weight, design: .monospaced)
+            return .system(size: role.size(for: .system, scale: scale), weight: role.weight, design: .monospaced)
         }
     }
 }
@@ -163,6 +182,9 @@ public struct ZeusFontOverride: Sendable, Equatable {
 }
 
 extension EnvironmentValues {
+    /// Conversation text size. Settings and menus retain the default system size.
+    @Entry public var zeusFontScale: ZeusFontScale = .default
+
     /// Overrides the pixel font (previews and font evaluation only; see `ZeusFontOverride`).
     @Entry public var zeusFontOverride: ZeusFontOverride? = nil
 }
@@ -170,6 +192,7 @@ extension EnvironmentValues {
 /// Applies the Zeus font for a role, honoring `\.zeusFontChoice` and `\.zeusFontOverride`.
 struct ZeusFontModifier: ViewModifier {
     @Environment(\.zeusFontChoice) private var choice
+    @Environment(\.zeusFontScale) private var scale
     @Environment(\.zeusFontOverride) private var override
     let role: ZeusTextRole
 
@@ -177,7 +200,7 @@ struct ZeusFontModifier: ViewModifier {
         if choice == .pixel, let override {
             content.font(override.font(role))
         } else {
-            content.font(ZeusFonts.font(role, choice: choice))
+            content.font(ZeusFonts.font(role, choice: choice, scale: scale))
         }
     }
 }

@@ -29,6 +29,8 @@ struct AppearanceSettingsView: View {
             }
             SettingsDivider()
             SettingsSegments(label: "Conversation font", options: ZeusFontChoice.allCases.map { ($0, $0.displayName) }, selection: $settings.fontChoice)
+            SettingsSegments(label: "Text size", options: ZeusFontScale.allCases.map { ($0, $0.displayName) }, selection: $settings.fontScale, accessibilityTitle: { $0.accessibilityLabel })
+            Text("Applies to the conversation, the peek bubble and the status line. Settings and menus keep the system size. The pixel font grows in whole steps, so two neighbouring sizes can look the same.").settingsCaption()
         }
     }
 }

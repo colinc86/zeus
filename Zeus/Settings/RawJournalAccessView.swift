@@ -71,6 +71,6 @@ struct RawJournalConsentSheet: View {
                 KeyboardButton("Allow", action: allow).buttonStyle(ZeusButtonStyle(.primary, size: .small)).accessibilityLabel("Allow \(level == .screen ? "pictures" : "words") when requested")
             }
         }.padding(24).frame(width: 520).fixedSize(horizontal: false, vertical: true)
-            .environment(\.zeusFontChoice, .system).onAppear { cancelFocused = true }
+            .environment(\.zeusFontChoice, .system).environment(\.zeusFontScale, .default).onAppear { cancelFocused = true }
     }
 }

@@ -57,6 +57,7 @@ struct DeliveryWarningView: View {
             }
         }
         .environment(\.zeusFontChoice, settings.fontChoice)
+        .environment(\.zeusFontScale, settings.fontScale)
         .onChange(of: messaging.deliveryIssue) { if messaging.deliveryIssue == nil { close() } }
     }
 }

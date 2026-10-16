@@ -36,6 +36,7 @@ struct PeekView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .environment(\.zeusAnimationsActive, activity.peek)
         .environment(\.zeusFontChoice, settings.fontChoice)
+        .environment(\.zeusFontScale, settings.fontScale)
         .environment(\.openURL, OpenURLAction { _ in open(.message); return .handled })
         .animation(.easeOut(duration: model.isVisible ? ZeusPeekTiming.enterDuration : ZeusPeekTiming.exitDuration), value: model.isVisible)
     }

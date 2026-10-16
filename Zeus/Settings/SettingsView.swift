@@ -84,7 +84,7 @@ struct SettingsView: View {
         .frame(minWidth: SettingsWindowSize.minimum.width, maxWidth: .infinity,
                minHeight: SettingsWindowSize.minimum.height, maxHeight: .infinity, alignment: .topLeading)
         .environment(\.zeusAnimationsActive, activity.settings)
-        .environment(\.zeusFontChoice, .system)
+        .environment(\.zeusFontChoice, .system).environment(\.zeusFontScale, .default)
         // UI scripting can query Settings without activating VoiceOver first.
         .environment(\.accessibilityEnabled, true)
     }
