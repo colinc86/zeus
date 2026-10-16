@@ -670,7 +670,7 @@ Copy Path puts the expanded absolute path on the pasteboard (`~` resolved, symli
 
 ### 18.4 Peek bubble
 
-The peek shows the card's **first** attachment as a chip in place of the old "1 attachment" caption: icon, name on one line, summary on **one** line ("…"), no reveal icon, no More, no context menu. Clicking the chip opens the attachment with the same routing as §18.2 (a reveal-only target reveals; nothing else changes in the peek). When the card has more, a caption under the chip in `secondaryText`: "and 1 more attachment" / "and 2 more attachments"; clicking it opens the panel at the card. The body keeps its 3-line limit (2 with buttons). Legacy or link attachments without a summary are a one-line chip.
+The peek shows the card's **first** attachment as a chip in place of the old "1 attachment" caption: icon, name on one line, summary on **one** line ("…"), no reveal icon, no More, no context menu. Clicking the chip opens the attachment with the same routing as §18.2 (a reveal-only target reveals; nothing else changes in the peek). When the card has more, a caption under the chip in `secondaryText`: "and 1 more attachment" / "and 2 more attachments"; clicking it opens the panel at the card. The body keeps the limit CONTRACT §10.7 sets (up to 6 lines, then "…" and "More"); the chip never shortens it, and the §14.2 anatomy's older 3/2-line figures do not apply (A9 superseded them). Legacy or link attachments without a summary are a one-line chip.
 
 ### 18.5 Keyboard and accessibility
 
