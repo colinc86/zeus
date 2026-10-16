@@ -8,7 +8,7 @@ public enum ZeusRuleTools {
         func object(_ fields: [String: JSONValue], _ required: [String] = []) -> JSONValue {
             ["type": "object", "properties": .object(fields), "required": .array(required.map(JSONValue.string)), "additionalProperties": false]
         }
-        let minute: JSONValue = ["type": "integer", "minimum": 0.4, "maximum": 0.7439]
+        let minute: JSONValue = ["type": "integer", "minimum": 0, "maximum": 1439]
         let trigger = object(["time": object(["startMinute": minute, "endMinute": minute,
             "weekdays": ["type": "array", "items": ["type": "integer", "minimum": 1, "maximum": 7]]], ["startMinute", "endMinute"]),
             "apps": ["type": "array", "items": text], "state": text, "kind": ["type": "string", "enum": ["spend"]]])
@@ -17,7 +17,7 @@ public enum ZeusRuleTools {
             "confidence": ["type": "number", "minimum": 0.4, "maximum": 0.7],
             "evidence": ["type": "array", "maxItems": 100, "items": text]], ["sentence"])
         return [
-            .init(name: "zeus_get_journal", description: "Answer the user's request from their permitted journal, never browse out of curiosity. One range up to 7 days, at most 20 calls/hour. Defaults: last day, all enabled levels, 20 items. Summaries/topics only; raw=true returns covered pictures or redacted words only while that level is enabled. Every answer is visible and logged. Never infer removed details or forward journal material to other people.", inputSchema: object([
+            .init(name: "zeus_get_journal", description: "Answer the user's request from their permitted journal, never browse out of curiosity. One range up to 7 days, at most 20 calls/hour. Defaults: last day, all enabled levels, 20 items. Summaries/topics only; raw=true returns pictures as stored (with the coverage applied at capture) or retained redacted words only while that level is enabled. Every answer is visible and logged. Never infer removed details or forward journal material to other people.", inputSchema: object([
                 "query": text, "from": text, "to": text, "kinds": ["type": "array", "items": ["type": "string", "enum": ["activity", "focus", "screen", "typing"]]],
                 "raw": ["type": "boolean"], "limit": ["type": "integer", "minimum": 1, "maximum": 50]])),
             .init(name: "zeus_rule_shadow", description: "Report what you would have done under a shadow rule; DO NOT act. wouldHave starts with a past participle (sent …, bought …) and contains nothing private. Only one shadow notice per rule until answered. Purchases always need amount/currency and a fresh confirmation; standing approval never authorizes payment.", inputSchema: object([
