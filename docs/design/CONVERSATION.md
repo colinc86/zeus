@@ -9,7 +9,7 @@
 
 **Colors:** read `@Environment(\.zeusPalette)`. It follows the color scheme and Increase Contrast (`ZeusPalette.lightHighContrast` / `darkHighContrast`, AAA text). Never fade text with `.opacity`; use `secondaryText` / `mutedText`. Symbols the pixel font lacks (✓ ✕ ↩ ◀ ▶ ↑) are `ZeusGlyph`s, and `ZeusFonts.pixelFontMissingGlyphs(in:)` checks any new UI string.
 
-**Type:** all text uses the `.zeusFont(_:)` roles. With the default pixel font, Departure Mono (D10), that's **16.5 pt for titles and 11 pt for everything else**, on the font's 11 px/em grid so it renders crisp. SF Mono is the user's alternative. Departure Mono has one weight and no italic, so in the pixel font markdown **bold** renders in the gold title color instead of a bold face and *italic* in the secondary color, and inline `code` gets a subtle tint (both fonts). Block markdown (F9) renders in the same single `Text`: headings as bold lines, `•`/`–`/`1.` list markers with nested indents (one newline between items), `▌` quote bars in the secondary color, fenced code as a tinted block padded to one width with the language tag dropped, tables as `│` rows, and rules as a short `─` line. There's a blank line between other blocks. Paragraph line breaks are kept. Use `ZeusMarkdown.spokenText(_:)` for accessibility labels; it drops the decorations. Render bodies with `ZeusMarkdown.attributed(_:choice:palette:)` or `ZeusMarkdownText`.
+**Type:** all text uses the `.zeusFont(_:)` roles. With the default pixel font, Departure Mono (D10), that's **16.5 pt for titles and 11 pt for everything else** at the Default text size, on the font's 11 px/em grid so it renders crisp; the user's text size (§19) moves every role in whole grid steps. SF Mono is the user's alternative. Departure Mono has one weight and no italic, so in the pixel font markdown **bold** renders in the gold title color instead of a bold face and *italic* in the secondary color, and inline `code` gets a subtle tint (both fonts). Block markdown (F9) renders in the same single `Text`: headings as bold lines, `•`/`–`/`1.` list markers with nested indents (one newline between items), `▌` quote bars in the secondary color, fenced code as a tinted block padded to one width with the language tag dropped, tables as `│` rows, and rules as a short `─` line. There's a blank line between other blocks. Paragraph line breaks are kept. Use `ZeusMarkdown.spokenText(_:)` for accessibility labels; it drops the decorations. Render bodies with `ZeusMarkdown.attributed(_:choice:palette:)` or `ZeusMarkdownText`.
 
 **The human's brief:** *seamless, intuitive, keyboard-driven, minimal clicks.* Every rule below serves one of these:
 - **No dead ends.** Nothing ever has to be dismissed.
@@ -681,3 +681,52 @@ The peek shows the card's **first** attachment as a chip in place of the old "1 
 ### 18.6 Renders
 
 `at1/at1-chip-rest__*`, `-hover`, `-focused`, `-expanded`, `-missing`, `-link`, `-legacy` (no summary), `-present` (chips above actions), `-peek` (one chip and "and 1 more attachment"), each in light and dark and both fonts, from `build/at1-renders/`.
+
+## 19. Text size (FS1)
+
+> **Status: building (FS1, appdev).** User request 2026-10-16: a way to set the font size. Four presets, not a slider: the pixel font is crisp only in whole 5.5 pt steps, so a slider would mostly produce blur.
+
+### 19.1 Setting and copy
+
+Settings › Appearance, directly under "Conversation font": `SettingsSegments(label: "Text size")` with **Small · Default · Large · Larger** (`ZeusFontScale`, persisted as `appearance.fontScale`, default Default). Accessibility labels "Small text", "Default text", "Large text", "Larger text". One caption under it:
+
+> Applies to the conversation, the peek bubble and the status line. Settings and menus keep the system size. The pixel font grows in whole steps, so two neighbouring sizes can look the same.
+
+The scope is everything drawn with `.zeusFont(_:)` under a root that injects `\.zeusFontScale`: the thread, the composer, the status strip, the peek bubble, attachment and context chips, rating rows, notice lines, the delivery warning. Settings, menus and the component galleries' chrome keep the system size (`.default`).
+
+### 19.2 Sizes per role
+
+Pixel font (Departure Mono), in points on the 5.5 pt grid (`ZeusTextRole.pixelGridStep`). Body can't go below 11 and stay readable, so Small shrinks the titles; Large lifts text, buttons and titles; Larger also lifts the captions (times, status line, summaries, rating lines), the step that matters for reading at a distance.
+
+| Role | Small | Default | Large | Larger |
+|---|---|---|---|---|
+| `.title` | 11 | 16.5 | 22 | 22 |
+| `.body` | 11 | 11 | 16.5 | 16.5 |
+| `.caption` | 11 | 11 | 11 | 16.5 |
+| `.button` | 11 | 11 | 16.5 | 16.5 |
+| `.badge` | 11 | 11 | 11 | 11 |
+
+SF Mono: the Default size times the preset's factor (0.85 · 1.0 · 1.18 · 1.36), rounded to the nearest 0.5 pt, which gives:
+
+| Role | Small | Default | Large | Larger |
+|---|---|---|---|---|
+| `.title` | 12 | 14 | 16.5 | 19 |
+| `.body` | 10.5 | 12.5 | 15 | 17 |
+| `.caption` | 9.5 | 11 | 13 | 15 |
+| `.button` | 10 | 12 | 14 | 16.5 |
+| `.badge` | 10 | 10 | 10 | 10 |
+
+The badge and the warning marker sit on the desktop at the avatar, not in the conversation, so they never scale. At Small the pixel title is the body size and reads as a title by its gold color alone, as bold already does (D10). Tests: every pixel size is a multiple of 5.5; every SF Mono size is a multiple of 0.5; Default equals the pre-FS1 sizes.
+
+### 19.3 What holds at every size
+
+- **Line heights follow the font**; nothing else is scaled. Spacing tokens, the 2-px pixel, button padding, the 22-pt ⋯ and ✕ targets, glyphs (`ZeusGlyph`), the typing dots and the progress bar keep their sizes. The typing row and the composer stay baseline-aligned because both take their height from the body font.
+- **Line limits count rendered lines** (peek body, chip summary, strip), so a bigger font shows fewer words, never a clipped glyph. The peek keeps its 200–280 pt width and the panel its widths; the composer grows to `composerLines` lines as before.
+- **Truncation, not overflow:** one-line items (status strip, chip names, session labels, the kind line's label) truncate in the middle or at the end as they do today. Chips and option buttons wrap onto new rows (`ZeusChipFlow`, the options' wrap) rather than squeezing.
+- **Short displays at Larger:** the peek still fits (`PeekLayout` measures with the scaled font), and the thread scrolls; nothing overlaps the composer.
+- Changing the size takes effect at once everywhere, without a relaunch; the peek re-measures if it's showing.
+- Not now: following the macOS accessibility text size. A later preset could map the system's Dynamic Type categories onto these four.
+
+### 19.4 Renders
+
+`fs1/fs1-<size>-<theme>-<scheme>-<font>`: a thread with a title, body, chip, rating line and strip, plus the peek, at each of the four sizes, light and dark, both fonts, from `build/fs1-renders/`. The Larger-pixel-short render shows the peek on a 240 pt-tall display.
