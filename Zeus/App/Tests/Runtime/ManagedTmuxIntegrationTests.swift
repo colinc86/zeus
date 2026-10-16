@@ -23,7 +23,7 @@ struct ManagedTmuxIntegrationTests {
         let startupGate = home.appendingPathComponent("hold-native-init")
         try Data().write(to: startupGate)
         let socket = root.appendingPathComponent("tmux.sock").path
-        let runner = FoundationProcessRunner()
+        let runner = ManagedFixtureProcessTrace()
         defer {
             let cleanup = Process(); cleanup.executableURL = tmux; cleanup.arguments = ["-S", socket, "kill-server"]
             cleanup.standardOutput = FileHandle.nullDevice; cleanup.standardError = FileHandle.nullDevice
@@ -44,7 +44,7 @@ struct ManagedTmuxIntegrationTests {
         let config = ManagedConfigBox(); config.value = .init(enabled: true, folder: folder.path, agent: agent, launchPrompt: "Instructions\nwith quotes ' \" and $()", startWhenZeusOpens: true)
         let clock = TestRuntimeClock()
         let controller = ManagedSessionController(configuration: { config.value }, stateURL: root.appendingPathComponent("state.json"), bridge: URL(fileURLWithPath: "/bin/cat"), bridgeSocket: root.appendingPathComponent("bridge.sock").path,
-            executables: .init(tmux: tmux, agents: [agent: executable]), environment: guiEnv, clock: clock, isolatedSocket: socket)
+            executables: .init(tmux: tmux, agents: [agent: executable]), hosting: ManagedTmux(executable: tmux, runner: runner, environment: guiEnv, testSocket: socket), environment: guiEnv, clock: clock, isolatedSocket: socket)
         defer { controller.shutdown() }
         controller.activate()
         try await Self.wait("startup lease", controller: controller, home: home) { controller.managedStatus == .starting && !controller.isBusy }
@@ -71,6 +71,24 @@ struct ManagedTmuxIntegrationTests {
         #expect(controller.record?.nativeEnvironment["CODEX_HOME"] == env["CODEX_HOME"])
         #expect(controller.record?.nativeEnvironment["XDG_DATA_HOME"] == env["XDG_DATA_HOME"])
         let native = controller.record?.conversation?.nativeID
+        // Session option commands silently ignore =name in tmux 3.6a. Resolve
+        // immutable IDs and distinguish a missing marker from a foreign marker.
+        let inspectionHost = ManagedTmux(executable: tmux, runner: runner, environment: guiEnv, testSocket: socket)
+        let inspectionOwner = try #require(controller.record?.owner)
+        let sessionTarget = "$" + first.sessionNumber
+        runner.beginRestart()
+        #expect(try await inspectionHost.inspect(name: first.name, owner: inspectionOwner, pane: first) != nil)
+        #expect(runner.ownerRepairs == 0)
+        runner.endRestart()
+        _ = try await runner.run(executable: tmux, arguments: ["-S", socket, "set-option", "-t", sessionTarget, "@zeus-owner", "foreign-fixture"], input: nil)
+        do {
+            _ = try await inspectionHost.inspect(name: first.name, owner: inspectionOwner, pane: first)
+            Issue.record("A foreign marker must win over the original recovery environment")
+        } catch ManagedSessionError.ownershipChanged { }
+        _ = try await runner.run(executable: tmux, arguments: ["-S", socket, "set-option", "-u", "-t", sessionTarget, "@zeus-owner"], input: nil)
+        #expect(try await inspectionHost.inspect(name: first.name, owner: inspectionOwner, pane: first) != nil)
+        let repairedOwner = try await runner.run(executable: tmux, arguments: ["-S", socket, "show-options", "-qv", "-t", sessionTarget, "@zeus-owner"], input: nil)
+        #expect(String(decoding: repairedOwner.stdout, as: UTF8.self).trimmingCharacters(in: .newlines) == inspectionOwner)
         let status = try await runner.run(executable: tmux, arguments: ["-S", socket, "show-options", "-wv", "-t", first.id, "remain-on-exit"], input: nil)
         #expect(String(decoding: status.stdout, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines) == "on")
         let log = home.appendingPathComponent("launches.jsonl")
@@ -93,7 +111,7 @@ struct ManagedTmuxIntegrationTests {
         #expect(kill(Int32(alive.pid), 0) == 0)
         config.value?.startWhenZeusOpens = false
         let adopted = ManagedSessionController(configuration: { config.value }, stateURL: root.appendingPathComponent("state.json"), bridge: URL(fileURLWithPath: "/bin/cat"), bridgeSocket: "unused", executables: controller.executables,
-            environment: guiEnv, clock: clock, isolatedSocket: socket)
+            hosting: ManagedTmux(executable: tmux, runner: runner, environment: guiEnv, testSocket: socket), environment: guiEnv, clock: clock, isolatedSocket: socket)
         defer { adopted.shutdown() }
         adopted.activate(); try await Self.wait("adoption", controller: adopted, home: home) { adopted.managedStatus == .starting && !adopted.isBusy }
         #expect(adopted.record?.pane?.pid == alive.pid)
@@ -117,7 +135,14 @@ struct ManagedTmuxIntegrationTests {
         #expect(adopted.record?.pane?.name == alive.name)
         let restartedPane = try #require(adopted.record?.pane)
         #expect(adopted.managedAttachCommand?.hasSuffix("attach -t " + ManagedSessionController.shellQuote(restartedPane.id)) == true)
-        adopted.restartManagedSession(); try await Self.wait("restart", controller: adopted, home: home) { adopted.managedStatus == .starting && !adopted.isBusy }
+        runner.beginRestart()
+        adopted.restartManagedSession()
+        do {
+            try await Self.wait("restart", controller: adopted, home: home) { adopted.managedStatus == .starting && !adopted.isBusy }
+        } catch { throw ManagedSessionError.command("\(error); subprocess trace: \(runner.summary)") }
+        print("FX3 restart \(agent): \(runner.summary)")
+        #expect(runner.ownerRepairs == 0, "A valid session marker must not enter interrupted-launch recovery")
+        runner.endRestart()
         try await Self.waitForFixtureReady(adopted, home: home, phase: "action native readiness")
         #expect(kill(humanPID, 0) == 0)
         adopted.startNewManagedConversation(); try await Self.wait("new conversation", controller: adopted, home: home) { adopted.managedStatus == .starting && !adopted.isBusy }
@@ -236,4 +261,34 @@ for line in sys.stdin:
     if line.strip() == '/exit':
         break
 """#
+}
+
+/// Measures the real restart pipeline. Optional per-command latency reproduces machine
+/// scheduling pressure without spawning CPU burners or touching other processes.
+/// TEST_RUNNER_ZEUS_FX3_DELAY=0.12 exercises the unchanged 10 s phase deadline.
+private final class ManagedFixtureProcessTrace: ProcessRunning, @unchecked Sendable {
+    private let lock = NSLock()
+    private var tracing = false
+    private var rows: [String] = []
+    private var current = "none"
+    private var repairs = 0
+    private var began = ContinuousClock.now
+    var ownerRepairs: Int { lock.withLock { repairs } }
+    private let delay = Double(ProcessInfo.processInfo.environment["ZEUS_FX3_DELAY"] ?? "0") ?? 0
+    func beginRestart() { lock.withLock { tracing = true; rows = []; repairs = 0; began = .now } }
+    func endRestart() { lock.withLock { tracing = false } }
+    var summary: String { lock.withLock { "elapsed=\(began.duration(to: .now)) commands=\(rows.count) ownerRepairs=\(repairs) current=\(current) recent=\(rows.suffix(8).joined(separator: "; "))" } }
+    func run(executable: URL, arguments: [String], input: Data?) async throws -> ProcessResult {
+        try await run(executable: executable, arguments: arguments, input: input, environment: ProcessInfo.processInfo.environment)
+    }
+    func run(executable: URL, arguments: [String], input: Data?, environment: [String: String]) async throws -> ProcessResult {
+        let trace = lock.withLock { tracing }
+        let name = arguments.dropFirst(3).first ?? "unknown"
+        let start = ContinuousClock.now
+        if trace { lock.withLock { current = name; if name == "set-option", arguments.contains("@zeus-owner") { repairs += 1 } } }
+        if trace, delay > 0 { try await Task.sleep(for: .seconds(delay)) }
+        let result = try await FoundationProcessRunner().run(executable: executable, arguments: arguments, input: input, environment: environment)
+        if trace { lock.withLock { rows.append("\(name):\(start.duration(to: .now))"); current = "none" } }
+        return result
+    }
 }

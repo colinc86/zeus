@@ -79,26 +79,27 @@ struct ManagedTmux: ManagedSessionHosting {
     }
     private func inspectPane(name: String, owner: String, pane: ManagedPane?, createdID: String?) async throws -> ManagedPane? {
         let socket = pane?.socket
-        let exists = try await run(["has-session", "-t", "=" + name], socket: socket)
-        if exists.status != 0 {
-            let message = String(decoding: exists.stderr, as: UTF8.self)
-            if message.contains("can't find session") || message.contains("No such file or directory") || message.contains("no server running") { return nil }
+        // Option commands do not honor the =name exact-target syntax: with -q,
+        // show-options silently returns an empty marker for a perfectly owned session.
+        // Resolve name, immutable ID and owner together; only genuinely missing markers
+        // take the interrupted-launch recovery path. Never use prefix-matched names.
+        let sessions = try await run(["list-sessions", "-F", "#{session_name}\t#{session_id}\t#{@zeus-owner}"], socket: socket)
+        if sessions.status != 0 {
+            let message = String(decoding: sessions.stderr, as: UTF8.self)
+            if message.contains("No such file or directory") || message.contains("no server running") || message.contains("no sessions") { return nil }
             throw ManagedSessionError.terminalCommand("Couldn't inspect managed tmux: " + message)
         }
-        var token = try await checked(["show-options", "-qv", "-t", "=" + name, "@zeus-owner"], socket: socket)
+        let entries = String(decoding: sessions.stdout, as: UTF8.self).split(separator: "\n")
+        guard let sessionFields = entries.map({ $0.split(separator: "\t", omittingEmptySubsequences: false).map(String.init) })
+            .first(where: { $0.count == 3 && $0[0] == name }) else { return nil }
+        let sessionID = sessionFields[1]
+        guard sessionID.hasPrefix("$"), Int(sessionID.dropFirst()) != nil else { throw ManagedSessionError.ownershipChanged }
+        var token = sessionFields[2]
         if token.isEmpty {
-            // Recover a launch interrupted between creating the parked session and setting its option.
-            let result = try await run(["show-environment", "-t", "=" + name, "ZEUS_MANAGED_OWNER"], socket: socket)
+            // Recover only a launch interrupted before its session option was saved.
+            let result = try await run(["show-environment", "-t", sessionID, "ZEUS_MANAGED_OWNER"], socket: socket)
             let marker = String(decoding: result.stdout, as: UTF8.self).trimmingCharacters(in: .newlines)
             guard result.status == 0, marker == "ZEUS_MANAGED_OWNER=" + owner else { throw ManagedSessionError.ownershipChanged }
-            // set-option's session target rejects =name in tmux 3.6a; the immutable $ID is exact.
-            let entries = try await checked(["list-sessions", "-F", "#{session_name}\t#{session_id}"], socket: socket)
-            var sessionID = ""
-            for entry in entries.split(separator: "\n") {
-                let fields = entry.split(separator: "\t")
-                if fields.count == 2, String(fields[0]) == name { sessionID = String(fields[1]); break }
-            }
-            guard sessionID.hasPrefix("$"), Int(sessionID.dropFirst()) != nil else { throw ManagedSessionError.ownershipChanged }
             _ = try await checked(["set-option", "-t", sessionID, "@zeus-owner", owner], socket: socket); token = owner
         }
         guard token == owner else { throw ManagedSessionError.ownershipChanged }
