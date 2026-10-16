@@ -14,7 +14,7 @@ By default only the selected assistant can call tools. A former assistant can st
 
 | Shape | Fields |
 |---|---|
-| Attachment | `{kind, label, target}`; all strings and required. `kind`: `file`, `folder` or `url`. File/folder targets must be absolute or `~` paths; URL targets must be HTTP(S). |
+| Attachment | `{kind, label, target, summary?}`; string fields. `kind`, `label` and `target` are required. `kind`: `file`, `folder` or `url`. File/folder targets must be absolute or `~` paths; URL targets must be HTTP(S). `summary` is required for files/folders; see [attachment summaries](#attachment-summaries). |
 | Option/action | `{id, label, style?}`. Unique string `id`, string `label`; `style`: `primary`, `secondary` (default) or `destructive`. |
 | Mood/state | `idle`, `talking`, `thinking`, `working`, `alert`, `waiting`, `happy`, `sleeping`. `zeus_set_status` also accepts `auto`. |
 | Priority | `low`, `normal` (default), `high`. High is for time-sensitive items; it does not bypass a stopped message kind. |
@@ -23,6 +23,20 @@ By default only the selected assistant can call tools. A former assistant can st
 | TTL | Nonnegative finite seconds. Omit for the tool's default. |
 
 Keep card text short. Bodies support inline formatting, links, lists, headings, quotes and fenced code. Attach longer work as a file. Mood is a brief reaction; use status for ongoing work. High priority emphasizes a card without reordering the chronological thread.
+
+## Attachment summaries
+
+For `zeus_say` and `zeus_present`, put the takeaway in `text` or `body`: what you found or made, and what the user should do next. Attach a file or folder only when opening it adds something useful. Use a name for `label`, not an instruction such as “Open report”.
+
+Each file/folder attachment needs `attachments[].summary`: 1–3 plain-text sentences explaining what is inside and why it matters. The runtime requires at least **20 non-whitespace characters** and at most **400 total characters**, including whitespace. URL summaries are optional, but any supplied summary must be a string of at most 400 characters; `null` is not accepted. The schema leaves `summary` out of the unconditional required list because links may omit it; file/folder validation still requires it.
+
+A missing or too-short file/folder summary returns `isError` with this exact guidance:
+
+> Each file or folder attachment needs a summary: 1–3 sentences saying what's in it and why it matters, so the user doesn't have to open it. Put the takeaway in the message text too.
+
+An overlong summary returns an indexed error such as `attachments[0].summary must be at most 400 characters.` Zeus validates the whole array before posting: if any attachment fails, **nothing from that call reaches the thread**. Correct the arguments and retry. The sentence count and takeaway are writing guidance; the length limits are enforced.
+
+Summaries appear in [compact attachment chips](CONVERSATION.md#attachments-from-your-assistant). Older stored cards without summaries remain readable. `zeus_update_card` cannot add or edit attachments or their summaries; text updates preserve them.
 
 ## Message kinds and ratings
 
@@ -46,7 +60,7 @@ Post a short message. Returns `{card_id}`.
 | `title` | String. |
 | `about` | Optional message-kind label; see [message kinds and ratings](#message-kinds-and-ratings). |
 | `mood` | Mood; the ordinary new-card reaction is talking. |
-| `attachments` | Attachment array; empty. |
+| `attachments` | Attachment array; empty. Files/folders require a [summary](#attachment-summaries). |
 | `priority` | Priority; normal. |
 | `ttl_seconds` | Number; no expiry when omitted. |
 
@@ -78,7 +92,7 @@ Present finished work. Returns `{card_id}`. Actions are answered later as reply 
 |---|---|
 | **`title`**, **`body`** | Strings. |
 | `about` | Optional message-kind label; see [message kinds and ratings](#message-kinds-and-ratings). |
-| `attachments` | Attachment array; empty. |
+| `attachments` | Attachment array; empty. Files/folders require a [summary](#attachment-summaries). |
 | `actions` | Option array; empty. |
 | `allow_text` | Boolean; false. |
 | `mood` | Mood. |
@@ -86,7 +100,7 @@ Present finished work. Returns `{card_id}`. Actions are answered later as reply 
 
 ### `zeus_update_card`
 
-Update **`card_id`** (string). Optional `title`, `text` and `append_text` are strings; `progress` is 0–1 or null. `text` replaces the body, then `append_text` appends exactly, without adding whitespace. Omitted fields stay unchanged.
+Update **`card_id`** (string). Optional `title`, `text` and `append_text` are strings; `progress` is 0–1 or null. `text` replaces the body, then `append_text` appends exactly, without adding whitespace. Omitted fields stay unchanged. Attachments and their summaries are preserved; supplying `attachments` is rejected.
 
 Returns `{ok, title, progress, status}`. A missing card returns an error. A `card_id` supplied by the delivery's receiving session also acknowledges matching replies, even if the requested mutation subsequently fails validation.
 
@@ -267,7 +281,16 @@ Ask without blocking:
 After the later delivery arrives, handle it, post the result with `zeus_present`, then acknowledge the actual received delivery ID:
 
 ```json
-{"title":"Slides ready","body":"Updated the charts and speaker notes.","attachments":[{"kind":"file","label":"Review slides","target":"~/Assistant/review.pdf"}]}
+{
+  "title": "Slides ready",
+  "body": "The review deck is ready; add the final revenue figures on slide 7 before presenting.",
+  "attachments": [{
+    "kind": "file",
+    "label": "Review slides",
+    "target": "~/Assistant/review.pdf",
+    "summary": "Twelve slides with updated charts and speaker notes. Slide 7 still has placeholders for the final revenue figures."
+  }]
+}
 ```
 
 ```json
@@ -276,4 +299,4 @@ After the later delivery arrives, handle it, post the result with `zeus_present`
 
 Replace the example path and ID with real values. The assistant should not repeat work when an already-handled delivery ID arrives again.
 
-Sources: [base tool schemas](../Packages/ZeusKit/Sources/ZeusProtocol/ZeusMCP.swift), [app tools](../Packages/ZeusKit/Sources/ZeusProtocol/ZeusAppTools.swift), [rule tools](../Packages/ZeusKit/Sources/ZeusProtocol/ZeusRuleTools.swift), [tool handlers](../Zeus/Bridge/ZeusRuntime+Tools.swift), [app handlers](../Zeus/Bridge/ZeusRuntime+AppControl.swift), [journal handler](../Zeus/Bridge/ZeusRuntime+Journal.swift), [rule proposals](../Zeus/Bridge/ZeusRuntime+Learning.swift), and [rule actions](../Zeus/Bridge/ZeusRuntime+RuleActions.swift).
+Sources: [base tool schemas](../Packages/ZeusKit/Sources/ZeusProtocol/ZeusMCP.swift), [app tools](../Packages/ZeusKit/Sources/ZeusProtocol/ZeusAppTools.swift), [rule tools](../Packages/ZeusKit/Sources/ZeusProtocol/ZeusRuleTools.swift), [tool handlers](../Zeus/Bridge/ZeusRuntime+Tools.swift), [attachment validation](../Zeus/Bridge/ToolArguments.swift), [app handlers](../Zeus/Bridge/ZeusRuntime+AppControl.swift), [journal handler](../Zeus/Bridge/ZeusRuntime+Journal.swift), [rule proposals](../Zeus/Bridge/ZeusRuntime+Learning.swift), and [rule actions](../Zeus/Bridge/ZeusRuntime+RuleActions.swift).

@@ -111,7 +111,7 @@ Choosing a destination backfills retained history for enabled levels. Changing d
 
 These are ordinary readable files, separate from the encrypted internal journal. Files are written atomically with owner-only permissions. Keep your own material outside `Zeus/`: Zeus updates its records, and edits there can be overwritten. A file you remove in Finder stays removed from this export; that does not delete the underlying journal records or preferences. Delete observations through **What Zeus Kept**; manage kind ratings under **Settings › Rules › What you hear about**.
 
-The version 3 template tells the assistant to read relevant records when useful, learn repeated tasks and preferences across days, revise its own notes, and propose rules supported by evidence. It must not repeat private observations unprompted or put them into material you did not ask it to send. Reading the folder does not itself authorize an action, and purchases still ask every time.
+The version 4 template tells the assistant to read relevant records when useful, learn repeated tasks and preferences across days, revise its own notes, and propose rules supported by evidence. It must not repeat private observations unprompted or put them into material you did not ask it to send. Reading the folder does not itself authorize an action, and purchases still ask every time.
 
 ## What your assistant receives
 
@@ -138,7 +138,7 @@ Each successful journal answer is recorded in **Sent to your assistant**, with a
 
 Each rating, edit, removal, Undo or **Not this kind** correction is saved and queued for the assistant, even with capture off. It includes the kind and scope, plus a redacted example for a rating. A `Files: Zeus/preferences.md` line is added when that exported file exists. **Just this one** feedback is delivered but does not enter the file's kind list or create a hold.
 
-The assistant template v3 tells the assistant to read `Zeus/preferences.md` at session start and after rating deliveries, generalize preferences across wording, and keep dated conclusions in its own `Notes/preferences.md`. Zeus writes the first file and does not read or update the second. Current preferences also enter reflections when those are produced.
+The assistant template v4 tells the assistant to read `Zeus/preferences.md` at session start and after rating deliveries, generalize preferences across wording, and keep dated conclusions in its own `Notes/preferences.md`. Zeus writes the first file and does not read or update the second. Current preferences also enter reflections when those are produced.
 
 The saved rating confirmation does not mean the assistant has received it. **What Zeus Kept › Sent to your assistant** shows an acknowledged or successfully polled receipt as **Sent your message preference**; expand it for the exact text. Pending deliveries appear under **Waiting**. There is no additional conversation receipt notice for ratings.
 

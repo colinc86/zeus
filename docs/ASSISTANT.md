@@ -21,9 +21,11 @@ You can edit its `AGENTS.md` and `CLAUDE.md`. The built-in **Instructions** fiel
 
 With learning enabled, Zeus writes its retained record into `Zeus/` inside this folder. It includes enabled levels after their privacy safeguards, whether or not a delivery reached the assistant. Explicit message ratings write `Zeus/preferences.md` even with observation off. Zeus owns and updates these files. [Folder contents and lifecycle](LEARNING.md#your-assistants-folder) explains the layout, retention and deletion.
 
-The version 3 assistant template teaches the agent to read relevant days and the paths named in deliveries, notice repeated tasks and preferences across days, and propose supported rules. The assistant can keep dated, revisable conclusions in `Notes/about-you.md`, `Notes/patterns.md` and `Notes/preferences.md`, alongside `Zeus/`. Zeus does not write or read those notes. They are the assistant's conclusions, not a second copy of every observation.
+The version 4 assistant template teaches the agent to read relevant days and the paths named in deliveries, notice repeated tasks and preferences across days, and propose supported rules. The assistant can keep dated, revisable conclusions in `Notes/about-you.md`, `Notes/patterns.md` and `Notes/preferences.md`, alongside `Zeus/`. Zeus does not write or read those notes. They are the assistant's conclusions, not a second copy of every observation.
 
 The template also teaches [message ratings](LEARNING.md#message-preferences): read `Zeus/preferences.md`, respect stopped kinds across wording, and use Neutral as need-to-know guidance.
+
+When sharing work, template v4 tells the assistant to put the takeaway in the message and summarize each file or folder attachment. It should attach only things worth opening, so you can understand the result before leaving the conversation. See [attachments from your assistant](CONVERSATION.md#attachments-from-your-assistant).
 
 With **Connect your own**, choose a separate destination under **Settings › Privacy › Your assistant's folder**. Until you choose one, Zeus keeps its internal journal without writing an assistant-folder copy. The agent must have access to the folder you select.
 

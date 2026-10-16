@@ -31,6 +31,21 @@
 | A message arrives without a bubble or sound | Check quiet hours, whether Zeus is hidden, whether the conversation is open, active timing rules, and **Stop these** ratings. Sounds are off by default. |
 | The assistant's answers appear only in Terminal | Ask it to reply through Zeus. New assistant folders contain instructions for using `zeus_say`, `zeus_ask` and `zeus_present`. |
 
+## Attachments
+
+| Symptom | Check or action |
+|---|---|
+| The assistant gets “Each file or folder attachment needs a summary…” and no message appears | It must supply a summary for every file/folder: 1–3 sentences, at least 20 non-whitespace characters, at most 400 total. One invalid attachment rejects the whole call. Correct it and retry; [MCP guidance](MCP.md#attachment-summaries) gives the exact error. This requirement does not apply to files you drop into the composer. |
+| A summary is rejected as too long | Shorten it to 400 characters including whitespace. This limit also applies to optional link summaries. |
+| There are no big Open or Finder buttons | Click the attachment chip to open it. Hover or focus an ordinary file/folder chip for **Show in Finder**, or right-click for available actions and **Copy Path**/**Copy Link**. Separate finished-work actions still appear as buttons. |
+| No **More** under a summary | It appears only when the summary exceeds two lines in the conversation. A peek shows one line; open the conversation to read more. Older attachments and links may have no summary. |
+| **Not found** | The file or folder is no longer at its saved path. Clicking reveals the nearest existing parent folder; ask the assistant for the current location. |
+| An app or script opens Finder | Expected: Zeus reveals executable targets rather than running them. |
+| **Can't be opened** | The saved target is invalid. Ask the assistant to send a valid absolute/`~` file path or HTTP(S) link. |
+| An attachment edit through `zeus_update_card` fails | That tool only edits card text/title/progress; it preserves existing attachments and summaries. To share a corrected attachment, send a new message. |
+
+[Attachment controls](CONVERSATION.md#attachments-from-your-assistant) · [Template updates](ASSISTANT.md#updates-and-instructions)
+
 ## Message ratings
 
 | Symptom | Check or action |
