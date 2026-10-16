@@ -107,6 +107,7 @@ struct AssistantSettingsView: View {
             KeyboardButton("Choose…", action: chooseFolder).accessibilityLabel("Choose Folder").buttonStyle(ZeusButtonStyle(.secondary, size: .small))
                 .disabled(choosingFolder)
         }
+        Text("Zeus keeps what it learns in Zeus/ inside this folder, and your assistant keeps its notes in Notes/.").settingsCaption()
         if managed.createFolder != nil {
             KeyboardButton("Create one for me") { managed.createDefaultFolder() }.accessibilityLabel("Create one for me")
                 .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).disabled(choosingFolder || managed.switching)

@@ -373,6 +373,7 @@ struct LearningContextDeliveryReceipt: Sendable {
 struct JournalAccessPolicy: Equatable, Sendable {
     var enabledLevels: Set<JournalLevel> = []
     /// Only .screen and .typed are meaningful; even raw means covered pictures / redacted words.
+    /// Legacy UI compatibility only. LF1 raw access follows enabledLevels.
     var rawLevels: Set<JournalLevel> = []
 }
 @MainActor protocol LearningJournalAccessControlling: AnyObject {
@@ -451,4 +452,53 @@ struct RuleActionRecord: Codable, Equatable, Identifiable, Sendable {
 @MainActor protocol LearningDeletionObserving: AnyObject {
     var retainedLearningIDs: Set<String> { get }
     var onLearningDeletion: ((Set<String>) -> Void)? { get set }
+}
+
+/// Observable on the concrete writer. Only post-safeguard retained data is exported.
+/// `folderURL` is the effective assistant folder (managed wins over the own-agent choice).
+@MainActor protocol LearningFolderProviding: AnyObject {
+    var folderURL: URL? { get }
+    var lastWriteError: String? { get }
+    /// Sets the Connect-your-own choice; nil disables that destination. Managed routing takes precedence.
+    func setFolder(_ folder: URL?)
+    /// Returns only a currently existing exported file; never recreates a Finder-deleted file.
+    func fileURL(forJournalItem item: JournalItem) -> URL?
+    func dayFolderURL(for date: Date) -> URL?
+}
+
+/// Additional explicit user action; ordinary journal deletion never touches Notes/.
+@MainActor protocol LearningFolderErasing: AnyObject {
+    func deleteFolderContents(includeAssistantNotes: Bool) throws
+}
+
+extension LearningFolderProviding {
+    func dayFolderURL(for date: Date) -> URL? {
+        guard let folderURL else { return nil }
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.calendar = .current; f.dateFormat = "yyyy-MM-dd"
+        let url = folderURL.appendingPathComponent("Zeus/days/" + f.string(from: date))
+        var directory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: url.path, isDirectory: &directory) && directory.boolValue ? url : nil
+    }
+}
+/// Independent mirror hooks: do not replace the runtime's erasure callback.
+@MainActor protocol JournalFolderSource: AnyObject {
+    var onFolderDeletion: ((Set<String>?) -> Void)? { get set }
+    func folderDays() throws -> [Date]
+    func folderItems(on day: Date) throws -> [JournalItem]
+}
+@MainActor protocol LearningHistoryProviding: AnyObject { var allLearnings: [Learning] { get } }
+/// Runtime dependency remains optional, including in isolated headless hosts.
+@MainActor protocol LearningFolderRecording: LearningFolderProviding {
+    func start(learnings: any LearningsProviding)
+    func stop()
+    func setManagedFolder(_ folder: URL?)
+    func recordLearning(_ learning: Learning) async -> [String]
+    func recordReflection(id: String, text: Redacted<String>, at: Date) async -> [String]
+    func setReflections(_ records: [LearningFolderReflection])
+}
+
+struct LearningFolderReflection: Sendable {
+    let id: String
+    let text: Redacted<String>
+    let time: Date
 }

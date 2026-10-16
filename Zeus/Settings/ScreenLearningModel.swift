@@ -49,6 +49,7 @@ import Observation
         var result = ScreenPolicy()
         result.enabled = value.enabled && !learn.isPausedNow
         result.consented = value.consented
+        result.coverPictures = learn.settings.coverPictures
         result.scope = value.scope == .chosenApps ? .onlyChosen : .everywhereExcept
         result.apps = value.scope == .chosenApps ? Set(value.apps.flatMap(\.bundleIDs)) : []
         result.privateApps = Set(learn.settings.excludedApps.flatMap(\.bundleIDs))

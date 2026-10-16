@@ -1,48 +1,51 @@
 {
+  "assistant_read_digest_file": true,
   "erasure_late_ack_suppressed": true,
-  "agent": "2.1.300 (Claude Code)",
+  "agent": "2.1.301 (Claude Code)",
   "tools": [
-    "zeus_ack"
+    "Read",
+    "zeus_ack",
+    "zeus_say"
   ],
   "state": {
+    "status": "running(Host.ManagedSessionStatus.Activity.idle)",
     "ok": true,
-    "unread": 0,
-    "error": null,
     "deliveries": [
       {
+        "kind": "learning",
+        "id": "lm4-digest",
         "discarded": false,
         "acked": true,
-        "kind": "learning",
-        "attempts": 1,
-        "id": "lm4-digest"
+        "attempts": 1
       }
     ],
     "pane": "%0",
+    "unread": 0,
     "sessions": 1,
-    "status": "running(Host.ManagedSessionStatus.Activity.idle)",
+    "error": null,
     "receipts": [
       {
+        "id": "sent:lm4-digest:9a652386f4a730b9186a1570",
+        "level": 1,
+        "kind": "sentToAssistant",
+        "time": "2026-10-16T01:56:45.746Z",
         "payload": {
           "report": {
             "counts": [],
             "semanticEngine": "patternsOnly"
           },
           "value": {
-            "description": "Sent your daily summary",
             "details": {
-              "agent": "claude",
-              "kind": "digest",
+              "sessionID": "9a652386f4a730b9186a157046401a790e6d497ca01e3b94fa8c28790d88ba22",
               "delivery_id": "lm4-digest",
-              "sessionLabel": "Claude \u00b7 Zeus",
-              "sessionID": "1520295c831312317460fc25a3a017976de32a089ce8325fcd0edf7fa4ef79b7"
+              "kind": "digest",
+              "agent": "claude",
+              "sessionLabel": "Claude \u00b7 Zeus"
             },
-            "text": "Synthetic morning summary: working on a fixture project."
+            "description": "Sent your daily summary",
+            "text": "Synthetic morning summary: working on a fixture project.\n\nFiles: Zeus/days/2026-10-15/summary.md"
           }
-        },
-        "time": "2026-10-15T22:02:07.721Z",
-        "kind": "sentToAssistant",
-        "id": "sent:lm4-digest:1520295c831312317460fc25",
-        "level": 1
+        }
       }
     ]
   },

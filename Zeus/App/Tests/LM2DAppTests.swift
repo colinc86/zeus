@@ -17,7 +17,7 @@ import Testing
         consent.setEnabled(false); #expect(!ObservationSettings(defaults: defaults).rawAllowed(3))
         settings.setRawAllowed(true, level: 2); #expect(!settings.rawAllowed(2))
     }
-    @Test func journalPolicyIntersectsGrantsWithCurrentEnabledConsentedLevels() throws {
+    @Test func journalPolicyFollowsEnabledConsentedLevelsWithoutRetiredRawGrant() throws {
         let name = "zeus-depth-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)
@@ -31,7 +31,7 @@ import Testing
         #expect(model.journalAccessPolicy.enabledLevels == [.screen])
         #expect(model.journalAccessPolicy.rawLevels == [.screen])
         model.policies.setRawAllowed(false, level: 3)
-        #expect(model.journalAccessPolicy.rawLevels.isEmpty)
+        #expect(model.journalAccessPolicy.rawLevels == [.screen])
         model.policies.edit(3) { $0.enabled = false }
         #expect(model.journalAccessPolicy.enabledLevels.isEmpty)
     }

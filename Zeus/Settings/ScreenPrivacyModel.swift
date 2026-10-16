@@ -32,6 +32,7 @@ enum ScreenPausePresentation: Equatable {
     var permission = ScreenPermissionPresentation.notRequested
     var pauseReason: ScreenPausePresentation?
     var showsConsent = false
+    var showsCoveringConfirmation = false
     var modelAvailable = true
     @ObservationIgnored var changed: () -> Void = {}
     @ObservationIgnored var requestPermission: () -> Void = {}
@@ -56,6 +57,15 @@ enum ScreenPausePresentation: Equatable {
         guard !policies.screenPermissionRequested, permission != .granted, permission != .reopenRequired else { return }
         policies.screenPermissionRequested = true
         permission = .waiting; requestPermission()
+    }
+    func setCoverPictures(_ enabled: Bool) {
+        if !enabled && privacy.coverPictures { showsCoveringConfirmation = true; return }
+        privacy.coverPictures = enabled; changed()
+    }
+    func keepCovering() { showsCoveringConfirmation = false }
+    func confirmUncoveredPictures() {
+        guard showsCoveringConfirmation else { return }
+        privacy.coverPictures = false; showsCoveringConfirmation = false; changed()
     }
     func cancelConsent() { showsConsent = false }
 }

@@ -5,9 +5,9 @@ import ZeusDesign
 struct JournalPrivacyActions: View {
     let learn: LearnFromMe
     let enabled: Bool
-    let delete: () -> Void
+    let delete: (Bool) -> Void
     @State private var confirming = false
-    @FocusState private var cancelFocused: Bool
+    @State private var includeAssistantNotes = false
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if enabled {
@@ -18,15 +18,34 @@ struct JournalPrivacyActions: View {
                     }.accessibilityLabel(learn.isPausedNow ? "Resume" : "Pause for Today")
                 }
             }
-            if confirming {
-                Text("Delete everything Zeus kept and sent? This can't be undone.").settingsBody()
-                HStack {
-                    KeyboardButton("Cancel", focus: $cancelFocused) { confirming = false }.keyboardShortcut(.cancelAction)
-                    KeyboardButton("Delete") { delete(); confirming = false }.buttonStyle(ZeusButtonStyle(.destructive, size: .small))
-                }.onAppear { cancelFocused = true }
-            } else {
-                KeyboardButton("Delete Everything…") { confirming = true }.buttonStyle(ZeusButtonStyle(.destructive, size: .small))
-            }
+            KeyboardButton("Delete Everything…") { includeAssistantNotes = false; confirming = true }
+                .buttonStyle(ZeusButtonStyle(.destructive, size: .small)).accessibilityLabel("Delete Everything")
         }
+        .sheet(isPresented: $confirming) {
+            DeleteLearningConfirmation(includeAssistantNotes: $includeAssistantNotes,
+                cancel: { confirming = false }, delete: { delete(includeAssistantNotes); confirming = false })
+        }
+    }
+}
+
+struct DeleteLearningConfirmation: View {
+    @Binding var includeAssistantNotes: Bool
+    let cancel: @MainActor () -> Void
+    let delete: @MainActor () -> Void
+    @FocusState private var cancelFocused: Bool
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Delete everything Zeus kept and sent, here and in your assistant's folder?").settingsTitle()
+            Text("This can't be undone.").settingsBody()
+            Toggle("Also delete your assistant's notes", isOn: $includeAssistantNotes)
+                .toggleStyle(ZeusCheckboxStyle()).accessibilityLabel("Also delete your assistant's notes")
+            Text("Its Notes folder, where it keeps what it has concluded about you.").settingsCaption()
+            HStack {
+                Spacer()
+                KeyboardButton("Cancel", focus: $cancelFocused, action: cancel).keyboardShortcut(.cancelAction).accessibilityLabel("Cancel")
+                KeyboardButton("Delete", action: delete).buttonStyle(ZeusButtonStyle(.destructive, size: .small)).accessibilityLabel("Delete")
+            }
+        }.padding(24).frame(width: 480).fixedSize(horizontal: false, vertical: true)
+            .onAppear { cancelFocused = true }
     }
 }
