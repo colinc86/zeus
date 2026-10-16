@@ -95,7 +95,7 @@ Zeus runs Claude Code, Codex or OpenCode in tmux and reconnects next time. You c
 
 Twelve characters. Seven themes. Yours to make your own.
 
-Choose a pixel font or SF Mono. Move Zeus to your favorite corner, or let it fade when idle. Characters and themes are editable JSON: import one, make one, or ask your assistant. **Undo** rolls back your assistant’s appearance changes.
+Choose a pixel font or SF Mono, with four text sizes. Move Zeus to your favorite corner, or let it fade when idle. Characters and themes are editable JSON: import one, make one, or ask your assistant. **Undo** rolls back your assistant’s appearance changes.
 
 <p align="center">
   <picture>

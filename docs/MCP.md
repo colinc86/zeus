@@ -193,10 +193,12 @@ Supply at least one of the following fields; omitted values stay unchanged. Retu
 | `ghost_delay_seconds` | Finite number; clamped to 5–600. |
 | `popup_sound` | Boolean. |
 | `popup_sound_name` | `chime`, `glass`, `ping`, `pop`, `tink`. |
-| `font` | `pixel` or `system`. |
+| `font` | `pixel` (Pixel) or `system` (SF Mono); changes the typeface only. |
 | `panel_width` | Finite number in points; clamped to the supported width for the current screen. |
 | `quiet_hours` | Boolean. False is rejected while a Zeus question is pending. |
 | `quiet_start_hour`, `quiet_end_hour` | Integers 0–23, in local time. Equal hours mean all day. |
+
+**Text size** is set in [Settings › Appearance](SETTINGS.md#appearance); `zeus_set_appearance` has no text-size argument.
 
 ### `zeus_check_for_updates`
 

@@ -33,8 +33,11 @@ The Talk shortcut with Shift added opens **Ask About This**, unless the shortcut
 | **Open Example** | Action | Opens an annotated theme example. |
 | **Open Themes Folder** | Action | Opens the user theme directory. |
 | **Conversation font** | Pixel | Pixel (Departure Mono) or SF Mono. |
+| **Text size** | Default | Small, Default, Large or Larger. Applies immediately and is saved for next time. |
 
-See [themes](CUSTOMIZATION.md#themes) for all seven built-ins, live reload and contrast behavior.
+**Text size** sits directly below **Conversation font**. It changes text in the conversation, message field, status line, peeks, attachment/context chips, ratings and notices. Settings and menus keep the system size. Pixel text grows in whole steps, so adjacent presets can look the same for some text.
+
+See [fonts and text size](CUSTOMIZATION.md#fonts-and-text-size) for choosing a preset, and [themes](CUSTOMIZATION.md#themes) for all seven built-ins, live reload and contrast behavior.
 
 ## Assistant
 
@@ -162,4 +165,4 @@ The editor offers **Choose App…** and **Remove** for apps, **Any**, **Tests fa
 
 Shows the app icon, version and build, description and basic interaction hints. There are no preferences in this pane.
 
-Implementation references: [app defaults](../Zeus/Settings/AppSettings.swift), [General](../Zeus/Settings/GeneralSettingsView.swift), [assistant](../Zeus/Settings/AssistantSettingsView.swift), [connection options](../Zeus/Settings/AgentSettingsView.swift), [learning defaults](../Zeus/Learn/LearnSettings.swift), [observation defaults](../Zeus/Settings/ObservationSettings.swift), [Rules](../Zeus/Settings/RulesSettingsView.swift), and [message ratings](../Zeus/Settings/MessageRatingsSettingsView.swift).
+Implementation references: [app defaults](../Zeus/Settings/AppSettings.swift), [General](../Zeus/Settings/GeneralSettingsView.swift), [Appearance](../Zeus/Settings/AppearanceSettingsView.swift), [assistant](../Zeus/Settings/AssistantSettingsView.swift), [connection options](../Zeus/Settings/AgentSettingsView.swift), [learning defaults](../Zeus/Learn/LearnSettings.swift), [observation defaults](../Zeus/Settings/ObservationSettings.swift), [Rules](../Zeus/Settings/RulesSettingsView.swift), and [message ratings](../Zeus/Settings/MessageRatingsSettingsView.swift).

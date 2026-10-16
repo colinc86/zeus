@@ -9,7 +9,7 @@ Start with [Setting up Zeus](SETUP.md), then follow the guides below for everyda
 | [Setting up Zeus](SETUP.md) | Install Zeus, choose your first assistant, connect an existing session and keep the app updated. |
 | [Your assistant](ASSISTANT.md) | Run or connect an assistant, choose its permissions, and manage sessions, restarts and instructions. |
 | [The conversation](CONVERSATION.md) | Send messages and files, answer questions, read status and use keyboard shortcuts. |
-| [Characters and themes](CUSTOMIZATION.md) | Choose the look, adjust fading, and import or create characters and themes. |
+| [Characters and themes](CUSTOMIZATION.md) | Choose characters, themes, fonts and text size, adjust fading, and import or create your own look. |
 | [Learn from me](LEARNING.md) | Choose what Zeus learns, explore its folder and journal, manage rules and ask about the window in front. |
 | [Privacy and security](PRIVACY.md) | Understand local redaction, stored records, assistant access and permission boundaries. |
 | [Settings reference](SETTINGS.md) | Look up every settings pane, control and initial default. |

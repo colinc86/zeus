@@ -40,11 +40,19 @@ swift run --package-path Packages/ZeusKit zeus-sprites validate "$HOME/Library/A
 | Pocket | Light. |
 | Sorbet | Light. |
 
-**Conversation font** offers **Pixel** (Departure Mono, the default) or **SF Mono**. Settings itself uses the system font. Increase Contrast uses a theme's high-contrast palette if supplied, otherwise Zeus's high-contrast colors. Reduce Motion limits animation and removes motion-dependent effects.
+Increase Contrast uses a theme's high-contrast palette if supplied, otherwise Zeus's high-contrast colors. Reduce Motion limits animation and removes motion-dependent effects.
 
 Use **Open Example** to make a theme, **Import Theme…** to add one, and **Open Themes Folder** to open `~/Library/Application Support/Zeus/Themes/`. Save an example copy with a new ID; changes reload immediately. A theme can use one fixed appearance or separate light and dark palettes. A valid theme with insufficient contrast still loads with **Low contrast** displayed in Settings.
 
 See the [theme format](design/THEME_FORMAT.md) for fields and examples.
+
+## Fonts and text size
+
+Choose **Settings › Appearance › Conversation font** for **Pixel** (Departure Mono, the default) or **SF Mono**. Directly below it, **Text size** offers **Small**, **Default**, **Large** and **Larger**. **Default** is the initial size. Changes apply immediately and survive relaunch; no assistant restart is needed.
+
+Text size applies to the conversation, message field, status line, speech bubbles, attachment/context chips, rating rows and notices. Settings and menus keep the system font and size. The character's size and desktop badges are separate. Zeus uses your chosen preset rather than following macOS accessibility text size.
+
+Pixel text grows in whole steps to stay crisp. **Small** reduces titles while keeping ordinary text at **Default** size. **Large** enlarges titles, message text and buttons; **Larger** also enlarges captions, including attachment summaries and the status line. SF Mono text changes at every preset. Larger text fits fewer words on a line; you can [widen the conversation](CONVERSATION.md#keyboard-shortcuts) for more room.
 
 ## Assistant controls
 
@@ -54,4 +62,4 @@ When asked, the assistant can select or create a character or theme, move or res
 
 App-control tools cannot change the assistant's agent, folder, permissions, instructions, run mode or session; answer its native prompts; erase conversation or learning data; or enable learning, launch at login or automatic update checks. They cannot disable quiet hours while a Zeus question is open. [MCP app controls](MCP.md#app-controls) lists the exact supported fields.
 
-Implementation references: [character settings](../Zeus/Settings/CharacterSettingsView.swift), [appearance settings](../Zeus/Settings/AppearanceSettingsView.swift), [defaults](../Zeus/Settings/AppSettings.swift), and [app-control schemas](../Packages/ZeusKit/Sources/ZeusProtocol/ZeusAppTools.swift).
+Implementation references: [character settings](../Zeus/Settings/CharacterSettingsView.swift), [appearance settings](../Zeus/Settings/AppearanceSettingsView.swift), [defaults](../Zeus/Settings/AppSettings.swift), [font presets](../Packages/ZeusKit/Sources/ZeusDesign/ZeusFonts.swift), and [app-control schemas](../Packages/ZeusKit/Sources/ZeusProtocol/ZeusAppTools.swift).

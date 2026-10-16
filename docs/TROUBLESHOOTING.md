@@ -97,6 +97,8 @@
 | Zeus stays asleep | Check **Settings › Assistant › Quiet hours**. Equal start/end hours mean all day. |
 | A character or theme does not load | Read the validation error in Settings. IDs starting with `_` are skipped. See [customization](CUSTOMIZATION.md). |
 | A custom theme is hard to read | Look for **Low contrast** and adjust its colors, or choose a bundled theme. |
+| Conversation text is too small | Choose **Settings › Appearance › Text size › Large** or **Larger**. This applies immediately; Settings and menus keep the system size. Zeus does not follow macOS accessibility text size. |
+| Two Pixel text sizes look the same | Pixel text grows in whole steps. **Small** changes titles; **Large** enlarges message text and buttons; **Larger** also enlarges captions such as summaries and the status line. See [fonts and text size](CUSTOMIZATION.md#fonts-and-text-size). |
 | The Talk shortcut does not work | Record another combination in General. macOS-reserved or already registered combinations are refused. |
 | No pop-up sound | Enable **Play a sound when Zeus pops up**, choose a sound, and check the Mac's alert volume. Quiet hours and an open conversation suppress it. |
 | Update checks are unavailable | Debug builds disable updates. Use a release build for automatic checks and **Check for Updates…**. |
