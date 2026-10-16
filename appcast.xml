@@ -6,6 +6,32 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.2.7</title>
+      <pubDate>Fri, 16 Oct 2026 20:23:08 GMT</pubDate>
+      <sparkle:version>20</sparkle:version>
+      <sparkle:shortVersionString>0.2.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Rate what your assistant tells you.</strong> Hover a message your assistant sent on its own and click the rating button: <strong>More like this</strong>, <strong>Only when I need to know</strong>, or <strong>Stop these</strong>. A rating applies to that <em>kind</em> of message, such as on-call reminders or meeting prep notes, not just the one message. You can edit the kind's name, or choose <strong>Just this one</strong>. ⌘R rates the message in focus. Replies to your own messages aren't rated.</li>
+<li><strong>Stop means stop.</strong> Your assistant stops sending that kind, and Zeus holds any that still arrive, even ones marked urgent. Zeus also compares new messages with the kinds you stopped, using Apple's on-device language tools, to catch look-alikes sent under a different name. Held messages are never deleted: they collapse in the conversation with <strong>Show</strong>, each says why it was held, and <strong>Not this kind</strong> lets it through.</li>
+<li><strong>Only when I need to know</strong> asks your assistant to send that kind only when it matters to you.</li>
+<li><strong>What you hear about.</strong> A new list in Settings shows every kind you've rated, with an example, and lets you change or remove each one.</li>
+<li><strong>Your assistant learns your taste.</strong> Each rating goes to your assistant, which confirms it, and is saved in <code class="notranslate">Zeus/preferences.md</code> in its folder. The instructions Zeus writes for your assistant now ask it to name the kind of each message it sends on its own and to generalize from your ratings. Restart Assistant picks them up if you haven't edited your copy.</li>
+<li><strong>A nudge, never a mute.</strong> If you keep ignoring one kind of message, Zeus may ask whether you want to rate them. It never mutes anything on its own.</li>
+<li><strong>Attachments say what's in them.</strong> When your assistant shares a file or folder, it now has to include a short summary of what's inside and why it matters, and the message itself gives the takeaway. Zeus turns the message back until it does. A "have a look" with a bare file no longer gets through.</li>
+<li><strong>Quieter attachments.</strong> The large Open and Show in Finder buttons are gone. Each attachment is now a small chip with its icon, name and summary: click it to open, use the small magnifier to show it in Finder, or right-click for Open, Show in Finder and Copy Path. The instructions Zeus writes for your assistant explain this; Restart Assistant picks them up if you haven't edited your copy.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.2.7/Zeus-0.2.7.zip" type="application/octet-stream" sparkle:edSignature="3nJ5Voo4hjzoooPyaHRxaCfRSHBjN7nYaGJ0mS9ViR1MUKcryJYMcKNCttEVoMG9CD7n4/ELInOU1fvjkEUaCQ==" length="13354213"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.2.6</title>
       <pubDate>Fri, 16 Oct 2026 13:45:44 GMT</pubDate>
       <sparkle:version>19</sparkle:version>
