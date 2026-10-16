@@ -33,6 +33,8 @@ private actor RuntimeHostBuilder {
                       root.appendingPathComponent("Zeus/Learn/MessageRatingSeams.swift"),
                       root.appendingPathComponent("Zeus/Learn/MessageRatingStore.swift"),
                       root.appendingPathComponent("Zeus/Learn/MessageSimilarity.swift"),
+                      root.appendingPathComponent("Zeus/Learn/Redactor/LocalRedactor.swift"),
+                      root.appendingPathComponent("Zeus/Learn/Redactor/OnDeviceProseRedactor.swift"),
                       root.appendingPathComponent("Zeus/Learn/Journal/JournalEncryption.swift"),
                       root.appendingPathComponent("Zeus/Learn/Journal/LearningStorageRecovery.swift"),
                       root.appendingPathComponent("Zeus/Cards/AttachmentTarget.swift"),
