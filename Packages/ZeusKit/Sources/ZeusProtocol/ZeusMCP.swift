@@ -31,6 +31,7 @@ public enum ZeusMCP {
     - zeus_say: short updates and FYIs (1–3 sentences).
     - zeus_ask: decisions. Give 2–4 options with short labels; free text is on by default when there are no options.
     - zeus_present: finished work. A title, a short summary, and the deliverables as attachments.
+    - Every file/folder attachment needs summary: 1–3 sentences saying what's in it and why it matters (20 non-whitespace characters minimum, 400 characters maximum). Put the takeaway in the message text too; never send only "here's the file". Link summaries are optional.
     - zeus_set_status: what you're doing right now (thinking, working), with an optional short detail and progress. Reset an explicit status override to "auto" when you finish.
     - Zeus shows thinking automatically after a user message or answer reaches you. Posting zeus_say, zeus_ask or zeus_present ends that activity indicator; acks and other tool calls won't restart it. If you finish without posting to Zeus, call zeus_set_status {"state":"auto"} to clear it.
     - zeus_update_card / zeus_dismiss: keep a card current, or remove it once it's stale.
@@ -94,7 +95,8 @@ public enum ZeusMCP {
             "id": described(text, "Short stable slug, e.g. yes / later."), "label": text, "style": described(enumeration(CardOption.Style.allCases.map(\.rawValue)), "primary = recommended, destructive = irreversible.")
         ], required: ["id", "label"])]
         let attachments: JSONValue = ["type": "array", "items": object([
-            "kind": enumeration(Attachment.Kind.allCases.map(\.rawValue)), "label": text, "target": described(text, "file/folder: absolute or ~ path. url: http(s) URL.")
+            "kind": enumeration(Attachment.Kind.allCases.map(\.rawValue)), "label": text, "target": described(text, "file/folder: absolute or ~ path. url: http(s) URL."),
+            "summary": ["type": "string", "maxLength": 400, "description": "1–3 sentences saying what's in this attachment and why it matters. Required for files/folders: at least 20 non-whitespace characters. Optional for links. Put the takeaway in the message text too."]
         ], required: ["kind", "label", "target"])]
         let progress: JSONValue = ["type": ["number", "null"], "minimum": 0, "maximum": 1]
         let about: JSONValue = ["type": "string", "minLength": 1, "maxLength": 60, "description": "Short plain kind label, e.g. On-call reminder. Keep it stable across similar messages; never relabel to evade a preference."]

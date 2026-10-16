@@ -1,0 +1,36 @@
+{
+  "agent": "2.1.301 (Claude Code)",
+  "steps": [
+    "missing_summary",
+    "retry_with_summary"
+  ],
+  "rejection": {
+    "type": "tool_result",
+    "content": "{\"error\":\"Each file or folder attachment needs a summary: 1\u20133 sentences saying what's in it and why it matters, so the user doesn't have to open it. Put the takeaway in the message text too.\"}",
+    "is_error": true,
+    "tool_use_id": "tool_5c46f03b6a2f456aa5a5194ba469ab0a"
+  },
+  "card": {
+    "origin": "unprompted",
+    "id": "c_edf1b7b7",
+    "options": [],
+    "createdAt": "2026-10-16T19:18:27.496Z",
+    "sessionKey": "claude:/FIXTURE/project#76545.1792178306751565",
+    "updatedAt": "2026-10-16T19:18:27.496Z",
+    "status": "open",
+    "priority": "normal",
+    "kind": "message",
+    "attachments": [
+      {
+        "id": "3C47D523-1BE3-473F-8637-0D55AEF0888D",
+        "label": "Launch plan",
+        "target": "/FIXTURE/project/plan.md",
+        "kind": "file",
+        "summary": "The draft explains the staged rollout and highlights the two risks to review before launch."
+      }
+    ],
+    "body": "The launch plan is ready; review the rollout risks."
+  },
+  "thread_card_count": 1,
+  "isolation": "private tmux, disposable HOME/config, scratch document, localhost model, fixture key"
+}

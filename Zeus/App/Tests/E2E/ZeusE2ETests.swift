@@ -47,7 +47,7 @@ struct ZeusE2ETests {
         let draft = f.directory.appendingPathComponent("presentation.md")
         try Data("# Presentation\nThe finished draft.\n".utf8).write(to: draft)
         let finished = try await bridge.call("zeus_present", ["title": "Presentation", "body": "The draft is ready.",
-            "attachments": [["kind": "file", "label": "Open draft", "target": .string(draft.path)]],
+            "attachments": [["kind": "file", "label": "Open draft", "target": .string(draft.path), "summary": "The finished presentation draft is ready for review."]],
             "actions": [["id": "good", "label": "Looks good"], ["id": "revise", "label": "Revise"]]])
         let card = try #require(f.cards.card(id: e2eString(finished["card_id"])))
         #expect(card.kind == .content && card.attachments.first?.target == draft.path && card.options.count == 2)

@@ -92,6 +92,15 @@ import Testing
         #expect(tool.inputSchema["additionalProperties"] == false)
         #expect(!tool.description.isEmpty)
     }
+    for name in ["zeus_say", "zeus_present"] {
+        let tool = try #require(ZeusMCP.tools.first { $0.name == name })
+        let item = try #require(tool.inputSchema["properties"]?["attachments"]?["items"])
+        guard case .object(let fields) = item["properties"] else { Issue.record("Missing attachment fields"); continue }
+        #expect(Set(fields.keys) == ["kind", "label", "target", "summary"])
+        #expect(fields["summary"]?["type"] == "string")
+        #expect(fields["summary"]?["maxLength"] == 400)
+        #expect(item["required"] == ["kind", "label", "target"]) // URL summaries remain optional.
+    }
     #expect(ZeusMCP.protocolVersion == "2025-06-18")
     #expect(ZeusMCP.capabilities(agent: .claude)["experimental"]?["claude/channel"] == [:])
     #expect(ZeusMCP.capabilities(agent: .codex)["experimental"] == nil)

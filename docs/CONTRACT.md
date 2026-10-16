@@ -58,7 +58,7 @@ All types are `Codable, Sendable` and public. JSON uses camelCase keys and ISO-8
   - `response: CardResponse?`
 - **`CardOption`**: `{ id, label, style: primary | secondary | destructive }`.
 - **`InputSpec`**: `{ placeholder?, multiline }`.
-- **`Attachment`**: `{ id, kind: file | folder | url, label, target }`. For files, `target` is a path and `~` is allowed.
+- **`Attachment`**: `{ id, kind: file | folder | url, label, target, summary? }`. For files, `target` is a path and `~` is allowed. `summary` is an assistant-written synopsis; legacy stored attachments decode without it. New tool-created file/folder attachments require at least 20 non-whitespace characters, at most 400 total characters; link summaries are optional (at most 400 characters).
 - **`CardResponse`**: `{ optionID?, optionLabel?, text?, skipped: Bool, respondedAt, device: "mac" | "ios" }`, plus `summary`. `skipped` defaults to false and a missing legacy field decodes as false; a skipped response has no `optionID` (TB1, 2026-10-14).
 - **`Delivery`** (§5): `{ id ("d_"+8), kind: reply | userMessage, cardID?, sessionKey, content, meta: [String:String], createdAt, attempts, lastAttemptAt?, ackedAt?, failedAt? }`.
 - **`ZeusPaths`**:
@@ -166,11 +166,13 @@ Lost receipts may replay stable delivery IDs. Restart older helpers for stdout d
 
 Tool results are returned as `text` (compact JSON) plus `structuredContent`.
 
+File/folder attachments require a `summary` with at least 20 non-whitespace characters and at most 400 total characters. Missing/short summaries reject the whole call before thread publication: "Each file or folder attachment needs a summary: 1–3 sentences saying what's in it and why it matters, so the user doesn't have to open it. Put the takeaway in the message text too." URL summaries are optional, still capped at 400. Existing stored attachments remain readable without one. `zeus_update_card` does not edit attachments; attempts to pass that field remain rejected, and text/progress edits preserve existing summaries.
+
 | Tool | Arguments (`*` = required) | Result |
 |---|---|---|
-| `zeus_say` | `text*`, `title`, `about` (1–60 characters), `mood`, `attachments[{kind,label,target}]`, `priority`, `ttl_seconds` | `{card_id}` |
+| `zeus_say` | `text*`, `title`, `about` (1–60 characters), `mood`, `attachments[{kind,label,target,summary?}]`, `priority`, `ttl_seconds` | `{card_id}` |
 | `zeus_ask` | `text*`, `title`, `about` (1–60 characters), `options[{id,label,style}]`, `allow_text` (default: true if no options), `placeholder`, `multiline`, `priority`, `wait_seconds` (default 45, clamped to 0…600) | `{status:"answered", card_id, option_id?, option_label?, text?}`, `{status:"skipped", card_id}` (the user skipped it: don't re-ask; proceed with your best judgement or move on) or `{status:"pending", card_id}`. Polled items (`zeus_get_responses`) carry `kind:"skipped"` for the same case. |
-| `zeus_present` | `title*`, `body*`, `about` (1–60 characters), `attachments`, `actions[{id,label,style}]`, `allow_text`, `mood`, `priority` | `{card_id}`. The chosen action comes back like a reply (§5). |
+| `zeus_present` | `title*`, `body*`, `about` (1–60 characters), `attachments[{kind,label,target,summary?}]`, `actions[{id,label,style}]`, `allow_text`, `mood`, `priority` | `{card_id}`. The chosen action comes back like a reply (§5). |
 | `zeus_update_card` | `card_id*`, `title`, `text`, `append_text`, `progress` (0…1 or null) | `{ok}` |
 | `zeus_dismiss` | `card_id*` | `{ok}` |
 | `zeus_set_status` | `state*` (an AvatarState or `"auto"`), `detail`, `progress`, `ttl_seconds` (default 600) | `{ok}` |
