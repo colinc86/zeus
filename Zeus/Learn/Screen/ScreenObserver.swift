@@ -158,7 +158,7 @@ import ImageIO
                     }
                     return
                 }
-                let covered = try await processor.redact(raw, context: startContext)
+                let covered = try await processor.redact(raw, context: startContext, coverPictures: startPolicy.coverPictures)
                 guard valid(token, startContext, startPolicy) else { return }
                 let description = startPolicy.deferDescriptions ? nil : await describer.describe(covered)
                 guard valid(token, startContext, startPolicy) else { return }

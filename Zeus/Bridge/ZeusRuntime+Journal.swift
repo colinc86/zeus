@@ -49,13 +49,13 @@ extension ZeusRuntime: LearningJournalAccessControlling {
             case .focus: text = payload.text ?? payload.description
             case .activity: text = payload.description
             }
-            let words = raw && policy.rawLevels.contains(.typed) && item.level == .typed ? payload.text : nil
+            let words = raw && policy.enabledLevels.contains(.typed) && item.level == .typed ? payload.text : nil
             // Searching summaries must not reveal the existence of an unpermitted word in retained typing.
             guard query.isEmpty || (text + (words.map { " " + $0 } ?? "")).localizedStandardContains(query) else { continue }
             var fields: [String: JSONValue] = ["id": .string(item.id), "time": .string(item.time.ISO8601Format()),
                 "app": .string(item.app ?? ""), "kind": .string(names.first { $0.value == item.level }?.key ?? "activity"), "text": .string(text)]
             if let words { fields["words"] = .string(words) }
-            if item.level == .screen, raw, policy.rawLevels.contains(.screen), let frameID = payload.details["frame_id"],
+            if item.level == .screen, raw, policy.enabledLevels.contains(.screen), let frameID = payload.details["frame_id"],
                let store = journal as? any FrameJournalStoring, let frame = try store.frame(id: frameID),
                let picture = Self.journalPicture(frame.value.heic) { fields["picture"] = picture }
             let itemValue = JSONValue.object(fields), size = try ZeusJSON.encoder().encode(itemValue).count
@@ -67,8 +67,8 @@ extension ZeusRuntime: LearningJournalAccessControlling {
         }
         let format = DateFormatter(); format.locale = Locale(identifier: "en_US_POSIX"); format.calendar = learningCalendar; format.timeZone = learningCalendar.timeZone; format.dateFormat = "EEE d MMM HH:mm"
         let range = format.string(from: from) + "–" + format.string(from: to)
-        let statuses: JSONValue = .object(["screen": .string(raw ? (levels.contains(.screen) && policy.rawLevels.contains(.screen) ? "allowed" : "not allowed") : "not requested"),
-                                           "typing": .string(raw ? (levels.contains(.typed) && policy.rawLevels.contains(.typed) ? "allowed" : "not allowed") : "not requested")])
+        let statuses: JSONValue = .object(["screen": .string(raw ? (levels.contains(.screen) && policy.enabledLevels.contains(.screen) ? "allowed" : "not allowed") : "not requested"),
+                                           "typing": .string(raw ? (levels.contains(.typed) && policy.enabledLevels.contains(.typed) ? "allowed" : "not allowed") : "not requested")])
         let value: JSONValue = ["answer_id": .string("journal_answer_" + UUID().uuidString), "query": .string(safeQuery.value),
             "from": .string(from.ISO8601Format()), "to": .string(to.ISO8601Format()), "range": .string(range),
             "items": .array(items), "raw": statuses, "raw_requested": .bool(raw),

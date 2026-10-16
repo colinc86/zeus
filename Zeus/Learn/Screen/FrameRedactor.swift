@@ -16,6 +16,12 @@ struct CoveredScreenFrame: Sendable {
 enum ScreenCaptureError: Error { case unavailable, sensitive, encoding, invalidImage }
 protocol ScreenFrameRedacting: Sendable {
     func redact(_ frame: CapturedScreenFrame, context: ScreenContext) async throws -> CoveredScreenFrame
+    func redact(_ frame: CapturedScreenFrame, context: ScreenContext, coverPictures: Bool) async throws -> CoveredScreenFrame
+}
+extension ScreenFrameRedacting {
+    func redact(_ frame: CapturedScreenFrame, context: ScreenContext, coverPictures: Bool) async throws -> CoveredScreenFrame {
+        try await redact(frame, context: context)
+    }
 }
 /// Vision and image processing run off the main actor. Raw pixels/OCR exist only during this call.
 actor FrameRedactor: ScreenFrameRedacting {
@@ -39,6 +45,9 @@ actor FrameRedactor: ScreenFrameRedacting {
         }
     }
     func redact(_ captured: CapturedScreenFrame, context: ScreenContext) async throws -> CoveredScreenFrame {
+        try await redact(captured, context: context, coverPictures: true)
+    }
+    func redact(_ captured: CapturedScreenFrame, context: ScreenContext, coverPictures: Bool) async throws -> CoveredScreenFrame {
         let image = captured.image
         guard image.width > 0, image.height > 0, image.width <= 1600, image.height <= 1600 else { throw ScreenCaptureError.invalidImage }
         let lines = try Self.textLines(image)
@@ -65,11 +74,12 @@ actor FrameRedactor: ScreenFrameRedacting {
             // Account hints and money on screenshots need covering even when the prose model is unavailable.
             let sensitive = result != line.0 || Self.hasAccountHint(line.0)
             coveredText.append(sensitive ? "‹redacted›" : result)
-            if sensitive {
+            if sensitive && (coverPictures || Self.mandatoryCover(original: line.0, redacted: result)) {
                 if result == line.0 { report.counts[.finance, default: 0] += 1 }
                 boxes.append(Self.box(line.1, kind: .text, paddingX: 5 / width, paddingY: 5 / height))
             }
         }
+        if coverPictures {
         let pictures = VNGenerateObjectnessBasedSaliencyImageRequest()
         try VNImageRequestHandler(cgImage: image).perform([pictures])
         for rect in pictures.results?.first?.salientObjects ?? [] {
@@ -83,11 +93,17 @@ actor FrameRedactor: ScreenFrameRedacting {
             boxes.append(Self.box(face.boundingBox, kind: .face,
                                   paddingX: face.boundingBox.width * 0.25, paddingY: face.boundingBox.height * 0.25))
         }
+        }
         let covered = try Self.cover(image, boxes: boxes)
         let bytes = try Self.heic(covered)
         return CoveredScreenFrame(frame: .init(FrameItem(heic: bytes, width: image.width, height: image.height, boxes: boxes,
             appName: appName, windowTitle: windowTitle), report: report),
             text: coveredText.joined(separator: "\n"), lineCount: lines.count)
+    }
+    static func mandatoryCover(original: String, redacted: String) -> Bool {
+        let mandatory: Set<RedactionKind> = [.secret, .card, .iban, .identity]
+        return mandatory.contains { redacted.contains($0.placeholder) }
+            || LocalRedactor.patternSpans(original).contains { mandatory.contains($0.kind) }
     }
     static func isSensitiveDialog(title: String, text: String) -> Bool {
         let source = (title + "\n" + text).lowercased()
