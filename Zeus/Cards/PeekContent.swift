@@ -43,7 +43,7 @@ struct PeekContent: View {
                 if let ratings, ratings.canRate(card) { MessageRatingButton(card: card, model: ratings, hovered: hovering, action: rate) }
                 if moreCount > 0 {
                     Button("+\(moreCount) more") { open(.more) }
-                        .buttonStyle(.plain).zeusFont(.badge).foregroundStyle(palette.onSecondary)
+                        .buttonStyle(.plain).zeusFont(.caption).foregroundStyle(palette.onSecondary)
                         .padding(.horizontal, ZeusTheme.Spacing.xs).padding(.vertical, 1)
                         .background(PixelRoundedRectangle(steps: 1).fill(palette.secondaryFill))
                         .overlay(PixelRoundedRectangle(steps: 1).strokeBorder(palette.outline, lineWidth: ZeusTheme.pixel))

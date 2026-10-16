@@ -35,7 +35,7 @@ public enum ZeusTextRole: Sendable, Hashable, CaseIterable {
     case title, body, caption, button, badge
 
     /// Point size per font. Departure Mono is drawn on an 11 px/em grid, so it's only crisp at multiples of
-    /// 5.5 pt (one font pixel = whole device pixels on 2× displays): 11 for text, 16.5 for titles.
+    /// 5.5 pt (one font pixel = whole device pixels on 2× displays). Default is 11 for text and 16.5 for titles.
     /// Its x-height at 11 pt matches the old 15 pt body; hierarchy comes from size and color (one weight).
     func size(for choice: ZeusFontChoice, scale: ZeusFontScale = .default) -> CGFloat {
         let index = switch scale { case .small: 0; case .default: 1; case .large: 2; case .larger: 3 }
@@ -189,7 +189,7 @@ extension EnvironmentValues {
     @Entry public var zeusFontOverride: ZeusFontOverride? = nil
 }
 
-/// Applies the Zeus font for a role, honoring `\.zeusFontChoice` and `\.zeusFontOverride`.
+/// Applies the Zeus font for a role, honoring `\.zeusFontChoice`, `\.zeusFontScale` and `\.zeusFontOverride`.
 struct ZeusFontModifier: ViewModifier {
     @Environment(\.zeusFontChoice) private var choice
     @Environment(\.zeusFontScale) private var scale

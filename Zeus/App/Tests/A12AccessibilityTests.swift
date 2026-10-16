@@ -180,7 +180,7 @@ import ZeusProtocol
         for theme in f.settings.availableThemes {
             _ = try f.button(theme.name + ". " + (theme.fixedAppearance == .dark ? "Always dark" : theme.fixedAppearance == .light ? "Always light" : "Follows your Mac"), in: appearance)
         }
-        for label in ["Import Theme…", "Open Example", "Open Themes Folder", "Pixel", "SF Mono"] { _ = try f.button(label, in: appearance) }
+        for label in ["Import Theme…", "Open Example", "Open Themes Folder", "Pixel", "SF Mono", "Small text", "Default text", "Large text", "Larger text"] { _ = try f.button(label, in: appearance) }
         for label in ["Let my assistant control Zeus", "Let my assistant install updates"] {
             #expect(a12Nodes(general).contains { a12String($0, "accessibilityRole") == "AXCheckBox" && a12String($0, "accessibilityLabel") == label })
         }
@@ -200,7 +200,7 @@ import ZeusProtocol
         #expect(ordered(f.tabLabels(sheet), startingAt: "Not Now") == ["Not Now", "Turn On"])
         #expect(ordered(f.tabLabels(strip), startingAt: "Question. Waiting for your answer. Go to question") == ["Question. Waiting for your answer. Go to question", "Skip"])
         let themeLabels = f.settings.availableThemes.map { $0.name + ". " + ($0.fixedAppearance == .dark ? "Always dark" : $0.fixedAppearance == .light ? "Always light" : "Follows your Mac") }
-        #expect(ordered(f.tabLabels(appearance), startingAt: themeLabels[0]) == themeLabels + ["Import Theme…", "Open Example", "Open Themes Folder", "Pixel", "SF Mono"])
+        #expect(ordered(f.tabLabels(appearance), startingAt: themeLabels[0]) == themeLabels + ["Import Theme…", "Open Example", "Open Themes Folder", "Pixel", "SF Mono", "Small text", "Default text", "Large text", "Larger text"])
         let privacyLabels = ["Let Zeus learn when and in what I work"]
             + f.learn.settings.excludedApps.map { "Remove \($0.name)" } + ["Add App…"]
             + LearnSettings.retentionChoices.map { "\($0) days" } + MomentKind.allCases.map(\.title) + ["Delete Everything…"]
