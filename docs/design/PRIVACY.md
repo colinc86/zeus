@@ -15,7 +15,7 @@ Renders: `scripts/design-harness/render.sh "privacyMockups()"` → `build/q2-ren
 | §11 Raw on request, journal answers, acting rules, outcomes in Why? | D | shipped (LM2-D-A) |
 | §4.2 Waiting group and empty states, §6.1 delivery, hold and stale-setup lines | LM4 | building (LM4-A, on LM4-P's seams) |
 | §12 The assistant folder: folder row, Cover pictures and faces, the new caption, Show in Finder, Delete Everything | LF1 | building (LF1-A, on LF1-P's seams); §11.1 retired |
-| §13 Ratings: what is kept, sent and written to the folder; the ledger rows; Delete Everything | FB1 | building (FB1-A, on FB1-P's seams); the surfaces are in `CONVERSATION.md` §17 |
+| §13 Ratings: what is kept, sent and written to the folder; the ledger rows; Delete Everything | FB1 | shipped (0.2.7); the surfaces are in `CONVERSATION.md` §17 |
 
 ## 1. The seven principles
 
@@ -755,23 +755,31 @@ Label **"Your assistant's folder"**, then one line and actions by state:
 
 ## 13. FB1 · Ratings
 
-> **Status: building (FB1-P stores, enforces and delivers; FB1-A shows; copy here is final).** User decision 2026-10-16. The surfaces (the ⋯ glyph, the row, muted rows, Settings "What you hear about", the suggestion line) are in `CONVERSATION.md` §17; this section is what is kept, sent and written.
+> **Status: shipped (0.2.7).** User decision 2026-10-16; this section was brought in line with the merged code on 2026-10-16 (FB1-D2). The surfaces (the ⋯ glyph, the row, muted rows, Settings "What you hear about", the suggestion line) are in `CONVERSATION.md` §17; this section is what is kept, sent and written. Ratings work with every learning level off.
 
 ### 13.1 What is kept
 
-A rating is one record on this Mac, encrypted like the rules: the kind label (editable), its normalized key, the choice (More like this / Neutral / Stop these), the scope (the kind, or this message only), the example card and its text as already redacted, and when it was made and last changed. Corrections ("Not this kind") and quiet signals (a kind's cards never opened within 24 h or dismissed within 3 s) are kept the same way. Nothing is inferred into a rating: a suggestion is a line the user can ignore, never an automatic mute.
+A rating is one record on this Mac, encrypted like the rules: the kind label (editable), its normalized key, the choice (More like this / Neutral / Stop these), the scope (the kind, or this message only), the example card and its text as already redacted, and when it was made and last changed. Alongside the ratings Zeus keeps, in the same store:
+
+- **Hold decisions:** for each card held under a "Stop these" rating, which rating matched, how ("Same label", or the on-device similarity score against the threshold), when it was decided, and when it was released by "Not this kind". A released card keeps its decision as history.
+- **Quiet signals:** when an unprompted card was first shown, opened and dismissed, per kind, for the suggestion line only. Nothing is inferred into a rating: a suggestion is a line the user can ignore, never an automatic mute.
+- **One Undo snapshot:** the preferences as they were before the latest change, valid until the next change (CONVERSATION.md §17.2).
+
+**How holds are decided.** A new unprompted card whose `about` matches a rated kind's label exactly follows that rating. Otherwise, for each "Stop these" kind, Zeus compares the card's label and text with the rating's label and example using the on-device NaturalLanguage sentence embeddings; a score at or above the threshold holds the card. If no embedding is installed for the card's language, only exact label matches hold, and look-alikes get through. Replies are never compared or held.
+
+**Changing or removing a rating does not touch cards already held.** Changing "Stop these" to another choice, removing the rating, or undoing it stops new holds; cards held before stay in their muted rows until the user picks "Not this kind" on each (which releases only that card) or clears the conversation. Delete Everything releases them all (§13.4).
 
 ### 13.2 What is sent, and the folder
 
-- Each rating, change and removal goes to the assistant as a delivery, acked like a summary: "Rating: Stop these · kind: On-call reminder · example: “…”" (the example is the redacted text; emoji in the delivery is fine, it's not rendered in the pixel font). Nothing is said in the thread for the delivery itself: the bubble's own line ("Stopped: On-call reminders") is the record, and the ledger has the exact text.
-- `Zeus/preferences.md` in the assistant's folder lists every rated kind under "Up", "Need-to-know" and "Stop", each with its examples, and is rewritten on every change. The delivery's `Files:` line names it. It is part of `Zeus/` like everything else in §12: Zeus writes and prunes it, and the user may delete it.
-- Ratings are an input to the evening reflection, as the rules are.
+- Each rating, change, removal, Undo and "Not this kind" correction goes to the assistant as a delivery, acked like a summary. A rating reads "Rating: Stop these · kind: On-call reminder · scope: kind · example: “…”." followed by one sentence on how to apply it (kind: "Apply this to the kind, including similar messages with different labels. Neutral uses your judgment. Replies to user input are unaffected."; just this one: "Feedback on this message only; do not create a kind rule."). The three choices are sent as "More like this", "Need-to-know" and "Stop these". A removal reads "Rating removed · kind: …"; an Undo sends the current preferences in full; a correction reads "Rating match corrected: the held message was not this kind: …". The example is the redacted text; emoji in the delivery is fine, it's not rendered in the pixel font. Nothing is said in the thread for the delivery itself: the bubble's own line ("Stopped: On-call reminders") is the record, and the ledger has the exact text.
+- `Zeus/preferences.md` in the assistant's folder lists every kind rating under "Up", "Need-to-know" and "Stop", each with its label and redacted example, after a short note on what the three mean. It is rewritten on every change. Ratings of this message only are not in it: they are delivered once and never become a kind. The delivery's `Files:` line names the file when it exists. It is part of `Zeus/` like everything else in §12: Zeus writes and prunes it, and the user may delete it; a file removed in Finder is not re-created and the ratings themselves are unchanged.
+- Current kind ratings are an input to the evening reflection, as the rules are.
 
 ### 13.3 What Zeus Kept
 
-- **Sent to your assistant:** one row per rating delivery, kind "Rating", summary "Stop these: On-call reminders" (or "More like this: …", "Only when I need to know: …", with ", this one only" for a single message). View shows the delivery text as sent. Waiting rows follow §4.2.
-- **Kept on this Mac:** muted cards stay ordinary cards, shown as they are; a rating row says "Rated Tue 21:41 · Stop these · On-call reminders"; a correction says "Not this kind: On-call reminders".
+- **Sent to your assistant:** one row per rating delivery once the assistant has acknowledged or read it, with the summary "Sent your message preference" (every rating kind: new, changed, removed, undone and corrected). View shows the delivery text as sent. Until then the delivery is a Waiting row (§4.2). There is no conversation notice for a rating receipt.
+- **Kept on this Mac:** nothing of its own. Ratings, hold decisions and quiet signals are reviewed and changed in Settings › Rules › What you hear about (CONVERSATION.md §17.4), which lists kind ratings only; a rating of this message only is visible as the bubble's line and its Sent row. Muted cards stay ordinary cards, shown as they are.
 
 ### 13.4 Delete Everything
 
-"Everything" includes the ratings, corrections and quiet signals, and `Zeus/preferences.md` in the folder; the confirmation text in §12.6 is unchanged. Muted cards are cards: Clear Conversation removes them like any other.
+"Everything" includes the ratings, hold decisions, quiet signals, Undo snapshot and any rating deliveries still waiting, and `Zeus/preferences.md` in the folder; every held card is released, back to an ordinary bubble. The confirmation text in §12.6 is unchanged. Clear Conversation removes muted cards like any other card and leaves the ratings alone.
