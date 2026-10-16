@@ -64,15 +64,23 @@ After five messages of an unrated, labeled kind within seven days go unread for 
 | Activity | A thinking or working indicator while the assistant responds. |
 | Notice | A quiet line for an app change, learning receipt, rule or restart. |
 
-Attachments stay available in older messages. Files and folders open in their usual apps or Finder; links open through macOS. Zeus does not execute attachment targets as commands.
-
 New messages follow the thread when you are at the bottom. If you scroll back, new arrivals leave your place alone and show a jump-to-latest control. Sending a message returns you to the newest part of the conversation.
 
 History is saved locally. Zeus retains the newest 500 history cards plus pending or unsaved outgoing messages. **Clear Conversation…** asks first and preserves unread messages, open questions and actions, and unsent or unconfirmed messages. It does not clear the learning journal, reset message ratings, or reset the assistant's native conversation.
 
+## Attachments from your assistant
+
+Read the takeaway in the message, then decide whether to open the attachment. Each new file or folder comes with the assistant's short summary of what is inside and why it matters. Links may have a summary too. Older attachments without one still show their names.
+
+Each chip shows a file, folder or link icon, its name, and up to two lines of summary. Long names shorten in the middle. **More** expands an overflowing summary in place; **Less** collapses it. Click the chip to open it. Finished-work cards can also have separate action buttons chosen by the assistant.
+
+For an ordinary file or folder, hover or focus the chip to reveal the **Show in Finder** icon. Right-click for the available **Open**, **Show in Finder** and **Copy Path** actions; links offer **Open** and **Copy Link**. With the chip focused, Return or Space opens it; **⌘Return** shows a file or folder in Finder. VoiceOver reads the kind, name and full summary and offers the available attachment actions.
+
+Files open in their usual apps, folders in Finder, and links through macOS. Apps, scripts and other executable targets are shown in Finder instead of run. A missing file shows **Not found**; clicking it reveals the nearest existing parent folder. Attachments remain available in older messages, subject to the file still being there.
+
 ## Attach things
 
-Drag files, folders, images, text or links onto Zeus. The conversation opens with removable attachment chips. Nothing is sent until you press **Send**, and attachments can be sent without text.
+Drag files, folders, images, text or links onto Zeus. The conversation opens with removable attachment chips. Nothing is sent until you press **Send**, and attachments can be sent without text. You do not need to write a summary for material you drop here.
 
 A dropped folder offers **Work in this folder** when Zeus runs the assistant. This uses the normal folder-switch confirmation and starts a new assistant conversation.
 
@@ -81,6 +89,8 @@ Dropped material is not added to Learn from me. To attach context from the curre
 ## Speech bubbles (peeks)
 
 When the conversation is closed, a new message, question or finished-work card can appear as a small bubble beside Zeus. It does not take keyboard focus. Click the bubble to open the full conversation; up to three choices can be answered directly in it.
+
+A peek shows the first attachment as a compact chip with one line of summary. Click the chip to open it; a link such as **and 1 more attachment** opens the conversation for the rest. Open the conversation to expand a summary or use Finder and copy actions.
 
 Ordinary peeks disappear after a reading interval of 6–15 seconds, with the timer paused while you hover. High-priority peeks wait for interaction. New arrivals replace the current peek and show how many more messages are waiting. Status and progress updates do not create peeks.
 
@@ -111,7 +121,8 @@ The character's pose reflects new messages, explicit assistant status, unread it
 |---|---|
 | **⌥⌘Z** | Open or focus Talk to Zeus; close it when already focused. Configurable. |
 | **⇧⌥⌘Z** | Ask About This. Derived by adding Shift to the Talk shortcut when possible. |
-| **Return** | Send the message. |
+| **Return** | Send from the message field; open a focused attachment chip. |
+| **⌘Return** | Show a focused file/folder attachment in Finder. |
 | **⇧Return** or **⌥Return** | Insert a line break. |
 | **Escape** | Cancel a rating label edit or close its row first; otherwise close the current popover or conversation. |
 | **⌘R** | Open/close ratings for the focused eligible message, or the newest eligible message. |
@@ -130,4 +141,4 @@ Except the two global shortcuts, these apply in the conversation panel. If your 
 
 Drag the panel's edge to resize it. Width is saved and limited by the screen; **Reset width** is available in the panel and resize-handle context menus. With the handle focused, Left and Right also adjust the width.
 
-Implementation references: [conversation model](../Zeus/Cards/ConversationModel.swift), [conversation view](../Zeus/Cards/ConversationView.swift), [rating controls](../Zeus/Cards/MessageRatingViews.swift), [rating presentation](../Zeus/Cards/MessageRatingsModel.swift), [design and keyboard specification](design/CONVERSATION.md), and [contract §10](CONTRACT.md#10-conversation-model-v2-ux-decided-2026-10-11-replaces-the-card-stack-ux).
+Implementation references: [conversation model](../Zeus/Cards/ConversationModel.swift), [conversation view](../Zeus/Cards/ConversationView.swift), [attachment chips](../Zeus/Cards/AttachmentChip.swift), [attachment targets](../Zeus/Cards/AttachmentTarget.swift), [rating controls](../Zeus/Cards/MessageRatingViews.swift), [rating presentation](../Zeus/Cards/MessageRatingsModel.swift), [design and keyboard specification](design/CONVERSATION.md), and [contract §10](CONTRACT.md#10-conversation-model-v2-ux-decided-2026-10-11-replaces-the-card-stack-ux).

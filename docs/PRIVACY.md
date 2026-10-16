@@ -46,7 +46,7 @@ Zeus's internal application data is under `~/Library/Application Support/Zeus/`.
 | Assistant-folder record | Readable Markdown and JPEG files under `Zeus/` in the chosen folder; not encrypted by Zeus. Written with owner-only permissions. The folder's sync/backup behavior applies. |
 | Rules and outcomes | Persisted in the encrypted rules store; manage rules in Settings › Rules. |
 | Message ratings, decisions, signals and pending rating outbox | Encrypted in `Ratings/ratings.zratings`, with a Keychain-held key; manage kind ratings in Settings › Rules › What you hear about. |
-| Conversation cards and delivery queue | Local JSON files, including messages and attachments. These are separate from the encrypted learning journal. Clear read/completed conversation history in General. |
+| Conversation cards and delivery queue | Local JSON files, including messages, attachment paths/URLs and assistant-written attachment summaries. These are separate from the encrypted learning journal. Clear read/completed conversation history in General. |
 | User characters and themes | Editable JSON in `Characters/` and `Themes/`. |
 | OpenCode server password saved in Zeus | Keychain, not the server URL or plain preferences. |
 | Assistant conversation and files | Owned by the chosen agent and its working folder; Zeus's learning deletion is not an agent-history eraser. |
