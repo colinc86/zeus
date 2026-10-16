@@ -23,7 +23,7 @@ struct RatingSuggestion: Codable, Equatable, Identifiable, Sendable {
     var exampleCardID: String? = nil
 }
 /// Opaque compare-and-swap receipt: undo refuses to overwrite a later edit.
-struct MessageRatingUndo: Sendable {
+struct MessageRatingUndo: Codable, Equatable, Sendable {
     let id: UUID
 }
 /// Optional runtime capability; app adapters need not change Shared seams.
@@ -41,8 +41,10 @@ struct MessageRatingUndo: Sendable {
     func update(id: String, rating: MessageRatingValue, scope: MessageRatingScope, label: String) async throws -> MessageRatingUndo
     func remove(id: String) async throws -> MessageRatingUndo
     func undoRating(_ receipt: MessageRatingUndo) async throws
+    /// Durable, valid only while no later preference mutation superseded it.
+    func ratingUndo(for ratingOrCardID: String) -> MessageRatingUndo?
     /// Releases only this card; does not weaken the kind preference or replay its alert.
-    func correctMuted(cardID: String) async throws
+    func correctMuted(cardID: String) async throws -> MessageRatingUndo
     /// Navigation only, not unmute. App wires this callback to reveal the retained cards.
     var onShowMuted: (([String]) -> Void)? { get set }
     func showMuted()
