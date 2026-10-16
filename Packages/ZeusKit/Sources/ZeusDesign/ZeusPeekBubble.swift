@@ -96,7 +96,7 @@ public struct ZeusPeekBubble: View {
                 if moreCount > 0 {
                     Button(action: onMore ?? onOpen) { Text("+\(moreCount) more") }
                         .buttonStyle(.plain)
-                        .zeusFont(.badge)
+                        .zeusFont(.caption)
                         .foregroundStyle(palette.onSecondary)
                         .padding(.horizontal, ZeusTheme.Spacing.xs)
                         .padding(.vertical, 1)
