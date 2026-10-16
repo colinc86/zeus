@@ -290,12 +290,12 @@ struct AgentUXTests {
         #expect(error.isError)
         #expect(error.structured?["error"] == "Unexpected arguments for zeus_say: body, message. Allowed: about, attachments, mood, priority, text, title, ttl_seconds.")
         for (kind, target) in [("file", "relative.txt"), ("folder", "./folder"), ("url", "file:///tmp/test"), ("url", "https:"), ("file", "/tmp/\0bad")] {
-            let result = await f.call("zeus_say", ["text": "Bad", "attachments": [["kind": .string(kind), "label": "Open", "target": .string(target)]]])
+            let result = await f.call("zeus_say", ["text": "Bad", "attachments": [["kind": .string(kind), "label": "Open", "target": .string(target), "summary": "Synthetic report explains the result and the next decision."]]])
             #expect(result.isError)
         }
         #expect(f.cards.values.isEmpty)
         for (kind, target) in [("file", "~/draft.txt"), ("folder", "/tmp/folder"), ("url", "https://example.com/report")] {
-            #expect(await f.call("zeus_say", ["text": "Good", "attachments": [["kind": .string(kind), "label": "Open", "target": .string(target)]]]).isError == false)
+            #expect(await f.call("zeus_say", ["text": "Good", "attachments": [["kind": .string(kind), "label": "Open", "target": .string(target), "summary": "Synthetic report explains the result and the next decision."]]]).isError == false)
         }
         for tool in ["zeus_update_card", "zeus_dismiss"] {
             let result = await f.call(tool, ["card_id": "c_missing"])
