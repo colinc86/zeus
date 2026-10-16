@@ -11,6 +11,12 @@ struct JournalWindowView: View {
     private var rootBody: some View {
         VStack(alignment: .leading, spacing: 12) {
             SettingsSegments(label: "", options: [(false, "Kept on this Mac"), (true, "Sent to your assistant")], selection: $model.sentOnly)
+            if let folder = model.folder, let path = folder.path {
+                HStack {
+                    Text("Kept in " + path).settingsHeading().textSelection(.enabled)
+                    KeyboardButton("Show in Finder", action: folder.showFolder).accessibilityLabel("Show assistant's folder in Finder")
+                }
+            }
             HStack {
                 KeyboardButton("‹") { step(-1) }.accessibilityLabel("Previous day")
                 KeyboardButton(dayTitle) { model.day = Date() }.accessibilityLabel("Journal day: \(dayTitle); show today")
@@ -66,10 +72,10 @@ struct JournalViewerView: View {
             }
             ForEach(model.timeline) { row in
                 if case .picture(let picture) = row {
-                    JournalPictureRow(picture: picture, model: model.pictures)
+                    JournalPictureRow(picture: picture, model: model.pictures, folder: model.activeFolder)
                 } else if case .typing(let group) = row {
                     JournalTypingGroupView(group: group, initiallyExpanded: Calendar.current.isDateInToday(model.day), search: model.search,
-                        deleteRun: { model.deleteItem($0.item) }, deleteGroup: { group in
+                        folder: model.activeFolder, deleteRun: { model.deleteItem($0.item) }, deleteGroup: { group in
                             pendingDelete = nil; pendingTypingGroup = group
                             let times = group.rangeLabel().components(separatedBy: "–")
                             deleteTitle = "Delete what Zeus kept from your typing in \(JournalDisplay.appName(group.app)) between \(times.first ?? "") and \(times.last ?? "")?"
@@ -77,7 +83,7 @@ struct JournalViewerView: View {
                 } else if case .record(let item) = row {
                 JournalRecordRow(item: item, sent: model.sentOnly, expanded: expanded.contains(item.id), toggle: {
                     if !expanded.insert(item.id).inserted { expanded.remove(item.id) }
-                }, delete: { model.deleteItem(item) }).id(item.id)
+                }, delete: { model.deleteItem(item) }, folder: model.activeFolder).id(item.id)
                 }
                 SettingsDivider()
             }
@@ -98,6 +104,8 @@ struct JournalViewerView: View {
                 }
                 Spacer()
                 if !model.sentOnly {
+                    KeyboardButton("Show Day in Finder", action: model.showDayInFinder)
+                        .disabled(model.dayFolderURL == nil).accessibilityLabel("Show this journal day in Finder")
                     KeyboardButton("Delete This Day…") { requestDelete(.day(model.day), "Delete everything Zeus kept on \(model.day.formatted(date: .abbreviated, time: .omitted))? This can't be undone.") }
                         .accessibilityLabel("Delete this journal day")
                     if !model.app.isEmpty {
@@ -214,13 +222,14 @@ struct JournalItemView: View {
     }
 }
 
-private struct JournalRecordRow: View {
+struct JournalRecordRow: View {
     @Environment(\.zeusPalette) private var palette
     let item: JournalItem
     let sent: Bool
     let expanded: Bool
     let toggle: @MainActor @Sendable () -> Void
     let delete: @MainActor @Sendable () -> Void
+    var folder: LearningFolderModel?
     @State private var hovered = false
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -244,15 +253,25 @@ private struct JournalRecordRow: View {
                 }
             } else {
                 JournalItemView(item: item)
-                    .padding(.trailing, 60)
+                    .padding(.trailing, folder == nil ? 60 : 180)
                     .overlay(alignment: .topTrailing) {
-                        if hovered { KeyboardButton("Delete", action: delete).accessibilityLabel("Delete journal item") }
+                        if hovered {
+                            HStack {
+                                if let folder { KeyboardButton("Show in Finder") { folder.show(item) }.accessibilityLabel("Show journal item in Finder") }
+                                KeyboardButton("Delete", action: delete).accessibilityLabel("Delete journal item")
+                            }
+                        }
                     }
             }
         }
         .contentShape(Rectangle()).onHover { hovered = $0 }
-        .contextMenu { if !sent { Button("Delete", action: delete) } }
+        .contextMenu { if !sent {
+            if let folder { Button("Show in Finder") { folder.show(item) } }
+            Button("Delete", action: delete)
+        } }
+        .accessibilityElement(children: .contain)
         .modifier(JournalDeleteAccessibility(enabled: !sent, delete: delete))
+        .modifier(JournalFinderAccessibility(folder: sent ? nil : folder, item: item))
     }
 }
 
@@ -261,6 +280,16 @@ private struct JournalDeleteAccessibility: ViewModifier {
     let delete: @MainActor @Sendable () -> Void
     @ViewBuilder func body(content: Content) -> some View {
         if enabled { content.accessibilityAction(named: Text("Delete"), delete) }
+        else { content }
+    }
+}
+
+/// Adds the same Finder operation to VoiceOver without grouping or hiding the row's children.
+struct JournalFinderAccessibility: ViewModifier {
+    let folder: LearningFolderModel?
+    let item: JournalItem?
+    @ViewBuilder func body(content: Content) -> some View {
+        if let folder, let item { content.accessibilityAction(named: Text("Show in Finder")) { folder.show(item) } }
         else { content }
     }
 }

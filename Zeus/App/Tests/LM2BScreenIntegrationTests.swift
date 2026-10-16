@@ -21,6 +21,26 @@ import Testing
     func invalidatePendingCapture() { invalidations += 1 }
 }
 @MainActor struct LM2BScreenIntegrationTests {
+    @Test func coveringChoiceReachesCapturePolicyOnlyAfterConfirmationAndInvalidatesPendingFrames() throws {
+        let name = "lf1-screen-policy-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let policies = ObservationSettings(defaults: defaults), learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)
+        let fake = AppScreenObserverFake()
+        let model = ScreenLearningModel(policies: policies, learn: learn,
+            journal: EncryptedJournalStore(root: root, keyProvider: LM2BPrivateKey()), redactor: LocalRedactor(useOnDeviceModel: false), focus: LM2FocusSource(), injectedObserver: fake)
+        defer { model.stop() }
+        #expect(model.policy.coverPictures)
+        model.privacy.setCoverPictures(false)
+        #expect(model.policy.coverPictures && fake.invalidations == 0)
+        model.privacy.confirmUncoveredPictures()
+        #expect(!model.policy.coverPictures && fake.invalidations > 0)
+        #expect(!model.policy.enabled && !model.policy.consented)
+        model.privacy.setCoverPictures(true)
+        #expect(model.policy.coverPictures && !model.privacy.showsCoveringConfirmation)
+    }
+
     @Test func productionAdapterStartsOnlyAfterConsentAndMapsPermissionAndHardStops() throws {
         let name = "zeus-screen-adapter-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }

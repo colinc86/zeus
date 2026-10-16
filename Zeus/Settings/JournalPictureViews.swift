@@ -5,6 +5,8 @@ import ZeusDesign
 struct JournalPictureRow: View {
     let picture: JournalPicture
     @Bindable var model: JournalPictureModel
+    var folder: LearningFolderModel?
+    @State private var hovered = false
     @Environment(\.zeusPalette) private var palette
     var body: some View {
         KeyboardButton { model.selectedID = picture.id; model.confirmsDeleteBoth = false } label: {
@@ -19,15 +21,25 @@ struct JournalPictureRow: View {
                     Text(model.caption(picture)).settingsCaption()
                 }
                 Spacer(minLength: 0)
-            }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+            }.padding(.trailing, folder == nil ? 120 : 240)
+                .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+        .overlay(alignment: .topTrailing) {
+            if hovered, let item = picture.frameRecord ?? picture.descriptionRecord { HStack {
+                if let folder { KeyboardButton("Show in Finder") { folder.show(item) }.accessibilityLabel("Show picture in Finder") }
+                KeyboardButton("Delete Picture") { model.delete(picture, includingDescription: false) }.disabled(model.frame(picture) == nil)
+            } }
+        }
         .accessibilityLabel("Picture of \(picture.app.map(JournalDisplay.appName) ?? "app"), \(picture.description)")
         .accessibilityHint("Open picture details")
         .contextMenu {
+            if let folder, let item = picture.frameRecord ?? picture.descriptionRecord { Button("Show in Finder") { folder.show(item) } }
             Button("Delete Picture") { model.delete(picture, includingDescription: false) }.disabled(model.frame(picture) == nil)
             Button("Delete Both…") { model.selectedID = picture.id; model.confirmsDeleteBoth = true }
         }
+        .modifier(JournalFinderAccessibility(folder: folder, item: picture.frameRecord ?? picture.descriptionRecord))
         .accessibilityAction(named: "Delete Picture") { model.delete(picture, includingDescription: false) }
     }
 }

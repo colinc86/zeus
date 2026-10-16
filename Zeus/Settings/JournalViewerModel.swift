@@ -14,6 +14,8 @@ final class JournalViewerModel {
         return learningEnabled() ? "Nothing yet. Zeus sends a summary each morning and notes during the day."
             : "Nothing yet. Learn from me is off, so Zeus has nothing to send."
     }
+    var activeFolder: LearningFolderModel? { folder?.folderURL == nil ? nil : folder }
+    var folder: LearningFolderModel?
     var deliveries: LearningDeliveryModel?
     var waiting: [PendingLearningDelivery] {
         guard sentOnly else { return [] }
@@ -56,6 +58,9 @@ final class JournalViewerModel {
         pictures.didChange = { [weak self] in self?.reload() }
         reload(); observe()
     }
+    /// Ask the writer for its existing day directory, preserving its calendar and missing-file policy.
+    var dayFolderURL: URL? { folder?.provider?.dayFolderURL(for: day) }
+    func showDayInFinder() { if let url = dayFolderURL { folder?.reveal(url) } }
     var query: JournalQuery {
         var query = JournalQuery()
         query.from = calendar.startOfDay(for: day)
