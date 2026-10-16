@@ -4,6 +4,8 @@
 
 Learn from me keeps a local record that your assistant can use for context, timing and rules. All four levels are independent and off by default. Open **Settings › Privacy** to choose them. Each first-use consent sheet explains its scope before capture starts.
 
+Message ratings are separate from observation: you can [rate what you hear about](CONVERSATION.md#rate-what-you-hear-about) with every level off.
+
 ## Levels at a glance
 
 | Level | Keeps | Initial retention |
@@ -85,7 +87,7 @@ The assistant folder contains the retained redacted words. The journal tool can 
 
 ## Your assistant's folder
 
-Zeus writes a readable copy of retained learning into `Zeus/` inside the assistant folder. Only enabled levels contribute, after their privacy safeguards. This record accumulates independently of delivery: a disconnected assistant does not stop it growing.
+Zeus writes a readable copy of retained learning into `Zeus/` inside the assistant folder. Observations come only from enabled levels, after their privacy safeguards. Explicit message ratings also have a folder record, independent of those switches. This record accumulates independently of delivery: a disconnected assistant does not stop it growing.
 
 - With **Zeus runs it**, the destination is the running conversation’s working folder. A folder switch deferred with **Later** keeps writing to the old folder until the switch is applied.
 - With **Connect your own**, open **Settings › Privacy › Your assistant's folder**, then **Choose…**. No destination is selected by default. **Stop keeping a folder** stops future writes and leaves the existing folder alone.
@@ -104,11 +106,12 @@ Choosing a destination backfills retained history for enabled levels. Changing d
 | `Zeus/days/YYYY-MM-DD/sent.md`, `outcomes.md` | Stored delivery receipts and rule outcomes when present. |
 | `Zeus/reflections/YYYY-MM-DD.md` | Reflection text. |
 | `Zeus/rules.md` | Current rules, status, confidence and author. |
-| `Notes/about-you.md`, `Notes/patterns.md` | Dated conclusions the assistant may write itself; Zeus does not write or read these files. |
+| `Zeus/preferences.md` | Current kind ratings under Up, Need-to-know and Stop, with redacted examples; excludes single-message ratings. |
+| `Notes/about-you.md`, `Notes/patterns.md`, `Notes/preferences.md` | Dated conclusions and communication preferences the assistant may write itself; Zeus does not write or read these files. |
 
-These are ordinary readable files, separate from the encrypted internal journal. Files are written atomically with owner-only permissions. Keep your own material outside `Zeus/`: Zeus updates its records, and edits there can be overwritten. A file you remove in Finder stays removed from this export; that does not delete the internal journal record. Delete through **What Zeus Kept** to remove the retained source as well.
+These are ordinary readable files, separate from the encrypted internal journal. Files are written atomically with owner-only permissions. Keep your own material outside `Zeus/`: Zeus updates its records, and edits there can be overwritten. A file you remove in Finder stays removed from this export; that does not delete the underlying journal records or preferences. Delete observations through **What Zeus Kept**; manage kind ratings under **Settings › Rules › What you hear about**.
 
-The version 2 template tells the assistant to read relevant records when useful, learn repeated tasks and preferences across days, revise its own notes, and propose rules supported by evidence. It must not repeat private observations unprompted or put them into material you did not ask it to send. Reading the folder does not itself authorize an action, and purchases still ask every time.
+The version 3 template tells the assistant to read relevant records when useful, learn repeated tasks and preferences across days, revise its own notes, and propose rules supported by evidence. It must not repeat private observations unprompted or put them into material you did not ask it to send. Reading the folder does not itself authorize an action, and purchases still ask every time.
 
 ## What your assistant receives
 
@@ -121,13 +124,23 @@ A morning summary describes the previous day. With Apps and timing enabled, it i
 
 These produce up to four notes a day. Summaries can include context from other enabled levels. The deliveries carry descriptions and topics, not picture bytes or retained typing words. Those retained details are available separately in the folder.
 
-At most once a day, Zeus prepares a reflection for the assistant: normally after ten minutes of idle time after 18:00, with a catch-up path for an earlier day. It includes redacted context, rule outcomes and evidence IDs. The assistant can use it to propose rules. A reflection is context, not a request to take an external action.
+At most once a day, Zeus prepares a reflection for the assistant: normally after ten minutes of idle time after 18:00, with a catch-up path for an earlier day. It includes redacted context, rule outcomes, current message preferences and evidence IDs. The assistant can use it to propose rules. A reflection is context, not a request to take an external action.
 
 Summaries, notes and reflections end with a `Files:` line naming relevant available paths when an assistant-folder copy exists. The exact sent text, including those paths, appears in the Sent ledger. They use durable delivery and acknowledgment. A conversation line such as **Daily summary ready for your assistant** becomes **Sent your daily summary** after acknowledgment or tool-result consumption. **View** shows the exact text. Prepared but unreceived items appear under **Waiting** in the Sent view, with reasons such as a disconnected assistant, busy session or unsent Terminal draft. A hold lasting ten minutes gets an explanatory notice.
 
 When you ask about your day, the assistant can query enabled journal levels using `zeus_get_journal`. It receives app activity descriptions, window titles, screen descriptions and typing topics. A request covers at most seven days and 50 records, with a limit of 20 calls an hour. With `raw: true`, it can also receive retained pictures or words from enabled levels. Pictures reflect the covering setting used when captured; words are already redacted. “Raw” means the stored form, not a copy from before safeguards.
 
 Each successful journal answer is recorded in **Sent to your assistant**, with a **Looked at your journal** notice in the conversation. This records the result delivered to the assistant, not proof of what its model understood. Your assistant's model provider can receive that context like any other message.
+
+## Message preferences
+
+**More like this**, **Neutral** and **Stop these** tell the assistant what kinds of unprompted messages you want. Neutral means need-to-know, by the assistant's judgment. Stop also applies a local hold to matching new messages; replies are exempt. These preferences are separate from acting rules and do not authorize external actions. See [rating controls and muted messages](CONVERSATION.md#rate-what-you-hear-about).
+
+Each rating, edit, removal, Undo or **Not this kind** correction is saved and queued for the assistant, even with capture off. It includes the kind and scope, plus a redacted example for a rating. A `Files: Zeus/preferences.md` line is added when that exported file exists. **Just this one** feedback is delivered but does not enter the file's kind list or create a hold.
+
+The assistant template v3 tells the assistant to read `Zeus/preferences.md` at session start and after rating deliveries, generalize preferences across wording, and keep dated conclusions in its own `Notes/preferences.md`. Zeus writes the first file and does not read or update the second. Current preferences also enter reflections when those are produced.
+
+The saved rating confirmation does not mean the assistant has received it. **What Zeus Kept › Sent to your assistant** shows an acknowledged or successfully polled receipt as **Sent your message preference**; expand it for the exact text. Pending deliveries appear under **Waiting**. There is no additional conversation receipt notice for ratings.
 
 ## Ask About This
 
@@ -150,7 +163,7 @@ Press **Open What Zeus Kept…** in Privacy.
 
 **Kept on this Mac** shows records as stored, including placeholders. Choose a day, filter by level or app, and search. Picture rows open the stored frame with its description and retention date. **Show in Finder** opens its exported file when available. **Delete Picture** keeps the description; **Delete Both…** asks before removing both. Typing is grouped by app and hour, with topics above any retained words.
 
-**Sent to your assistant** shows exact outgoing summaries, notes, reflections, journal answers and context attachments. Expand a row to inspect it. **Waiting** items are separate from received records; they do not count as sent. This ledger covers learning/context delivery, not all ordinary chat or anything the assistant independently reads.
+**Sent to your assistant** shows exact outgoing summaries, notes, reflections, message preferences, journal answers and context attachments. Expand a row to inspect it. **Waiting** items are separate from received records; they do not count as sent. This ledger covers learning/context delivery, not all ordinary chat or anything the assistant independently reads.
 
 **Show Day in Finder** opens the selected day’s export when it exists. Record rows also offer **Show in Finder** in their context menu or hover actions; a missing item file falls back to its day folder when available.
 
@@ -160,15 +173,17 @@ Press **Open What Zeus Kept…** in Privacy.
 
 **Pause for Today** stops observation until local midnight; **Resume** restarts it sooner. Turning a level off stops its observation and excludes it from journal-tool access. Existing records remain available in the viewer until retention or deletion removes them. The folder copy follows enabled levels too: disabling a level removes its exported records on the next refresh; re-enabling can restore still-retained records.
 
+Pausing or disabling observation does not disable ratings, their delivery, or `Zeus/preferences.md`.
+
 Delete an individual record, typing group, day, or all records from a selected app using the viewer. Individual deletions can offer **Undo**; day/app deletion and **Delete Both…** ask for confirmation. Retention and deletion update matching records in the current assistant folder; Undo restores an exported record when its source is restored. Existing sent receipts are separate evidence and are not removed by deleting only their source record.
 
-**Delete Everything…** removes the learning journal, summaries and Sent ledger, and empties `Zeus/` in the current assistant folder after confirmation. **Also delete your assistant's notes** starts unchecked; select it to empty `Notes/` too. Other working files are left alone. It also discards affected pending summaries/reflections; a late acknowledgment cannot recreate a sent receipt. Already-pasted Terminal text is left alone. Rules are managed separately in **Settings › Rules**, and deletion cannot retract material already received by an assistant or its provider.
+**Delete Everything…** removes the learning journal, summaries, Sent ledger, message ratings, matching decisions and quiet-signal history, and empties `Zeus/` in the current assistant folder after confirmation. **Also delete your assistant's notes** starts unchecked; select it to empty `Notes/` too. Other working files are left alone. It also discards pending rating deliveries and affected summaries/reflections; a late acknowledgment cannot recreate a sent receipt. Already-pasted Terminal text is left alone. Rules are managed separately in **Settings › Rules**, and deletion cannot retract material already received by an assistant or its provider.
 
 If the journal key is unavailable, new records wait in memory. Privacy explains the condition. Unlocking lets Zeus save them; quitting first loses those unsaved records.
 
 ## Rules
 
-Rules guide timing, tone and work. **Settings › Rules** appears when a learning level is enabled or a rule exists. The default **New rules** dial is **Balanced**.
+Rules guide timing, tone and work. **Settings › Rules** is always available, with **What you hear about** above the rule controls. The default **New rules** dial is **Balanced**.
 
 | Dial | Initial behavior |
 |---|---|
@@ -180,7 +195,7 @@ For an acting rule, the assistant first reports what it would have done. **OK ne
 
 Purchases always require a fresh, amount-specific approval. A spending rule never becomes standing permission to pay. Zeus records approvals and reported actions; the assistant performs external work through its own tools and permissions.
 
-Passive rules with evaluable time, app or state conditions can hold routine peeks and sounds. Cards still enter the thread and count as unread. When a hold clears, Zeus can show the newest eligible unread card. Urgent cards bypass the rule hold. A rule with no evaluable trigger is guidance for the assistant and does not hold the UI.
+Passive rules with evaluable time, app or state conditions can hold routine peeks and sounds. Cards still enter the thread and count as unread. When a hold clears, Zeus can show the newest eligible unread card. Urgent cards bypass a timing-rule hold, but cannot bypass a stopped message kind. A rule with no evaluable trigger is guidance for the assistant and does not hold the UI.
 
 Use a rule's **… › Why?** to see its retained evidence and dated outcomes. Acceptance, skips, ignoring, edits, toggles and Undo affect confidence. It is shown as **Sure**, **Fairly sure** or **Unsure**. Agent rules that lose enough confidence retire; rejected, disabled or deleted proposals are suppressed for 30 days. User-authored rules do not retire automatically.
 

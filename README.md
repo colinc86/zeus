@@ -61,7 +61,7 @@ Assistant/
 
 A quick question. A click. Back to your work.
 
-Answer in a click, type a reply, or drop in a file. Finished work opens straight from the conversation. Quiet hours keep interruptions in check.
+Answer in a click, type a reply, or drop in a file. Finished work opens straight from the conversation. Rate each kind of update: more like this, only when needed, or stop.
 
 <p align="center">
   <picture>
