@@ -6,6 +6,31 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.2.6</title>
+      <pubDate>Fri, 16 Oct 2026 13:45:44 GMT</pubDate>
+      <sparkle:version>19</sparkle:version>
+      <sparkle:shortVersionString>0.2.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Your assistant's folder is its memory.</strong> Everything Zeus keeps, after its privacy safeguards, is now also written as readable files in your assistant's folder under <code class="notranslate">Zeus/</code>: each day's activity, windows, screenshots with their descriptions, typing topics, summaries and moments, plus reflections and the current rules. It builds up whether or not anything was sent. Retention and deletion apply to the files too, and a file you delete in Finder stays deleted.</li>
+<li><strong>Summaries point to the files.</strong> Morning summaries, moments and reflections still go to your assistant as before, and each now ends with a line naming the files to look at.</li>
+<li><strong>Your assistant learns you.</strong> The instructions Zeus writes for a new assistant now explain the folder, ask the assistant to learn your habits and patterns, and give it a <code class="notranslate">Notes/</code> folder for its own conclusions. If you haven't edited your copy, Restart Assistant refreshes it.</li>
+<li><strong>Cover pictures and faces.</strong> A new switch in Settings › Privacy, on by default. Turn it off for full trust and screenshots are kept as they are. Passwords, card numbers and keys are always covered. The separate Raw on request switches are gone: what your assistant can read follows the levels you turned on.</li>
+<li><strong>Show in Finder.</strong> Settings and What Zeus Kept show your assistant's folder and open any item or day in Finder. Delete Everything asks before deleting your assistant's own notes.</li>
+<li><strong>A new README and a full manual.</strong> The README leads with the learning story. New guides cover setup, assistants, the conversation, characters and themes, Learn from me, privacy, every setting, every tool your assistant can use, and troubleshooting.</li>
+<li><strong>Fixes.</strong> Restarting the assistant Zeus runs no longer takes extra recovery steps, so it's about twice as fast. Time-based rules from assistants that check tool schemas are no longer rejected. Rules, redaction and typing-consent wording now match what Zeus does.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.2.6/Zeus-0.2.6.zip" type="application/octet-stream" sparkle:edSignature="OZpiEBx0DRarOOk168LJhxnDRn3/JPVtyxPYeHSwICxbYyHoHjvDbBWCgoBPEyPf+dIxVEX9/z7sjxF6Cr9bCQ==" length="12545556"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.2.5</title>
       <pubDate>Thu, 15 Oct 2026 22:25:50 GMT</pubDate>
       <sparkle:version>18</sparkle:version>
