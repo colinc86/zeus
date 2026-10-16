@@ -74,7 +74,7 @@ actor FrameRedactor: ScreenFrameRedacting {
             // Account hints and money on screenshots need covering even when the prose model is unavailable.
             let sensitive = result != line.0 || Self.hasAccountHint(line.0)
             coveredText.append(sensitive ? "‹redacted›" : result)
-            if sensitive && (coverPictures || Self.mandatoryCover(original: line.0, redacted: result)) {
+            if (sensitive && coverPictures) || Self.mandatoryCover(original: line.0, redacted: result) {
                 if result == line.0 { report.counts[.finance, default: 0] += 1 }
                 boxes.append(Self.box(line.1, kind: .text, paddingX: 5 / width, paddingY: 5 / height))
             }

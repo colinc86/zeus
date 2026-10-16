@@ -58,7 +58,7 @@ final class LearningFolderDisk: @unchecked Sendable {
             let values = try? current.resourceValues(forKeys: [.isSymbolicLinkKey, .isDirectoryKey])
             guard values?.isSymbolicLink != true else { throw LearningFolderError.unsafePath }
             if i < pieces.count - 1 {
-                if create { try FileManager.default.createDirectory(at: current, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700]) }
+                if create && !FileManager.default.fileExists(atPath: current.path) { try FileManager.default.createDirectory(at: current, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700]) }
                 if FileManager.default.fileExists(atPath: current.path) {
                     guard (try current.resourceValues(forKeys: [.isDirectoryKey])).isDirectory == true else { throw LearningFolderError.unsafePath }
                     if create { try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: current.path) }

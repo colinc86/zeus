@@ -33,16 +33,16 @@ import ZeusProtocol
         f.runtime.journalAccessPolicy = { .init(enabledLevels: [.focus, .typed]) }
         let answer = await f.runtime.callTool("zeus_get_journal", arguments: ["raw": true], sessionKey: session)
         #expect(!answer.isError); #expect(answer.text.contains("Stored title ‹name›") && answer.text.contains("Drafting a project update"))
-        #expect(!answer.text.contains("NEVER_")); #expect(answer.structured?["raw"]?["typing"] == "not allowed")
+        #expect(answer.text.contains("NEVER_WORDS")); #expect(!answer.text.contains("NEVER_DESCRIPTION"))
         let receipt = try #require(f.journal.items(matching: .init()).last { $0.payload.value.text == answer.text })
         #expect(receipt.kind == .sentToAssistant); #expect(receipt.payload.value.details["sessionLabel"] == "Claude · Assistant")
         #expect(!receipt.payload.value.details["sessionID", default: ""].contains("fixture"))
         let search = await f.runtime.callTool("zeus_get_journal", arguments: ["query": "NEVER_WORDS"], sessionKey: session)
         #expect(search.structured?["items"] == [])
     }
-    @Test func rawWordsNeedExplicitPolicyAndReadReceiptNotAnAttempt() async throws {
+    @Test func rawWordsFollowEnabledLevelAndReadReceiptNotAnAttempt() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }; try seed(f)
-        f.runtime.journalAccessPolicy = { .init(enabledLevels: [.typed], rawLevels: [.typed]) }
+        f.runtime.journalAccessPolicy = { .init(enabledLevels: [.typed]) }
         let answer = await f.runtime.callTool("zeus_get_journal", arguments: ["raw": true], sessionKey: session, deferResultCommit: true)
         #expect(answer.text.contains("NEVER_WORDS")); #expect(!answer.text.contains("NEVER_DESCRIPTION"))
         #expect(try !f.journal.items(matching: .init()).contains { $0.kind == .sentToAssistant })

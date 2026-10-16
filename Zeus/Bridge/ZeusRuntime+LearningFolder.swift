@@ -1,6 +1,9 @@
 import Foundation
 
 extension ZeusRuntime {
+    static func withLearningFiles(_ text: String, paths: [String]) -> String {
+        paths.isEmpty ? text : text + "\n\nFiles: " + paths.joined(separator: ", ")
+    }
     /// Use the applied managed identity while a requested folder switch is deferred.
     func syncLearningFolder() {
         guard let learningFolder else { return }
