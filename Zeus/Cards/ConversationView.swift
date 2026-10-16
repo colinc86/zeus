@@ -543,6 +543,7 @@ struct ConversationView: View {
                 guard let ratings else { return }
                 let focusedID = focusedControl?.entryID.replacingOccurrences(of: "card:", with: "")
                 let target = focusedID.flatMap { store.card(id: $0) }.flatMap { ratings.canRate($0) ? $0 : nil }
+                    ?? ratings.keyboardCardID.flatMap { store.card(id: $0) }
                     ?? ratings.focusedRatingCardID.flatMap { ratings.drafts[$0] != nil ? store.card(id: $0) : nil }
                     ?? store.cards.last(where: { ratings.canRate($0) })
                 guard let target else { return }

@@ -22,7 +22,7 @@ import ZeusProtocol
     private func checkpoint(_ id: String) throws -> MessageRatingUndo {
         if fail { throw Failure.unavailable }
         let token = MessageRatingUndo(id: UUID()); undo[token.id] = (ratings, mutedDecisions)
-        tokens[id] = token; return token
+        tokens.removeAll(); tokens[id] = token; return token
     }
     func rate(cardID: String, rating: MessageRatingValue, scope: MessageRatingScope, label: String) async throws -> MessageRatingUndo {
         let id = UUID().uuidString, token = try checkpoint(id)
@@ -94,6 +94,32 @@ import ZeusProtocol
         #expect(fake.ratings.first?.scope == .kind)
         #expect(model.confirmation(for: card)?.text == "Only when I need to know: On-call reminders")
     }
+    @Test func scopeChangesReplaceOwnChoiceAndUndoRestoresPreviousChoice() async throws {
+        let (root, cards, fake, model) = fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let card = Self.card(); cards.add(card); model.begin(card); await model.rate(.up, card: card)
+        model.begin(card); model.setScope(.justThisOne, id: card.id); await model.rate(.down, card: card)
+        #expect(fake.ratings.count == 1 && fake.ratings.first?.scope == .justThisOne)
+        #expect(model.confirmation(for: card)?.text == "Not this one")
+        await model.undo(card.id)
+        #expect(fake.ratings.first?.scope == .kind && fake.ratings.first?.rating == .up)
+        #expect(model.confirmation(for: card)?.text == "More like this: On-call reminders")
+        #expect(model.confirmation(for: card)?.receipt == nil, "No stale Undo after its receipt was consumed")
+        var another = Self.card("other"); another.about = "Meeting prep"; cards.add(another)
+        model.begin(another); await model.rate(.neutral, card: another)
+        #expect(model.confirmation(for: card)?.receipt == nil)
+        #expect(model.confirmation(for: card)?.text == "More like this: On-call reminders")
+        model.cancel(another.id); #expect(model.focusedRatingCardID == nil)
+    }
+    @Test func originalExampleIsNotAMatchAfterRatingAndErrorsStayHonest() async throws {
+        let (root, cards, fake, model) = fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        var card = Self.card(); card.createdAt = .distantPast; cards.add(card)
+        model.begin(card); await model.rate(.up, card: card)
+        let rating = try #require(fake.ratings.first)
+        #expect(model.lastMatched(rating) == nil)
+        fake.ratingsError = "Preferences unavailable"; #expect(model.error == "Preferences unavailable")
+        fake.fail = true; await model.remove(rating)
+        #expect(model.currentRating(card) != nil && model.errors[rating.id] != nil)
+    }
     @Test func failedWriteKeepsEditorAndDoesNotClaimSuccess() async {
         let (root, cards, fake, model) = fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let card = Self.card(); cards.add(card); model.begin(card); fake.fail = true
@@ -122,6 +148,39 @@ import ZeusProtocol
         #expect(model.confirmation(for: card)?.text == "Stopped: Pager alerts")
         await model.remove(try #require(fake.ratings.first)); #expect(model.confirmation(for: card) == nil)
         await model.undo(rating.id); #expect(fake.ratings.first?.kindLabel == "Pager alerts")
+    }
+    @Test func peekAnswersAndEveryCommittedSeenEdgeNotifyOnce() throws {
+        let (root, cards, fake, _) = fixture()
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: root.path); try? FileManager.default.removeItem(at: root) }
+        var question = Self.card("peek-answer"); question.kind = .question; question.options = [.init(id: "yes", label: "Yes")]
+        cards.add(question)
+        cards.onRatingRead = { id in
+            #expect(CardStore(fileURL: root.appendingPathComponent("cards.json")).seenIDs.contains(id), "Read edge follows durable commit")
+            fake.ratingCardOpened(id: id)
+        }
+        let peek = PeekModel(store: cards)
+        #expect(peek.receive(question, suppression: .init(), reduceMotion: true, typewriter: false))
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: root.path)
+        #expect(!peek.answer(optionID: "yes")); #expect(fake.opened.isEmpty)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: root.path)
+        #expect(peek.answer(optionID: "yes")); cards.markSeen(id: question.id)
+        #expect(fake.opened == [question.id])
+        cards.add(Self.card("batch")); cards.markAllSeen(); cards.markAllSeen()
+        #expect(fake.opened == [question.id, "batch"])
+        cards.setConversationOpen(true); cards.add(Self.card("automatic"))
+        #expect(fake.opened == [question.id, "batch", "automatic"])
+        cards.setConversationOpen(false)
+        question.id = "skip"; cards.add(question); #expect(cards.skip(id: question.id))
+        #expect(fake.opened == ["peek-answer", "batch", "automatic", "skip"])
+    }
+    @Test func kindMatchingUsesCorePunctuationDiacriticsAndWidthNormalization() async throws {
+        let (root, cards, fake, model) = fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let source = Self.card(); cards.add(source); model.begin(source); await model.rate(.up, card: source)
+        let rating = try #require(fake.ratings.first)
+        var variant = Self.card("variant"); variant.about = "ＯＮ Cáll reminders"; variant.createdAt = rating.createdAt.addingTimeInterval(1)
+        cards.add(variant)
+        #expect(model.currentRating(variant)?.id == rating.id)
+        #expect(model.lastMatched(rating) == variant.createdAt)
     }
     @Test func dailySummaryAndSuggestionAreQuietDurableNavigation() throws {
         let (root, cards, fake, model) = fixture(); defer { try? FileManager.default.removeItem(at: root) }

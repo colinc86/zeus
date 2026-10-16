@@ -52,7 +52,8 @@ private struct MessageRatingSettingsRow: View {
             if editing {
                 HStack {
                     ZeusTextField("Kind label", text: $label).focused($labelFocused).accessibilityLabel("Kind label")
-                        .onSubmit { save() }
+                        .onSubmit { save() }.onAppear { labelFocused = true }
+                        .onExitCommand { editing = false }
                     KeyboardButton("Save", action: save).accessibilityLabel("Save kind label")
                     KeyboardButton("Cancel") { editing = false }.accessibilityLabel("Cancel editing kind label")
                 }

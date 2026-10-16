@@ -22,6 +22,8 @@ struct MessageRatingButton: View {
             guard press.modifiers.intersection([.command, .option, .control]).isEmpty else { return .ignored }
             if let action { action() } else { model.toggle(card) }; return .handled
         }
+        .onChange(of: focused) { _, value in model.noteKeyboardFocus(cardID: card.id, focused: value) }
+        .onDisappear { model.noteKeyboardFocus(cardID: card.id, focused: false) }
         .help("Rate this kind of message (⌘R)").accessibilityLabel("Rate this kind of message (⌘R)")
         .disabled(model.busy.contains(card.id))
     }
@@ -42,11 +44,13 @@ struct MessageRatingAffordance: View {
     }
 }
 
+enum MessageRatingFocus: Hashable { case choice(MessageRatingValue), edit, scope, remove }
+
 struct MessageRatingChoices: View {
     var selected: MessageRatingValue? = nil
     var focusRequest: UInt64 = 0
     let choose: (MessageRatingValue) -> Void
-    @FocusState private var focused: MessageRatingValue?
+    let focus: FocusState<MessageRatingFocus?>.Binding
     var body: some View {
         ZeusFlowLayout(spacing: 6) {
             ForEach(MessageRatingValue.allCases, id: \.self) { value in
@@ -57,21 +61,16 @@ struct MessageRatingChoices: View {
                         HStack(spacing: 4) {
                             Text(MessageRatingsModel.label(value))
                         }
-                    }.buttonStyle(ZeusButtonStyle(.secondary, size: .small)).focused($focused, equals: value)
+                    }.buttonStyle(ZeusButtonStyle(.secondary, size: .small)).focused(focus, equals: .choice(value))
                         .accessibilityLabel(MessageRatingsModel.label(value))
                         .help(value == .neutral ? "Only when I need to know" : MessageRatingsModel.label(value))
                         .accessibilityHint(value == .neutral ? "Only when I need to know" : "")
-                        .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow]) { press in
-                            let choices = MessageRatingValue.allCases.filter { $0 != selected }
-                            guard let index = choices.firstIndex(of: value) else { return .ignored }
-                            let delta = press.key == .leftArrow || press.key == .upArrow ? -1 : 1
-                            focused = choices[(index + delta + choices.count) % choices.count]; return .handled
-                        }
+
                 }
             }
         }
-        .onAppear { if focusRequest > 0 { focused = MessageRatingValue.allCases.first { $0 != selected } } }
-        .onChange(of: focusRequest) { focused = MessageRatingValue.allCases.first { $0 != selected } }
+        .onAppear { if focusRequest > 0 { focus.wrappedValue = MessageRatingValue.allCases.first { $0 != selected }.map(MessageRatingFocus.choice) } }
+        .onChange(of: focusRequest) { focus.wrappedValue = MessageRatingValue.allCases.first { $0 != selected }.map(MessageRatingFocus.choice) }
     }
 }
 
@@ -79,42 +78,63 @@ struct MessageRatingInline: View {
     let card: Card
     let model: MessageRatingsModel
     @FocusState private var labelFocused: Bool
+    @FocusState private var controlFocused: MessageRatingFocus?
     @Environment(\.zeusPalette) private var palette
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let draft = model.drafts[card.id] {
                 Rectangle().fill(palette.fieldBorder).frame(height: 1).accessibilityHidden(true)
-                MessageRatingChoices(selected: selected(draft), focusRequest: model.focusRequest) { value in Task { await model.rate(value, card: card) } }
+                MessageRatingChoices(selected: selected(draft), focusRequest: model.focusRequest, choose: { value in Task { await model.rate(value, card: card) } }, focus: $controlFocused)
                 if draft.editingLabel {
                     ZeusTextField("Kind of message", text: Binding(get: { model.drafts[card.id]?.label ?? "" }, set: { model.setLabel($0, id: card.id) }))
-                        .focused($labelFocused).onSubmit { model.finishLabel(card.id) }
-                        .accessibilityLabel("Kind of message").onAppear { labelFocused = true }
+                        .focused($labelFocused).onSubmit { finishEditing(cancel: false) }
+                        .onExitCommand { finishEditing(cancel: true) }
+                        .accessibilityLabel("Kind of message").onAppear {
+                            controlFocused = nil
+                            Task { @MainActor in await Task.yield(); labelFocused = true }
+                        }
                 } else {
                     ZeusFlowLayout(spacing: 4) {
                         Text(draft.scope == .kind ? "For all “\(draft.label)”" : "For this message only").foregroundStyle(palette.secondaryText)
                         if draft.scope == .kind {
                             separator
-                            link("Edit", label: "Edit the kind label") { model.editLabel(card.id) }
+                            link("Edit", target: .edit, label: "Edit the kind label") { controlFocused = nil; model.editLabel(card.id) }
                             separator
-                            link("Just this one", label: "Rate this message only") { model.setScope(.justThisOne, id: card.id) }
-                        } else { separator; link("All of this kind") { model.setScope(.kind, id: card.id) } }
+                            link("Just this one", target: .scope, label: "Rate this message only") { model.setScope(.justThisOne, id: card.id) }
+                        } else { separator; link("All of this kind", target: .scope) { model.setScope(.kind, id: card.id) } }
                         if let current = model.currentRating(card) {
                             separator
-                            link("Remove rating") { Task { await model.remove(current); model.cancel(card.id) } }
+                            link("Remove rating", target: .remove) { Task { await model.remove(current); if model.errors[current.id] == nil { model.cancel(card.id) } } }
                         }
                     }.zeusFont(.caption)
                 }
             } else if let confirmation = model.confirmation(for: card) {
                 RatingConfirmationLine(text: confirmation.text, undo: undoAction(confirmation))
             }
-            if let error = model.errors[card.id] { Text(error).zeusFont(.caption).foregroundStyle(palette.destructive) }
+            if let error = model.errors[card.id] ?? model.currentRating(card).flatMap({ model.errors[$0.id] }) { Text(error).zeusFont(.caption).foregroundStyle(palette.destructive) }
         }
         .disabled(model.busy.contains(card.id))
+        .onChange(of: controlFocused) { _, value in model.noteKeyboardFocus(cardID: card.id, focused: value != nil) }
+        .onChange(of: labelFocused) { _, value in model.noteKeyboardFocus(cardID: card.id, focused: value) }
+        .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow]) { press in
+            guard let draft = model.drafts[card.id], !draft.editingLabel, let focused = controlFocused else { return .ignored }
+            let controls = MessageRatingValue.allCases.filter { $0 != selected(draft) }.map(MessageRatingFocus.choice)
+                + (draft.scope == .kind ? [.edit, .scope] : [.scope])
+                + (model.currentRating(card) == nil ? [] : [.remove])
+            guard let index = controls.firstIndex(of: focused) else { return .ignored }
+            let delta = press.key == .leftArrow || press.key == .upArrow ? -1 : 1
+            controlFocused = controls[(index + delta + controls.count) % controls.count]; return .handled
+        }
         .onKeyPress(.escape) {
             guard let draft = model.drafts[card.id] else { return .ignored }
-            if draft.editingLabel { model.finishLabel(card.id, cancel: true) } else { model.cancel(card.id) }
+            if draft.editingLabel { finishEditing(cancel: true) } else { model.cancel(card.id) }
             return .handled
         }
+    }
+    private func finishEditing(cancel: Bool) {
+        model.finishLabel(card.id, cancel: cancel)
+        labelFocused = false
+        Task { @MainActor in await Task.yield(); controlFocused = .edit }
     }
     private var separator: some View { Text("·").foregroundStyle(palette.secondaryText).accessibilityHidden(true) }
     private func selected(_ draft: MessageRatingsModel.Draft) -> MessageRatingValue? {
@@ -125,9 +145,9 @@ struct MessageRatingInline: View {
         guard confirmation.receipt != nil else { return nil }
         return { Task { await model.undo(card.id) } }
     }
-    private func link(_ text: String, label: String? = nil, action: @escaping @MainActor @Sendable () -> Void) -> some View {
+    private func link(_ text: String, target: MessageRatingFocus, label: String? = nil, action: @escaping @MainActor @Sendable () -> Void) -> some View {
         KeyboardButton(text, action: action).buttonStyle(.plain).foregroundStyle(palette.title)
-            .accessibilityLabel(label ?? text).frame(minHeight: 22)
+            .accessibilityLabel(label ?? text).frame(minHeight: 22).focused($controlFocused, equals: target)
     }
 }
 

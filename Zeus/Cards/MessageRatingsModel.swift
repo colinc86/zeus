@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import ZeusProtocol
 
-/// Ephemeral presentation only. The runtime owns classification, persistence, matching and guarded Undo.
+/// App presentation only. The runtime owns classification, persistence, matching and guarded Undo.
 @MainActor @Observable
 final class MessageRatingsModel {
     struct Draft: Equatable {
@@ -92,6 +92,11 @@ final class MessageRatingsModel {
     private(set) var hasOpenedRow: Bool
     private(set) var focusRequest: UInt64 = 0
     private(set) var focusedRatingCardID: String?
+    private(set) var keyboardCardID: String?
+    func noteKeyboardFocus(cardID: String, focused: Bool) {
+        if focused { keyboardCardID = cardID }
+        else if keyboardCardID == cardID { keyboardCardID = nil }
+    }
     @ObservationIgnored private let defaults: UserDefaults?
     @ObservationIgnored var dailyHour: () -> Int = { 21 }
     @ObservationIgnored private let source: () -> (any MessageRatingsProviding)?
@@ -121,9 +126,9 @@ final class MessageRatingsModel {
     func isCollapsed(_ card: Card) -> Bool { isHeld(card) && !expandedMuted.contains(card.id) }
     var newestUnpromptedID: String? { cards.cards.last(where: Self.eligible)?.id }
     func currentRating(_ card: Card) -> MessageRating? {
-        ratings.first { $0.exampleCardID == card.id }
+        ratings.last { $0.exampleCardID == card.id }
             ?? ratings.first { $0.id == decision(card)?.ratingID }
-            ?? ratings.first { $0.scope == .kind && $0.kindLabel.localizedCaseInsensitiveCompare(card.about ?? "") == .orderedSame }
+            ?? ratings.first { $0.scope == .kind && MessageRatingStore.kindKey($0.kindLabel) == MessageRatingStore.kindKey(card.about ?? "") }
     }
     static func defaultLabel(_ card: Card) -> String {
         if let label = card.about, !label.isEmpty { return label }
@@ -175,7 +180,7 @@ final class MessageRatingsModel {
         guard !label.isEmpty else { errors[card.id] = "Give this kind a name."; return }
         await perform(card.id) {
             let receipt: MessageRatingUndo
-            if let current = self.currentRating(card), current.scope == draft.scope {
+            if let current = self.currentRating(card), current.scope == draft.scope || current.exampleCardID == card.id {
                 receipt = try await provider.update(id: current.id, rating: value, scope: draft.scope, label: label)
             } else { receipt = try await provider.rate(cardID: card.id, rating: value, scope: draft.scope, label: label) }
             self.confirmations[card.id] = .init(text: Self.confirmation(value, label: label, scope: draft.scope), receipt: receipt)
@@ -215,7 +220,7 @@ final class MessageRatingsModel {
     }
     func lastMatched(_ rating: MessageRating) -> Date? {
         let decisions = provider?.mutedDecisions.values.filter { $0.ratingID == rating.id }.map(\.decidedAt) ?? []
-        let exact = cards.cards.filter { $0.origin == .unprompted && $0.about?.localizedCaseInsensitiveCompare(rating.kindLabel) == .orderedSame }.map(\.createdAt)
+        let exact = cards.cards.filter { $0.origin == .unprompted && MessageRatingStore.kindKey($0.about ?? "") == MessageRatingStore.kindKey(rating.kindLabel) }.map(\.createdAt)
         return (decisions + exact).filter { $0 >= rating.createdAt }.max()
     }
     private func perform(_ id: String, operation: () async throws -> Void) async {

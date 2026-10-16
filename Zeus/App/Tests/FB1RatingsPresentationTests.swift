@@ -136,12 +136,19 @@ import ZeusProtocol
             let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: 2,
                 windowNumber: window.windowNumber, context: nil, characters: chars, charactersIgnoringModifiers: chars, isARepeat: false, keyCode: code))
             if modifiers.contains(.command) { #expect(window.performKeyEquivalent(with: event)) }
-            else { window.sendEvent(event) }
+            else { NSApp.sendEvent(event) }
         }
         try key("r", code: 15, modifiers: .command); try await settle()
         #expect(rating.drafts.isEmpty, "Command-R again closes the open row")
         try key("r", code: 15, modifiers: .command); try await settle()
         #expect(rating.drafts[card.id] != nil)
+        for _ in 0..<3 { try key("\u{f703}", code: 124); try await settle() }
+        try key("\r", code: 36); try await settle()
+        #expect(rating.drafts[card.id]?.editingLabel == true, "Arrows move from the three choices to Edit; Return activates it")
+        #expect(window.firstResponder is NSTextView, "Edit transfers native focus into the text editor")
+        rating.setLabel("Discard this edit", id: card.id)
+        try key("\u{1b}", code: 53); try await settle()
+        #expect(rating.drafts[card.id]?.label == "On-call reminders" && rating.drafts[card.id]?.editingLabel == false)
         try key("\u{1b}", code: 53); try await settle()
         #expect(rating.drafts.isEmpty && panel.isVisible, "Escape closes only the rating row")
         try key("r", code: 15, modifiers: .command); try await settle()

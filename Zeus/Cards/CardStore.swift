@@ -250,6 +250,7 @@ final class CardStore: CardStoring {
         let next = Snapshot(cards: kept, seenIDs: seenIDs.intersection(ids), revealedIDs: revealedIDs.intersection(ids),
                             outgoingStates: outgoingStates.filter { ids.contains($0.key) }, outgoingDeliveryIDs: outgoingDeliveryIDs.filter { ids.contains($0.key) }, notices: [])
         guard save(snapshot: next) else { return false }
+        let newlySeen = next.seenIDs.subtracting(seenIDs)
         cards = next.cards; seenIDs = next.seenIDs; revealedIDs = next.revealedIDs; outgoingStates = next.outgoingStates; outgoingDeliveryIDs = next.outgoingDeliveryIDs; notices = next.notices
         pruneNoticeActions()
         pendingAppChanges.removeAll()
@@ -367,7 +368,6 @@ final class CardStore: CardStoring {
         var next = snapshot
         next.seenIDs.insert(id)
         if commit(next) {
-            onRatingRead?(id)
             if card.status == .open, isPlainMessage(card) { retainHistory(keepingNewest: 500, pendingCardIDs: []) }
         }
     }
@@ -417,10 +417,7 @@ final class CardStore: CardStoring {
         let answered = nextCards[index]
         var nextContexts = contextIntents
         if let context { nextContexts["card:" + id] = context }
-        guard save(snapshot: Snapshot(cards: nextCards, seenIDs: nextSeenIDs, revealedIDs: revealedIDs, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs, notices: notices, contextIntents: nextContexts)) else { return false }
-        contextIntents = nextContexts
-        cards = nextCards
-        seenIDs = nextSeenIDs
+        guard commit(Snapshot(cards: nextCards, seenIDs: nextSeenIDs, revealedIDs: revealedIDs, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs, notices: notices, contextIntents: nextContexts)) else { return false }
         responseHandler?(answered, response)
         return true
     }
@@ -449,9 +446,11 @@ final class CardStore: CardStoring {
     }
     @discardableResult private func commit(_ next: Snapshot) -> Bool {
         guard save(snapshot: next) else { return false }
+        let newlySeen = next.seenIDs.subtracting(seenIDs)
         cards = next.cards; seenIDs = next.seenIDs; revealedIDs = next.revealedIDs; outgoingStates = next.outgoingStates; outgoingDeliveryIDs = next.outgoingDeliveryIDs; notices = next.notices
         if let contexts = next.contextIntents { contextIntents = contexts }
         pruneNoticeActions()
+        for card in next.cards where newlySeen.contains(card.id) && card.kind != .userMessage { onRatingRead?(card.id) }
         return true
     }
 
