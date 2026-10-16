@@ -45,6 +45,11 @@
 | **Private input: Zeus isn't noting typing** | macOS secure input is active. Capture pauses until it clears. |
 | Ask About This attaches nothing | Enable Windows and pages or Screen, grant its permission, and check the caption. Private or unavailable context is omitted; nothing is attached from a disabled level. |
 | The journal/rules cannot be opened | Unlock the Keychain or sign in again. New records wait in memory; quitting before recovery loses unsaved records. |
+| No learning files appear in the assistant folder | Enable a learning level and check **Settings › Privacy › Your assistant's folder**. Managed mode uses the working folder; Connect your own needs an explicit destination. |
+| **Zeus can't write to this folder.** | Check that the selected folder is available and writable. The retained journal is separate. Choose an accessible destination to backfill retained records. |
+| A file deleted in Finder does not return | Intentional: the export does not recreate files you removed. Finder deletion does not erase the internal journal; use What Zeus Kept for that. |
+| Pictures are not covered | Check **Cover pictures and faces**. The setting applies to new captures; turning it on does not modify earlier frames. |
+| An old folder still has records after deletion | Retention and deletion apply to the current destination. A previous folder is left alone when you switch destinations. |
 | No rules have been proposed | Learning needs relevant evidence and a delivered reflection. Evaluable rules require evidence across two days; the assistant may appropriately propose none. |
 | A rule is only **Suggested** or **Waiting for your OK** | Turn it on or approve its shadow result in Rules. An unapproved acting rule is not permission to act. |
 | The assistant cannot propose a time trigger | The current advertised MCP schema has invalid fractional minute bounds. Runtime minutes are 0–1439, but a schema-validating client may reject them. See [the tool limitation](MCP.md#zeus_propose_rules). |
@@ -77,7 +82,7 @@ No. The managed tmux agent keeps running. Use **Stop** if you want it to stop.
 No. It clears eligible Zeus history, retaining pending items. Starting a new assistant conversation and deleting learning records are separate actions. Agent files/provider history have their own lifecycle.
 
 **Does Delete Everything delete rules?**  
-It deletes the learning journal, summaries and Sent ledger, and cancels affected pending learning deliveries. Manage rules separately in **Settings › Rules**. It cannot retract data already received by the assistant.
+It deletes the learning journal, summaries and Sent ledger, empties `Zeus/` in the current assistant folder, and cancels affected pending learning deliveries. **Also delete your assistant's notes** can additionally empty `Notes/`. Manage rules separately in **Settings › Rules**. It cannot retract data already received by the assistant.
 
 **Can Undo reverse every action?**  
 Appearance Undo is local to Zeus. A rule's Undo sends a reversal instruction to the assistant; whether the external action can actually be reversed depends on that action.

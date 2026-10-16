@@ -36,7 +36,7 @@ Your assistant can change Zeus's appearance and install a Zeus update when reque
 
 ### Learn from me
 
-Learning is optional and starts off. [Learn from me](LEARNING.md) explains the four levels, their permissions, retention and the journal.
+Learning is optional and starts off. Enabled levels write a readable `Zeus/` record inside the managed assistant folder. With **Connect your own**, choose a destination under **Settings › Privacy › Your assistant's folder**. [Learn from me](LEARNING.md) explains the four levels, permissions, folder, retention and journal.
 
 #### The permissions Zeus asks for
 

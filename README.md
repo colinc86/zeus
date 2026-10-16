@@ -28,9 +28,9 @@ Your assistant works in a terminal you're not watching. Zeus gives it a face, a 
 
 Less explaining yourself. Better timing. Help with the thing you were just doing.
 
-**Learn from me** gives your assistant context: apps and timing, windows and pages, occasional pictures of the front window, or topics from your typing. All four levels start off. You choose what to share, and Zeus removes private details on your Mac before keeping a record.
+**Learn from me** gives your assistant context: apps and timing, windows and pages, occasional pictures of the front window, or topics from your typing. All four levels start off. You choose what to share, and Zeus applies its privacy safeguards on your Mac before keeping a record.
 
-Morning summaries and evening reflections help your assistant notice patterns. **Rules** turn useful patterns into habits: hold routine messages after work, or act for you after you've approved the rule. Purchases always ask.
+A readable record lives in your assistant’s folder, so it can pick up the thread across days and keep its own notes about what helps you. Morning summaries and evening reflections help it notice patterns. **Rules** turn useful patterns into habits: hold routine messages after work, or act for you after you've approved the rule. Purchases always ask.
 
 Lost your place? Ask about your day, or use **Ask About This** to bring the window in front into the conversation. **What Zeus Kept** lets you inspect the records, see what was sent, and delete what you don't want kept.
 
@@ -109,7 +109,7 @@ Characters and themes are editable JSON files. Import one, make your own, or ask
 2. **Zeus brings it to you.** A bundled MCP server gives the assistant tools for messages, questions, finished work and status.
 3. **Your answer goes back.** Zeus saves replies and retries delivery when needed. The assistant acknowledges them and ignores repeats.
 
-Zeus's learning and redaction run locally, using Apple's on-device frameworks. Context sent to your assistant follows that assistant's model-provider setup, just like your messages. Zeus never edits your saved agent configuration or credentials.
+Zeus's learning and redaction run locally, using Apple's on-device frameworks. Your assistant reads its folder and what Zeus sends it; where that goes depends on the assistant you chose. Zeus never edits your saved agent configuration or credentials.
 
 [Privacy and security](docs/PRIVACY.md) · [MCP tool reference](docs/MCP.md)
 

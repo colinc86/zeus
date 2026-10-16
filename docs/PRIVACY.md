@@ -2,7 +2,7 @@
 
 [Documentation](README.md) · [Learn from me](LEARNING.md) · [Assistant permissions](ASSISTANT.md#permission-modes)
 
-Zeus processes observations and redaction on your Mac. Learning starts off, with a separate opt-in for each level. Context delivered to your assistant follows that assistant's model-provider configuration; local collection does not mean the assistant's processing is local.
+Zeus processes observations and redaction on your Mac. Learning starts off, with a separate opt-in for each level. The Privacy pane explains: “Zeus never sends your data anywhere itself. Your assistant reads its folder and what Zeus sends it. Where that goes depends on the assistant you chose.” Local collection does not mean the assistant's processing is local.
 
 ## What is collected
 
@@ -22,15 +22,16 @@ The text pipeline runs before a learning record is stored:
 
 Removed spans become typed placeholders such as `‹name›`, `‹email›` or `‹secret›`. The viewer and the assistant receive the retained form. If the model is unavailable or does not complete, the always-available pattern/detector/name pass remains; Typing cannot be enabled without model availability. No redaction request uses Private Cloud Compute or an external model service.
 
-For pictures, Vision reads text and detects faces and likely picture regions. Zeus covers detected private text and pixellates detected picture regions and faces before encoding the stored frame. Password dialogs and other guarded contexts are dropped. Descriptions are generated from the filtered text and metadata. Detection is not a guarantee that every private detail or picture is found; **What Zeus Kept** shows the actual retained result.
+For pictures, Vision reads text and detects faces and likely picture regions. With **Cover pictures and faces** on (the default), Zeus covers detected private text and pixellates detected picture regions and faces before encoding the stored frame. Turning it off requires confirmation and leaves pictures, faces and ordinary text uncovered in new frames. Detected passwords, keys, card/account numbers and identity numbers are still covered. Existing frames are unchanged. Password dialogs and other guarded contexts are dropped. Descriptions are generated from the filtered text and metadata. Detection is not a guarantee that every private detail or picture is found; **What Zeus Kept** shows the actual retained result.
 
 ## Storage on the Mac
 
-Zeus's application data is under `~/Library/Application Support/Zeus/`.
+Zeus's internal application data is under `~/Library/Application Support/Zeus/`.
 
 | Data | Storage and control |
 |---|---|
 | Learning journal and stored frames | Encrypted on disk with a key held in the Mac's Keychain. Inspect and delete through What Zeus Kept. |
+| Assistant-folder record | Readable Markdown and JPEG files under `Zeus/` in the chosen folder; not encrypted by Zeus. Written with owner-only permissions. The folder's sync/backup behavior applies. |
 | Rules and outcomes | Persisted in the encrypted rules store; manage rules in Settings › Rules. |
 | Conversation cards and delivery queue | Local JSON files, including messages and attachments. These are separate from the encrypted learning journal. Clear read/completed conversation history in General. |
 | User characters and themes | Editable JSON in `Characters/` and `Themes/`. |
@@ -39,11 +40,15 @@ Zeus's application data is under `~/Library/Application Support/Zeus/`.
 
 An unavailable Keychain leaves new journal/rules writes queued in memory. The Privacy pane reports this; they are saved when access returns. Unsaved records are lost if Zeus quits first.
 
-Exports are files you choose to save. Removing journal records does not remove an earlier export or retract a copy already delivered to an assistant.
+Retention and deletion update the active assistant-folder record. Changing folders leaves the earlier copy alone. Finder deletion prevents that exported file from being recreated, but does not delete its journal source. **Delete Everything…** empties the current `Zeus/`; its unchecked **Also delete your assistant's notes** option additionally empties `Notes/`. Other assistant working files are unaffected.
+
+Viewer exports and copies in previous destinations are separate files. Removing journal records cannot remove those copies or retract material already received by an assistant.
 
 ## What the assistant can read
 
-By default, summaries and reflections carry redacted descriptions and topics. The journal tool returns permitted activity descriptions, titles, screen descriptions and typing topics. Covered pictures and retained redacted words additionally require their level's **Let my assistant see…** switch and a request for raw access. Here, “raw” means the stored form, never the original pre-redaction observation.
+By default, summaries and reflections carry redacted descriptions and topics. The journal tool returns permitted activity descriptions, titles, screen descriptions and typing topics. Its `raw: true` option includes retained pictures or words from enabled levels. There are no separate picture/word-access switches. Here, “raw” means the stored form after capture safeguards and the chosen picture-covering setting.
+
+The assistant can also read the retained record in its folder without making a journal-tool call. This includes pictures and retained words. It may keep its own dated conclusions in `Notes/`, which Zeus does not read or update.
 
 **Sent to your assistant** records consumed learning/context deliveries and exact journal answers. A queued attempt appears separately under **Waiting**. It is a record of delivery, not an audit of the assistant's model-provider traffic or its independent file reads.
 

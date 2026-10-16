@@ -10,7 +10,7 @@ Start with [Setting up Zeus](SETUP.md). Learning is optional; all four observati
 | [Your assistant](ASSISTANT.md) | Managed sessions, permission modes, tmux, routing, restarts and instruction updates |
 | [The conversation](CONVERSATION.md) | Messages, questions, cards, attachments, peeks, status and keyboard shortcuts |
 | [Characters and themes](CUSTOMIZATION.md) | Appearance, fading, importing and creating JSON characters and themes |
-| [Learn from me](LEARNING.md) | Four levels, permissions, retention, summaries, journal, rules and Ask About This |
+| [Learn from me](LEARNING.md) | Four levels, assistant folder, permissions, retention, summaries, journal, rules and Ask About This |
 | [Privacy and security](PRIVACY.md) | Local processing, redaction, storage, assistant access and safety boundaries |
 | [Settings reference](SETTINGS.md) | Every pane, available controls and initial defaults |
 | [MCP tool reference](MCP.md) | All 26 `zeus_*` tools, arguments, results and delivery conventions |

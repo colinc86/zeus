@@ -10,7 +10,7 @@ Learn from me keeps a local record that your assistant can use for context, timi
 |---|---|---|
 | **Apps and timing** | App use, launches/quits, idle time, lock/sleep/wake and display count. | 90 days; summaries one year. |
 | **Windows and pages** | Front-window titles, document references and supported browser addresses. | 90 days. |
-| **Screen** | Occasional covered pictures of the front window and descriptions. | Pictures 7 days; descriptions 90 days. |
+| **Screen** | Occasional pictures of the front window and descriptions; picture covering starts on. | Pictures 7 days; descriptions 90 days. |
 | **Typing** | Topics from typing in chosen apps, plus redacted words if retained. | Topics 30 days; words 24 hours. |
 
 Higher levels do not require turning on all lower levels. They still need their own consent, app scope and macOS permissions.
@@ -65,9 +65,11 @@ Capture opportunities are an app or document change after ten seconds of dwell, 
 
 Capture stops while a camera is in use, during detected presentation or display mirroring, with secure input active, on the lock screen, in excluded apps, and for private or unknown browser windows, subject to the Safari exception. Password dialogs and known sensitive banking/Keychain contexts are also rejected. The caption explains a current pause.
 
-Before saving, Zeus reads the frame with Vision, covers detected private text with solid boxes, and pixellates detected picture regions and faces. An on-device description summarizes the redacted text and window metadata. If Apple Intelligence is unavailable, descriptions use a simpler local fallback. Low Power Mode or a low battery can defer descriptions.
+**Cover pictures and faces** starts on. Before saving, Zeus reads the frame with Vision, covers detected private text with solid boxes, and pixellates detected picture regions and faces. An on-device description summarizes the redacted text and window metadata. If Apple Intelligence is unavailable, descriptions use a simpler local fallback. Low Power Mode or a low battery can defer descriptions.
 
-Pictures are retained for seven days. **Keep descriptions for** offers 7, 30 or 90 days (default 90). The separate **Let my assistant see the pictures when it asks** switch starts off; enabling it asks for confirmation.
+Turning **Cover pictures and faces** off opens **Keep pictures uncovered?**, with **Keep Covering** and **Turn Off**. After confirmation, new frames keep pictures, faces and ordinary text uncovered. Detected passwords, keys, card/account numbers and identity numbers are still covered. Capture exclusions still apply, including the Safari exception above. Text descriptions still use the full redaction pipeline. Previously stored frames do not change when you toggle the switch.
+
+Pictures are retained for seven days. **Keep descriptions for** offers 7, 30 or 90 days (default 90). Retained pictures are available in the assistant folder and, on request, through the journal tool while Screen is enabled. There is no separate picture-access switch.
 
 ## Typing
 
@@ -79,7 +81,34 @@ When macOS secure input is active, typing capture stops and an in-progress run i
 
 **Keep topics** offers 7, 30 or 90 days (default 30). **Keep the words** offers **Don't keep**, **24 hours** (default) or **7 days**. Shortening retention deletes older content immediately. Words cannot outlive their topic. Very short runs keep only a topic, and a run consisting entirely of a secret pattern is dropped.
 
-**Let my assistant see the words when it asks** starts off and requires confirmation to enable. Even with that switch on, only retained, redacted words are available.
+The assistant folder contains the retained redacted words. The journal tool can also return them on request while Typing is enabled. There is no separate word-access switch; **Keep the words** determines whether words remain available.
+
+## Your assistant's folder
+
+Zeus writes a readable copy of retained learning into `Zeus/` inside the assistant folder. Only enabled levels contribute, after their privacy safeguards. This record accumulates independently of delivery: a disconnected assistant does not stop it growing.
+
+- With **Zeus runs it**, the destination is the working folder selected in Assistant settings.
+- With **Connect your own**, open **Settings › Privacy › Your assistant's folder**, then **Choose…**. No destination is selected by default. **Stop keeping a folder** stops future writes and leaves the existing folder alone.
+- **Show in Finder** opens the record. The path and any write error appear in Privacy. Where the folder lives is your choice; if it syncs, the records sync with it.
+
+Choosing a destination backfills retained history for enabled levels. Changing destinations backfills the new one and leaves the old one alone. The old copy no longer follows retention or deletion in the current destination.
+
+| Path inside the assistant folder | Contents |
+|---|---|
+| `Zeus/README.md` | The layout and ownership rules. |
+| `Zeus/days/YYYY-MM-DD/activity.md` | Activity timeline; private apps remain unnamed. |
+| `Zeus/days/YYYY-MM-DD/focus.md` | Redacted window/document titles and addresses. |
+| `Zeus/days/YYYY-MM-DD/screen/` | Retained JPEG pictures and Markdown descriptions, named with time, app and a distinguishing suffix. |
+| `Zeus/days/YYYY-MM-DD/typing.md` | Topics and redacted words while retained. |
+| `Zeus/days/YYYY-MM-DD/summary.md`, `moments.md` | Summaries and notes, including items still waiting for delivery. |
+| `Zeus/days/YYYY-MM-DD/sent.md`, `outcomes.md` | Stored delivery receipts and rule outcomes when present. |
+| `Zeus/reflections/YYYY-MM-DD.md` | Reflection text. |
+| `Zeus/rules.md` | Current rules, status, confidence and author. |
+| `Notes/about-you.md`, `Notes/patterns.md` | Dated conclusions the assistant may write itself; Zeus does not write or read these files. |
+
+These are ordinary readable files, separate from the encrypted internal journal. Files are written atomically with owner-only permissions. Keep your own material outside `Zeus/`: Zeus updates its records, and edits there can be overwritten. A file you remove in Finder stays removed from this export; that does not delete the internal journal record. Delete through **What Zeus Kept** to remove the retained source as well.
+
+The version 2 template tells the assistant to read relevant records when useful, learn repeated tasks and preferences across days, revise its own notes, and propose rules supported by evidence. It must not repeat private observations unprompted or put them into material you did not ask it to send. Reading the folder does not itself authorize an action, and purchases still ask every time.
 
 ## What your assistant receives
 
@@ -90,13 +119,13 @@ A morning summary describes the previous day. With Apps and timing enabled, it i
 - **A later start than usual**
 - **Day winding down (no input for 20 min after 17:00)**
 
-These produce up to four notes a day. Summaries can include context from other enabled levels. They carry descriptions and topics, not picture bytes or retained typing words.
+These produce up to four notes a day. Summaries can include context from other enabled levels. The deliveries carry descriptions and topics, not picture bytes or retained typing words. Those retained details are available separately in the folder.
 
 At most once a day, Zeus prepares a reflection for the assistant: normally after ten minutes of idle time after 18:00, with a catch-up path for an earlier day. It includes redacted context, rule outcomes and evidence IDs. The assistant can use it to propose rules. A reflection is context, not a request to take an external action.
 
-Summaries, notes and reflections use durable delivery and acknowledgment. A conversation line such as **Daily summary ready for your assistant** becomes **Sent your daily summary** after acknowledgment or tool-result consumption. **View** shows the exact text. Prepared but unreceived items appear under **Waiting** in the Sent view, with reasons such as a disconnected assistant, busy session or unsent Terminal draft. A hold lasting ten minutes gets an explanatory notice.
+Summaries, notes and reflections end with a `Files:` line naming relevant available paths when an assistant-folder copy exists. The exact sent text, including those paths, appears in the Sent ledger. They use durable delivery and acknowledgment. A conversation line such as **Daily summary ready for your assistant** becomes **Sent your daily summary** after acknowledgment or tool-result consumption. **View** shows the exact text. Prepared but unreceived items appear under **Waiting** in the Sent view, with reasons such as a disconnected assistant, busy session or unsent Terminal draft. A hold lasting ten minutes gets an explanatory notice.
 
-When you ask about your day, the assistant can query enabled journal levels using `zeus_get_journal`. It receives app activity descriptions, window titles, screen descriptions and typing topics. A request covers at most seven days and 50 records, with a limit of 20 calls an hour. Pictures or retained words additionally require that level's assistant-access switch. Pictures are already covered; words are already redacted.
+When you ask about your day, the assistant can query enabled journal levels using `zeus_get_journal`. It receives app activity descriptions, window titles, screen descriptions and typing topics. A request covers at most seven days and 50 records, with a limit of 20 calls an hour. With `raw: true`, it can also receive retained pictures or words from enabled levels. Pictures reflect the covering setting used when captured; words are already redacted. “Raw” means the stored form, not a copy from before safeguards.
 
 Each successful journal answer is recorded in **Sent to your assistant**, with a **Looked at your journal** notice in the conversation. This records the result delivered to the assistant, not proof of what its model understood. Your assistant's model provider can receive that context like any other message.
 
@@ -111,7 +140,7 @@ The conversation opens with context chips from the front window when the enabled
 | Window | Front-window title/document context from Windows and pages. |
 | Selection | Selected text available through Accessibility. |
 | Page | A permitted browser address. |
-| Picture | A covered front-window capture from Screen. |
+| Picture | A front-window capture from Screen, using the current picture-covering setting. |
 
 Hover a chip to inspect its content and remove any chip you do not want to send. Nothing is sent until **Send**. Private, unavailable or disabled context is omitted with an explanatory caption. With neither relevant level enabled, the conversation still opens and explains what to turn on. Sent context attachments have their own ledger receipt.
 
@@ -119,7 +148,7 @@ Hover a chip to inspect its content and remove any chip you do not want to send.
 
 Press **Open What Zeus Kept…** in Privacy.
 
-**Kept on this Mac** shows records as stored, including placeholders. Choose a day, filter by level or app, and search. Picture rows open a covered frame with its description and retention date. **Delete Picture** keeps the description; **Delete Both…** asks before removing both. Typing is grouped by app and hour, with topics above any retained words.
+**Kept on this Mac** shows records as stored, including placeholders. Choose a day, filter by level or app, and search. Picture rows open the stored frame with its description and retention date. **Show in Finder** opens its exported file when available. **Delete Picture** keeps the description; **Delete Both…** asks before removing both. Typing is grouped by app and hour, with topics above any retained words.
 
 **Sent to your assistant** shows exact outgoing summaries, notes, reflections, journal answers and context attachments. Expand a row to inspect it. **Waiting** items are separate from received records; they do not count as sent. This ledger covers learning/context delivery, not all ordinary chat or anything the assistant independently reads.
 
@@ -127,11 +156,11 @@ Press **Open What Zeus Kept…** in Privacy.
 
 ## Pause, retention and deletion
 
-**Pause for Today** stops observation until local midnight; **Resume** restarts it sooner. Turning a level off stops its observation and excludes it from journal-tool access. Existing records remain available in the viewer until retention or deletion removes them.
+**Pause for Today** stops observation until local midnight; **Resume** restarts it sooner. Turning a level off stops its observation and excludes it from journal-tool access. Existing records remain available in the viewer until retention or deletion removes them. The folder copy follows enabled levels too: disabling a level removes its exported records on the next refresh; re-enabling can restore still-retained records.
 
-Delete an individual record, typing group, day, or all records from a selected app using the viewer. Individual deletions can offer **Undo**; day/app deletion and **Delete Both…** ask for confirmation. Existing sent receipts are separate evidence and are not removed by deleting only their source record.
+Delete an individual record, typing group, day, or all records from a selected app using the viewer. Individual deletions can offer **Undo**; day/app deletion and **Delete Both…** ask for confirmation. Retention and deletion update matching records in the current assistant folder; Undo restores an exported record when its source is restored. Existing sent receipts are separate evidence and are not removed by deleting only their source record.
 
-**Delete Everything…** removes the learning journal, summaries and Sent ledger after confirmation. It also discards affected pending summaries/reflections; a late acknowledgment cannot recreate a sent receipt. Already-pasted Terminal text is left alone. Rules are managed separately in **Settings › Rules**, and deletion cannot retract material already received by an assistant or its provider.
+**Delete Everything…** removes the learning journal, summaries and Sent ledger, and empties `Zeus/` in the current assistant folder after confirmation. **Also delete your assistant's notes** starts unchecked; select it to empty `Notes/` too. Other working files are left alone. It also discards affected pending summaries/reflections; a late acknowledgment cannot recreate a sent receipt. Already-pasted Terminal text is left alone. Rules are managed separately in **Settings › Rules**, and deletion cannot retract material already received by an assistant or its provider.
 
 If the journal key is unavailable, new records wait in memory. Privacy explains the condition. Unlocking lets Zeus save them; quitting first loses those unsaved records.
 

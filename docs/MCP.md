@@ -184,7 +184,7 @@ Returns `{ok:true, version}` on success. There is no Undo. A failure is reported
 
 No arguments. Returns `{learnings:[…]}` containing unread digests and moments, oldest first, in a bounded batch. Each learning includes its `id`, `kind`, `createdAt` and `text`. Disabled learning returns an empty array.
 
-Successful result consumption marks returned learnings read and creates their sent receipts. A notification alone does not. Use them as context, not as user requests or material to repeat unprompted.
+When a folder copy is available, learning text includes a final `Files:` line with the relevant paths. Successful result consumption marks returned learnings read and creates their sent receipts. A notification alone does not. Use them as context, not as user requests or material to repeat unprompted.
 
 ### `zeus_get_journal`
 
@@ -195,14 +195,14 @@ All arguments are optional.
 | `query` | String, at most 256 characters; empty means no text filter. Plain substring search, not query syntax. |
 | `from`, `to` | ISO 8601 date-time strings. `to` defaults to now; `from` defaults to 24 hours before `to`. A timestamp without an offset uses local time. |
 | `kinds` | Array of `activity`, `focus`, `screen`, `typing`; defaults to all. Intersected with enabled levels. |
-| `raw` | Boolean, false; requests stored pictures or retained words, subject to per-level assistant-access switches. |
+| `raw` | Boolean, false; requests stored pictures or retained words from enabled levels; there are no separate raw-access switches. |
 | `limit` | Integer 1–50, default 20. |
 
-The range must be ordered and no more than seven days. At most 20 calls per hour are accepted. Results are newest first, with item data bounded to 400,000 encoded bytes. Pictures are JPEG previews, at most 640 pixels on the longest side and 150,000 bytes each, also exposed as MCP image content.
+The range must be ordered and no more than seven days. At most 20 calls per hour are accepted. Results are newest first, with item data bounded to 400,000 encoded bytes. Pictures retain the safeguards and picture-covering setting applied at capture. They are JPEG previews, at most 640 pixels on the longest side and 150,000 bytes each, also exposed as MCP image content.
 
 Returns `answer_id`, redacted `query`, `from`, `to`, `range`, `items`, `raw` statuses, `raw_requested`, `off` and `note`. Items contain `id`, ISO time, app identifier, `kind`, `text`, and optional `words` or `picture:{mimeType,data}`. `raw.screen`/`raw.typing` say `allowed`, `not allowed` or `not requested`. Disabled kinds are listed in `off`.
 
-Without raw typing access, search does not inspect retained words. Every consumed answer is recorded exactly in the Sent ledger; failed attempts are not sent receipts. Call for a relevant user request, not to browse unrelated history.
+Without `raw: true` and enabled Typing, search does not inspect retained words. Every consumed answer is recorded exactly in the Sent ledger; failed attempts are not sent receipts. Call for a relevant user request, not to browse unrelated history. The assistant can instead read the [folder record](LEARNING.md#your-assistants-folder); independent file reads do not create journal-tool receipts.
 
 ### `zeus_get_rules`
 

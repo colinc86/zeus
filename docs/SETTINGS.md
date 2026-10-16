@@ -113,15 +113,18 @@ All observation switches start off. See [Learn from me](LEARNING.md) for collect
 | Windows and pages: **Keep for** | 90 days | 7, 30 or 90 days. |
 | Screen: **Up to** | 12 an hour | 4, 12 or 30 pictures an hour. |
 | **Keep descriptions for** | 90 days | 7, 30 or 90 days; pictures always expire after 7 days. |
-| **Let my assistant see the pictures when it asks** | Off | Confirmation before enabling access to stored covered pictures. |
+| **Cover pictures and faces** | On | Covers private text and pixellates pictures/faces before storage. Turning off requires confirmation; detected secrets, card/account and identity numbers remain covered. |
 | **Keep topics** | 30 days | 7, 30 or 90 days. |
 | **Keep the words** | 24 hours | Don't keep, 24 hours or 7 days. |
-| **Let my assistant see the words when it asks** | Off | Confirmation before enabling access to retained redacted words. |
 | **Notes to your assistant** | All four moment types selected | First activity, back from a long break, later start, winding down. Up to four notes per day. |
+| **Your assistant's folder** | Managed working folder; none in Connect your own | Shows the `Zeus/` record's path and write errors. |
+| Folder **Show in Finder** | Action when configured | Opens the readable record. |
+| Folder **Choose…** / **Stop keeping a folder** | Connect your own only | Chooses or stops the export destination; stopping leaves existing files alone. |
+| Folder **Assistant Settings** | Managed mode with no folder | Opens Assistant settings to choose the working folder. |
 | **What Zeus has recorded** | Empty until recording | Today's activity list. |
 | **Open What Zeus Kept…** | Action | Opens stored records and the Sent ledger. |
 | **Pause for Today** / **Resume** | Not paused | Stops observation until midnight, or resumes sooner. |
-| **Delete Everything…** | Action | Confirms deletion of the journal, summaries and Sent ledger, and cancels affected pending deliveries. Rules remain separately managed. |
+| **Delete Everything…** | Action | Confirms deletion of the journal, summaries and Sent ledger, empties the active `Zeus/` folder, and cancels affected pending deliveries. **Also delete your assistant's notes** starts off; selecting it also empties `Notes/`. Rules remain separately managed. |
 
 ## Rules
 

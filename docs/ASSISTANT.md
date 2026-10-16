@@ -19,6 +19,12 @@ The folder is the agent's working directory. **Choose…** selects an existing f
 
 You can edit its `AGENTS.md` and `CLAUDE.md`. The built-in **Instructions** field supplies additional launch instructions; it does not replace those files. A new conversation receives a short first message asking the agent to check in.
 
+With learning enabled, Zeus writes its retained record into `Zeus/` inside this folder. It includes enabled levels after their privacy safeguards, whether or not a delivery reached the assistant. Zeus owns and updates these files. [Folder contents and lifecycle](LEARNING.md#your-assistants-folder) explains the layout, retention and deletion.
+
+The version 2 assistant template teaches the agent to read relevant days and the paths named in deliveries, notice repeated tasks and preferences across days, and propose supported rules. The assistant can keep dated, revisable conclusions in `Notes/about-you.md` and `Notes/patterns.md`, alongside `Zeus/`. Zeus does not write or read those notes. They are the assistant's conclusions, not a second copy of every observation.
+
+With **Connect your own**, choose a separate destination under **Settings › Privacy › Your assistant's folder**. Until you choose one, Zeus keeps its internal journal without writing an assistant-folder copy. The agent must have access to the folder you select.
+
 ## Session controls
 
 | Control | Effect |
