@@ -1,20 +1,20 @@
-# Zeus documentation
+# Zeus user manual
 
 Zeus is a macOS desktop character and conversation window for Claude Code, Codex or OpenCode. It can run one assistant for you or connect to a session you run yourself.
 
-Start with [Setting up Zeus](SETUP.md). Learning is optional; all four observation levels are off by default.
+Start with [Setting up Zeus](SETUP.md), then follow the guides below for everyday use. Learning is optional; all four observation levels start off.
 
 | Guide | Contents |
 |---|---|
-| [Setting up Zeus](SETUP.md) | Requirements, installation, first start, connecting your own session and updates |
-| [Your assistant](ASSISTANT.md) | Managed sessions, permission modes, tmux, routing, restarts and instruction updates |
-| [The conversation](CONVERSATION.md) | Messages, questions, cards, attachments, peeks, status and keyboard shortcuts |
-| [Characters and themes](CUSTOMIZATION.md) | Appearance, fading, importing and creating JSON characters and themes |
-| [Learn from me](LEARNING.md) | Four levels, assistant folder, permissions, retention, summaries, journal, rules and Ask About This |
-| [Privacy and security](PRIVACY.md) | Local processing, redaction, storage, assistant access and safety boundaries |
-| [Settings reference](SETTINGS.md) | Every pane, available controls and initial defaults |
-| [MCP tool reference](MCP.md) | All 26 `zeus_*` tools, arguments, results and delivery conventions |
-| [Troubleshooting and FAQ](TROUBLESHOOTING.md) | Connection, delivery, learning, appearance and update problems |
+| [Setting up Zeus](SETUP.md) | Install Zeus, choose your first assistant, connect an existing session and keep the app updated. |
+| [Your assistant](ASSISTANT.md) | Run or connect an assistant, choose its permissions, and manage sessions, restarts and instructions. |
+| [The conversation](CONVERSATION.md) | Send messages and files, answer questions, read status and use keyboard shortcuts. |
+| [Characters and themes](CUSTOMIZATION.md) | Choose the look, adjust fading, and import or create characters and themes. |
+| [Learn from me](LEARNING.md) | Choose what Zeus learns, explore its folder and journal, manage rules and ask about the window in front. |
+| [Privacy and security](PRIVACY.md) | Understand local redaction, stored records, assistant access and permission boundaries. |
+| [Settings reference](SETTINGS.md) | Look up every settings pane, control and initial default. |
+| [MCP tool reference](MCP.md) | Look up all 26 `zeus_*` tools, their arguments and results, and delivery conventions. |
+| [Troubleshooting and FAQ](TROUBLESHOOTING.md) | Resolve common connection, delivery, learning, appearance and update problems. |
 
 ## For contributors
 

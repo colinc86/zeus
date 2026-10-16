@@ -997,6 +997,38 @@ private struct ReadmePeek: View {
     }
 }
 
+/// A morning summary and its exact file reference, followed by a relevant user question.
+private struct ReadmeLearningStory: View {
+    let fixture: Fixture
+    let clock: ReadmeClock
+    static let size = CGSize(width: 780, height: 480)
+    @Environment(\.zeusPalette) private var palette
+
+    var body: some View {
+        let phase = clock.time < 3 ? 0 : clock.time < 8 ? 1 : 2
+        ReadmeStage(size: Self.size) {
+            HStack(alignment: .center, spacing: 28) {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("A little less\nexplaining.")
+                        .font(.custom(ZeusFonts.pixelFamily, size: 30)).foregroundStyle(palette.title)
+                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(Array(["It notices.", "It remembers.", "It helps."].enumerated()), id: \.offset) { index, text in
+                            Text(text).font(.custom(ZeusFonts.pixelFamily, size: 18))
+                                .foregroundStyle(index == phase ? palette.title : palette.secondaryText)
+                        }
+                    }
+                    Text(["The context you choose.", "A morning summary.\nThe files to back it up.", "Pick up where you left off."][phase])
+                        .zeusFont(.body).foregroundStyle(palette.text).frame(height: 48, alignment: .topLeading)
+                    ReadmeSprite(character: Readme.character("zeus"), state: phase == 2 ? .happy : .idle,
+                                 time: clock.time, scale: 3)
+                }.frame(width: 300, alignment: .leading)
+                fixture.conversation().padding(2).frame(width: 392, height: 432, alignment: .bottom)
+            }.padding(24)
+        }
+    }
+}
+
 extension DesignerAuditRenders {
     @Test func readme() async throws {
         let previousZone = NSTimeZone.default
@@ -1009,6 +1041,7 @@ extension DesignerAuditRenders {
             try await Readme.still("peek-\(look.name)", appearance: look.appearance, ReadmePeek())
             try await conversation(look)
             try await learningConversation(look)
+            try await learningStory(look)
             try await settings(look)
             try await themes(look)
         }
@@ -1081,6 +1114,87 @@ extension DesignerAuditRenders {
         try await Readme.still("learning-\(look.name)", appearance: look.appearance, settle: 0.8, f.conversation().padding(2))
     }
 
+    /// Real notice updates and its real View action; no production agent or capture source is involved.
+    private func learningStory(_ look: (name: String, appearance: NSAppearance.Name)) async throws {
+        // Ask this test process to materialize the lazy conversation's accessibility children, as the native
+        // conversation tests do. Restore its previous state; this never changes the installed app or system settings.
+        let enhanced = NSSelectorFromString("accessibilitySetValue:forAttribute:")
+        let prior = NSApp.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? NSNumber(value: false)
+        defer { if NSApp.responds(to: enhanced) { NSApp.perform(enhanced, with: prior, with: "AXEnhancedUserInterface") } }
+        if NSApp.responds(to: enhanced) { NSApp.perform(enhanced, with: NSNumber(value: true), with: "AXEnhancedUserInterface") }
+        let f = Fixture(font: .pixel); defer { f.cleanup() }
+        f.messaging.sessions = [Readme.session]
+        f.settings.typewriterEnabled = false
+        f.panel.width = 388
+        f.panel.screenHeight = 720
+        let clock = ReadmeClock()
+        let root = ReadmeLearningStory(fixture: f, clock: clock).environment(\.accessibilityEnabled, true)
+        let (host, window) = Readme.window(AnyView(root), appearance: look.appearance, size: ReadmeLearningStory.size)
+        defer { window.orderOut(nil); window.contentView = nil; window.close() }
+        let dir = Readme.out.appendingPathComponent("frames/learning-story-\(look.name)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let base = Calendar.current.startOfDay(for: Date()).addingTimeInterval(9 * 3600)
+        let detail = "Yesterday: planning notes in Notes, then a draft in Mail.\n\nFiles: Zeus/days/2026-10-14/summary.md"
+        func notice(_ summary: String) {
+            f.store.recordLearningNotice(.init(id: "morning", kind: .reflection, createdAt: base,
+                summary: summary, actionTitle: "View", detail: detail, ruleID: nil), action: nil)
+        }
+        func nodes(_ value: Any, seen: inout Set<ObjectIdentifier>) -> [NSObject] {
+            guard seen.count < 2048, let node = value as? NSObject, seen.insert(ObjectIdentifier(node)).inserted else { return [] }
+            func children(_ method: String, _ attribute: String? = nil) -> [Any] {
+                let selector = NSSelectorFromString(method)
+                return node.responds(to: selector) ? (node.perform(selector, with: attribute)?.takeUnretainedValue() as? [Any] ?? []) : []
+            }
+            return [node] + (children("accessibilityChildren") + children("accessibilityAttributeValue:", "AXChildren")
+                + children("accessibilityAttributeValue:", "AXContents") + ((node as? NSView)?.subviews ?? []))
+                .flatMap { nodes($0, seen: &seen) }
+        }
+        func labels() -> [(NSObject, String)] {
+            var seen: Set<ObjectIdentifier> = []
+            return nodes(host, seen: &seen).map { node in
+                let texts = ["accessibilityLabel", "accessibilityTitle", "accessibilityValue"].compactMap { name -> String? in
+                    let selector = NSSelectorFromString(name)
+                    return node.responds(to: selector) ? node.perform(selector)?.takeUnretainedValue() as? String : nil
+                }
+                return (node, texts.first { !$0.isEmpty } ?? "")
+            }
+        }
+        try await Task.sleep(for: .seconds(0.6))
+        let fps = 8
+        for i in 0..<(14 * fps) {
+            clock.time = Double(i) / Double(fps)
+            if i == 12 { notice("Daily summary ready for your assistant") }
+            if i == 24 { notice("Sent your daily summary") }
+            if i == 32 {
+                let available = labels()
+                try available.map(\.1).joined(separator: "\n").write(to: Readme.out.appendingPathComponent("learning-ax.txt"), atomically: true, encoding: .utf8)
+                let view = try #require(available.first { $0.1 == "View: Sent your daily summary" }?.0)
+                #expect((view as AnyObject).accessibilityPerformPress?() == true)
+            }
+            if i == 64 {
+                f.store.add(Card(id: "morning-question", kind: .userMessage, body: "Where did I leave the launch plan?",
+                                 createdAt: base.addingTimeInterval(60), updatedAt: base.addingTimeInterval(60)))
+            }
+            if i == 76 {
+                f.store.add(Card(id: "morning-answer", kind: .message,
+                                 body: "The timeline was drafted. Next up: collect questions for the design review.",
+                                 sessionKey: Readme.session.sessionKey, createdAt: base.addingTimeInterval(65), updatedAt: base.addingTimeInterval(65)))
+            }
+            try await Task.sleep(for: .milliseconds(80))
+            host.layoutSubtreeIfNeeded()
+            try Readme.write(host, to: dir.appendingPathComponent(String(format: "%03d.png", i)))
+        }
+        try "\(fps)".write(to: dir.appendingPathComponent("fps.txt"), atomically: true, encoding: .utf8)
+    }
+
+    @Test func readmeLearningStory() async throws {
+        for look in Readme.looks { try await learningStory(look) }
+    }
+
+    @Test func readmeAssistantSettings() async throws {
+        for look in Readme.looks { try await settings(look) }
+    }
+
     /// Settings › Assistant with "Zeus runs it": Claude Code running in ~/Assistant.
     private func settings(_ look: (name: String, appearance: NSAppearance.Name)) async throws {
         let f = Fixture(font: .pixel); defer { f.cleanup() }
@@ -1097,12 +1211,12 @@ extension DesignerAuditRenders {
         let view = AssistantSettingsView(settings: f.settings, managed: model, messaging: hub, testMessage: ComposeModel(cards: f.store, messaging: hub))
             .frame(width: 524).padding(24)
             // Ends just after the Folder caption, before the Permissions heading.
-            .frame(width: 572, height: 582, alignment: .top).clipped()
+            .frame(width: 572, height: 638, alignment: .top).clipped()
             .padding(.bottom, 20)
             .background(Color(nsColor: .windowBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color(nsColor: .separatorColor)))
-        try await Readme.still("settings-\(look.name)", appearance: look.appearance, size: CGSize(width: 572, height: 602), settle: 0.8, view)
+        try await Readme.still("settings-\(look.name)", appearance: look.appearance, size: CGSize(width: 572, height: 658), settle: 0.8, view)
     }
 }
 
@@ -2263,10 +2377,12 @@ extension DesignerAuditRenders {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color(nsColor: .separatorColor)))
         }
-        // The pane without the tab strip above it (`cut`), ending after Typing's "Raw on request" caption.
-        let privacyHeight = CGFloat(ProcessInfo.processInfo.environment["README_PRIVACY_HEIGHT"].flatMap(Double.init) ?? 2216), cut: CGFloat = 92
-        try await Readme.still("privacy-\(look.name)", appearance: look.appearance, size: CGSize(width: 792, height: privacyHeight - cut + 44), settle: 0.8,
-                               framed(r.settings(.privacy).frame(width: 744, height: privacyHeight - 48).padding(24).offset(y: -cut), height: privacyHeight - cut, top: 24))
+        // The current Privacy pane, including the LF1 folder row and picture-covering control.
+        // Give the scroll view room to lay out every control, then trim the spare space below its last action.
+        let privacyHeight = CGFloat(ProcessInfo.processInfo.environment["README_PRIVACY_HEIGHT"].flatMap(Double.init) ?? 2650)
+        let cut: CGFloat = 92, bottom: CGFloat = 180
+        try await Readme.still("privacy-\(look.name)", appearance: look.appearance, size: CGSize(width: 792, height: privacyHeight - cut - bottom + 44), settle: 0.8,
+                               framed(r.settings(.privacy).frame(width: 744, height: privacyHeight - 48).padding(24).offset(y: -cut), height: privacyHeight - cut - bottom, top: 24))
         try await Readme.still("kept-\(look.name)", appearance: look.appearance, size: CGSize(width: 792, height: 540), settle: 0.8,
                                framed(r.kept(), height: 520))
         try await Readme.still("rules-\(look.name)", appearance: look.appearance, size: CGSize(width: 792, height: 530), settle: 0.8,

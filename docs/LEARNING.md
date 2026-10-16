@@ -87,7 +87,7 @@ The assistant folder contains the retained redacted words. The journal tool can 
 
 Zeus writes a readable copy of retained learning into `Zeus/` inside the assistant folder. Only enabled levels contribute, after their privacy safeguards. This record accumulates independently of delivery: a disconnected assistant does not stop it growing.
 
-- With **Zeus runs it**, the destination is the working folder selected in Assistant settings.
+- With **Zeus runs it**, the destination is the running conversation’s working folder. A folder switch deferred with **Later** keeps writing to the old folder until the switch is applied.
 - With **Connect your own**, open **Settings › Privacy › Your assistant's folder**, then **Choose…**. No destination is selected by default. **Stop keeping a folder** stops future writes and leaves the existing folder alone.
 - **Show in Finder** opens the record. The path and any write error appear in Privacy. Where the folder lives is your choice; if it syncs, the records sync with it.
 
@@ -152,6 +152,8 @@ Press **Open What Zeus Kept…** in Privacy.
 
 **Sent to your assistant** shows exact outgoing summaries, notes, reflections, journal answers and context attachments. Expand a row to inspect it. **Waiting** items are separate from received records; they do not count as sent. This ledger covers learning/context delivery, not all ordinary chat or anything the assistant independently reads.
 
+**Show Day in Finder** opens the selected day’s export when it exists. Record rows also offer **Show in Finder** in their context menu or hover actions; a missing item file falls back to its day folder when available.
+
 **Export…** saves the displayed stored records as JSON. On the Sent tab it exports received records, not waiting items. Exporting is your own file copy.
 
 ## Pause, retention and deletion
@@ -184,4 +186,4 @@ Use a rule's **… › Why?** to see its retained evidence and dated outcomes. A
 
 **Add Rule…** creates a passive rule. You can edit its sentence, days, time window, apps and state; **Save** applies it. For an acting rule, ask the assistant to propose one. **Turn Back On** restores a retired rule; acting rules return through shadow approval.
 
-Implementation references: [learning settings](../Zeus/Learn/LearnSettings.swift), [level policies](../Zeus/Settings/ObservationSettings.swift), [learning presentation](../Zeus/Settings/LearningPresentation.swift), [journal queries](../Zeus/Bridge/ZeusRuntime+Journal.swift), [rules](../Zeus/Learn/PersistentRulesStore.swift) and [rule actions](../Zeus/Bridge/ZeusRuntime+RuleActions.swift).
+Implementation references: [learning settings](../Zeus/Learn/LearnSettings.swift), [level policies](../Zeus/Settings/ObservationSettings.swift), [learning presentation](../Zeus/Settings/LearningPresentation.swift), [journal queries](../Zeus/Bridge/ZeusRuntime+Journal.swift), [rules](../Zeus/Learn/PersistentRulesStore.swift), [rule actions](../Zeus/Bridge/ZeusRuntime+RuleActions.swift), [folder writer](../Zeus/Learn/LearningFolderWriter.swift) and [folder routing](../Zeus/Bridge/ZeusRuntime+LearningFolder.swift).
