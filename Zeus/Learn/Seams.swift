@@ -452,3 +452,19 @@ struct RuleActionRecord: Codable, Equatable, Identifiable, Sendable {
     var retainedLearningIDs: Set<String> { get }
     var onLearningDeletion: ((Set<String>) -> Void)? { get set }
 }
+
+/// Observable on the concrete writer. Only post-safeguard retained data is exported.
+/// `folderURL` is the effective assistant folder (managed wins over the own-agent choice).
+@MainActor protocol LearningFolderProviding: AnyObject {
+    var folderURL: URL? { get }
+    var lastWriteError: String? { get }
+    /// Sets the Connect-your-own choice; nil disables that destination. Managed routing takes precedence.
+    func setFolder(_ folder: URL?)
+    /// Returns only a currently existing exported file; never recreates a Finder-deleted file.
+    func fileURL(forJournalItem item: JournalItem) -> URL?
+}
+
+/// Additional explicit user action; ordinary journal deletion never touches Notes/.
+@MainActor protocol LearningFolderErasing: AnyObject {
+    func deleteFolderContents(includeAssistantNotes: Bool) throws
+}

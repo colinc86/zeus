@@ -37,6 +37,8 @@ final class LearnSettings {
     @ObservationIgnored var permitsApp: ((String?, String?) -> Bool)?
 
     var enabled: Bool { didSet { defaults.set(enabled, forKey: "learn.enabled") } }
+    /// Pixel covering may be disabled explicitly; credential regions and capture hard stops remain mandatory.
+    var coverPictures: Bool { didSet { defaults.set(coverPictures, forKey: "learn.coverPictures") } }
     /// The one-time sheet was answered.
     var introShown: Bool { didSet { defaults.set(introShown, forKey: "learn.introShown") } }
     var excludedApps: [ExcludedApp] {
@@ -61,6 +63,7 @@ final class LearnSettings {
     init(defaults: UserDefaults) {
         self.defaults = defaults
         enabled = defaults.bool(forKey: "learn.enabled")
+        coverPictures = defaults.object(forKey: "learn.coverPictures") as? Bool ?? true
         introShown = defaults.bool(forKey: "learn.introShown")
         excludedApps = defaults.data(forKey: "learn.excludedApps").flatMap { try? JSONDecoder().decode([ExcludedApp].self, from: $0) }
             ?? ExcludedApp.defaults
