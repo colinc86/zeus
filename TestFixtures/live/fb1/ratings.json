@@ -1,0 +1,42 @@
+{
+  "agent": "2.1.301 (Claude Code)",
+  "events": [
+    "first_say",
+    "ack_rating",
+    "lookalike_say"
+  ],
+  "held": {
+    "muteDecision": {
+      "decidedAt": "2026-10-16T17:36:00.985Z",
+      "kindLabel": "On-call reminder",
+      "score": 0.3911726474761963,
+      "threshold": 0.35,
+      "reason": "looks like On-call reminder",
+      "engine": "naturalLanguage",
+      "ratingID": "rating_25CEF90D-ECAB-4350-A54C-F7DBC0408FF8"
+    },
+    "id": "c_42e24170",
+    "sessionKey": "claude:/FIXTURE/project#63612.1792172147938193",
+    "about": "Rotation heads-up",
+    "origin": "unprompted",
+    "options": [],
+    "kind": "message",
+    "body": "Your on-call rotation is about to start. Review the handover notes before taking over.",
+    "updatedAt": "2026-10-16T17:36:00.948Z",
+    "priority": "high",
+    "attachments": [],
+    "status": "open",
+    "createdAt": "2026-10-16T17:36:00.948Z"
+  },
+  "preferences": "# What you hear about\n\nUp: keep telling the user. Need-to-know: use your judgment; send only when useful. Stop: do not send unsolicited messages of this kind, even with a new label or high priority. Replies are unaffected. Generalize the preference, and keep useful preference notes in Notes/.\n\n## Up\n\n## Need-to-know\n\n## Stop\n\n- On-call reminder\n  Example: Your on-call shift starts soon. Check the rotation and handover notes before your shift.\n\n",
+  "deliveries": [
+    {
+      "attempts": 1,
+      "kind": "learning",
+      "discarded": false,
+      "id": "d_rating_DF16CA83-EC84-456A-BAF0-BBC11FF22010",
+      "acked": true
+    }
+  ],
+  "isolation": "private tmux, disposable HOME, localhost fake model, fixture key, production NLEmbedding"
+}

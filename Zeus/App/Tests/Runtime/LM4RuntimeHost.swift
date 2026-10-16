@@ -73,12 +73,13 @@ private struct LM4Runner: ProcessRunning {
         let controller = ManagedSessionController(configuration: { routing.managedSession }, stateURL: root.appendingPathComponent("managed.json"), bridge: bridge, bridgeSocket: root.appendingPathComponent("bridge.sock").path,
             executables: .init(tmux: tmux, agents: [.claude: cli]), hosting: hosting, environment: env, isolatedSocket: socket, resourceDirectory: nil)
         let journal = EncryptedJournalStore(root: root.appendingPathComponent("Journal"), keyProvider: LM4Key())
+        let ratings = try MessageRatingStore(fileURL: root.appendingPathComponent("ratings.zratings"), keyProvider: LM4Key())
         let folder = LearningFolderWriter(journal: journal, rules: nil, stateURL: root.appendingPathComponent("folder.json"),
             enabledLevels: { [.activity] }, redactor: LocalRedactor(useOnDeviceModel: false))
         let live = ZeusRuntime(cards: cards, status: LM4Status(), characters: LM4Characters(), routing: routing,
             socketPath: root.appendingPathComponent("bridge.sock").path, ledgerURL: root.appendingPathComponent("deliveries.json"),
             connectors: [TmuxConnector(executable: tmux, runner: LM4Runner(socket: socket))], managedController: controller,
-            learnings: learnings, journal: journal, redactor: LocalRedactor(useOnDeviceModel: false), learningFolder: folder)
+            learnings: learnings, journal: journal, redactor: LocalRedactor(useOnDeviceModel: false), learningFolder: folder, messageRatings: ratings)
         try live.start(); defer { live.stop() }
         try write(["ready": true])
         await Task.detached {
@@ -86,6 +87,14 @@ private struct LM4Runner: ProcessRunning {
                 await MainActor.run {
                     do {
                         let command = try JSONDecoder().decode(JSONValue.self, from: Data(line.utf8))
+                        if command["command"] == "rateFirst" {
+                            if let first = cards.values.first(where: { $0.about == "On-call reminder" }) {
+                                Task { @MainActor in
+                                    do { _ = try await live.rate(cardID: first.id, rating: .down, scope: .kind, label: "On-call reminder") }
+                                    catch { FileHandle.standardError.write(Data("Rating failed: \(error)\n".utf8)) }
+                                }
+                            }
+                        }
                         if command["command"] == "digest" { learnings.digest() }
                         if command["command"] == "eraseThenLateAck" {
                             try journal.delete(.all)
@@ -94,6 +103,9 @@ private struct LM4Runner: ProcessRunning {
                         }
                         try write(["ok": true, "status": .string(String(describing: live.managedStatus)), "sessions": .number(Double(live.sessions.count)),
                             "pane": controller.record?.pane.map { .string($0.id) } ?? .null,
+                            "cards": .array(try cards.values.map(JSONValue.from)),
+                            "ratings": .number(Double(live.ratings.count)),
+                            "muted": .array(live.mutedToday.map(JSONValue.string)),
                             "unread": .number(Double(learnings.values.count)),
                             "receipts": .array(try journal.items(matching: .init()).filter { $0.kind == .sentToAssistant }.map(JSONValue.from)),
                             "deliveries": .array((live.ledger?.records ?? []).map { ["id": .string($0.delivery.id), "kind": .string($0.delivery.kind.rawValue), "acked": .bool($0.delivery.ackedAt != nil), "attempts": .number(Double($0.delivery.attempts)), "discarded": .bool($0.discardedAt != nil)] }),
