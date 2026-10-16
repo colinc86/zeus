@@ -21,6 +21,7 @@ private struct LiveCaptureRunner: ProcessRunning {
     func run(executable: URL, arguments: [String], input: Data?) async throws -> ProcessResult {
         let result: String
         if arguments.contains("capture-pane") { result = snapshot.screen }
+        else if arguments.contains("list-sessions") { result = "zeus\t$0\tfixture\n" }
         else if arguments.contains("show-options") { result = "fixture\n" }
         else if arguments.contains("list-panes") { result = "%0\n" }
         else if arguments.last?.contains("cursor_x") == true { result = snapshot.inputMetadata + "\n" }
