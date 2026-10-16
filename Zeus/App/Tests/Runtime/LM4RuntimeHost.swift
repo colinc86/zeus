@@ -73,10 +73,12 @@ private struct LM4Runner: ProcessRunning {
         let controller = ManagedSessionController(configuration: { routing.managedSession }, stateURL: root.appendingPathComponent("managed.json"), bridge: bridge, bridgeSocket: root.appendingPathComponent("bridge.sock").path,
             executables: .init(tmux: tmux, agents: [.claude: cli]), hosting: hosting, environment: env, isolatedSocket: socket, resourceDirectory: nil)
         let journal = EncryptedJournalStore(root: root.appendingPathComponent("Journal"), keyProvider: LM4Key())
+        let folder = LearningFolderWriter(journal: journal, rules: nil, stateURL: root.appendingPathComponent("folder.json"),
+            enabledLevels: { [.activity] }, redactor: LocalRedactor(useOnDeviceModel: false))
         let live = ZeusRuntime(cards: cards, status: LM4Status(), characters: LM4Characters(), routing: routing,
             socketPath: root.appendingPathComponent("bridge.sock").path, ledgerURL: root.appendingPathComponent("deliveries.json"),
             connectors: [TmuxConnector(executable: tmux, runner: LM4Runner(socket: socket))], managedController: controller,
-            learnings: learnings, journal: journal, redactor: LocalRedactor(useOnDeviceModel: false))
+            learnings: learnings, journal: journal, redactor: LocalRedactor(useOnDeviceModel: false), learningFolder: folder)
         try live.start(); defer { live.stop() }
         try write(["ready": true])
         await Task.detached {

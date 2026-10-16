@@ -264,18 +264,29 @@ extension ZeusRuntime: LearningRuntimeControlling {
             if calendar.isDate(day, inSameDayAs: today) {
                 guard let idle = self.learningContext().idleSince, self.clock.now.timeIntervalSince(idle) >= 600 else { return }
             }
-            let content = """
+            var content = """
             Zeus reflection for \(dayKey). This is a redacted local summary, not a new user request.
             Read zeus_get_rules. Propose at most three useful rules with zeus_propose_rules; evidence must use IDs below. Evaluable rules require two IDs from different days; respect suppression fingerprints. Every purchase always asks with its amount, including amounts higher than the rule or last purchase.
             Prefer timing/tone/preparation rules. External acts start in shadow; do not execute them. Do not repeat habits or private details to the user.
             \(safe.value)
             Evidence IDs (already-redacted journal records): \(evidence.joined(separator: ", "))
             """
+            let paths = await self.learningFolder?.recordReflection(id: id, text: .init(content), at: self.clock.now) ?? []
+            guard self.running, !Task.isCancelled, self.generation == token,
+                  self.learningObservationToken == observationToken, self.reflectionEnabled(), journal.revision == revision,
+                  !self.learningContext().isPrivate, !self.learningContext().isLocked,
+                  self.assistantTarget == target, self.sessions.contains(where: { $0.id == session.id }), self.ledger?.record(id: id) == nil else { return }
+            content = Self.withLearningFiles(content, paths: paths)
             var delivery = Delivery(id: id, kind: .reflection, sessionKey: target, content: content, createdAt: self.clock.now)
             delivery.meta = ["kind": "reflection", "delivery_id": id, "reflection_day": dayKey,
                              "evidence": evidence.joined(separator: ",")]
             do {
                 try self.ledger?.insert(.init(delivery: delivery))
+                if self.learningFolder != nil {
+                    _ = await self.learningFolder?.recordReflection(id: id, text: .init(content), at: delivery.createdAt)
+                    guard self.running, self.generation == token, !Task.isCancelled,
+                          self.ledger?.record(id: id)?.isPending == true, !self.learningWasErased(id) else { return }
+                }
                 self.learningCatchUpPending = false
                 _ = self.beginSend(id: id)
             } catch { self.learningError = "Zeus couldn't save its reflection delivery." }
@@ -343,9 +354,14 @@ extension ZeusRuntime: LearningRuntimeControlling {
         return moments.first { text.hasPrefix($0.0) }.map { "Sent a note: " + $0.1 } ?? "Sent a note"
     }
     func learningForSending(_ learning: Learning) async -> Learning {
-        guard let redactor = learningRedactor else { return learning }
-        let text = await redactor.redact(learning.text)
-        return Learning(id: learning.id, kind: learning.kind, createdAt: learning.createdAt, text: text.value)
+        if let saved = ledger?.record(id: learning.id), !saved.delivery.content.isEmpty {
+            return .init(id: learning.id, kind: learning.kind, createdAt: learning.createdAt, text: saved.delivery.content)
+        }
+        let text = await learningRedactor?.redact(learning.text).value ?? learning.text
+        let safe = Learning(id: learning.id, kind: learning.kind, createdAt: learning.createdAt, text: text)
+        guard !learningWasErased(learning.id) else { return safe }
+        let files = await learningFolder?.recordLearning(safe) ?? []
+        return .init(id: safe.id, kind: safe.kind, createdAt: safe.createdAt, text: Self.withLearningFiles(text, paths: files))
     }
     func recordLearningToolReceipts(_ items: [JSONValue], sessionKey: String) {
         for value in items {

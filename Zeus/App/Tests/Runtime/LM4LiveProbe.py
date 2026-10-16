@@ -10,6 +10,7 @@ def build_host():
     package = host_package(OUT, 'lm4')
     sources = package/'Sources/Host'; sources.mkdir(parents=True, exist_ok=True)
     inputs = [REPO/'Zeus/App/Tests/Runtime/LM4RuntimeHost.swift', REPO/'Zeus/Shared/AppSeams.swift', REPO/'Zeus/Learn/Seams.swift', REPO/'Zeus/Cards/AttachmentTarget.swift', REPO/'Zeus/Cards/CardStore.swift', REPO/'Zeus/Cards/ContextSendIntent.swift', REPO/'Zeus/Cards/ThreadNotice.swift', REPO/'Zeus/Learn/PersistentRulesStore.swift']
+    inputs += [REPO/'Zeus/Learn/LearningFolderWriter.swift', REPO/'Zeus/Learn/LearningFolderDisk.swift']
     inputs += [p for area in ['Zeus/Bridge','Zeus/Agents','Zeus/Learn/Journal','Zeus/Learn/Redactor'] for p in (REPO/area).glob('*.swift') if p.name != 'DebugSpriteFrameCounter.swift']
     for path in inputs:(sources/path.name).write_text(path.read_text())
     # finish_host_build provides the seams; don't compile a duplicate copy.
@@ -25,7 +26,9 @@ def main():
     def action(body):
         rendered=json.dumps(body.get('messages',[]))
         if '[zeus delivery_id=lm4-digest' not in rendered:return None,{}
-        steps=[('zeus_ack',{'delivery_ids':['lm4-digest']}),('zeus_say',{'text':'Synthetic learning received.'})]
+        paths=re.findall(r'Files: (Zeus/days/[^\s,]+/summary\.md)',rendered.replace('\\n','\n'))
+        assert paths, 'Digest must reference its retained file'
+        steps=[('Read',{'file_path':str(pane.project/paths[-1])}),('zeus_ack',{'delivery_ids':['lm4-digest']}),('zeus_say',{'text':'Synthetic learning received.'})]
         if len(seen)<len(steps):
             result=steps[len(seen)];seen.append(result[0]);return result
         return None,{}
@@ -53,11 +56,16 @@ def main():
             control.call('digest')
             state=eventually(lambda:(s if (s:=control.call('state'))['deliveries'] and s['deliveries'][0]['acked'] and s['receipts'] else None),'digest -> model zeus_ack -> sent ledger',timeout=60)
             assert state['unread']==0 and len(state['deliveries'])==1 and state['deliveries'][0]['kind']=='learning' and state['deliveries'][0]['attempts']==1,state
-            assert state['receipts'][0]['payload']['value']['text']=='Synthetic morning summary: working on a fixture project.',state
+            delivered=state['receipts'][0]['payload']['value']['text']
+            assert delivered.startswith('Synthetic morning summary: working on a fixture project.\n\nFiles: Zeus/days/'),state
+            relative=delivered.split('Files: ',1)[1]
+            assert (pane.project/relative).read_text().strip()=='Synthetic morning summary: working on a fixture project.'
+            read_results=[block for body in Model.requests for message in body.get('messages',[]) if isinstance(message.get('content'),list) for block in message['content'] if block.get('type')=='tool_result' and 'Synthetic morning summary: working on a fixture project.' in json.dumps(block)]
+            assert read_results, 'Real Claude must read the file and return its contents to the localhost model'
             assert state['receipts'][0]['payload']['value']['details']['sessionLabel']=='Claude · Zeus',state
             erased=control.call('eraseThenLateAck')
             assert not erased['receipts'] and erased['deliveries'][0]['discarded'],erased
-            proof={'erasure_late_ack_suppressed':True,'agent':pane.version,'tools':seen,'state':state,'model_received_digest':any('Synthetic morning summary: working on a fixture project.' in json.dumps(b.get('messages',[])) for b in Model.requests),'isolation':'private tmux, disposable HOME/config, localhost synthetic model, fixture encryption key'}
+            proof={'assistant_read_digest_file':True,'erasure_late_ack_suppressed':True,'agent':pane.version,'tools':seen,'state':state,'model_received_digest':any('Synthetic morning summary: working on a fixture project.' in json.dumps(b.get('messages',[])) for b in Model.requests),'isolation':'private tmux, disposable HOME/config, localhost synthetic model, fixture encryption key'}
             assert proof['model_received_digest']
             proof=scrub_paths(proof,{str(pane.root):'/FIXTURE',str(REPO):'<worktree>'})
             (OUT/'proof.json').write_text(json.dumps(proof,indent=2)+'\n')

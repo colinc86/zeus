@@ -373,6 +373,7 @@ struct LearningContextDeliveryReceipt: Sendable {
 struct JournalAccessPolicy: Equatable, Sendable {
     var enabledLevels: Set<JournalLevel> = []
     /// Only .screen and .typed are meaningful; even raw means covered pictures / redacted words.
+    /// Legacy UI compatibility only. LF1 raw access follows enabledLevels.
     var rawLevels: Set<JournalLevel> = []
 }
 @MainActor protocol LearningJournalAccessControlling: AnyObject {

@@ -20,18 +20,26 @@ struct FixtureLearningRedactor: Redactor {
     let runtime: ZeusRuntime
     let journal: EncryptedJournalStore
     let rules: PersistentRulesStore
-    init(learnings: (any LearningsProviding)? = nil, redactor: any Redactor = FixtureLearningRedactor()) throws {
+    let folder: LearningFolderWriter?
+    init(learnings: (any LearningsProviding)? = nil, redactor: any Redactor = FixtureLearningRedactor(), exportFolder: Bool = false) throws {
         clock.now = ISO8601DateFormatter().date(from: "2026-10-14T18:15:00Z") ?? clock.now
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = .gmt
         cards = FakeCards(clock: clock)
         let clock = self.clock
         journal = EncryptedJournalStore(root: root.appendingPathComponent("Journal"), keyProvider: FixtureJournalKey(), calendar: calendar, clock: { clock.now })
         rules = try PersistentRulesStore(fileURL: root.appendingPathComponent("rules.zrules"), keyProvider: FixtureJournalKey())
+        if exportFolder {
+            let destination = root.appendingPathComponent("assistant")
+            try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+            folder = LearningFolderWriter(journal: journal, rules: rules, stateURL: root.appendingPathComponent("folder.json"),
+                enabledLevels: { [.activity, .focus] }, redactor: redactor, calendar: calendar)
+            folder?.setFolder(destination)
+        } else { folder = nil }
         let box = box
         runtime = ZeusRuntime(cards: cards, status: FakeStatus(), characters: FakeCharacters(), routing: FakeRouting(),
             clock: clock, socketPath: root.appendingPathComponent("bridge.sock").path, ledgerURL: root.appendingPathComponent("deliveries.json"),
             connectors: [connector], targetIsDead: { _ in false }, learnings: learnings, rules: rules, journal: journal, redactor: redactor,
-            learningContext: { box.context }, reflectionEnabled: { box.enabled }, learningCalendar: calendar)
+            learningFolder: folder, learningContext: { box.context }, reflectionEnabled: { box.enabled }, learningCalendar: calendar)
         try runtime.start()
         runtime.registerSession(.init(id: UUID(), sessionKey: "claude:/fixture#123.1", agent: .claude, cwd: "/fixture", clientName: "Fixture", supportsChannel: true, tmuxPane: nil, connectedAt: clock.now))
     }

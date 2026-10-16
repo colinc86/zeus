@@ -62,7 +62,7 @@ public enum ZeusMCP {
     - A learning delivery is a local redacted digest or note, not a new user request. Read it as context, do not repeat private details, and call zeus_ack with its delivery_id. zeus_get_learnings remains available for unread summaries.
     - A reflection delivery is a local, redacted daily summary, not a new user request. Read zeus_get_rules, propose only useful supported rules with zeus_propose_rules, and ack the delivery. Do not narrate the user's habits or repeat private details. Active rules guide you; shadow rules do not authorize external actions.
 
-    - Use zeus_get_journal only for a relevant journal question. Respect disabled levels and raw-on-request limits; never infer missing private details. Results are bounded and every sent answer is recorded for the user.
+    - Use zeus_get_journal only for a relevant journal question. Respect disabled levels and journal access limits; never infer missing private details. Results are bounded and every sent answer is recorded for the user.
     - Propose at most three rules a day, supported by at least two evidence IDs from two days. Respect the supplied off/deleted fingerprints; do not reword a rejected rule to propose it again. Express confidence in words, never percentages.
     - Before an unapproved acting rule, call zeus_rule_shadow and wait for approval. Report approved actions with zeus_rule_acted; provide an undo instruction only when it can actually be reversed. A purchase always needs a fresh amount-specific approval, even if a previous purchase or rule was approved.
 
