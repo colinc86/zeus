@@ -51,7 +51,7 @@ struct ConversationView: View {
 
     private var entries: [ConversationEntry] { Array(model.thread.suffix(pageCount)) }
     // Replace the old 2-point separator with a 24-point strip and its 1-point rule.
-    private var stripExtraHeight: CGFloat { 23 }
+    private var stripExtraHeight: CGFloat { ZeusStatusStrip.height(for: settings.fontChoice, scale: settings.fontScale) - 1 }
     private var threadHeight: CGFloat { ConversationLayout.threadHeight(content: contentHeight, composer: composerHeight, screen: panel.screenHeight, strip: stripExtraHeight) }
     private var assistant: ConnectedSession? {
         if settings.managedSession?.enabled == true { return nil }
@@ -159,6 +159,7 @@ struct ConversationView: View {
             .padding(.bottom, 4)
             .environment(\.zeusAnimationsActive, activity.conversation)
             .environment(\.zeusFontChoice, settings.fontChoice)
+            .environment(\.zeusFontScale, settings.fontScale)
             .environment(\.openURL, OpenURLAction { url in
                 if url == WelcomeCard.agentSettingsURL { openSettings(); return .handled }
                 guard ["http", "https"].contains(url.scheme?.lowercased() ?? "") else { return .discarded }

@@ -1001,6 +1001,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             _ = ratings.confirmations
             _ = ratings.errors
             _ = settings.fontChoice
+            _ = settings.fontScale
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -1013,7 +1014,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     private func positionPeek() {
         guard let message = peek.card,
               let screen = PanelPlacement.screen(for: avatar.frame, in: screenRects) else { return }
-        let layout = PeekLayout.measure(card: message, font: settings.fontChoice, moreCount: peek.moreCount,
+        let layout = PeekLayout.measure(card: message, font: settings.fontChoice, scale: settings.fontScale, moreCount: peek.moreCount,
                                         error: peek.answerError, answeredOptionID: peek.answeredOptionID,
                                         available: screen.insetBy(dx: 8, dy: 8).size, ratings: ratings)
         let placement = PeekPlacement.place(art: screenArtRect, anchorX: screenAnchor.x, contentSize: layout.contentSize, screen: screen)

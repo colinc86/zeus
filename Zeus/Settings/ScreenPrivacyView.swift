@@ -74,7 +74,7 @@ struct ScreenConsentSheet: View {
                 footer
             }.padding(24)
         }.frame(width: 540).frame(maxHeight: maximumHeight).fixedSize(horizontal: false, vertical: true)
-            .environment(\.zeusFontChoice, .system)
+            .environment(\.zeusFontChoice, .system).environment(\.zeusFontScale, .default)
             .onAppear { cancelFocused = true }
     }
     private var content: some View {

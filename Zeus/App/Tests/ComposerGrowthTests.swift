@@ -16,26 +16,28 @@ import ZeusProtocol
 }
 
 @Suite(.serialized) @MainActor struct ComposerGrowthTests {
-    @Test(arguments: [ZeusFontChoice.system, .pixel])
-    func fieldGrowsToItsLineCapAndReturnsToOneLineAfterSend(font: ZeusFontChoice) async throws {
+    @Test(arguments: [ZeusFontChoice.system, .pixel], [ZeusFontScale.default, .larger])
+    func fieldGrowsToItsLineCapAndReturnsToEmptyHeightAfterSend(font: ZeusFontChoice, scale: ZeusFontScale) async throws {
         #expect(ZeusFonts.registerBundled())
         let suite = "zeus-composer-growth-\(UUID())"
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
         defer { try? FileManager.default.removeItem(at: root) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
-        settings.fontChoice = font; settings.typewriterEnabled = false
+        settings.fontChoice = font; settings.fontScale = scale; settings.typewriterEnabled = false
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json")), messaging = GrowthMessaging()
         for index in 0..<30 { cards.add(Card(kind: .message, body: "History \(index)")) }
         let model = ConversationModel(cards: cards, messaging: messaging), panel = ConversationPanelState(), activity = SurfaceActivity()
         panel.screenHeight = 600
-        let window = GrowthPanel(contentRect: CGRect(x: -10000, y: -10000, width: 380, height: 250),
+        let width: CGFloat = scale == .larger ? 280 : 380
+        panel.width = width
+        let window = GrowthPanel(contentRect: CGRect(x: -10000, y: -10000, width: width, height: 250),
             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.ignoresMouseEvents = true
         defer { panel.isVisible = false; window.orderOut(nil); window.contentView = nil; window.close() }
         let host = TestHostingView(rootView: ConversationView(settings: settings, store: cards, model: model, messaging: messaging,
             status: AvatarStatusModel(cards: cards), panel: panel, activity: activity, openSettings: {}, copySetup: {},
-            resize: { height in window.setContentSize(CGSize(width: 380, height: height)) }))
+            resize: { height in window.setContentSize(CGSize(width: width, height: height)) }))
         window.contentView = host; host.layoutSubtreeIfNeeded()
         panel.isVisible = true; model.openPanel(viewportManaged: true)
         activity.update(suspended: false, avatar: false, conversation: true, peek: false, settings: false)
@@ -66,6 +68,7 @@ import ZeusProtocol
             print("COMPOSER \(font) lines=\(text.split(separator: "\n", omittingEmptySubsequences: false).count) height=\(field.bounds.height) thread=\(panel.viewportForDiagnostics.height) window=\(host.bounds.height)")
             return field.bounds.height
         }
+        let emptyHeight = try #require(editor.superview).bounds.height
         let one = try await replace("One line")
         let threadBefore = panel.viewportForDiagnostics.height
         let three = try await replace("First line\nSecond line\nThird line")
@@ -83,6 +86,8 @@ import ZeusProtocol
         let wrapped = try await replace(String(repeating: "A long wrapped line with readable words. ", count: 20))
         #expect(abs(wrapped - six) < 2)
         await ConversationView.sendFromComposer(model); try await settle()
-        #expect(model.draft.isEmpty && abs(field.bounds.height - one) < 2)
+        #expect(model.draft.isEmpty)
+        #expect(abs(field.bounds.height - emptyHeight) < 2, "After sending, restore the empty placeholder height (it may wrap at narrow widths).")
+        #expect(field.bounds.height < six)
     }
 }

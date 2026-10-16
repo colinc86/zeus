@@ -144,7 +144,7 @@ struct ObservationConsentSheet: View {
                 KeyboardButton("Not Now", focus: $cancelFocused, action: cancel).keyboardShortcut(.cancelAction).accessibilityLabel("Not Now")
                 KeyboardButton("Continue", action: enable).buttonStyle(ZeusButtonStyle(.primary, size: .small)).accessibilityLabel("Continue")
             }
-        }.padding(24).frame(width: 480).environment(\.zeusFontChoice, .system)
+        }.padding(24).frame(width: 480).environment(\.zeusFontChoice, .system).environment(\.zeusFontScale, .default)
             .onAppear { cancelFocused = true }
     }
     private func list(_ title: String, _ rows: [String]) -> some View {

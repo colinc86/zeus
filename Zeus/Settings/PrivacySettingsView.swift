@@ -244,7 +244,7 @@ struct LearnIntroSheet: View {
         .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
         .padding(24)
         .frame(width: 440)
-        .environment(\.zeusFontChoice, .system)
+        .environment(\.zeusFontChoice, .system).environment(\.zeusFontScale, .default)
         .onAppear { notNowFocused = true }
     }
 

@@ -145,7 +145,7 @@ struct RuleEvidenceView: View {
             else { RuleConfidence(confidence: rule.confidence) }
         }.padding(20)
         }.frame(width: 440, height: min(560, max(320, (NSScreen.main?.visibleFrame.height ?? 800) - 100)))
-            .environment(\.zeusFontChoice, .system)
+            .environment(\.zeusFontChoice, .system).environment(\.zeusFontScale, .default)
     }
 }
 
@@ -207,7 +207,7 @@ private struct RuleEditorView: View {
                 KeyboardButton("Cancel", focus: $cancelFocused, action: cancel).keyboardShortcut(.cancelAction).accessibilityLabel("Cancel rule edit")
                 KeyboardButton("Save") { if model.save() { saved() } }.buttonStyle(ZeusButtonStyle(.primary, size: .small)).accessibilityLabel("Save rule")
             }
-        }.padding(24).frame(width: 560).environment(\.zeusFontChoice, .system)
+        }.padding(24).frame(width: 560).environment(\.zeusFontChoice, .system).environment(\.zeusFontScale, .default)
             .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).toggleStyle(ZeusCheckboxStyle())
             .onAppear { cancelFocused = true }
     }

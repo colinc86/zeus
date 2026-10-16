@@ -121,7 +121,7 @@ struct ZeusShortcutRecorder: View {
             }
             if !recorder.isRecording, let error = recorder.error ?? hotKey.error { Text(error).settingsError() }
         }
-        .environment(\.zeusFontChoice, .system)
+        .environment(\.zeusFontChoice, .system).environment(\.zeusFontScale, .default)
         .task(id: recorder.isRecording && !reduceMotion) {
             pulse = false
             guard recorder.isRecording, !reduceMotion else { return }

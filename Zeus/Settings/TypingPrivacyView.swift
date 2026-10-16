@@ -76,7 +76,7 @@ struct TypingConsentSheet: View {
                 Text("Typing").settingsTitle(); ScrollView { content }.scrollBounceBehavior(.basedOnSize); footer
             }.padding(24)
         }.frame(width: 540).frame(maxHeight: maximumHeight).fixedSize(horizontal: false, vertical: true)
-            .environment(\.zeusFontChoice, .system).onAppear { cancelFocused = true }
+            .environment(\.zeusFontChoice, .system).environment(\.zeusFontScale, .default).onAppear { cancelFocused = true }
     }
     private var content: some View {
         VStack(alignment: .leading, spacing: 12) {

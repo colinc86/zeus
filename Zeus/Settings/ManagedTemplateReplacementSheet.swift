@@ -14,6 +14,6 @@ struct ManagedTemplateReplacementSheet: View {
                 KeyboardButton("Cancel", focus: $cancelFocused, action: cancel).keyboardShortcut(.cancelAction).accessibilityLabel("Cancel template replacement")
             }
         }.padding(20).frame(width: 480).fixedSize(horizontal: false, vertical: true)
-            .environment(\.zeusFontChoice, .system).onAppear { cancelFocused = true }
+            .environment(\.zeusFontChoice, .system).environment(\.zeusFontScale, .default).onAppear { cancelFocused = true }
     }
 }

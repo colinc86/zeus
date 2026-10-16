@@ -207,9 +207,15 @@ public struct ZeusStatusStrip: View {
     public var onSkip: (() -> Void)?
     public var onButton: (ZeusStatusStripModel.Button) -> Void
     @Environment(\.zeusPalette) private var palette
+    @Environment(\.zeusFontChoice) private var fontChoice
+    @Environment(\.zeusFontScale) private var fontScale
 
     /// The strip's height, excluding its 1-px rule.
     public static let height: CGFloat = 24
+    /// Caption line height plus fixed vertical padding; preserves the Default strip geometry.
+    public static func height(for choice: ZeusFontChoice, scale: ZeusFontScale = .default) -> CGFloat {
+        scale == .default ? height : max(height, ZeusFonts.lineHeight(.caption, choice: choice, scale: scale) + 4)
+    }
     /// Icon size, in points (one icon pixel is one point).
     public static let iconSize: CGFloat = 12
 
@@ -234,7 +240,7 @@ public struct ZeusStatusStrip: View {
             }
             .zeusFont(.caption)
             .lineLimit(1)
-            .frame(height: Self.height)
+            .frame(minHeight: Self.height(for: fontChoice, scale: fontScale))
             Rectangle().fill(palette.divider).frame(height: ZeusTheme.pixel).accessibilityHidden(true)
         }
         .accessibilityElement(children: .contain)

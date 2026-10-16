@@ -72,6 +72,7 @@ struct SpriteAvatarView: View {
         }
         .environment(\.zeusAnimationsActive, activity.avatar)
         .environment(\.zeusFontChoice, settings.fontChoice)
+        .environment(\.zeusFontScale, settings.fontScale)
         .help(status.deliveryProblem ?? status.presentation.detail ?? "Click to talk; drag to move Zeus.")
     }
 }

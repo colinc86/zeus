@@ -31,7 +31,7 @@ struct JournalWindowView: View {
             ZeusTextField("Search what Zeus kept", text: $model.search).accessibilityLabel("Search what Zeus kept")
             JournalViewerView(model: model).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }.padding(20).frame(minWidth: 560, minHeight: 340)
-            .environment(\.zeusFontChoice, .system)
+            .environment(\.zeusFontChoice, .system).environment(\.zeusFontScale, .default)
             .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
             .toggleStyle(ZeusCheckboxStyle())
     }
