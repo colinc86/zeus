@@ -91,6 +91,9 @@ struct FixtureRatingSimilarity: MessageSimilarityComparing {
         #expect(!f.cards.learningNotices.contains { $0.id == "n_" + record.delivery.id })
         try f.journal.delete(.all)
         #expect(f.runtime.ratings.isEmpty && f.runtime.mutedDecisions.isEmpty)
+        await f.folder?.flush()
+        #expect(f.runtime.ratingDeliveryTask == nil)
+        #expect(!FileManager.default.fileExists(atPath: f.root.appendingPathComponent("assistant/Zeus/preferences.md").path))
         _ = await f.runtime.callTool("zeus_ack", arguments: ["delivery_ids": [.string(record.delivery.id)]], sessionKey: key)
         #expect(try f.journal.items(matching: .init()).isEmpty)
     }

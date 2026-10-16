@@ -190,7 +190,12 @@ extension ZeusRuntime: MessageRatingsProviding {
     func clearMessageRatings() {
         ratingDeliveryTask?.cancel(); ratingDeliveryTask = nil
         ratingRetryTask?.cancel(); ratingRetryTask = nil
+        ratingSignalTimer?.cancel(); ratingSignalTimer = nil
         let held = mutedDecisions
+        // Erasure must not let the store observer enqueue an empty export while clearing.
+        let onChange = messageRatings?.onChange
+        messageRatings?.onChange = nil
+        defer { messageRatings?.onChange = onChange }
         do { try messageRatings?.clear(); ratingError = nil }
         catch { ratingError = error.localizedDescription; return }
         ratingExportVersion = messageRatings?.state.version
