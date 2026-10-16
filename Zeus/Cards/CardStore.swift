@@ -44,6 +44,7 @@ final class CardStore: CardStoring {
     @ObservationIgnored var responseHandler: ((Card, CardResponse) -> Void)?
     @ObservationIgnored var onHistoryCleared: (() -> Void)?
     @ObservationIgnored var pendingHistoryIDs: (() -> Set<String>)?
+    @ObservationIgnored var onRatingRead: ((String) -> Void)?
     @ObservationIgnored var onAdd: ((Card) -> Void)?
     @ObservationIgnored private let fileURL: URL
     @ObservationIgnored private let clock: () -> Date
@@ -88,7 +89,7 @@ final class CardStore: CardStoring {
 
     /// High-priority arrivals interrupt the stack; each group shows its newest arrivals first.
     var openCards: [Card] {
-        cards.enumerated().filter { $0.element.status == .open }.sorted { lhs, rhs in
+        cards.enumerated().filter { $0.element.status == .open && !$0.element.isRatingHeld }.sorted { lhs, rhs in
             let a = rank(lhs.element.priority), b = rank(rhs.element.priority)
             if a != b { return a > b }
             return lhs.offset > rhs.offset
@@ -100,7 +101,7 @@ final class CardStore: CardStoring {
     }
 
     /// Agent messages remain in the thread after dismissal/expiry; outgoing messages never badge.
-    var unseenCount: Int { cards.filter { $0.kind != .userMessage && !seenIDs.contains($0.id) }.count }
+    var unseenCount: Int { cards.filter { $0.kind != .userMessage && !$0.isRatingHeld && !seenIDs.contains($0.id) }.count }
     var hasUnseenCards: Bool { unseenCount > 0 }
 
     func setConversationOpen(_ open: Bool, automaticallyMarkSeen: Bool = true) {
@@ -111,7 +112,7 @@ final class CardStore: CardStoring {
 
     /// Batch persistence avoids one disk write per bubble when the thread opens.
     func markAllSeen() {
-        let ids = Set(cards.filter { $0.kind != .userMessage }.map(\.id))
+        let ids = Set(cards.filter { $0.kind != .userMessage && !$0.isRatingHeld }.map(\.id))
         guard !ids.isSubset(of: seenIDs) else { return }
         var next = snapshot
         let newlyEligible = cards.contains { $0.status == .open && isPlainMessage($0) && !seenIDs.contains($0.id) }
@@ -132,7 +133,7 @@ final class CardStore: CardStoring {
         }
         var next = snapshot
         next.cards.append(card)
-        if isConversationOpen && automaticallyMarkSeen && card.kind != .userMessage { next.seenIDs.insert(card.id) }
+        if isConversationOpen && automaticallyMarkSeen && card.kind != .userMessage && !card.isRatingHeld { next.seenIDs.insert(card.id) }
         guard commit(next) else { return }
         if card.status == .open { onAdd?(card) }
     }
@@ -365,7 +366,10 @@ final class CardStore: CardStoring {
         guard let card = card(id: id), card.kind != .userMessage, !seenIDs.contains(id) else { return }
         var next = snapshot
         next.seenIDs.insert(id)
-        if commit(next), card.status == .open, isPlainMessage(card) { retainHistory(keepingNewest: 500, pendingCardIDs: []) }
+        if commit(next) {
+            onRatingRead?(id)
+            if card.status == .open, isPlainMessage(card) { retainHistory(keepingNewest: 500, pendingCardIDs: []) }
+        }
     }
 
     /// Consume the reveal durably before it starts. False means already consumed or unable to save.
@@ -378,7 +382,7 @@ final class CardStore: CardStoring {
         return true
     }
     func markAllRevealed() {
-        let next = revealedIDs.union(cards.filter { $0.kind != .userMessage }.map(\.id))
+        let next = revealedIDs.union(cards.filter { $0.kind != .userMessage && !$0.isRatingHeld }.map(\.id))
         guard next != revealedIDs, save(snapshot: Snapshot(cards: cards, seenIDs: seenIDs, revealedIDs: next, outgoingStates: outgoingStates, outgoingDeliveryIDs: outgoingDeliveryIDs, notices: notices)) else { return }
         revealedIDs = next
     }
@@ -634,4 +638,9 @@ extension CardStore: AdmissionNoticeRecording {
         }
         return true
     }
+}
+
+extension Card {
+    /// UI suppression follows the durable runtime decision, never the agent's priority.
+    var isRatingHeld: Bool { origin != .reply && muteDecision != nil && muteDecision?.releasedAt == nil }
 }

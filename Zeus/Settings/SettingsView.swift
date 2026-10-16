@@ -37,6 +37,7 @@ struct SettingsView: View {
     var learn: LearnFromMe?
     var learning: LearningPresentation?
     var openJournal: () -> Void = {}
+    var ratings: MessageRatingsModel? = nil
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
     /// This root's own colors come from the theme directly: the environment it sets applies to its children.
@@ -71,6 +72,10 @@ struct SettingsView: View {
                 .onChange(of: navigation.tab) { revealManagedConfirmation(proxy) }
                 .onChange(of: learning?.rules?.selectionRevision, initial: true) { _, _ in
                     guard navigation.tab == .rules, let id = learning?.rules?.selectedRuleID else { return }
+                    Task { @MainActor in await Task.yield(); proxy.scrollTo(id, anchor: .center) }
+                }
+                .onChange(of: ratings?.selectedRatingID) { _, id in
+                    guard let id else { return }
                     Task { @MainActor in await Task.yield(); proxy.scrollTo(id, anchor: .center) }
                 }
             }
@@ -146,6 +151,8 @@ struct SettingsView: View {
                 else { Text("Learn from me isn't available here.").settingsCaption() }
             }
         case .rules:
+            VStack(alignment: .leading, spacing: 12) {
+            if let ratings { MessageRatingsSettingsView(model: ratings); SettingsDivider() }
             if let rules = learning?.rules {
                 VStack(alignment: .leading, spacing: 12) {
                     RulesSettingsView(model: rules)
@@ -153,6 +160,7 @@ struct SettingsView: View {
                 }
             }
             else { Text("Rules aren't available here.").settingsCaption() }
+            }
         case .about:
             AboutSettingsView()
         #if DEBUG

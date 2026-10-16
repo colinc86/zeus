@@ -14,6 +14,7 @@ struct PeekView: View {
     let panel: PeekPanelState
     let settings: AppSettings
     let activity: SurfaceActivity
+    var ratings: MessageRatingsModel? = nil
     let open: (PeekModel.OpenAction) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -26,7 +27,7 @@ struct PeekView: View {
                 PeekContent(card: card, layout: panel.layout, moreCount: model.moreCount, error: model.answerError,
                             answeredOptionID: model.answeredOptionID, tail: panel.tail,
                             reveal: !model.isTyping || reduceMotion || !settings.typewriterEnabled ? .full : .typing(start: model.startedAt),
-                            open: open, answer: { _ = model.answer(optionID: $0) }, close: { model.close(markSeen: true) })
+                            ratings: ratings, rate: { ratings?.begin(card); open(.message) }, open: open, answer: { _ = model.answer(optionID: $0) }, close: { ratings?.provider?.ratingCardDismissed(id: card.id); model.close(markSeen: true) })
                     .background { Color.clear.contentShape(Rectangle()).onTapGesture { open(.message) } }
                     .onHover { model.setHovering($0) }
                     .transition(.zeusPeek(reduceMotion: reduceMotion, edge: panel.tail.edge))

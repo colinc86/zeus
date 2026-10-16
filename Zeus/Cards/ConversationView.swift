@@ -20,6 +20,7 @@ struct ConversationView: View {
     let openSettings: () -> Void
     let copySetup: () -> Void
     let resize: (CGFloat) -> Void
+    var ratings: MessageRatingsModel? = nil
     var managed: ManagedAssistantModel? = nil
     var openTerminal: () async throws -> Void = {}
     var newConversation: () -> Void = {}
@@ -214,7 +215,7 @@ struct ConversationView: View {
             .onChange(of: panel.scrollRequest) { openTarget(proxy) }
             .onAppear {
                 guard panel.isVisible else { return }
-                focusComposer(); openTarget(proxy)
+                if ratings?.drafts.isEmpty != false { focusComposer() }; openTarget(proxy)
                 withAnimation(.easeOut(duration: 0.12)) { appeared = true }
             }
             .onChange(of: panel.isVisible) {
@@ -223,7 +224,7 @@ struct ConversationView: View {
                     model.openPanel(viewportManaged: true)
                     pageCount = ConversationLayout.pageSize
                     userHasScrolled = false
-                    focusComposer(); openTarget(proxy)
+                    if ratings?.drafts.isEmpty != false { focusComposer() }; openTarget(proxy)
                     withAnimation(.easeOut(duration: 0.12)) { appeared = true }
                 } else {
                     model.closePanel(); composerFocused = false
@@ -237,13 +238,15 @@ struct ConversationView: View {
                 if current != nil { followLatest() }
             }
             .onChange(of: model.thread.last?.body) { _, _ in
-                if !atBottom { pendingLatest = true }
+                if !atBottom && model.thread.last?.isRatingHeld != true { pendingLatest = true }
             }
             .onChange(of: model.thread.map(\.id)) { old, _ in
                 guard panel.isVisible else { return }
+                let arrivals = model.thread.filter { !old.contains($0.id) }
+                let added = arrivals.filter { !$0.isRatingHeld }
+                guard arrivals.isEmpty || !added.isEmpty else { return }
                 if atBottom && !userScrolling { frames.removeValue(forKey: "latestMessage"); latest(proxy) } else { pendingLatest = true }
-                let added = model.thread.filter { !old.contains($0.id) && !$0.isUser }
-                if let entry = added.last {
+                if let entry = added.last(where: { !$0.isUser }) {
                     NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested,
                         userInfo: [.announcement: announcement(entry), .priority: NSAccessibilityPriorityLevel.medium.rawValue])
                 }
@@ -505,9 +508,15 @@ struct ConversationView: View {
                         Color.clear.preference(key: ThreadFrames.self,
                             value: entry.id == latestID ? [entry.id: frame, "latestMessage": frame] : [entry.id: frame])
                     })
+            } else if case .agentCard(let card) = entry.content, let ratings, ratings.isCollapsed(card) {
+                MutedMessageLine(card: card, model: ratings)
+                    .background(GeometryReader { geometry in
+                        Color.clear.preference(key: ThreadFrames.self, value: entry.id == latestID ? ["latestMessage": geometry.frame(in: .named("threadContent"))] : [:])
+                    })
             } else {
+            if case .agentCard(let card) = entry.content, let ratings, ratings.isHeld(card) { MutedMessageLine(card: card, model: ratings) }
             ConversationVisibleBubble(bubble: ConversationBubble(entry: entry, answerCaption: ConversationLayout.answerCaption(entry, after: previous, sources: sources), showTime: !grouped, shortcuts: entry.sourceCardID == shortcutID,
-                               model: model, settings: settings, isVisible: panel.isVisible, maxWidth: ConversationWidth.bubble(panelWidth: panel.width, user: entry.isUser),
+                               model: model, settings: settings, ratings: ratings, isVisible: panel.isVisible, maxWidth: ConversationWidth.bubble(panelWidth: panel.width, user: entry.isUser),
                                openSettings: openSettings, copySetup: copySetup, sessions: messaging.sessions, focus: $focusedControl,
                                onReply: { id in model.rearmReplyTarget(cardID: id); panel.focusRequest += 1 }), visibility: visibility)
                 .background(GeometryReader { geometry in
@@ -520,12 +529,29 @@ struct ConversationView: View {
         .padding(.top, row.first ? 0 : grouped ? 4 : 10)
     }
     private var sessionLabelEntries: Set<String> { ConversationLayout.sessionLabelEntries(entries, cards: store.cards) }
+    private func allEntriesCount(from cardID: String) -> Int {
+        guard let index = model.thread.firstIndex(where: { $0.sourceCardID == cardID }) else { return ConversationLayout.pageSize }
+        return model.thread.count - index
+    }
     private func shortcuts(proxy: ScrollViewProxy) -> some View {
         VStack {
             ForEach(1...9, id: \.self) { number in
                 Button("") { _ = model.pickNumberedOption(number) }.keyboardShortcut(KeyEquivalent(Character(String(number))), modifiers: .command).focusable(false)
             }
             Button("") { latest(proxy) }.keyboardShortcut(.downArrow, modifiers: .command).focusable(false)
+            Button("") {
+                guard let ratings else { return }
+                let focusedID = focusedControl?.entryID.replacingOccurrences(of: "card:", with: "")
+                let target = focusedID.flatMap { store.card(id: $0) }.flatMap { ratings.canRate($0) ? $0 : nil }
+                    ?? ratings.focusedRatingCardID.flatMap { ratings.drafts[$0] != nil ? store.card(id: $0) : nil }
+                    ?? store.cards.last(where: { ratings.canRate($0) })
+                guard let target else { return }
+                composerFocused = false; ratings.toggle(target)
+                if ratings.drafts[target.id] != nil {
+                    pageCount = max(pageCount, allEntriesCount(from: target.id))
+                    Task { @MainActor in await Task.yield(); proxy.scrollTo("card:" + target.id, anchor: .center) }
+                }
+            }.keyboardShortcut("r", modifiers: .command).focusable(false)
             Button("", action: openSettings).keyboardShortcut(",", modifiers: .command).focusable(false)
             ConversationStripKeys(jump: { jumpStatus(proxy) }, skip: canSkipFromStrip ? { skipFromStrip() } : nil)
         }.opacity(0).allowsHitTesting(false).accessibilityHidden(true)
@@ -539,6 +565,7 @@ private struct ConversationBubble: View, Equatable {
     let shortcuts: Bool
     let model: ConversationModel
     let settings: AppSettings
+    var ratings: MessageRatingsModel? = nil
     var isVisible: Bool
     let maxWidth: CGFloat
     let openSettings: () -> Void
@@ -550,8 +577,9 @@ private struct ConversationBubble: View, Equatable {
         lhs.entry == rhs.entry && lhs.answerCaption == rhs.answerCaption && lhs.showTime == rhs.showTime
             && lhs.shortcuts == rhs.shortcuts && lhs.isVisible == rhs.isVisible
             && lhs.maxWidth == rhs.maxWidth
-            && lhs.model === rhs.model && lhs.settings === rhs.settings && lhs.sessions == rhs.sessions
+            && lhs.model === rhs.model && lhs.ratings === rhs.ratings && lhs.settings === rhs.settings && lhs.sessions == rhs.sessions
     }
+    @State private var ratingHovered = false
     @State private var attachmentError: String?
     @State private var attachmentNotice: String?
     @Environment(\.zeusPalette) private var palette
@@ -562,9 +590,17 @@ private struct ConversationBubble: View, Equatable {
                 HStack(spacing: 4) { ZeusGlyph(.reply); Text(answerCaption) }
                     .zeusFont(.caption).foregroundStyle(palette.secondaryText)
             }
-            ZeusBubble(entry.isUser ? .user : .agent, muted: entry.isMuted, highPriority: card?.priority == .high, maxWidth: maxWidth) {
+            ZeusBubble(entry.isUser ? .user : .agent, muted: entry.isMuted || card.map { ratings?.isHeld($0) == true } == true, highPriority: card?.priority == .high && card.map { ratings?.isHeld($0) == true } != true, maxWidth: maxWidth) {
                 if let card {
-                    if card.title != nil || card.kind == .progress {
+                    if let ratings, ratings.canRate(card), !ratings.isHeld(card) {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            if let title = card.title { Text(title).zeusFont(.button).foregroundStyle(palette.title) }
+                            Spacer(minLength: 0)
+                            if showTime { Text(entry.timestamp.formatted(.dateTime.hour().minute())).zeusFont(.caption).foregroundStyle(palette.secondaryText) }
+                            MessageRatingButton(card: card, model: ratings, hovered: ratingHovered,
+                                showAtRest: !ratings.hasOpenedRow && ratings.newestUnpromptedID == card.id)
+                        }
+                    } else if card.title != nil || card.kind == .progress {
                         ZeusBubbleHeader(title: card.title ?? String(card.body.split(separator: "\n").first ?? ""),
                                          trailing: showTime ? entry.timestamp.formatted(.dateTime.hour().minute()) : nil)
                     }
@@ -597,6 +633,7 @@ private struct ConversationBubble: View, Equatable {
                     } else {
                         ZeusOptionButtons(card.options, state: optionState(card)) { _ in }
                     }
+                    if let ratings, ratings.canRate(card) { MessageRatingInline(card: card, model: ratings) }
                     if card.id == WelcomeCard.id {
                         Button("Settings → Assistant", action: openSettings).accessibilityLabel("Settings, Assistant").buttonStyle(ZeusButtonStyle(.primary)).focusable()
                             .modifier(ConversationControlFocus(focus: focus, target: .init(entryID: entry.id, controlID: "settings")))
@@ -609,8 +646,11 @@ private struct ConversationBubble: View, Equatable {
                     }
                 } else { bodyText }
             }
+            .onHover { ratingHovered = $0 }
+            .modifier(OptionalRatingAccessibility(card: card, model: ratings))
             .accessibilityElement(children: .contain)
             .accessibilityLabel(ConversationLayout.accessibilityLabel(entry, sessions: sessions))
+            if let card, let ratings { MutedMessageReason(card: card, model: ratings) }
             if let card, card.response?.skipped == true {
                 Text("Skipped").zeusFont(.caption).foregroundStyle(palette.secondaryText)
                     .accessibilityElement(children: .ignore).accessibilityLabel("Skipped")

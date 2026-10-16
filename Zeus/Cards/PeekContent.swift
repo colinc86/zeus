@@ -12,6 +12,8 @@ struct PeekContent: View {
     let answeredOptionID: String?
     let tail: ZeusDialogTail?
     let reveal: ZeusPeekBubble.Reveal
+    var ratings: MessageRatingsModel? = nil
+    var rate: () -> Void = {}
     var open: (PeekModel.OpenAction) -> Void = { _ in }
     var answer: (String) -> Void = { _ in }
     var close: () -> Void = {}
@@ -38,6 +40,7 @@ struct PeekContent: View {
             HStack(alignment: .firstTextBaseline, spacing: ZeusTheme.Spacing.xs) {
                 if let title = card.title { Text(title).zeusFont(.button).foregroundStyle(palette.title).lineLimit(1) }
                 Spacer(minLength: ZeusTheme.Spacing.xs)
+                if let ratings, ratings.canRate(card) { MessageRatingButton(card: card, model: ratings, hovered: hovering, action: rate) }
                 if moreCount > 0 {
                     Button("+\(moreCount) more") { open(.more) }
                         .buttonStyle(.plain).zeusFont(.badge).foregroundStyle(palette.onSecondary)
@@ -76,6 +79,7 @@ struct PeekContent: View {
             }
         }
         .onHover { hovering = $0 }
+        .modifier(MessageRatingAccessibility(card: card, model: ratings))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Self.accessibilityDescription(card, choice: font, palette: palette))
         .accessibilityAction { open(.message) }

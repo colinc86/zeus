@@ -40,8 +40,8 @@ enum StatusStripState {
             $0.element.createdAt == $1.element.createdAt ? $0.offset < $1.offset : $0.element.createdAt < $1.element.createdAt
         }.map(\.element)
     }
-    static func questions(_ cards: Cards) -> [Card] { ordered(cards.values.filter(isOpenQuestion)) }
-    static func unread(_ cards: Cards) -> [Card] { ordered(cards.values.filter { $0.kind != .userMessage && !cards.seen.contains($0.id) }) }
+    static func questions(_ cards: Cards) -> [Card] { ordered(cards.values.filter { !$0.isRatingHeld && isOpenQuestion($0) }) }
+    static func unread(_ cards: Cards) -> [Card] { ordered(cards.values.filter { $0.kind != .userMessage && !$0.isRatingHeld && !cards.seen.contains($0.id) }) }
     static func mirroredPrompt(_ cards: Cards) -> Card? {
         ordered(cards.values.filter { $0.status == .open && $0.id.hasPrefix(CardStore.managedActionPrefix)
             && $0.options.contains { $0.id != "open-terminal" } }).last
