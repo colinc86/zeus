@@ -595,7 +595,7 @@ A new unprompted card whose kind is stopped is held: it lands in the thread at i
 
 ### 17.4 Settings › Rules › "What you hear about"
 
-The last section of the Rules pane, after a `SettingsDivider`: `settingsTitle` "What you hear about" with a count ("What you hear about · 6"). While something is muted today, a line under the title: "Muted today: 3 · Show" (opens the panel with them shown).
+The first section of the Rules pane, above the "New rules" dial and followed by a `SettingsDivider`: ratings don't depend on Learn from me, so they come first and are always there. `settingsTitle` "What you hear about" with a count ("What you hear about · 6"). While something is muted today, a line under the title: "Muted today: 3 · Show" (opens the panel with them shown).
 
 Rows are grouped under `settingsBody` subheads "More like this", "Need-to-know" and "Stopped"; empty groups are hidden.
 
