@@ -150,6 +150,13 @@ import ZeusProtocol
                     let card = Card(kind: .message, title: "Release plan", body: "The smaller rollout keeps recovery simple. Review the trade-offs before approving the launch.", attachments: attachments)
                     let layout = PeekLayout.measure(card: card, font: font, moreCount: 1, error: nil, answeredOptionID: nil, available: .init(width: 500, height: 500))
                     try await render(PeekContent(card: card, layout: layout, moreCount: 1, error: nil, answeredOptionID: nil, tail: nil, reveal: .full).padding(12), name: "at1-chip-peek-" + name, theme: theme, scheme: scheme, font: font, width: layout.width + 24, height: layout.contentSize.height + 24)
+                    if theme.id == "classic" {
+                        try await render(VStack(alignment: .leading, spacing: 8) {
+                            Text("Review the smaller rollout.").zeusFont(.body)
+                            AttachmentChip(attachment: attachments[0], previewInteraction: .rest)
+                            ZeusOptionButtons([.init(id: "approve", label: "Approve")], state: .open(shortcuts: false)) { _ in }
+                        }.padding(12), name: "at1-chip-present-short-" + name, theme: theme, scheme: scheme, font: font, width: 240, height: 300)
+                    }
                     try await render(AttachmentChip(attachment: attachments[0], compact: true).padding(12), name: name + "-peek-chip", theme: theme, scheme: scheme, font: font, width: 280, height: 120)
                 }
             }
