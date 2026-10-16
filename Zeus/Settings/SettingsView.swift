@@ -119,7 +119,7 @@ struct SettingsView: View {
                     Text(PrivacySettingsView.caveat).settingsCaption()
                     if learning.enabled { Text(learning.redactionCaption).settingsCaption() }
                     LearningStorageWarningView(warnings: learning.storageWarnings)
-                    LearningFolderView(model: learning.folder, managed: managed.enabled)
+                    LearningFolderView(model: learning.folder, managed: managed.enabled, openAssistant: { navigation.tab = .agent })
                     SettingsDivider()
                     PrivacySettingsView(learn: learn, observations: learning.policies,
                         onObservationChange: { learning.settingsChanged() }, deleteAll: { learning.deleteEverything() })

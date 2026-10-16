@@ -74,14 +74,14 @@ import ZeusDesign
         let viewer = JournalViewerModel(journal: journal, now: now); viewer.folder = folder
         for scheme in [ColorScheme.light, .dark] {
             let prefix = scheme == .light ? "light" : "dark"
-            for mode in ["managed", "chosen", "none", "error"] {
+            for mode in ["managed", "managed-none", "chosen", "none", "error"] {
                 fake.managedFolder = mode == "managed" ? URL(fileURLWithPath: "/Fixture/Zeus Assistant") : nil
                 fake.ownFolder = ["chosen", "error"].contains(mode) ? URL(fileURLWithPath: "/Fixture/Assistant") : nil
                 fake.lastWriteError = mode == "error" ? "Fixture write failure" : nil
                 try await render(VStack(alignment: .leading, spacing: 16) {
                     Text("Learn from me").settingsTitle()
                     Text(PrivacySettingsView.caveat).settingsCaption()
-                    LearningFolderView(model: folder, managed: mode == "managed")
+                    LearningFolderView(model: folder, managed: mode.hasPrefix("managed"))
                 }.padding(24), name: prefix + "-folder-" + mode, scheme: scheme, height: 320)
             }
             try await render(ObservationConsentSheet(enable: {}, cancel: {}), name: prefix + "-focus-consent", scheme: scheme, width: 480, height: 770)
