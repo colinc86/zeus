@@ -17,6 +17,8 @@ Digest and moment deliveries append existing relative file paths. Reflections wr
 - `build/lf1-folder-final.log`: expanded 10-test folder suite passed, including retained JPEG/description layout and independent words expiry.
 - `build/lf1-tombstone.log`: 10 folder tests passed after adding the Finder-delete/disable boundary.
 - `build/lf1-real-claude.log` and `TestFixtures/live/lm4/digest.json`: real Claude Code 2.1.301 passed native `Read` → `zeus_ack` → `zeus_say`, one delivery attempt, exact file-line receipt, and no late-ack ledger after erasure.
-- Final integrated full-suite and default quick live-gate results follow in the hand-back/evidence update.
+- `build/lf1-live-quick.log` / `build/live/20261016T014652.605222Z`: default `scripts/live.sh --quick` passed every probe/agent including E2E in 436.01 s.
+- Final writer follow-up `28a5ee8`: observable Finder availability, reuse of immutable frame exports (delete/Undo invalidates the cache), and omission of stale file references after an export error. `build/lf1-final-writer.log`: 13/13 tests passed in 3.051 s. `build/lf1-final-real-claude.log`: real-Claude file-read proof passed again against this follow-up.
+- The first integrated full run passed all core tests but failed two app-owned disclosure-prefix expectations. Appdev corrected those expectations without weakening the geometry assertions; the final integrated full rerun is pending.
 
 All storage tests inject fixture encryption keys and temporary destinations. Live checks use a private tmux socket, disposable HOME/config and a synthetic localhost model; they never use the user's assistant folder or credentials.

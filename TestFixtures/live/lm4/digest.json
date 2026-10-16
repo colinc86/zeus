@@ -8,46 +8,46 @@
     "zeus_say"
   ],
   "state": {
+    "status": "running(Host.ManagedSessionStatus.Activity.idle)",
+    "ok": true,
     "deliveries": [
       {
+        "kind": "learning",
         "id": "lm4-digest",
         "discarded": false,
-        "kind": "learning",
-        "attempts": 1,
-        "acked": true
+        "acked": true,
+        "attempts": 1
       }
     ],
     "pane": "%0",
+    "unread": 0,
+    "sessions": 1,
     "error": null,
     "receipts": [
       {
+        "id": "sent:lm4-digest:9a652386f4a730b9186a1570",
         "level": 1,
-        "time": "2026-10-16T01:35:15.913Z",
-        "id": "sent:lm4-digest:e1e33e34d4842cbf7fe53efe",
+        "kind": "sentToAssistant",
+        "time": "2026-10-16T01:56:45.746Z",
         "payload": {
           "report": {
             "counts": [],
             "semanticEngine": "patternsOnly"
           },
           "value": {
-            "description": "Sent your daily summary",
-            "text": "Synthetic morning summary: working on a fixture project.\n\nFiles: Zeus/days/2026-10-15/summary.md",
             "details": {
+              "sessionID": "9a652386f4a730b9186a157046401a790e6d497ca01e3b94fa8c28790d88ba22",
               "delivery_id": "lm4-digest",
-              "sessionID": "e1e33e34d4842cbf7fe53efe6d7b028cc7cd5106a9bd17c3d1b32e858d0593ec",
+              "kind": "digest",
               "agent": "claude",
-              "sessionLabel": "Claude \u00b7 Zeus",
-              "kind": "digest"
-            }
+              "sessionLabel": "Claude \u00b7 Zeus"
+            },
+            "description": "Sent your daily summary",
+            "text": "Synthetic morning summary: working on a fixture project.\n\nFiles: Zeus/days/2026-10-15/summary.md"
           }
-        },
-        "kind": "sentToAssistant"
+        }
       }
-    ],
-    "ok": true,
-    "sessions": 1,
-    "status": "running(Host.ManagedSessionStatus.Activity.idle)",
-    "unread": 0
+    ]
   },
   "model_received_digest": true,
   "isolation": "private tmux, disposable HOME/config, localhost synthetic model, fixture encryption key"
