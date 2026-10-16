@@ -65,7 +65,7 @@ import ZeusProtocol
         let (host, window) = try await mount(ScreenConsentSheet(enable: {}, cancel: {}, heightLimit: 560).frame(width: 540, height: 560), width: 540, height: 560)
         defer { window.contentView = nil; window.close() }
         let nodes = lm2bNodes(host)
-        for prefix in ["Descriptions go to your assistant", "Next, macOS asks", "Continue", "Not Now"] {
+        for prefix in ["Covered pictures and their descriptions go into your assistant's folder", "Next, macOS asks", "Continue", "Not Now"] {
             let node = try #require(nodes.first { lm2bLabel($0).hasPrefix(prefix) }, "Missing \(prefix); fixture labels: \(nodes.map(lm2bLabel).filter { !$0.isEmpty })")
             let screenFrame = try #require((node as AnyObject).accessibilityFrame?())
             let frame = host.convert(window.convertFromScreen(screenFrame), from: nil)
@@ -76,7 +76,7 @@ import ZeusProtocol
         let (host, window) = try await mount(TypingConsentSheet(enable: {}, cancel: {}, heightLimit: 540).frame(width: 540, height: 540), width: 540, height: 540)
         defer { window.contentView = nil; window.close() }
         let nodes = lm2bNodes(host)
-        for prefix in ["Topics go to your assistant", "Next, macOS asks", "Continue", "Not Now"] {
+        for prefix in ["Topics and the words, as kept, go into your assistant's folder", "Next, macOS asks", "Continue", "Not Now"] {
             let node = try #require(nodes.first { lm2bLabel($0).hasPrefix(prefix) })
             let screenFrame = try #require((node as AnyObject).accessibilityFrame?())
             #expect(host.bounds.insetBy(dx: -1, dy: -1).contains(host.convert(window.convertFromScreen(screenFrame), from: nil)))
