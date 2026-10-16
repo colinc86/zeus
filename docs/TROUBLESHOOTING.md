@@ -1,0 +1,89 @@
+# Troubleshooting and FAQ
+
+[Documentation](README.md) · [Setup](SETUP.md) · [Settings](SETTINGS.md)
+
+## Assistant and connection
+
+| Symptom | Check or action |
+|---|---|
+| **Start** is disabled | Choose a folder and an installed agent in Assistant settings. Install tmux if requested, then press **Check Again**. |
+| An installed agent is not detected | Press **Check Again**. Zeus searches common executable locations, including Homebrew and `~/.local/bin`. Make sure the CLI is installed, not only a separate desktop app. |
+| **Waiting for you in Terminal** | Use the choices in a mirrored permission card, or **Open in Terminal** for login, folder trust or an unrecognized prompt. Messages wait until it clears. |
+| **Couldn't keep it running** | Open Terminal, inspect why the agent exits, fix the agent's sign-in/configuration, then press **Try Again**. |
+| No session appears with **Connect your own** | Check `claude mcp list`, `codex mcp list` or `opencode mcp list`. Verify the bridge path, then start a fresh agent session. |
+| A tool says Zeus is not running | Open Zeus. If it is already open, check that you have not started two copies using the same bridge socket. |
+| A tool says Zeus only talks to its assistant | Select that session in Assistant settings, or use the quiet notice's **Make it my assistant** action. **Any session with the Zeus server** broadens access deliberately. |
+| Claude's direct channel does not deliver | Answer its channel prompt in Terminal. If the agent or organization does not allow channels, use tmux and **Its Terminal pane**. Managed mode already uses that route. |
+| Codex's test message waits | Run Codex inside tmux with the command from Settings, choose its session and pane, and ensure the prompt is empty. |
+| OpenCode's test message waits | Start the OpenCode app with the fixed port, not `opencode serve`; check Server URL, password and the selected **Conversation**. Re-select after changing the URL. |
+| The character keeps thinking after a turn ends | Use the launch command from Settings for completion reporting. Explicit working statuses last until the assistant resets them or their TTL expires. Selected Terminal-pane sessions also have read-only completion detection. |
+
+## Messages and learning delivery
+
+| Symptom | Check or action |
+|---|---|
+| A message is queued | Read its caption. Zeus saves messages while the assistant is disconnected, busy, blocked, or has an unsent Terminal draft. |
+| **Waiting on unsent text in Terminal** | Open Terminal and finish or remove your draft yourself. Zeus does not send or clear it. Cancel queued messages only if you no longer want them delivered. |
+| **Message not delivered** or a red warning | Open **Delivery problem…**. Use the offered recovery action, **Retry Now** when appropriate, or **Discard…** to cancel after confirmation. |
+| The same delivery appears twice | Retries are expected without acknowledgment. The agent should handle each delivery ID once and call `zeus_ack`; the assistant template explains this. |
+| A summary stays ready; Sent is empty | Open **What Zeus Kept › Sent to your assistant**. **Waiting** gives the current reason and an action when one is available. Ready does not mean received. |
+| New tools/instructions notice persists | Use **Restart assistant** at a convenient point. If you edited the template, compare through **Open Folder** or confirm **Use the new template…**. |
+| A message arrives without a bubble or sound | Check quiet hours, whether Zeus is hidden, whether the conversation is open, and active timing rules. Sounds are off by default. |
+| The assistant's answers appear only in Terminal | Ask it to reply through Zeus. New assistant folders contain instructions for using `zeus_say`, `zeus_ask` and `zeus_present`. |
+
+## Learn from me
+
+| Symptom | Check or action |
+|---|---|
+| No activity is recorded | Enable **Let Zeus learn when and in what I work**. Check Pause for Today and the level's app scope. |
+| Window titles are absent | Enable Windows and pages, grant Accessibility, and check the private/chosen-app lists. Browser context also needs a supported, permitted browser. |
+| Safari details are absent | This is the default. Explicitly choosing Safari for a level permits details from its private windows too; read the caption before doing so. |
+| No pictures are taken | Check Screen Recording and reopen when requested. Identical frames are skipped. Camera use, presentation/mirroring, secure input, private contexts and the hourly cap can stop capture. |
+| Descriptions are simple or delayed | Apple Intelligence may be unavailable, or low power/battery conditions may have deferred descriptions. |
+| Typing cannot be enabled | Apple Intelligence must be available. The disabled switch explains what is missing. |
+| Typing is enabled but nothing is kept | Check Input Monitoring, reopen when asked, and add the app to the Typing list. Secure input, private contexts and unsupported input methods limit capture. |
+| **Private input: Zeus isn't noting typing** | macOS secure input is active. Capture pauses until it clears. |
+| Ask About This attaches nothing | Enable Windows and pages or Screen, grant its permission, and check the caption. Private or unavailable context is omitted; nothing is attached from a disabled level. |
+| The journal/rules cannot be opened | Unlock the Keychain or sign in again. New records wait in memory; quitting before recovery loses unsaved records. |
+| No rules have been proposed | Learning needs relevant evidence and a delivered reflection. Evaluable rules require evidence across two days; the assistant may appropriately propose none. |
+| A rule is only **Suggested** or **Waiting for your OK** | Turn it on or approve its shadow result in Rules. An unapproved acting rule is not permission to act. |
+| The assistant cannot propose a time trigger | The current advertised MCP schema has invalid fractional minute bounds. Runtime minutes are 0–1439, but a schema-validating client may reject them. See [the tool limitation](MCP.md#zeus_propose_rules). |
+
+## Appearance and sound
+
+| Symptom | Check or action |
+|---|---|
+| Zeus is hidden and the menu bar icon is off | Open Zeus from Spotlight, Launchpad or Finder, or use the Talk shortcut. |
+| Zeus is off screen | **Settings › Character › Reset Avatar Position**. |
+| Zeus stays asleep | Check **Settings › Assistant › Quiet hours**. Equal start/end hours mean all day. |
+| A character or theme does not load | Read the validation error in Settings. IDs starting with `_` are skipped. See [customization](CUSTOMIZATION.md). |
+| A custom theme is hard to read | Look for **Low contrast** and adjust its colors, or choose a bundled theme. |
+| The Talk shortcut does not work | Record another combination in General. macOS-reserved or already registered combinations are refused. |
+| No pop-up sound | Enable **Play a sound when Zeus pops up**, choose a sound, and check the Mac's alert volume. Quiet hours and an open conversation suppress it. |
+| Update checks are unavailable | Debug builds disable updates. Use a release build for automatic checks and **Check for Updates…**. |
+
+## FAQ
+
+**Does Zeus include an AI model or agent account?**  
+No assistant account is bundled. Install and configure Claude Code, Codex or OpenCode. Zeus uses Apple's on-device frameworks for learning redaction and descriptions.
+
+**Must I enable learning?**  
+No. Conversation, status, questions, attachments and assistant management work with all learning levels off.
+
+**Will quitting Zeus stop my assistant?**  
+No. The managed tmux agent keeps running. Use **Stop** if you want it to stop.
+
+**Does clearing the conversation erase the assistant's memory?**  
+No. It clears eligible Zeus history, retaining pending items. Starting a new assistant conversation and deleting learning records are separate actions. Agent files/provider history have their own lifecycle.
+
+**Does Delete Everything delete rules?**  
+It deletes the learning journal, summaries and Sent ledger, and cancels affected pending learning deliveries. Manage rules separately in **Settings › Rules**. It cannot retract data already received by the assistant.
+
+**Can Undo reverse every action?**  
+Appearance Undo is local to Zeus. A rule's Undo sends a reversal instruction to the assistant; whether the external action can actually be reversed depends on that action.
+
+**Can several sessions talk to Zeus?**  
+Choose **Any session with the Zeus server** under **Who may talk to Zeus**. The default admits only your selected assistant. Zeus manages only one assistant session itself.
+
+**Why is there no Dock icon?**  
+Zeus is a menu-bar application. Use the character, its right-click menu, the menu bar entry or the global Talk shortcut.
