@@ -73,7 +73,7 @@ import ZeusDesign
         try journal.append(item)
         fake.files[item.id] = fake.ownFolder?.appendingPathComponent("Zeus/days/2027-01-15/activity.md")
         let viewer = JournalViewerModel(journal: journal, now: now); viewer.folder = folder
-        let (host, window) = try await mount(JournalViewerView(model: viewer).padding(24))
+        let (host, window) = try await mount(JournalRecordRow(item: item, sent: false, expanded: false, toggle: {}, delete: {}, folder: folder).padding(24))
         defer { window.contentView = nil; window.close() }
         let legacyActions = lf1Nodes(host).flatMap { node -> [String] in
             let selector = NSSelectorFromString("accessibilityActionNames")

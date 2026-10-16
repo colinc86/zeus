@@ -222,7 +222,7 @@ struct JournalItemView: View {
     }
 }
 
-private struct JournalRecordRow: View {
+struct JournalRecordRow: View {
     @Environment(\.zeusPalette) private var palette
     let item: JournalItem
     let sent: Bool
