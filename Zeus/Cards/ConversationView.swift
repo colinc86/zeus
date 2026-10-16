@@ -581,8 +581,6 @@ private struct ConversationBubble: View, Equatable {
             && lhs.model === rhs.model && lhs.ratings === rhs.ratings && lhs.settings === rhs.settings && lhs.sessions == rhs.sessions
     }
     @State private var ratingHovered = false
-    @State private var attachmentError: String?
-    @State private var attachmentNotice: String?
     @Environment(\.zeusPalette) private var palette
 
     var body: some View {
@@ -609,8 +607,6 @@ private struct ConversationBubble: View, Equatable {
                     ForEach(card.attachments, id: \.id) { attachment in
                         attachmentRow(attachment)
                     }
-                    if let attachmentNotice { Text(attachmentNotice).zeusFont(.caption).foregroundStyle(palette.secondaryText) }
-                    if let attachmentError { Text(attachmentError).zeusFont(.caption).foregroundStyle(palette.destructive) }
                     if card.kind == .progress || card.progress != nil { ZeusProgressRow(value: card.progress.flatMap { $0.isFinite ? min(1, max(0, $0)) : nil }) }
                     if card.status == .open && !entry.isMuted {
                         ZeusFlowLayout(spacing: ZeusTheme.Spacing.s) {
@@ -693,36 +689,7 @@ private struct ConversationBubble: View, Equatable {
             .modifier(ConversationControlFocus(focus: focus, target: .init(entryID: entry.id, controlID: "retry")))
     }
     private func attachmentRow(_ attachment: Attachment) -> some View {
-        let revealOnly: Bool = if case .reveal? = AttachmentTarget.action(for: attachment) { true } else { false }
-        return VStack(alignment: .leading, spacing: 6) {
-          HStack(alignment: .top, spacing: 8) {
-            Image(systemName: ZeusAttachmentRow.symbol(for: attachment.kind)).font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(palette.title).frame(width: 18)
-            VStack(alignment: .leading, spacing: 0) {
-                Text(attachment.label).zeusFont(.body).foregroundStyle(palette.text).lineLimit(2)
-                Text(AttachmentTarget.locationCaption(for: attachment)).zeusFont(.caption).foregroundStyle(palette.secondaryText).lineLimit(1).truncationMode(.middle)
-            }
-          }
-          HStack(spacing: 8) {
-            Spacer(minLength: 0)
-            if attachment.kind != .url && !revealOnly {
-                Button("Show in Finder") { open(attachment, reveal: true) }.buttonStyle(ZeusButtonStyle(.secondary, size: .small))
-                    .focusable()
-                    .modifier(ConversationControlFocus(focus: focus, target: .init(entryID: entry.id, controlID: "reveal:\(attachment.id)")))
-                    .accessibilityLabel("Show \(attachment.label) in Finder")
-            }
-            Button(revealOnly ? "Show in Finder" : "Open") { open(attachment, reveal: false) }.buttonStyle(ZeusButtonStyle(.primary, size: .small))
-                .focusable()
-                .modifier(ConversationControlFocus(focus: focus, target: .init(entryID: entry.id, controlID: "open:\(attachment.id)")))
-                .accessibilityLabel(revealOnly ? "Show \(attachment.label) in Finder" : "Open \(attachment.label)")
-                .help(revealOnly ? AttachmentTarget.safetyCaption : "Open \(attachment.label)")
-          }
-        }
-        .padding(ZeusTheme.Spacing.xs + ZeusTheme.pixel)
-        .background {
-            PixelRoundedRectangle(steps: 1).fill(palette.field.opacity(0.55))
-                .overlay(PixelRoundedRectangle(steps: 1).stroke(palette.fieldBorder, lineWidth: ZeusTheme.pixel))
-        }
+        AttachmentChip(attachment: attachment, muted: entry.isMuted || card.map { ratings?.isHeld($0) == true } == true, entryID: entry.id, threadFocus: focus)
     }
     private var card: Card? { if case .agentCard(let card) = entry.content { return card }; return nil }
     private var bodyText: some View {
@@ -736,18 +703,7 @@ private struct ConversationBubble: View, Equatable {
         if card.status == .answered { return .answered(optionID: card.response?.optionID) }
         return .open(shortcuts: shortcuts)
     }
-    private func open(_ attachment: Attachment, reveal: Bool) {
-        // Recompute at click time: a symlink may have changed since the row was rendered.
-        guard let action = AttachmentTarget.action(for: attachment, reveal: reveal) else { attachmentError = "This attachment has an invalid target."; return }
-        attachmentError = nil; attachmentNotice = nil
-        switch action {
-        case .reveal(let target):
-            NSWorkspace.shared.activateFileViewerSelecting([target])
-            if !reveal { attachmentNotice = AttachmentTarget.safetyCaption }
-        case .open(let target):
-            if !NSWorkspace.shared.open(target) { attachmentError = "Could not open \(attachment.label)." }
-        }
-    }
+
 }
 
 private struct ConversationControlFocus: ViewModifier {
