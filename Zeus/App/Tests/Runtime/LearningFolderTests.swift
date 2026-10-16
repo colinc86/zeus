@@ -54,7 +54,10 @@ import ZeusProtocol
         #expect(!FileManager.default.fileExists(atPath: url.path))
         try f.journal.append(item); await f.writer.flush()
         #expect(FileManager.default.fileExists(atPath: url.path))
-        try FileManager.default.removeItem(at: url); await f.writer.flush()
+        try FileManager.default.removeItem(at: url)
+        // A policy prune must remember a prior Finder deletion too.
+        f.writer.enabledLevels = { [.activity] }; await f.writer.flush()
+        f.writer.enabledLevels = { [.focus] }
         try f.journal.append(f.item("two")); await f.writer.flush()
         #expect(!FileManager.default.fileExists(atPath: url.path))
         let disk = try LearningFolderDisk(stateURL: f.root.appendingPathComponent("state.json"))

@@ -101,6 +101,7 @@ final class LearningFolderDisk: @unchecked Sendable {
             for path in folder.files.keys where !keeping.contains(path) {
                 let url = try target(root, path, create: false)
                 if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
+                else { folder.finderDeleted.insert(path) }
                 folder.files.removeValue(forKey: path)
             }
             state.folders[k] = folder; try save()
