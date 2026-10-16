@@ -288,7 +288,7 @@ struct AgentUXTests {
         let f = try RuntimeFixture(); defer { f.stop() }
         let error = await f.call("zeus_say", ["message": "Bad", "body": "Bad"])
         #expect(error.isError)
-        #expect(error.structured?["error"] == "Unexpected arguments for zeus_say: body, message. Allowed: attachments, mood, priority, text, title, ttl_seconds.")
+        #expect(error.structured?["error"] == "Unexpected arguments for zeus_say: body, message. Allowed: about, attachments, mood, priority, text, title, ttl_seconds.")
         for (kind, target) in [("file", "relative.txt"), ("folder", "./folder"), ("url", "file:///tmp/test"), ("url", "https:"), ("file", "/tmp/\0bad")] {
             let result = await f.call("zeus_say", ["text": "Bad", "attachments": [["kind": .string(kind), "label": "Open", "target": .string(target)]]])
             #expect(result.isError)
