@@ -44,6 +44,7 @@ extension ZeusRuntime: LearningDeliveryPresenting {
     }
 
     func journalEvidenceDeleted(_ ids: Set<String>?) {
+        if ids == nil { clearMessageRatings() }
         reflectionTask?.cancel(); reflectionTask = nil
         let records = (ledger?.records ?? []).filter { [.learning, .reflection].contains($0.delivery.kind) }
         let erased = Set(records.filter { record in
@@ -56,7 +57,7 @@ extension ZeusRuntime: LearningDeliveryPresenting {
 
     func learningWasErased(_ id: String) -> Bool {
         erasedLearningDeliveryIDs.contains(id) || ledger?.record(id: id)?.discardedAt != nil
-            || (learnings as? any LearningDeletionObserving).map { !$0.retainedLearningIDs.contains(id) && ledger?.record(id: id)?.delivery.kind == .learning } == true
+            || (learnings as? any LearningDeletionObserving).map { !$0.retainedLearningIDs.contains(id) && ledger?.record(id: id)?.delivery.kind == .learning && ledger?.record(id: id)?.delivery.meta["learning_kind"] != "rating" } == true
     }
 
     func observeLearningAvailability() {
