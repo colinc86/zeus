@@ -59,14 +59,21 @@ struct ToolArguments {
         guard Set(result.map(\.id)).count == result.count else { throw ToolArgumentError("\(key) contains duplicate IDs") }
         return result
     }
+    static let attachmentSummaryGuidance = "Each file or folder attachment needs a summary: 1–3 sentences saying what's in it and why it matters, so the user doesn't have to open it. Put the takeaway in the message text too."
     func attachments() throws -> [Attachment] {
         try array("attachments").enumerated().map { index, json in
             let item = try ToolArguments(json)
             guard let kind = try item.enumeration("kind", as: Attachment.Kind.self) else { throw ToolArgumentError("Missing attachment kind") }
-            let attachment = Attachment(kind: kind, label: try item.requiredString("label"), target: try item.requiredString("target"))
+            let attachment = Attachment(kind: kind, label: try item.requiredString("label"), target: try item.requiredString("target"), summary: try item.string("summary"))
             guard AttachmentTarget.url(for: attachment) != nil else {
                 let expected = kind == .url ? "an http(s) URL" : "an absolute or ~ path"
                 throw ToolArgumentError("attachments[\(index)].target must be \(expected) for kind \(kind.rawValue)")
+            }
+            if let summary = attachment.summary, summary.count > 400 {
+                throw ToolArgumentError("attachments[\(index)].summary must be at most 400 characters.")
+            }
+            if kind != .url, (attachment.summary?.filter { !$0.isWhitespace }.count ?? 0) < 20 {
+                throw ToolArgumentError(Self.attachmentSummaryGuidance)
             }
             return attachment
         }
