@@ -76,7 +76,7 @@ See [permissions](LEARNING.md#permissions): Apps and timing needs none; Windows 
 
 ## 3. Pick a character
 
-Choose a character and its size in **Settings › Character**. Colors and fonts are in **Appearance**. [Characters and themes](CUSTOMIZATION.md) covers the built-ins, fading and imports.
+Choose a character and its size in **Settings › Character**. Colors, **Conversation font** and **Text size** are in **Settings › Appearance**. [Characters and themes](CUSTOMIZATION.md) covers the built-ins, fading and imports.
 
 ### Make your own character
 
