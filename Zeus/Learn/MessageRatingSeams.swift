@@ -20,6 +20,7 @@ struct RatingSuggestion: Codable, Equatable, Identifiable, Sendable {
     var id: String
     var kindLabel: String
     var count: Int
+    var exampleCardID: String? = nil
 }
 /// Opaque compare-and-swap receipt: undo refuses to overwrite a later edit.
 struct MessageRatingUndo: Sendable {
