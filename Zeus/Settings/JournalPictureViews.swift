@@ -21,7 +21,8 @@ struct JournalPictureRow: View {
                     Text(model.caption(picture)).settingsCaption()
                 }
                 Spacer(minLength: 0)
-            }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+            }.padding(.trailing, folder == nil ? 120 : 240)
+                .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }
