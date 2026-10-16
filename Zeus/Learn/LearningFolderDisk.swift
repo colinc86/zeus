@@ -73,6 +73,21 @@ final class LearningFolderDisk: @unchecked Sendable {
             return url
         }
     }
+    /// Journal frame IDs are immutable (replacement under an existing ID is rejected).
+    /// Avoid decrypting/re-encoding every retained image on each activity append.
+    func reuseFrame(root: URL, path: String, id: String, token: UInt64) throws -> Bool {
+        try lock.withLock {
+            guard epoch == token else { throw LearningFolderError.stale }
+            let k = key(root); var folder = state.folders[k] ?? Folder()
+            if folder.finderDeleted.contains(path) { return true }
+            guard folder.files[path]?.ids == Set([id]) else { return false }
+            let url = try target(root, path, create: false)
+            if FileManager.default.fileExists(atPath: url.path) { return true }
+            folder.finderDeleted.insert(path); folder.files.removeValue(forKey: path)
+            state.folders[k] = folder; try save()
+            return true
+        }
+    }
     func apply(_ files: [LearningFolderFile], root: URL, token: UInt64) throws {
         try lock.withLock {
             guard epoch == token else { throw LearningFolderError.stale }
