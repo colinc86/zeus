@@ -574,7 +574,7 @@ Clicking ⋯ (or ⌘R) opens the row inside the bubble, under everything else in
 | Neutral | "Only when I need to know: On-call reminders · Undo" | "Only when I need to know, this one · Undo" |
 | Stop these | "Stopped: On-call reminders · Undo" | "Not this one · Undo" |
 
-- **Undo** removes the rating and the line; the bubble is back to ⋯. There's no time limit: the line is the record.
+- **Undo** restores whatever was there before this choice (FB1-P's snapshot undo, kept across relaunch): nothing, so the line goes and the bubble is back to ⋯, or the previous choice, so the line changes to it. "· Undo" shows only while `ratingUndo(id)` is valid; once a later change (here, in Settings, or a correction) supersedes it, the line stays as the record without Undo, and removal is through the row's "Remove rating". Never show an Undo that does nothing.
 - **Reopening** a rated bubble's row shows the current choice as a "✓ Stop these" chip (the `.answered` style) with the other two live; picking another changes the rating in place, and the kind line gains "· Remove rating". A rating changed or removed in Settings updates the bubble's line.
 - **Keyboard:** ⌘R opens the row on the focused bubble, or on the newest unprompted bubble when nothing in the thread is focused, and focuses "More like this". Tab and the arrow keys move through the choices and the links; Return activates; Esc closes the row and nothing else; ⌘R again closes it. ⌘1–9 keep answering questions.
 - **VoiceOver:** the bubble gains custom actions "Rate: more like this", "Rate: only when I need to know", "Rate: stop these", "Rate this message only" and "Edit the kind label". The collapsed line reads as written, with "Undo" as its button.
@@ -588,7 +588,7 @@ A new unprompted card whose kind is stopped is held: it lands in the thread at i
   - exact match: "Stopped kind: On-call reminders · Not this kind · Change rating"
   - look-alike: "Looks like On-call reminders · Not this kind · Change rating"
   - The reason carries a tooltip with the decision: "Matched by the on-device model, 0.82" (engine and score from FB1-P), or "Same label".
-- **Not this kind** unmutes this card (normal bubble, with ⋯) and records the correction. Its caption becomes "Shown. Zeus won't count this as On-call reminders · Undo".
+- **Not this kind** unmutes this card (normal bubble, with ⋯) and records the correction. Its caption becomes "Shown. Zeus won't count this as On-call reminders · Undo", with Undo on the same rule as 17.2: shown only while the correction's undo is still valid.
 - **Change rating** opens the rating row on this bubble with the matched kind's label filled in.
 - **End of day:** once a day, when quiet hours start (or at 21:00 when none are set), if anything was muted that day: a notice line "3 muted messages today · Show" ("1 muted message today · Show"). Show expands every muted row of the day and scrolls to the first. Expanded rows stay expanded.
 - Muted cards are never high-priority gold, even if marked `priority: high`: the hold wins.
