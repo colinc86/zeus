@@ -91,7 +91,7 @@ struct TypingConsentSheet: View {
                     Text("→ Replying to a doctor about rescheduling an appointment").settingsBody()
                 }
             }
-            Text("The first line is the words as kept for 24 hours. The second is the topic kept for 30 days, and the only part your assistant sees.").settingsCaption()
+            Text("The first line is the words as kept for 24 hours. The second is the topic kept for 30 days. Your assistant can read both while they're kept.").settingsCaption()
             Text("If you'd rather keep no words, choose Don't keep after turning this on. Topics still work.").settingsCaption()
             Text("Safari: Zeus notes nothing you type in Safari unless you add it under Only in apps I choose. Zeus can't tell Safari's private windows apart, so typing in those would be kept too.").settingsCaption()
         }

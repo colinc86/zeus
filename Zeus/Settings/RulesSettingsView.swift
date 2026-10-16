@@ -35,7 +35,7 @@ struct RulesSettingsView: View {
     }
     private var dialCaption: String {
         if model.autonomy == 0 { return "Every new rule waits in Suggested until you turn it on." }
-        if model.autonomy == 1 { return "Rules start at once. Rules that act for you still show what they'd have done the first time, then act without asking. Undo is always there." }
+        if model.autonomy == 1 { return "Rules start at once. Rules that act for you show what they'd have done and wait for your OK, then act without asking. Undo is always there." }
         return "Rules about timing and tone start at once. Rules that act for you show what they'd have done once, and wait for your OK."
     }
     @ViewBuilder private func section(_ status: LearnedRuleStatus) -> some View {
