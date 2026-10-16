@@ -124,11 +124,27 @@ All observation switches start off. See [Learn from me](LEARNING.md) for collect
 | **What Zeus has recorded** | Empty until recording | Today's activity list. |
 | **Open What Zeus Kept…** | Action | Opens stored records and the Sent ledger. |
 | **Pause for Today** / **Resume** | Not paused | Stops observation until midnight, or resumes sooner. |
-| **Delete Everything…** | Action | Confirms deletion of the journal, summaries and Sent ledger, empties the active `Zeus/` folder, and cancels affected pending deliveries. **Also delete your assistant's notes** starts off; selecting it also empties `Notes/`. Rules remain separately managed. |
+| **Delete Everything…** | Action | Confirms deletion of the journal, summaries, Sent ledger, message ratings and their matching/signal history, empties the active `Zeus/` folder, and cancels affected pending deliveries. **Also delete your assistant's notes** starts off; selecting it also empties `Notes/`. Rules remain separately managed. |
 
 ## Rules
 
-Visible when any learning level is enabled or rules exist.
+Always available, including with all learning levels off.
+
+### What you hear about
+
+The first section lists kind ratings under **More like this**, **Need-to-know** and **Stopped**, with a redacted example and **Last matched** time or **Not seen since you rated it**. It starts empty. Single-message feedback is not listed here.
+
+| Control | Default | Effect |
+|---|---|---|
+| **More** / **Neutral** / **Stop** | No rating until you choose one | Keep hearing this kind; hear it only when the assistant judges it necessary; or hold matching new unprompted messages. |
+| **Edit Label** | Current kind label | Edit a name of 1–60 characters; **Save**/Return commits, **Cancel**/Escape cancels. Matching uses the new label. |
+| **Remove** | Action | Removes this preference; sends the removal to the assistant. |
+| **Undo** | Offered while the change is still reversible | Restores the preceding preference; a later preference change invalidates it. |
+| **Muted today: … › Show** | Shown when messages are held today | Opens the conversation with today's muted messages expanded; does not release their holds. |
+
+Each change is delivered to the assistant and updates `Zeus/preferences.md` when a folder is configured. Changing a preference does not release previously held messages. See [ratings and corrections](CONVERSATION.md#muted-messages).
+
+### Learning rules
 
 | Control | Default | Effect |
 |---|---|---|
@@ -146,4 +162,4 @@ The editor offers **Choose App…** and **Remove** for apps, **Any**, **Tests fa
 
 Shows the app icon, version and build, description and basic interaction hints. There are no preferences in this pane.
 
-Implementation references: [app defaults](../Zeus/Settings/AppSettings.swift), [General](../Zeus/Settings/GeneralSettingsView.swift), [assistant](../Zeus/Settings/AssistantSettingsView.swift), [connection options](../Zeus/Settings/AgentSettingsView.swift), [learning defaults](../Zeus/Learn/LearnSettings.swift), [observation defaults](../Zeus/Settings/ObservationSettings.swift), and [Rules](../Zeus/Settings/RulesSettingsView.swift).
+Implementation references: [app defaults](../Zeus/Settings/AppSettings.swift), [General](../Zeus/Settings/GeneralSettingsView.swift), [assistant](../Zeus/Settings/AssistantSettingsView.swift), [connection options](../Zeus/Settings/AgentSettingsView.swift), [learning defaults](../Zeus/Learn/LearnSettings.swift), [observation defaults](../Zeus/Settings/ObservationSettings.swift), [Rules](../Zeus/Settings/RulesSettingsView.swift), and [message ratings](../Zeus/Settings/MessageRatingsSettingsView.swift).

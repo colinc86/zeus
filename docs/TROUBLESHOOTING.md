@@ -28,8 +28,27 @@
 | The same delivery appears twice | Retries are expected without acknowledgment. The agent should handle each delivery ID once and call `zeus_ack`; the assistant template explains this. |
 | A summary stays ready; Sent is empty | Open **What Zeus Kept › Sent to your assistant**. **Waiting** gives the current reason and an action when one is available. Ready does not mean received. |
 | New tools/instructions notice persists | Use **Restart assistant** at a convenient point. If you edited the template, compare through **Open Folder** or confirm **Use the new template…**. |
-| A message arrives without a bubble or sound | Check quiet hours, whether Zeus is hidden, whether the conversation is open, and active timing rules. Sounds are off by default. |
+| A message arrives without a bubble or sound | Check quiet hours, whether Zeus is hidden, whether the conversation is open, active timing rules, and **Stop these** ratings. Sounds are off by default. |
 | The assistant's answers appear only in Terminal | Ask it to reply through Zeus. New assistant folders contain instructions for using `zeus_say`, `zeus_ask` and `zeus_present`. |
+
+## Message ratings
+
+| Symptom | Check or action |
+|---|---|
+| No **⋯** rating button | Hover an unprompted assistant message, question or finished-work card, or use **⌘R**. Replies, local/progress cards and older cards without origin metadata have no menu. A held card uses **Show** and **Change rating** instead. |
+| **Neutral** messages still arrive normally | Expected: Neutral means **Only when I need to know**, judged by the assistant. It does not make messages quiet or hold them. |
+| An urgent message was muted | **Stop these** also holds high-priority messages. Expand its **Muted: … › Show** row to inspect it. |
+| Zeus muted the wrong kind | Choose **Not this kind** under the expanded message. This releases only that card, keeps the kind preference, and does not replay an alert. |
+| A look-alike still gets through | Similarity is imperfect and depends on an installed language embedding. Check the label; an exact **More like this** or **Neutral** rating takes precedence over similarity to a stopped kind. Rate the new kind if appropriate. |
+| Changing/removing a rating leaves an old message muted | Preferences govern new arrivals. Use **Show** to read a retained message; use **Not this kind** only when the match was wrong. |
+| **Just this one** did not stop future messages | It sends feedback without a kind rule. Use **All of this kind** before choosing **Stop these** to stop the kind. |
+| A single-message rating is absent from Settings or `preferences.md` | Those lists contain kind ratings only. Check the original message's rating row or the received delivery in **Sent to your assistant**. |
+| Undo is no longer available | A later preference change invalidates the earlier Undo. Edit the current preference under **Settings › Rules › What you hear about**. |
+| A rating has not reached the assistant | Open **What Zeus Kept › Sent to your assistant** and check **Waiting**. The saved confirmation is not a delivery receipt; a disconnected/busy assistant or an unsent Terminal draft can delay delivery. |
+| Message preferences are locked or cannot be saved | Unlock the Mac/Keychain and retry. Zeus preserves existing preferences; failed edits are not silently saved in memory. If startup preferences cannot be read, unprompted tool posts wait for recovery. |
+| Ratings still work with Learn from me off | Intentional. Explicit feedback, its delivery and the preferences file are independent of observation switches. |
+
+[How to rate and inspect muted messages](CONVERSATION.md#rate-what-you-hear-about) · [Rating storage and delivery](PRIVACY.md#message-ratings-and-quiet-signals)
 
 ## Learn from me
 
@@ -45,14 +64,14 @@
 | **Private input: Zeus isn't noting typing** | macOS secure input is active. Capture pauses until it clears. |
 | Ask About This attaches nothing | Enable Windows and pages or Screen, grant its permission, and check the caption. Private or unavailable context is omitted; nothing is attached from a disabled level. |
 | The journal/rules cannot be opened | Unlock the Keychain or sign in again. New records wait in memory; quitting before recovery loses unsaved records. |
-| No learning files appear in the assistant folder | Enable a learning level and check **Settings › Privacy › Your assistant's folder**. Managed mode uses the working folder; Connect your own needs an explicit destination. |
+| No observation files appear in the assistant folder | Enable a learning level and check **Settings › Privacy › Your assistant's folder**. Managed mode uses the working folder; Connect your own needs an explicit destination. |
 | **Zeus can't write to this folder.** | Check that the selected folder is available and writable. The retained journal is separate. Choose an accessible destination to backfill retained records. |
-| A file deleted in Finder does not return | Intentional: the export does not recreate files you removed. Finder deletion does not erase the internal journal; use What Zeus Kept for that. |
+| A file deleted in Finder does not return | Intentional: the export does not recreate files you removed. Finder deletion does not erase the internal journal or ratings; use What Zeus Kept for observations and Settings › Rules for kind ratings. |
 | Pictures are not covered | Check **Cover pictures and faces**. The setting applies to new captures; turning it on does not modify earlier frames. |
 | An old folder still has records after deletion | Retention and deletion apply to the current destination. A previous folder is left alone when you switch destinations. |
 | No rules have been proposed | Learning needs relevant evidence and a delivered reflection. Evaluable rules require evidence across two days; the assistant may appropriately propose none. |
 | A rule is only **Suggested** or **Waiting for your OK** | Turn it on or approve its shadow result in Rules. An unapproved acting rule is not permission to act. |
-| The assistant cannot propose a time trigger | The current advertised MCP schema has invalid fractional minute bounds. Runtime minutes are 0–1439, but a schema-validating client may reject them. See [the tool limitation](MCP.md#zeus_propose_rules). |
+| A time trigger is rejected | Supply integer minutes 0–1439 for both `startMinute` and `endMinute`. If the client still advertises fractional bounds, refresh its tool discovery or restart it to load the current bridge schema. |
 
 ## Appearance and sound
 
@@ -73,19 +92,19 @@
 No assistant account is bundled. Install and configure Claude Code, Codex or OpenCode. Zeus uses Apple's on-device frameworks for learning redaction and descriptions.
 
 **Must I enable learning?**  
-No. Conversation, status, questions, attachments and assistant management work with all learning levels off.
+No. Conversation, status, questions, attachments, message ratings and assistant management work with all learning levels off.
 
 **Will quitting Zeus stop my assistant?**  
 No. The managed tmux agent keeps running. Use **Stop** if you want it to stop.
 
 **Does clearing the conversation erase the assistant's memory?**  
-No. It clears eligible Zeus history, retaining pending items. Starting a new assistant conversation and deleting learning records are separate actions. Agent files/provider history have their own lifecycle.
+No. It clears eligible Zeus history, retaining pending items and message preferences. Starting a new assistant conversation and deleting learning records are separate actions. Agent files/provider history have their own lifecycle.
 
 **Does Delete Everything delete rules?**  
-It deletes the learning journal, summaries and Sent ledger, empties `Zeus/` in the current assistant folder, and cancels affected pending learning deliveries. **Also delete your assistant's notes** can additionally empty `Notes/`. Manage rules separately in **Settings › Rules**. It cannot retract data already received by the assistant.
+It deletes the learning journal, summaries, Sent ledger, message ratings, corrections and quiet signals, empties `Zeus/` in the current assistant folder, and cancels pending rating deliveries and affected learning deliveries. **Also delete your assistant's notes** can additionally empty `Notes/`. Manage rules separately in **Settings › Rules**. It cannot retract data already received by the assistant.
 
 **Can Undo reverse every action?**  
-Appearance Undo is local to Zeus. A rule's Undo sends a reversal instruction to the assistant; whether the external action can actually be reversed depends on that action.
+Rating Undo restores the preceding preference while no later edit has superseded it; it sends a new correction, not a recall. Appearance Undo is local to Zeus. A rule's Undo sends a reversal instruction to the assistant; whether the external action can actually be reversed depends on that action.
 
 **Can several sessions talk to Zeus?**  
 Choose **Any session with the Zeus server** under **Who may talk to Zeus**. The default admits only your selected assistant. Zeus manages only one assistant session itself.

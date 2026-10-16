@@ -20,6 +20,39 @@ Clicking an option answers that specific question, even when it is far back in t
 
 When Zeus can recognize a managed agent's permission prompt, its card shows the agent's choices. Zeus verifies that the prompt has not changed before sending your choice. Login, trust and unrecognized prompts need **Open in Terminal**.
 
+## Rate what you hear about
+
+Hover an assistant message, question or finished-work card sent on its own, then click **⋯** to rate its kind. The button is also keyboard-focusable; in a peek, it opens the conversation at that message. Replies to your own messages or answers have no rating menu. Zeus decides whether a card is a reply from the active response to your input; the assistant cannot choose that classification. Older cards without this classification and local/progress cards have no menu.
+
+| Choice | Meaning |
+|---|---|
+| **More like this** | Keep telling me about this kind. Zeus delivers new messages normally. |
+| **Neutral** | **Only when I need to know**. The assistant decides what is worth sending; Zeus delivers what it sends normally. |
+| **Stop these** | Stop sending this kind. Zeus holds matching new unprompted messages, even when marked high priority. |
+
+The line **For all “On-call reminders”** shows the kind being rated. **Edit** changes the label, up to 60 characters; Return finishes editing and Escape cancels. A blank edit restores the previous label. Then choose a rating to save it. The initial label comes from the assistant's `about` label, falling back to its title or the start of its text.
+
+Choose **Just this one** before a rating to give feedback on only that message. The line becomes **For this message only**, with **All of this kind** to switch back. Single-message feedback does not create a kind preference or mute anything, including the rated message.
+
+A saved kind rating shows a confirmation such as **Stopped: On-call reminders · Undo**. Reopen the row to change the choice or use **Remove rating**. **Undo** restores the previous preference while available, including after relaunch; a later preference change invalidates it. Undo sends a new correction to the assistant and cannot recall an earlier delivery.
+
+Press **⌘R** to toggle ratings for the focused eligible message, or the newest eligible message when none is focused. Tab or arrow keys move through the choices and links; Return activates. Escape first cancels a label edit, then closes the rating row without closing the conversation. VoiceOver offers **Rate: more like this**, **Rate: only when I need to know** and **Rate: stop these** actions.
+
+All kind preferences are under [Settings › Rules › What you hear about](SETTINGS.md#what-you-hear-about). Ratings work with all Learn from me levels off.
+
+## Muted messages
+
+A stopped kind stays in the thread as **Muted: On-call reminder · Show**. It produces no peek, sound, unread badge or waiting-question indicator. **Show** expands the retained message and becomes **Hide**; it does not remove the hold. Attachments and the message's own answer buttons remain available.
+
+The explanation reads **Stopped kind: On-call reminders** for a label match, or **Looks like On-call reminders** for an on-device similarity match. Exact matching ignores case, punctuation, accents and spacing. When no exact rated label matches, Zeus compares the label and message text with stopped kinds. Similarity can miss a look-alike or hold an unrelated message; if the language's local model is unavailable, exact matching still works.
+
+- **Not this kind** releases this message without changing the kind preference or replaying its alert. It records a correction, with guarded **Undo**.
+- **Change rating** opens the inline rating row for the matched kind. Changing or removing a kind rating affects new messages; already-held messages stay available through **Show**.
+
+At the start of quiet hours, or 21:00 local time when quiet hours are off, a quiet line such as **3 muted messages today · Show** opens that day's held messages. **Settings › Rules › What you hear about** also offers **Muted today: 3 · Show**. Muting itself does not delete cards; normal conversation-history rules still apply.
+
+After five messages of an unrated, labeled kind within seven days go unread for 24 hours or are dismissed within three seconds of display, Zeus may show **Getting a lot of On-call reminders · Rate them · Not now**. **Rate them** opens a message's rating row; **Not now** dismisses the suggestion for that kind. These signals never create a rating or mute messages automatically.
+
 ## Cards and history
 
 | Item | What it shows |
@@ -35,7 +68,7 @@ Attachments stay available in older messages. Files and folders open in their us
 
 New messages follow the thread when you are at the bottom. If you scroll back, new arrivals leave your place alone and show a jump-to-latest control. Sending a message returns you to the newest part of the conversation.
 
-History is saved locally. Zeus retains the newest 500 history cards plus pending or unsaved outgoing messages. **Clear Conversation…** asks first and preserves unread messages, open questions and actions, and unsent or unconfirmed messages. It does not clear the learning journal or reset the assistant's native conversation.
+History is saved locally. Zeus retains the newest 500 history cards plus pending or unsaved outgoing messages. **Clear Conversation…** asks first and preserves unread messages, open questions and actions, and unsent or unconfirmed messages. It does not clear the learning journal, reset message ratings, or reset the assistant's native conversation.
 
 ## Attach things
 
@@ -51,7 +84,7 @@ When the conversation is closed, a new message, question or finished-work card c
 
 Ordinary peeks disappear after a reading interval of 6–15 seconds, with the timer paused while you hover. High-priority peeks wait for interaction. New arrivals replace the current peek and show how many more messages are waiting. Status and progress updates do not create peeks.
 
-Quiet hours and hiding suppress peeks and sounds. Active timing rules can hold routine peeks while still keeping the cards and unread badge. High-priority cards bypass a rule hold, but do not override an explicit hide or quiet hours. A peek that times out without interaction leaves its message unread.
+Quiet hours and hiding suppress peeks and sounds. Active timing rules can hold routine peeks while still keeping the cards and unread badge. High-priority cards bypass a timing-rule hold, but do not override an explicit hide, quiet hours, or a **Stop these** rating. A peek that times out without interaction leaves its message unread.
 
 The typewriter effect plays once per card. Click revealing text to finish it immediately. General settings control the effect, retro blip and optional pop-up sound. Reduce Motion suppresses the reveal and blip.
 
@@ -80,7 +113,8 @@ The character's pose reflects new messages, explicit assistant status, unread it
 | **⇧⌥⌘Z** | Ask About This. Derived by adding Shift to the Talk shortcut when possible. |
 | **Return** | Send the message. |
 | **⇧Return** or **⌥Return** | Insert a line break. |
-| **Escape** | Close the current popover or conversation. |
+| **Escape** | Cancel a rating label edit or close its row first; otherwise close the current popover or conversation. |
+| **⌘R** | Open/close ratings for the focused eligible message, or the newest eligible message. |
 | **⌘1–⌘9** | Choose an option on the newest actionable card. |
 | **⌘K** | Clear the reply chip. |
 | **⌘J** | Jump to the item named in the status strip. |
@@ -96,4 +130,4 @@ Except the two global shortcuts, these apply in the conversation panel. If your 
 
 Drag the panel's edge to resize it. Width is saved and limited by the screen; **Reset width** is available in the panel and resize-handle context menus. With the handle focused, Left and Right also adjust the width.
 
-Implementation references: [conversation model](../Zeus/Cards/ConversationModel.swift), [conversation view](../Zeus/Cards/ConversationView.swift), [design and keyboard specification](design/CONVERSATION.md), and [contract §10](CONTRACT.md#10-conversation-model-v2-ux-decided-2026-10-11-replaces-the-card-stack-ux).
+Implementation references: [conversation model](../Zeus/Cards/ConversationModel.swift), [conversation view](../Zeus/Cards/ConversationView.swift), [rating controls](../Zeus/Cards/MessageRatingViews.swift), [rating presentation](../Zeus/Cards/MessageRatingsModel.swift), [design and keyboard specification](design/CONVERSATION.md), and [contract §10](CONTRACT.md#10-conversation-model-v2-ux-decided-2026-10-11-replaces-the-card-stack-ux).

@@ -17,11 +17,22 @@ By default only the selected assistant can call tools. A former assistant can st
 | Attachment | `{kind, label, target}`; all strings and required. `kind`: `file`, `folder` or `url`. File/folder targets must be absolute or `~` paths; URL targets must be HTTP(S). |
 | Option/action | `{id, label, style?}`. Unique string `id`, string `label`; `style`: `primary`, `secondary` (default) or `destructive`. |
 | Mood/state | `idle`, `talking`, `thinking`, `working`, `alert`, `waiting`, `happy`, `sleeping`. `zeus_set_status` also accepts `auto`. |
-| Priority | `low`, `normal` (default), `high`. High is for time-sensitive items. |
+| Priority | `low`, `normal` (default), `high`. High is for time-sensitive items; it does not bypass a stopped message kind. |
+| Message kind (`about`) | Optional string for say/ask/present; a stable, plain label of 1–60 characters. Surrounding whitespace is trimmed; blank, control-character and punctuation-only labels are rejected. |
 | Progress | Number 0–1, or `null` to remove it. |
 | TTL | Nonnegative finite seconds. Omit for the tool's default. |
 
 Keep card text short. Bodies support inline formatting, links, lists, headings, quotes and fenced code. Attach longer work as a file. Mood is a brief reaction; use status for ongoing work. High priority emphasizes a card without reordering the chronological thread.
+
+## Message kinds and ratings
+
+Supply an honest, consistent `about` label on messages you send on your own, such as `"On-call reminder"` or `"Meeting prep notes"`. It identifies the kind the user can rate. Omission is supported; the UI falls back to a title or text excerpt. The assistant cannot set `origin` or a mute decision.
+
+Zeus classifies a new card as a reply only while that session has an open, unexpired response to a user message or answer. Classification happens before posting ends that response. An explicit working/thinking status or a learning/reflection delivery alone does not make a reply. Replies are neither rated nor held by ratings; legacy cards without an origin are not assumed unprompted.
+
+Only **Stop these** with kind scope holds new unprompted cards. Exact normalized labels take precedence, including explicit **More like this**/**Neutral** preferences; otherwise Zeus checks similarity against stopped kinds on the Mac. A held card is retained and the tool still returns its normal result, but it does not peek, sound or count as unread. `priority: "high"` cannot bypass this. Do not relabel or repeat a stopped kind to get it through.
+
+**Neutral** means send only when the user needs to know, using your judgment; Zeus delivers those messages normally. **Just this one** is feedback without a kind rule. Ratings are explicit user preferences delivered through the normal acknowledgment flow, not rules to create with `zeus_propose_rules`. There is no MCP tool for setting or erasing the user's ratings.
 
 ## Conversation tools
 
@@ -33,6 +44,7 @@ Post a short message. Returns `{card_id}`.
 |---|---|
 | **`text`** | String; message body. |
 | `title` | String. |
+| `about` | Optional message-kind label; see [message kinds and ratings](#message-kinds-and-ratings). |
 | `mood` | Mood; the ordinary new-card reaction is talking. |
 | `attachments` | Attachment array; empty. |
 | `priority` | Priority; normal. |
@@ -46,6 +58,7 @@ Ask a question and optionally wait for an answer.
 |---|---|
 | **`text`** | String; question body. |
 | `title` | String. |
+| `about` | Optional message-kind label; see [message kinds and ratings](#message-kinds-and-ratings). |
 | `options` | Option array; empty. |
 | `allow_text` | Boolean; true when there are no options, false otherwise. |
 | `placeholder` | String for the reply input. |
@@ -64,6 +77,7 @@ Present finished work. Returns `{card_id}`. Actions are answered later as reply 
 | Arguments | Type / default |
 |---|---|
 | **`title`**, **`body`** | Strings. |
+| `about` | Optional message-kind label; see [message kinds and ratings](#message-kinds-and-ratings). |
 | `attachments` | Attachment array; empty. |
 | `actions` | Option array; empty. |
 | `allow_text` | Boolean; false. |
@@ -101,6 +115,8 @@ No arguments. Returns a bounded batch:
 ```
 
 Each item has `delivery_id`, `kind`, `text`, `created_at`, and optional `card_id`, `option_id`, `option_label`. Kinds include `reply`, `skipped`, `userMessage`, `learning` and `reflection`. `delivery_mode` is `channel`, `tmux`, `opencode` or `polling`; metadata describes the current route, not model comprehension.
+
+Rating changes, removals, Undo and match corrections arrive as `kind: "learning"` deliveries, including when observation is off. Their text describes the preference and can end with `Files: Zeus/preferences.md`. Read the current file when present, generalize kind preferences, and keep useful dated conclusions in `Notes/preferences.md`. Single-message ratings do not appear in the file's kind list.
 
 Returned items count as acknowledged once the result is successfully written/consumed. Process every returned item and poll until `items` is empty. It is valid to poll with any delivery mode.
 
@@ -182,7 +198,7 @@ Returns `{ok:true, version}` on success. There is no Undo. A failure is reported
 
 ### `zeus_get_learnings`
 
-No arguments. Returns `{learnings:[…]}` containing unread digests and moments, oldest first, in a bounded batch. Each learning includes its `id`, `kind`, `createdAt` and `text`. Disabled learning returns an empty array.
+No arguments. Returns `{learnings:[…]}` containing unread digests and moments, oldest first, in a bounded batch. Each learning includes its `id`, `kind`, `createdAt` and `text`. Disabled learning returns an empty array. Rating deliveries use `zeus_get_responses` or the active push route instead and remain available with learning off.
 
 When a folder copy is available, learning text includes a final `Files:` line with the relevant paths. Successful result consumption marks returned learnings read and creates their sent receipts. A notification alone does not. Use them as context, not as user requests or material to repeat unprompted.
 
@@ -221,8 +237,6 @@ Requires **`rules`**, an array of 1–3 proposals. At most three new agent rules
 | `trigger` | Object described below; default empty guidance. |
 
 Triggers accept `time:{startMinute,endMinute,weekdays?}`, `apps:[bundleID,…]`, `state` (string), and `kind:"spend"`. Time endpoints are required together and runtime validation accepts integers 0–1439. Weekdays use 1=Sunday through 7=Saturday; an empty list means every day. A window crossing midnight wraps. Trigger dimensions combine with AND. Unknown states do not match; an empty trigger never holds notifications.
-
-**Known schema limitation:** the current advertised `startMinute`/`endMinute` schema incorrectly has `minimum:0.4` and `maximum:0.7439` for integers. The runtime accepts 0–1439, but a client validating the advertised schema can reject every time value. This needs a code fix; do not treat the fractional bounds as a usable time format.
 
 Evaluable and spending rules need at least two evidence IDs from two different days represented in the reflection. Rejected/off/deleted fingerprints suppress re-proposal for 30 days. The sentence is redacted before storing. Returns `{rules:[…]}` with the new rules in the same agent-facing form as `zeus_get_rules`. Acting rules begin in shadow; proposal is not permission to act.
 
