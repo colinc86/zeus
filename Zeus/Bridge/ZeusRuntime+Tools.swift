@@ -43,6 +43,9 @@ extension ZeusRuntime {
             if Self.appToolNames.contains(name) {
                 return try await callAppTool(name, args: args, sessionKey: sessionKey, deferResultCommit: deferResultCommit)
             }
+            if ["zeus_say", "zeus_ask", "zeus_present"].contains(name), let about = try args.string("about") {
+                _ = try MessageRatingStore.validateLabel(about)
+            }
             switch name {
             case "zeus_say":
                 let now = clock.now

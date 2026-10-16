@@ -8,7 +8,7 @@ struct RatingDelivery: Codable, Sendable {
     var createdAt: Date
 }
 /// Local encrypted preference state and transactional outbox. Tests always inject a fixture key.
-@MainActor @Observable final class MessageRatingStore {
+@MainActor @Observable final class MessageRatingStore: LearningStorageRecovering {
     struct Signal: Codable {
         var id: String
         var label: String
@@ -38,20 +38,57 @@ struct RatingDelivery: Codable, Sendable {
     private(set) var state: State
     private(set) var revision: UInt64 = 0
     private(set) var lastError: String?
+    private(set) var storageWaitingForUnlock = false
+    var pendingStorageWrites: Int { 0 } // User edits fail visibly until saved; no false success.
+    @ObservationIgnored var onChange: (() -> Void)?
+    @ObservationIgnored private var recovery: Task<Void, Never>?
+    private var awaitingInitialRead = false
     private let url: URL
     private let key: any JournalKeyProviding
     init(fileURL: URL = ZeusPaths.appSupport.appendingPathComponent("Ratings/ratings.zratings"),
          keyProvider: any JournalKeyProviding = KeychainJournalKeyProvider(account: "ratings-v1")) throws {
         url = fileURL; key = keyProvider
-        state = try LearningEncryption.read(State.self, at: fileURL, key: keyProvider) ?? State()
+        state = State()
+        do { state = try LearningEncryption.read(State.self, at: fileURL, key: keyProvider) ?? State() }
+        catch where LearningStorageAvailability.isUnavailable(error) {
+            awaitingInitialRead = true; storageWaitingForUnlock = true
+            lastError = "Zeus can't open your message preferences right now. It will try again when your Mac unlocks."
+            scheduleRecovery()
+        }
+    }
+    isolated deinit { recovery?.cancel() }
+    var isReady: Bool { !awaitingInitialRead }
+    private func scheduleRecovery() {
+        guard recovery == nil else { return }
+        recovery = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(3)) } catch { return }
+            guard let self else { return }; self.recovery = nil; self.retryPendingWrites()
+        }
+    }
+    func retryPendingWrites() {
+        guard awaitingInitialRead else { return }
+        do {
+            state = try LearningEncryption.read(State.self, at: url, key: key) ?? State()
+            awaitingInitialRead = false; storageWaitingForUnlock = false; lastError = nil; revision &+= 1; onChange?()
+        } catch {
+            storageWaitingForUnlock = LearningStorageAvailability.isUnavailable(error)
+            if storageWaitingForUnlock { scheduleRecovery() }
+            else { lastError = "Zeus couldn't read its message preferences. Existing files were left alone." }
+        }
     }
     func commit(_ next: State) throws {
+        guard !awaitingInitialRead else { throw LearningStorageError.keyUnavailable }
         do {
             try LearningEncryption.write(next, to: url, key: key)
-            state = next; revision &+= 1; lastError = nil
+            state = next; revision &+= 1; lastError = nil; onChange?()
         } catch { lastError = "Zeus couldn't save your message preferences. Your previous preferences are unchanged."; throw error }
     }
-    func clear() throws { try commit(State()) }
+    func clear() throws {
+        // Erasure must work with a locked keychain, without decrypting or resurrecting old data.
+        if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
+        recovery?.cancel(); recovery = nil; awaitingInitialRead = false; storageWaitingForUnlock = false
+        state = State(); lastError = nil; revision &+= 1; onChange?()
+    }
     static func kindKey(_ label: String) -> String {
         label.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: Locale(identifier: "en_US_POSIX"))
             .components(separatedBy: CharacterSet.alphanumerics.inverted).filter { !$0.isEmpty }.joined(separator: " ")

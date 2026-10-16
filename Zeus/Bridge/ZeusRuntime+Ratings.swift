@@ -103,6 +103,8 @@ extension ZeusRuntime: MessageRatingsProviding {
         var card = original
         card.about = try about.map(MessageRatingStore.validateLabel)
         guard let store = messageRatings else { return card }
+        guard store.isReady || card.origin == .reply else { throw ToolArgumentError("Message preferences are locked. Retry this message after the Mac unlocks.") }
+        if !store.isReady { return card }
         let token = generation
         // A concurrent preference edit invalidates the semantic decision; never publish a stale hold.
         for _ in 0..<3 {
@@ -140,8 +142,8 @@ extension ZeusRuntime: MessageRatingsProviding {
     }
 
     func scheduleRatingDelivery() {
-        guard running, ratingDeliveryTask == nil, let store = messageRatings else { return }
-        guard ratingExportVersion != store.state.version || store.state.outbox.contains(where: { ledger?.record(id: $0.id) == nil }) else { return }
+        guard running, ratingDeliveryTask == nil, let store = messageRatings, store.isReady else { return }
+        guard ratingExportVersion != store.state.version || !store.state.outbox.isEmpty else { return }
         let token = generation, startingVersion = store.state.version
         ratingDeliveryTask = Task { [weak self] in
             guard let self else { return }
@@ -166,12 +168,28 @@ extension ZeusRuntime: MessageRatingsProviding {
                 var drained = store.state
                 drained.outbox.removeAll { self.ledger?.record(id: $0.id) != nil }
                 if drained.outbox.count != store.state.outbox.count { try store.commit(drained) }
+                self.ratingError = nil
+                self.ratingRetryTask?.cancel(); self.ratingRetryTask = nil
                 self.processDueDeliveries()
-            } catch { self.ratingError = "Zeus couldn't queue the rating for your assistant. It is saved and will be retried." }
+            } catch {
+                self.ratingError = "Zeus couldn't queue the rating for your assistant. It is saved and will be retried."
+                self.scheduleRatingRetry()
+            }
+        }
+    }
+    private func scheduleRatingRetry() {
+        guard running, ratingRetryTask == nil else { return }
+        let clock = self.clock, deadline = clock.now.addingTimeInterval(3), token = generation
+        ratingRetryTask = Task { [weak self] in
+            do { try await clock.sleep(until: deadline) } catch { return }
+            guard let self, !Task.isCancelled, self.running, self.generation == token else { return }
+            self.ratingRetryTask = nil
+            self.scheduleRatingDelivery()
         }
     }
     func clearMessageRatings() {
         ratingDeliveryTask?.cancel(); ratingDeliveryTask = nil
+        ratingRetryTask?.cancel(); ratingRetryTask = nil
         let held = mutedDecisions
         do { try messageRatings?.clear(); ratingError = nil }
         catch { ratingError = error.localizedDescription; return }

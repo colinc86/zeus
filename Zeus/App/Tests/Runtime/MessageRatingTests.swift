@@ -88,6 +88,7 @@ struct FixtureRatingSimilarity: MessageSimilarityComparing {
         #expect(f.runtime.ledger?.record(id: record.delivery.id)?.delivery.ackedAt != nil)
         let sent = try f.journal.items(matching: .init()).first { $0.payload.value.details["delivery_id"] == record.delivery.id }
         #expect(sent?.payload.value.text == record.delivery.content)
+        #expect(!f.cards.learningNotices.contains { $0.id == "n_" + record.delivery.id })
         try f.journal.delete(.all)
         #expect(f.runtime.ratings.isEmpty && f.runtime.mutedDecisions.isEmpty)
         _ = await f.runtime.callTool("zeus_ack", arguments: ["delivery_ids": [.string(record.delivery.id)]], sessionKey: key)
@@ -115,5 +116,93 @@ struct FixtureRatingSimilarity: MessageSimilarityComparing {
             #expect(result.isError)
         }
         #expect(f.cards.values.isEmpty)
+    }
+    @Test func invalidAboutLeavesUserResponseOpenAndAskPresentClassifyBeforeEndingIt() async throws {
+        let f = try LearningRuntimeFixture(messageRatings: true); defer { f.stop() }
+        _ = await f.runtime.sendUserMessage("A user question", deliveryID: "d_rating_origin")
+        try await eventually { f.runtime.sends.isEmpty }
+        let bad = await f.runtime.callTool("zeus_say", arguments: ["text": "hello", "about": ""], sessionKey: key)
+        #expect(bad.isError && f.runtime.assistantActivity != nil)
+        let ask = await f.runtime.callTool("zeus_ask", arguments: ["text": "Which?", "about": "Follow-up", "wait_seconds": 0], sessionKey: key)
+        #expect(!ask.isError && f.cards.values.last?.origin == .reply)
+        f.cards.respond(id: try #require(f.cards.values.last?.id), text: "This one")
+        try await eventually { f.runtime.sends.isEmpty }
+        let present = await f.runtime.callTool("zeus_present", arguments: ["title": "Result", "body": "Here it is", "about": "Finished work"], sessionKey: key)
+        #expect(!present.isError && f.cards.values.last?.origin == .reply)
+    }
+    @Test func ratingOutboxDrainsWithoutReplayAndDeleteEverythingCancelsPendingRating() async throws {
+        let f = try LearningRuntimeFixture(exportFolder: true, messageRatings: true); defer { f.stop() }
+        let card = try await post(f)
+        _ = try await f.runtime.rate(cardID: card.id, rating: .up, scope: .kind, label: "On-call reminder")
+        try await eventually { f.runtime.ratingDeliveryTask == nil && f.runtime.sends.isEmpty }
+        #expect(f.ratingStore?.state.outbox.isEmpty == true)
+        let deliveryID = try #require(f.runtime.ledger?.records.first { $0.delivery.meta["learning_kind"] == "rating" }?.delivery.id)
+        try f.journal.delete(.all)
+        #expect(f.runtime.ledger?.record(id: deliveryID)?.discardedAt != nil)
+        #expect(f.ratingStore?.state.ratings.isEmpty == true)
+        f.runtime.recordReflectionReceipt(id: deliveryID)
+        #expect(try f.journal.items(matching: .init()).isEmpty)
+    }
+    @Test func semanticNonmatchAndAlreadyReadMessagesDoNotMuteOrSuggest() async throws {
+        let f = try LearningRuntimeFixture(messageRatings: true, ratingSimilarity: FixtureRatingSimilarity(score: 0.2)); defer { f.stop() }
+        let first = try await post(f)
+        _ = try await f.runtime.rate(cardID: first.id, rating: .down, scope: .kind, label: "On-call reminder")
+        for _ in 0..<6 {
+            let card = try await post(f, about: "Build results", text: "Your requested build passed.")
+            #expect(card.muteDecision == nil)
+            f.runtime.ratingCardOpened(id: card.id)
+        }
+        f.clock.advance(86400); f.runtime.scheduleRatingSuggestions()
+        #expect(f.runtime.ratingSuggestions.isEmpty)
+    }
+    @Test func savedOutboxRetriesLedgerWriteWithoutAnotherUserAction() async throws {
+        let f = try LearningRuntimeFixture(messageRatings: true); defer { f.stop() }
+        let card = try await post(f)
+        try await eventually { f.runtime.ratingDeliveryTask == nil }
+        let ledgerURL = f.root.appendingPathComponent("deliveries.json")
+        if FileManager.default.fileExists(atPath: ledgerURL.path) { try FileManager.default.removeItem(at: ledgerURL) }
+        try FileManager.default.createDirectory(at: ledgerURL, withIntermediateDirectories: true)
+        _ = try await f.runtime.rate(cardID: card.id, rating: .down, scope: .kind, label: "On-call reminder")
+        try await eventually { f.runtime.ratingRetryTask != nil && f.runtime.ratingDeliveryTask == nil }
+        #expect(f.ratingStore?.state.outbox.count == 1)
+        try FileManager.default.removeItem(at: ledgerURL)
+        f.clock.advance(3)
+        try await eventually { f.ratingStore?.state.outbox.isEmpty == true && !f.connector.deliveries.isEmpty }
+        #expect(f.runtime.ratingsError == nil)
+    }
+    @Test func encryptedStoreLockedLoadCannotOverwriteAndEraseNeedsNoKey() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("fb1_keys_" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appendingPathComponent("ratings.zratings"), key = RatingFixtureKey()
+        let store = try MessageRatingStore(fileURL: url, keyProvider: key)
+        var state = store.state
+        state.ratings = [.init(id: "r1", kindLabel: "Synthetic preference", kindKey: "synthetic preference", rating: .down, scope: .kind,
+            exampleCardID: "c1", exampleText: "Only ‹email› remains", createdAt: Date(), updatedAt: Date())]
+        try store.commit(state)
+        let bytes = try Data(contentsOf: url)
+        #expect(!String(decoding: bytes, as: UTF8.self).contains("Synthetic preference"))
+        key.locked = true
+        let locked = try MessageRatingStore(fileURL: url, keyProvider: key)
+        #expect(!locked.isReady && locked.storageWaitingForUnlock)
+        do { try locked.commit(.init()); Issue.record("Locked preferences were overwritten") } catch { }
+        #expect(try Data(contentsOf: url) == bytes)
+        key.locked = false; locked.retryPendingWrites()
+        #expect(locked.state.ratings.count == 1 && locked.isReady)
+        key.locked = true
+        try locked.clear()
+        #expect(locked.state.ratings.isEmpty && !FileManager.default.fileExists(atPath: url.path))
+        try Data("corrupt fixture".utf8).write(to: url)
+        key.locked = false
+        #expect(throws: (any Error).self) { try MessageRatingStore(fileURL: url, keyProvider: key) }
+        #expect(try Data(contentsOf: url) == Data("corrupt fixture".utf8))
+    }
+
+}
+
+@MainActor private final class RatingFixtureKey: FixtureLearningKeyProviding {
+    var locked = false
+    func key() throws -> Data {
+        if locked { throw LearningStorageError.keyUnavailable }
+        return Data(repeating: 7, count: 32)
     }
 }
