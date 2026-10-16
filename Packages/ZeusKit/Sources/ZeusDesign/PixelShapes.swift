@@ -128,6 +128,8 @@ struct PixelTailShape: Shape {
 public struct ZeusGlyph: View {
     public enum Symbol: String, CaseIterable, Sendable {
         case check, close, reply, left, right, up
+        /// The rating affordance (⋯) (FB1, CONVERSATION.md §17): the font has no ellipsis on its grid.
+        case more
 
         /// Rows of the bitmap, top to bottom; "#" is filled. All are 7 px tall, the font's cap height.
         public var rows: [String] {
@@ -138,6 +140,7 @@ public struct ZeusGlyph: View {
             case .left: ["...#", "..##", ".###", "####", ".###", "..##", "...#"]
             case .right: ["#...", "##..", "###.", "####", "###.", "##..", "#..."]
             case .up: ["...##...", "..####..", ".######.", "###..###", "...##...", "...##...", "...##..."]
+            case .more: ["..........", "..........", "..........", "##..##..##", "##..##..##", "..........", ".........."]
             }
         }
         /// What VoiceOver should say when the glyph stands alone.
@@ -149,6 +152,7 @@ public struct ZeusGlyph: View {
             case .left: "previous"
             case .right: "next"
             case .up: "send"
+            case .more: "rate"
             }
         }
     }

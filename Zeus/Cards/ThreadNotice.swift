@@ -5,6 +5,7 @@ import Foundation
 struct ThreadNotice: Codable, Equatable, Identifiable, Sendable {
     enum Kind: String, Codable, Sendable {
         /// A digest or moment sent to the assistant; the action shows `detail`, the exact text sent.
+        case messageRating
         case learning
         /// Reserved for CONTRACT §12's assistant-made changes (AC2), so both share one line style.
         case appChange

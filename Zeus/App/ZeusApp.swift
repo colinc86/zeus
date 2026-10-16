@@ -27,6 +27,7 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
         catch { return ShellController(requirePrivateJournal: true) }
     }()
     private(set) var runtime: ZeusRuntime?
+    private var messageRatings: MessageRatingStore?
 
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -50,6 +51,12 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
     private func startAgentLink() {
         guard runtime == nil else { return }
         let settings = shell.settings
+        do { messageRatings = try MessageRatingStore(); shell.ratings.startupError = nil }
+        catch {
+            let message = "Zeus can't open your message preferences right now. Retry the assistant connection to try again."
+            shell.ratings.startupError = message; shell.runtimeError = message
+            return
+        }
         let runtime = ZeusRuntime(cards: shell.cards, status: shell.status,
                                   characters: settings, routing: settings,
                                   quietHours: { [weak settings] date in settings?.isQuiet(at: date) ?? false },
@@ -57,6 +64,7 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
                                   rules: shell.learningServices?.rules, journal: shell.learningServices?.journal,
                                   redactor: shell.learningServices?.redactor,
                                   learningFolder: shell.learningServices?.folder as? any LearningFolderRecording,
+                                  messageRatings: messageRatings,
                                   learningContext: { [weak learning = shell.learning] in learning?.context ?? .init(isPrivate: true) },
                                   reflectionEnabled: { [weak learning = shell.learning] in learning?.enabled == true })
         shell.connectLearningRuntime(runtime)

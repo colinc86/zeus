@@ -15,6 +15,7 @@ Renders: `scripts/design-harness/render.sh "privacyMockups()"` → `build/q2-ren
 | §11 Raw on request, journal answers, acting rules, outcomes in Why? | D | shipped (LM2-D-A) |
 | §4.2 Waiting group and empty states, §6.1 delivery, hold and stale-setup lines | LM4 | building (LM4-A, on LM4-P's seams) |
 | §12 The assistant folder: folder row, Cover pictures and faces, the new caption, Show in Finder, Delete Everything | LF1 | building (LF1-A, on LF1-P's seams); §11.1 retired |
+| §13 Ratings: what is kept, sent and written to the folder; the ledger rows; Delete Everything | FB1 | building (FB1-A, on FB1-P's seams); the surfaces are in `CONVERSATION.md` §17 |
 
 ## 1. The seven principles
 
@@ -699,7 +700,7 @@ The core records each outcome as a category, a source, a date and a confidence c
 
 ### 12.1 What the folder holds
 
-`<assistant folder>/Zeus/`, written by Zeus from the journal: `README.md`, `days/<yyyy-mm-dd>/` (`activity.md`, `focus.md`, `screen/<HHmmss>-<app>.jpg` + `.md`, `typing.md`, `summary.md`, `moments.md`), `reflections/<yyyy-mm-dd>.md`, `rules.md`. Content is exactly what the journal stores, redacted and covered; the per-level "Raw on request" switches (§11.1) are retired, and `zeus_get_journal` follows the levels too. Retention pruning and every delete remove the matching files (Undo restores them). A file the user deleted in Finder is not re-created. Zeus never touches anything else in the folder, including the assistant's own `Notes/`.
+`<assistant folder>/Zeus/`, written by Zeus from the journal: `README.md`, `days/<yyyy-mm-dd>/` (`activity.md`, `focus.md`, `screen/<HHmmss>-<app>.jpg` + `.md`, `typing.md`, `summary.md`, `moments.md`), `reflections/<yyyy-mm-dd>.md`, `rules.md`, `preferences.md` (§13). Content is exactly what the journal stores, redacted and covered; the per-level "Raw on request" switches (§11.1) are retired, and `zeus_get_journal` follows the levels too. Retention pruning and every delete remove the matching files (Undo restores them). A file the user deleted in Finder is not re-created. Zeus never touches anything else in the folder, including the assistant's own `Notes/`.
 
 `Zeus/README.md` opens with: "Zeus writes this folder. It holds what Zeus learned about how you use your Mac, with private details already removed. Zeus overwrites and prunes these files; don't edit them. Delete a file and it stays deleted."
 
@@ -751,3 +752,26 @@ Label **"Your assistant's folder"**, then one line and actions by state:
 - The confirmation reads: "Delete everything Zeus kept and sent, here and in your assistant's folder? This can't be undone."
 - A checkbox under it, off by default: "Also delete your assistant's notes", caption "Its Notes folder, where it keeps what it has concluded about you." Passed as `includeAssistantNotes`.
 - Buttons unchanged: "Cancel" (default) and "Delete" (destructive).
+
+## 13. FB1 · Ratings
+
+> **Status: building (FB1-P stores, enforces and delivers; FB1-A shows; copy here is final).** User decision 2026-10-16. The surfaces (the ⋯ glyph, the row, muted rows, Settings "What you hear about", the suggestion line) are in `CONVERSATION.md` §17; this section is what is kept, sent and written.
+
+### 13.1 What is kept
+
+A rating is one record on this Mac, encrypted like the rules: the kind label (editable), its normalized key, the choice (More like this / Neutral / Stop these), the scope (the kind, or this message only), the example card and its text as already redacted, and when it was made and last changed. Corrections ("Not this kind") and quiet signals (a kind's cards never opened within 24 h or dismissed within 3 s) are kept the same way. Nothing is inferred into a rating: a suggestion is a line the user can ignore, never an automatic mute.
+
+### 13.2 What is sent, and the folder
+
+- Each rating, change and removal goes to the assistant as a delivery, acked like a summary: "Rating: Stop these · kind: On-call reminder · example: “…”" (the example is the redacted text; emoji in the delivery is fine, it's not rendered in the pixel font). Nothing is said in the thread for the delivery itself: the bubble's own line ("Stopped: On-call reminders") is the record, and the ledger has the exact text.
+- `Zeus/preferences.md` in the assistant's folder lists every rated kind under "Up", "Need-to-know" and "Stop", each with its examples, and is rewritten on every change. The delivery's `Files:` line names it. It is part of `Zeus/` like everything else in §12: Zeus writes and prunes it, and the user may delete it.
+- Ratings are an input to the evening reflection, as the rules are.
+
+### 13.3 What Zeus Kept
+
+- **Sent to your assistant:** one row per rating delivery, kind "Rating", summary "Stop these: On-call reminders" (or "More like this: …", "Only when I need to know: …", with ", this one only" for a single message). View shows the delivery text as sent. Waiting rows follow §4.2.
+- **Kept on this Mac:** muted cards stay ordinary cards, shown as they are; a rating row says "Rated Tue 21:41 · Stop these · On-call reminders"; a correction says "Not this kind: On-call reminders".
+
+### 13.4 Delete Everything
+
+"Everything" includes the ratings, corrections and quiet signals, and `Zeus/preferences.md` in the folder; the confirmation text in §12.6 is unchanged. Muted cards are cards: Clear Conversation removes them like any other.

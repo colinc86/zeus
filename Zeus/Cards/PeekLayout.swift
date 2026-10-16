@@ -14,7 +14,7 @@ struct PeekLayout: Equatable {
     var textWidth: CGFloat { width - ZeusTheme.pixel - 2 * (ZeusTheme.Spacing.s + ZeusTheme.borderWidth) }
 
     @MainActor static func measure(card: Card, font: ZeusFontChoice, moreCount: Int, error: String?,
-                                   answeredOptionID: String?, available: CGSize) -> PeekLayout {
+                                   answeredOptionID: String?, available: CGSize, ratings: MessageRatingsModel? = nil) -> PeekLayout {
         // Leave room for either tail orientation and the dialog's drawn shadow.
         var layout = PeekLayout(width: min(ZeusPeekTiming.maxWidth, max(1, available.width - ZeusDialogTail.height)))
         let full = textHeight(card.body, font: font, width: layout.textWidth, lines: nil)
@@ -22,7 +22,7 @@ struct PeekLayout: Equatable {
             layout.bodyLines = lines
             layout.showsMore = full > textHeight(card.body, font: font, width: layout.textWidth, lines: lines) + 0.5
             let content = PeekContent(card: card, layout: layout, moreCount: moreCount, error: error,
-                                      answeredOptionID: answeredOptionID, tail: nil, reveal: .full)
+                                      answeredOptionID: answeredOptionID, tail: nil, reveal: .full, ratings: ratings)
                 .environment(\.zeusFontChoice, font).environment(\.zeusAnimationsActive, false)
             let size = NSHostingView(rootView: content).fittingSize
             layout.contentSize = CGSize(width: ceil(size.width), height: ceil(size.height))

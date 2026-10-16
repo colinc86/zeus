@@ -72,6 +72,7 @@ final class AvatarStatusModel: AvatarStatusControlling, ManagedBlockingPresentin
     }
 
     func noteNewCard(_ card: Card) {
+        guard !card.isRatingHeld else { return }
         now = clock()
         speakingUntil = nil
         speakingCardID = nil
@@ -82,6 +83,7 @@ final class AvatarStatusModel: AvatarStatusControlling, ManagedBlockingPresentin
 
     /// Peek speech has the exact same duration as D8's reveal; the card mood follows the last word.
     func notePeek(_ card: Card, reduceMotion: Bool, typewriter: Bool = true) {
+        guard !card.isRatingHeld else { return }
         now = clock()
         let typing = typewriter && !reduceMotion
         let duration = typing

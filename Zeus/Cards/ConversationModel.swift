@@ -32,6 +32,7 @@ struct ConversationEntry: Identifiable, Equatable, Sendable {
     }
     var isNotice: Bool { switch content { case .notice, .appChange: true; default: false } }
     var threadNotice: ThreadNotice? { switch content { case .notice(let notice), .appChange(let notice): notice; default: nil } }
+    var isRatingHeld: Bool { if case .agentCard(let card) = content { return card.isRatingHeld }; return false }
     var isMuted: Bool {
         if case .agentCard(let card) = content { return card.status == .dismissed || card.status == .expired }
         return false
@@ -131,7 +132,7 @@ final class ConversationModel {
 
     /// Priority never changes conversational chronology or which question the keyboard targets.
     var newestOpenQuestion: Card? {
-        cards.cards.enumerated().filter { $0.element.kind == .question && $0.element.status == .open }.max {
+        cards.cards.enumerated().filter { $0.element.kind == .question && !$0.element.isRatingHeld && $0.element.status == .open }.max {
             if $0.element.createdAt != $1.element.createdAt { return $0.element.createdAt < $1.element.createdAt }
             return $0.offset < $1.offset
         }?.element
@@ -139,7 +140,7 @@ final class ConversationModel {
 
     /// The newest open text-accepting question wins, even when newer options-only questions exist.
     private var newestTextQuestion: Card? {
-        cards.cards.enumerated().filter { $0.element.kind == .question && $0.element.status == .open && $0.element.input != nil }.max {
+        cards.cards.enumerated().filter { $0.element.kind == .question && !$0.element.isRatingHeld && $0.element.status == .open && $0.element.input != nil }.max {
             if $0.element.createdAt != $1.element.createdAt { return $0.element.createdAt < $1.element.createdAt }
             return $0.offset < $1.offset
         }?.element

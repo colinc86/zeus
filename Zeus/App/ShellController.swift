@@ -30,6 +30,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     let settingsNavigation = SettingsNavigation()
     let peek: PeekModel
     let peekPanelState = PeekPanelState()
+    let ratings: MessageRatingsModel
     let conversation: ConversationModel
     let testMessage: ComposeModel
     let managed: ManagedAssistantModel
@@ -95,6 +96,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         self.settings = settings
         managed = ManagedAssistantModel(settings: settings, controller: { [weak messaging] in messaging?.runtime as? any ManagedSessionControlling })
         conversation = ConversationModel(cards: cards, messaging: messaging)
+        ratings = MessageRatingsModel(cards: cards, defaults: defaults, source: { [weak messaging] in messaging?.runtime as? any MessageRatingsProviding })
         testMessage = ComposeModel(cards: cards, messaging: messaging)
         // ZeusPaths.activity in the app; next to a test's own Characters folder otherwise, and none when a test passes no
         // folder, so tests never see the real one.
@@ -115,6 +117,13 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
                                    assistantActivity: { [weak messaging] in messaging?.assistantActivity })
         super.init()
         learning.deliveries = learningDeliveries
+        ratings.openCard = { [weak self] id in
+            guard let self else { return }
+            self.openConversation(at: id)
+        }
+        ratings.dailyHour = { [weak settings] in settings?.quietHoursEnabled == true ? (settings?.quietStartHour ?? 21) : 21 }
+        ratings.openSettings = { [weak self] in self?.showSettings(tab: .rules) }
+        cards.onRatingRead = { [weak ratings] id in ratings?.provider?.ratingCardOpened(id: id) }
         if let services = learningServices {
             learning.folder.provider = services.folder
             if let writer = services.folder as? LearningFolderWriter {
@@ -193,6 +202,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         settings.startWatchingUserFolders()
         learn.start()
         learningDeliveries.start()
+        ratings.start()
         configure(avatar)
         // Ghost mode changes only alpha; it never makes Zeus click-through.
         avatar.ignoresMouseEvents = false
@@ -200,7 +210,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         configure(peekPanel)
         card.contentView = nil
         peekPanel.title = "Zeus says"
-        peekPanel.contentView = PeekHostingView(rootView: PeekView(model: peek, panel: peekPanelState, settings: settings, activity: surfaceActivity,
+        peekPanel.contentView = PeekHostingView(rootView: PeekView(model: peek, panel: peekPanelState, settings: settings, activity: surfaceActivity, ratings: ratings,
             open: { [weak self] in self?.expandPeek($0) }))
         observePeekVisibility()
         observePeekLayoutInputs()
@@ -291,6 +301,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         learn.stop()
         learning.stop()
         learningDeliveries.stop()
+        ratings.stop()
         contextCaptureTask?.cancel(); contextCaptureTask = nil
         if let access = learningRuntime as? any LearningJournalAccessControlling {
             access.journalAccessPolicy = { .init() }; access.onViewJournalAnswer = nil
@@ -335,7 +346,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             resize: { [weak self] height in
                 guard let self, abs(self.cardPanelState.height - height) > 1 else { return }
                 self.cardPanelState.height = height; self.positionCard()
-            }, managed: managed,
+            }, ratings: ratings, managed: managed,
             openTerminal: { [weak self] in try await self?.openConversationTerminal() },
             newConversation: { [weak self] in self?.performManagedAction(.newConversation) },
             resetWidth: { [weak self] in self?.resetConversationWidth() },
@@ -659,7 +670,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         cardPanelState.scrollRequest += 1
         closingTask?.cancel()
         showInteractionPanel()
-        cardPanelState.focusRequest += 1
+        if cardID.flatMap({ ratings.drafts[$0] }) == nil { cardPanelState.focusRequest += 1 }
     }
 
     /// Keyboard/menu recovery entry point, also used by the avatar's named accessibility action.
@@ -910,6 +921,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     }
 
     private func receivedCard(_ newCard: Card) {
+        guard !newCard.isRatingHeld else { return }
         // The local introduction is not assistant speech, a peek or a popup sound.
         guard newCard.id != WelcomeCard.id else { return }
         if newCard.priority != .high && learningRuntime?.learningInterruptionHold == true { return }
@@ -920,6 +932,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         let suppression = peekSuppression
         if peek.receive(newCard, suppression: suppression, reduceMotion: reduceMotion, typewriter: settings.typewriterEnabled) {
             playPopupSound(appeared: !wasShowing, suppression: suppression)
+            ratings.provider?.ratingCardShown(id: newCard.id)
             status.notePeek(newCard, reduceMotion: reduceMotion, typewriter: peek.types)
             peekExitTask?.cancel()
             positionPeek()
@@ -984,6 +997,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             _ = peek.moreCount
             _ = peek.answerError
             _ = peek.answeredOptionID
+            _ = ratings.drafts
+            _ = ratings.confirmations
+            _ = ratings.errors
             _ = settings.fontChoice
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
@@ -999,7 +1015,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
               let screen = PanelPlacement.screen(for: avatar.frame, in: screenRects) else { return }
         let layout = PeekLayout.measure(card: message, font: settings.fontChoice, moreCount: peek.moreCount,
                                         error: peek.answerError, answeredOptionID: peek.answeredOptionID,
-                                        available: screen.insetBy(dx: 8, dy: 8).size)
+                                        available: screen.insetBy(dx: 8, dy: 8).size, ratings: ratings)
         let placement = PeekPlacement.place(art: screenArtRect, anchorX: screenAnchor.x, contentSize: layout.contentSize, screen: screen)
         if peekPanelState.layout != layout { peekPanelState.layout = layout }
         if peekPanelState.tail != placement.tail { peekPanelState.tail = placement.tail }
@@ -1053,7 +1069,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
                                                                       messaging: messaging, preview: messaging, testMessage: testMessage,
                                                                       injectDemo: { [weak self] in self?.injectDemo($0) },
                                                                       resetPosition: { [weak self] in self?.resetPosition() },
-                                                                      navigation: settingsNavigation, login: login, hotKey: hotKey, activity: surfaceActivity, updater: updater, learn: learn, learning: learning, openJournal: { [weak self] in self?.showJournal() }))
+                                                                      navigation: settingsNavigation, login: login, hotKey: hotKey, activity: surfaceActivity, updater: updater, learn: learn, learning: learning, openJournal: { [weak self] in self?.showJournal() }, ratings: ratings))
             host.sizingOptions = []
             window.contentView = host
             SettingsWindowSize.restore(window, from: defaults, screen: NSScreen.main)
@@ -1067,8 +1083,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     }
 
     private func refreshRulesTab() {
-        settingsNavigation.showsRules = learning.enabled || !(learning.rules?.rules.isEmpty ?? true)
-        if !settingsNavigation.showsRules && settingsNavigation.tab == .rules { settingsNavigation.tab = .privacy }
+        settingsNavigation.showsRules = true // Ratings are available independently of learning permissions.
     }
     func showRule(_ id: String) {
         guard let rules = learning.rules else { return }
