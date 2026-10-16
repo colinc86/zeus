@@ -20,6 +20,9 @@ public struct ZeusPeekBubble: View {
     public var options: [CardOption]
     public var acceptsText: Bool
     public var attachmentCount: Int
+    /// The app's chip for the card's first attachment (CONVERSATION.md §18.4), shown in place of the
+    /// "N attachments" caption. `nil` keeps the caption, driven by `attachmentCount`.
+    public var attachment: AnyView?
     public var moreCount: Int
     public var isHighPriority: Bool
     public var tail: ZeusDialogTail?
@@ -42,6 +45,7 @@ public struct ZeusPeekBubble: View {
     ///   - body: the card's markdown body (inline markdown only).
     ///   - options: the card's options or actions. Up to 3 are shown as buttons; more turn into "Reply…".
     ///   - acceptsText: the card takes a free-text answer (`input != nil`); adds "Reply…".
+    ///   - attachment: the app's chip for the first attachment (§18.4); replaces the attachment count caption.
     ///   - moreCount: other unseen cards that arrived while this one is showing ("+N more").
     ///   - answeredOptionID: set right after an option is clicked: that button shows "✓", the others disable,
     ///     and the app hides the bubble 0.6 s later (CONVERSATION.md §14.6).
@@ -49,7 +53,7 @@ public struct ZeusPeekBubble: View {
     ///   - onOption: answer the card with this option directly, without expanding.
     ///   - onClose: the ✕ button.
     public init(title: String?, body: String, options: [CardOption] = [], acceptsText: Bool = false,
-                attachmentCount: Int = 0, moreCount: Int = 0, highPriority: Bool = false,
+                attachmentCount: Int = 0, attachment: AnyView? = nil, moreCount: Int = 0, highPriority: Bool = false,
                 tail: ZeusDialogTail? = nil, reveal: Reveal = .full, answeredOptionID: String? = nil,
                 onOpen: @escaping () -> Void, onMore: (() -> Void)? = nil, onReply: (() -> Void)? = nil, onOption: @escaping (CardOption) -> Void = { _ in },
                 onClose: @escaping () -> Void) {
@@ -58,6 +62,7 @@ public struct ZeusPeekBubble: View {
         self.options = options
         self.acceptsText = acceptsText
         self.attachmentCount = attachmentCount
+        self.attachment = attachment
         self.moreCount = moreCount
         self.isHighPriority = highPriority
         self.tail = tail
@@ -109,7 +114,9 @@ public struct ZeusPeekBubble: View {
             typedBody(lineLimit: Self.bodyLineLimit(hasButtons: hasButtons))
                 .contentShape(Rectangle())
                 .onTapGesture(perform: onOpen)
-            if attachmentCount > 0 {
+            if let attachment {
+                attachment
+            } else if attachmentCount > 0 {
                 Text(attachmentCount == 1 ? "1 attachment" : "\(attachmentCount) attachments")
                     .zeusFont(.caption).foregroundStyle(palette.secondaryText)
             }

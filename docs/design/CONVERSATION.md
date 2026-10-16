@@ -117,10 +117,10 @@ Every bubble is a `ZeusBubble`. The table shows what goes inside it, mapped from
 
 | Card | Bubble | Contents, in order |
 |---|---|---|
-| `message` | agent | `ZeusBubbleHeader(title, time)` if `title`, then the body |
+| `message` | agent | `ZeusBubbleHeader(title, time)` if `title`, then the body, then one attachment chip per attachment (§18) |
 | `question`, open | agent | header, body, `ZeusOptionButtons(.open(shortcuts:))`. Shortcuts are only on the newest open question that has options (§8). |
 | `question`, answered | agent | header, body, `ZeusOptionButtons(.answered(optionID:))` showing only "✓ <label>", or nothing for a text answer. **Plus** a user bubble with the answer, placed **chronologically at the time of answering** (amended in D12: it used to say "right after the question card"). When the entry just before it isn't its question, add a caption above it: "↩ <question title>" (secondaryText, `.caption`, right-aligned). |
-| `content` | agent | header, body, one `ZeusAttachmentRow` per attachment, then actions as `ZeusOptionButtons` (same open/answered rules as a question) |
+| `content` | agent | header, body, one attachment chip per attachment (§18), then actions as `ZeusOptionButtons` (same open/answered rules as a question) |
 | `progress` | agent | header (title, or the body's first line), `ZeusProgressRow(value: card.progress)`. Updates in place. |
 | any card with `progress != nil` | agent | as its kind, plus `ZeusProgressRow` before the options |
 | `userMessage` | user | the text |
@@ -200,7 +200,7 @@ All keys work while the panel is key. Only ⌥⌘Z is global.
 
 Notes:
 - Register ⌥⌘Z with Carbon `RegisterEventHotKey`. It needs no Accessibility permission. If registration fails because another app owns the combination, show "⌥⌘Z is in use; choose another" in Settings → Agent.
-- Tab order: "Load earlier messages", then oldest to newest, each bubble's controls: open option buttons, the Welcome card's buttons, Retry on a failed send, and each attachment row's Reveal then Open. The composer comes last. Answered, closed and muted bubbles have no stops. Every thread control is `.focusable()` with a unique focus identity (entry + control). Then Tab reaches it without the system's Keyboard Navigation setting, and two cards that reuse an option ID never share a stop.
+- Tab order: "Load earlier messages", then oldest to newest, each bubble's controls: open option buttons, the Welcome card's buttons, Retry on a failed send, and each attachment chip, then its "More" when the summary is clipped (§18). The composer comes last. Answered, closed and muted bubbles have no stops. Every thread control is `.focusable()` with a unique focus identity (entry + control). Then Tab reaches it without the system's Keyboard Navigation setting, and two cards that reuse an option ID never share a stop.
 - Focusing a thread control scrolls it to the middle of the thread and stops following new messages (as if the person had scrolled), until ⌘↓ or the pill.
 - In the composer, Tab leaves the field; it never inserts a tab character. Focus arriving in the composer, by Tab, click-to-open or ⌥⌘Z, keeps a restored draft intact with the caret at its end (`ZeusComposer`, Q2 DES-1); a click inside the text keeps the caret where it was clicked.
 - Focus ring: as CARDS.md §7 (a 1 px `palette.accent` line inside the button frame). The composer field shows focus with its frame turning `palette.accent`; the system ring is off.
@@ -285,7 +285,7 @@ if let a = runtime.assistantActivity {
 
 ## 12. Accessibility
 
-- The thread is a list. Each bubble is one element: the label is "<Zeus | You>: <title>. <body>", and its option and attachment buttons are child elements.
+- The thread is a list. Each bubble is one element: the label is "<Zeus | You>: <title>. <body>", and its option buttons and attachment chips are child elements (chip labels and actions in §18.5).
 - Session labels read "From Claude · Zeus" (the same text as the label, §3).
 - Dividers are headers.
 - When a new agent bubble arrives while the panel is open, post a VoiceOver announcement with the title, or the first sentence of the body.
@@ -331,7 +331,8 @@ When a message arrives and the panel is **closed**, Zeus *says* it: a small spee
 ┌ Talk tomorrow ───────────── +2 more  ✕ ┐  title: .button, gold, 1 line · tag · close
 │ Your talk on Q3 planning is tomorrow   │  body: .body, inline markdown,
 │ at 10:00. Have you star…               │        3 lines, or 2 when there are buttons
-│ 1 attachment                           │  caption, only if attachments
+│ ▢ Q3 Planning.key                      │  attachment chip, only if attachments (§18.4):
+│   12 slides from your planning notes.  │  name, 1 line of summary · "and 1 more" caption if several
 │ [Yes] [No] [Later] [Reply…]            │  small ZeusButtonStyle buttons
 └─────────────────────▼──────────────────┘  tail → Zeus
 ```
@@ -347,6 +348,7 @@ When a message arrives and the panel is **closed**, Zeus *says* it: a small spee
   - More than 3 options: show only **Reply…**.
   - Text-only question: show **Reply…**.
   - Plain message: no buttons.
+- **Attachments:** the first one as a chip (§18.4), never the old "1 attachment" caption; `ZeusPeekBubble(attachment:)` takes the app's chip view.
 - **"+N more":** a small secondary tag left of ✕. Clicking it opens the panel.
 - **✕:** a pixel `ZeusGlyph(.close)` in `secondaryText` at rest (≥ 3:1), `text` on hover. Never fade it with opacity. It closes the bubble.
 
@@ -618,3 +620,64 @@ When FB1-P exposes a `RatingSuggestion` (five quiet signals in seven days for on
 ### 17.6 Renders
 
 `build/fb1-renders/` (FB1-A): the glyph at rest, hovered and open; the row and each collapsed line; a muted row collapsed and expanded, both reasons; the Settings section with all three groups and empty; the suggestion line. Light and dark, both fonts, and the row in every bundled theme.
+
+## 18. Attachment chips (AT1)
+
+> **Status: building (AT1-A, on AT1-P's `summary`).** User decision 2026-10-16: "hey, look at this" plus a file isn't a message. Every file or folder attachment now carries a `summary` the assistant wrote (1–3 sentences, CONTRACT §4), the message text gives the takeaway, and the attachment itself sits quietly under the body: a chip, not a pair of buttons. Nothing in this section is a filled button; the chip must read as *less* prominent than the message text.
+
+### 18.1 Anatomy
+
+```
+Here's the first draft. Slides 7–9 need your numbers.      body, as before
+┌───────────────────────────────────────────────┐
+│ ▢ Q3 Planning.key                          ⌕  │  icon · name (.body, text, 1 line, middle-truncated) · reveal icon (hover/focus only)
+│   12 slides built from your planning notes;   │  summary (.caption, secondaryText, 2 lines)
+│   the budget slides are placeholders.         │
+│   More                                        │  only when the summary is clipped
+└───────────────────────────────────────────────┘
+```
+
+- **One chip per attachment**, full bubble width, stacked with `Spacing.xs` between them, after the body and before any options or actions. `zeus_present` actions stay `ZeusOptionButtons`; its attachments are chips.
+- **Chrome:** the quiet well the old row used: `palette.field` at 55% fill with a 1-px `fieldBorder` frame (`PixelFrame(outline: fieldBorder, frame: nil, steps: 1)`), padding `Spacing.xs + pixel`. Hover: the fill goes to full `palette.field`. Focus: the frame becomes `palette.focusRing`, as a field does. No outline change on press; the click is the whole chip.
+- **Icon:** the kind's SF Symbol (`ZeusAttachmentRow.symbol(for:)`: doc, folder, link) at 11 pt semibold, the size the composer's draft chip uses, in `secondaryText` at rest and `title` while the chip is hovered or focused. Width 14, top-aligned with the name.
+- **Name:** `attachment.label`, `.body` in `palette.text`, one line, `truncationMode(.middle)`. Template v4 makes the label the *name* of the thing ("Q3 Planning.key", "Speaker notes"), not a verb ("Open Keynote draft"); old cards keep whatever label they have.
+- **Summary:** `attachment.summary`, `.caption` in `secondaryText`, under the name, indented to the name's leading edge, `lineLimit(2)` and "…" at the clip. A card without a summary (legacy, or a `url`) is a one-line chip: icon and name only, no empty line reserved.
+- **More / Less:** only when the summary needs more than two lines (measure: lay the full text out hidden and compare heights, or `ViewThatFits`). A plain-style text button "More" in `palette.title`, `.caption`, on its own line under the summary, left-aligned with it. Click: the summary expands in place to its full height and the button reads "Less"; click again collapses. Expansion is per chip, not persisted, and never opens the attachment. Tooltip none. VoiceOver "Show the full summary" / "Show less".
+- **Location:** the path caption ("~/Documents/Talks") leaves the resting chip. It is the chip's tooltip and is one Copy Path away (§18.3).
+
+### 18.2 Click, hover, reveal
+
+- **Click anywhere on the chip = Open**, through `AttachmentTarget.action(for:)` exactly as today: apps, scripts, packages, aliases and executables are shown in Finder instead and the safety caption appears under the bubble ("Zeus shows apps and scripts in Finder instead of opening them.", `secondaryText`); folders open in Finder; links open in the browser. It is a first-click target: the panel needn't be key. The click-time errors stay: "This attachment has an invalid target." and "Could not open <name>." (`palette.destructive`, under the bubble).
+- **Tooltip** on the chip: the location (`AttachmentTarget.locationCaption`, the folder in `~` form) for files and folders, the host for links; for a reveal-only target the safety caption instead.
+- **Reveal icon:** `magnifyingglass` at 11 pt, in a 20×20 target at the trailing end of the name line. The slot is always reserved so the name's truncation never shifts; the icon is drawn only while the chip is hovered or focused, `secondaryText`, and `title` while the icon itself is hovered or focused. Click: Show in Finder (`reveal: true`), without opening. Tooltip "Show in Finder". Not shown for links, for reveal-only targets (the chip's own click already reveals) or when the file is missing.
+- **Missing file or folder** (`url(for:)` resolves but nothing is there when the chip appears, re-checked on click): a third line "Not found" in `secondaryText` under the summary (or under the name when there is no summary); the name goes `mutedText`; no reveal icon. Click: Show in Finder of the nearest existing parent folder, so the user can see where it was; tooltip "Zeus will show the folder it was in." Copy Path still works.
+- **Invalid target** (`url(for:)` is nil: a relative path, a non-http link): the name in `mutedText`, the line "Can't be opened" in `secondaryText`, nothing on click, no reveal icon; Copy Path / Copy Link only.
+- **Muted bubbles** (§4, dismissed or expired): chips stay live, in the muted bubble's colors (`mutedText` for name and summary); the reveal icon still appears on hover.
+
+### 18.3 Context menu
+
+Right-click or Control-click on the chip (also the Menu key while focused):
+
+| Target | Items, in order |
+|---|---|
+| file, folder | **Open**, Show in Finder, Copy Path |
+| reveal-only (app, script…) | Show in Finder, Copy Path |
+| missing | Show in Finder (the parent folder), Copy Path |
+| invalid | Copy Path |
+| `url` | **Open**, Copy Link |
+
+Copy Path puts the expanded absolute path on the pasteboard (`~` resolved, symlinks not resolved); Copy Link the URL as given. No confirmation and no caption.
+
+### 18.4 Peek bubble
+
+The peek shows the card's **first** attachment as a chip in place of the old "1 attachment" caption: icon, name on one line, summary on **one** line ("…"), no reveal icon, no More, no context menu. Clicking the chip opens the attachment with the same routing as §18.2 (a reveal-only target reveals; nothing else changes in the peek). When the card has more, a caption under the chip in `secondaryText`: "and 1 more attachment" / "and 2 more attachments"; clicking it opens the panel at the card. The body keeps its 3-line limit (2 with buttons). Legacy or link attachments without a summary are a one-line chip.
+
+### 18.5 Keyboard and accessibility
+
+- The chip is one focus stop in the §8 Tab order (where Reveal then Open used to be two). Return or Space opens, as a click does. ⌘Return shows in Finder when that item exists. The "More" button is the next stop when present; Return toggles it.
+- VoiceOver: the chip is one element, label "<kind>: <name>, <summary>" ("File: Q3 Planning.key, 12 slides built from your planning notes."), with "Not found" or "Can't be opened" appended in those states. Custom actions: "Open" (or "Show in Finder" when that is what the click does), "Show in Finder", "Copy Path" or "Copy Link", and "Show the full summary" while the summary is clipped. The reveal icon is `accessibilityHidden`: its action is in the chip.
+- Reduce Motion: the More/Less expansion is instant.
+
+### 18.6 Renders
+
+`at1/at1-chip-rest__*`, `-hover`, `-focused`, `-expanded`, `-missing`, `-link`, `-legacy` (no summary), `-present` (chips above actions), `-peek` (one chip and "and 1 more attachment"), each in light and dark and both fonts, from `build/at1-renders/`.
