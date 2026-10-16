@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Observation
 
@@ -14,6 +15,8 @@ final class JournalViewerModel {
         return learningEnabled() ? "Nothing yet. Zeus sends a summary each morning and notes during the day."
             : "Nothing yet. Learn from me is off, so Zeus has nothing to send."
     }
+    var activeFolder: LearningFolderModel? { folder?.folderURL == nil ? nil : folder }
+    var folder: LearningFolderModel?
     var deliveries: LearningDeliveryModel?
     var waiting: [PendingLearningDelivery] {
         guard sentOnly else { return [] }
@@ -56,6 +59,18 @@ final class JournalViewerModel {
         pictures.didChange = { [weak self] in self?.reload() }
         reload(); observe()
     }
+    /// Reveal actual existing files for the selected day, without guessing the writer's layout.
+    var dayFiles: [URL] {
+        guard let provider = folder?.provider else { return [] }
+        var selection = JournalQuery()
+        selection.from = calendar.startOfDay(for: day)
+        selection.to = calendar.date(byAdding: .day, value: 1, to: selection.from ?? day)
+        selection.limit = 100_000
+        let records = (try? journal.items(matching: selection)) ?? []
+        return Array(Set(records.compactMap { provider.fileURL(forJournalItem: $0) })).sorted { $0.path < $1.path }
+    }
+    @ObservationIgnored var revealFiles: ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) }
+    func showDayInFinder() { let files = dayFiles; if !files.isEmpty { revealFiles(files) } }
     var query: JournalQuery {
         var query = JournalQuery()
         query.from = calendar.startOfDay(for: day)

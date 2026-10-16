@@ -22,7 +22,7 @@ struct PrivacySettingsView: View {
     var announce: @MainActor (String) -> Void = AccessibilityFeedback.announce
 
     /// Verbatim from CONTRACT §13.
-    static let caveat = "Summaries go to your assistant, which sends them to its model provider like any message. Raw activity never leaves this Mac."
+    static let caveat = "Zeus never sends your data anywhere itself. Your assistant reads its folder and what Zeus sends it. Where that goes depends on the assistant you chose."
     static let scope = "Zeus notes which app is in front, app launches and quits, when you lock, sleep or step away, and how many displays you use. Never what you type, copy, read or open."
 
     init(learn: LearnFromMe, observations: ObservationSettings? = nil,

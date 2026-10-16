@@ -137,7 +137,7 @@ struct ObservationConsentSheet: View {
             }
             Text("Names, emails, numbers and other private details become placeholders like ‹name› before anything is stored.").settingsCaption()
             Text("Safari: Zeus keeps only that you used it. To keep its titles and web addresses too, add Safari under Only in apps I choose. Zeus can't tell Safari's private windows apart, so those would be kept too.").settingsCaption()
-            Text("Summaries of this go to your assistant, which sends them to its model provider like any message. The records themselves stay on this Mac.").settingsCaption()
+            Text("The records go into your assistant's folder, and summaries of them go to your assistant like any message. Where that goes depends on the assistant you chose.").settingsCaption()
             Text("Next, macOS asks you to allow Zeus under Accessibility. Zeus uses it only to read window titles.").settingsCaption()
             HStack {
                 Spacer()

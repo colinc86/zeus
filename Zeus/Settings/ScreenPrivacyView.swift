@@ -9,7 +9,7 @@ struct ScreenPrivacyView: View {
             Text("Screen").settingsTitle()
             Toggle("Let Zeus look at the window in front now and then", isOn: Binding(get: { model.policy.enabled }, set: model.setEnabled))
                 .accessibilityLabel("Let Zeus look at the window in front now and then")
-            Text("Zeus takes a picture of the window in front at sensible moments, covers private text and pixellates pictures on this Mac, and keeps a one-line description of what you were doing. Never the whole screen.").settingsCaption()
+            Text(model.privacy.coverPictures ? "Zeus takes a picture of the window in front at sensible moments, covers private text and pixellates pictures on this Mac, and keeps a one-line description of what you were doing. Never the whole screen." : "Zeus takes a picture of the window in front at sensible moments and keeps a one-line description of what you were doing. Never the whole screen.").settingsCaption()
             if model.policy.enabled {
                 if let caption = model.statusCaption {
                     Text(caption).settingsCaption()
@@ -25,8 +25,11 @@ struct ScreenPrivacyView: View {
             }
             ScreenPolicyControls(model: model).disabled(!model.policy.enabled)
         }
+        .sheet(isPresented: $model.showsCoveringConfirmation) {
+            CoverPicturesConfirmation(keepCovering: model.keepCovering, turnOff: model.confirmUncoveredPictures)
+        }
         .sheet(isPresented: $model.showsConsent) {
-            ScreenConsentSheet(enable: { model.continueConsent() }, cancel: { model.cancelConsent() })
+            ScreenConsentSheet(enable: { model.continueConsent() }, cancel: { model.cancelConsent() }, coverPictures: model.privacy.coverPictures)
         }
     }
 }
@@ -42,7 +45,9 @@ private struct ScreenPolicyControls: View {
             SettingsSegments(label: "Keep descriptions for", options: [7, 30, 90].map { ($0, "\($0) days") },
                 selection: Binding(get: { model.policy.retentionDays }, set: { value in model.policies.edit(3) { $0.retentionDays = value }; model.changed() }))
             Text("Pictures are deleted after 7 days.").settingsCaption()
-            RawJournalAccessView(settings: model.policies, level: .screen)
+            Toggle("Cover pictures and faces", isOn: Binding(get: { model.privacy.coverPictures }, set: model.setCoverPictures))
+                .accessibilityLabel("Cover pictures and faces")
+            Text("Private text is covered and pictures and faces are pixellated before a screenshot is kept.").settingsCaption()
         }
     }
 }
@@ -54,6 +59,7 @@ struct ScreenConsentSheet: View {
     static let timing = "Zeus doesn't record your screen. It takes one picture of the window in front when something has changed: after you've switched to an app or document and stayed for 10 seconds, every 5 minutes if you stay in the same place, when you come back from a break, and when you ask. It skips the picture if the window looks the same as last time. It never takes one during a video call, while your screen is mirrored for a presentation, while a password field is active, or in private windows and apps on your private list."
     /// A containing window may provide a smaller available height; by default use the display's usable height.
     var heightLimit: CGFloat? = nil
+    var coverPictures = true
     private var maximumHeight: CGFloat { max(420, heightLimit ?? ((NSScreen.main?.visibleFrame.height ?? 1080) - 48)) }
     var body: some View {
         ViewThatFits(in: .vertical) {
@@ -74,7 +80,7 @@ struct ScreenConsentSheet: View {
     private var content: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Zeus takes a picture of the window in front at sensible moments, so your assistant knows what you were looking at. Before anything is kept, Zeus covers private text and pixellates pictures and faces, here on this Mac.").settingsBody()
-            list("Zeus keeps", ["A picture of the window in front, with private text covered and pictures pixellated, for 7 days", "A one-line description of what you were doing, for 90 days"])
+            list("Zeus keeps", [coverPictures ? "A picture of the window in front, with private text covered and pictures pixellated, for 7 days" : "The picture of the window in front, as it is, for 7 days", "A one-line description of what you were doing, for 90 days"])
             list("Zeus never keeps", ["The rest of your screen or other windows", "Anything during a video call or while presenting", "Anything while a password field is active", "Private windows and apps on your private list", "Sound"])
             Text("When Zeus looks").settingsHeading()
             Text(Self.timing).settingsCaption()
@@ -92,7 +98,7 @@ struct ScreenConsentSheet: View {
     /// The disclosure and permission caption remain visible even on a short display.
     private var footer: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Descriptions go to your assistant in summaries, like any message. Pictures never leave this Mac unless you attach one yourself or let your assistant see them when it asks (off until you turn it on).").settingsCaption()
+            Text("Covered pictures and their descriptions go into your assistant's folder, and descriptions into summaries. Where that goes depends on the assistant you chose.").settingsCaption()
             Text("Next, macOS asks you to allow Zeus under Screen Recording. Zeus uses it only for these pictures.").settingsCaption()
             HStack {
                 Spacer()

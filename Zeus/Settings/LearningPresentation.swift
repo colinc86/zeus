@@ -10,6 +10,7 @@ final class LearningPresentation {
     let policies: ObservationSettings
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored let learn: LearnFromMe
+    let folder = LearningFolderModel()
     var deliveries: LearningDeliveryModel? { didSet { viewer?.deliveries = deliveries } }
     private(set) var viewer: JournalViewerModel?
     private(set) var rules: RulesPaneModel?
@@ -64,14 +65,18 @@ final class LearningPresentation {
         if SystemLanguageModel.default.isAvailable { return prefix }
         return prefix + " Apple Intelligence is off, so only fixed patterns (emails, card numbers, passwords…) are caught."
     }
-    func deleteEverything() {
+    func deleteEverything(includeAssistantNotes: Bool = false) {
         focus?.invalidate(); screen?.invalidate(); typing?.invalidate(); ask?.invalidate(); learn.invalidatePendingCapture(); viewer?.forgetUndo()
         // Persist the erase boundary before deleting, so an old receipt cannot restore the sent ledger after relaunch.
         let previousBoundary = defaults.object(forKey: "learn.contextLedgerClearedAt")
         defaults.set(Date(), forKey: "learn.contextLedgerClearedAt")
         do {
             try journal?.delete(.all)
-            learn.deleteEverything(); viewer?.reload(); error = nil
+            learn.deleteEverything(); viewer?.reload()
+            do {
+                try (folder.provider as? any LearningFolderErasing)?.deleteFolderContents(includeAssistantNotes: includeAssistantNotes)
+                error = nil
+            } catch { self.error = "Couldn't finish deleting the folder contents. Try again." }
         } catch {
             if let previousBoundary { defaults.set(previousBoundary, forKey: "learn.contextLedgerClearedAt") }
             else { defaults.removeObject(forKey: "learn.contextLedgerClearedAt") }
@@ -85,7 +90,7 @@ final class LearningPresentation {
             let policy = policies.policy(level.rawValue)
             if policy.enabled && policy.consented { enabled.insert(level) }
         }
-        return JournalAccessPolicy(enabledLevels: enabled, rawLevels: Set(enabled.filter { policies.rawAllowed($0.rawValue) }))
+        return JournalAccessPolicy(enabledLevels: enabled, rawLevels: enabled)
     }
     /// Exact durable receipts outrank a pending snapshot after a ledger write failure.
     /// Nil means the journal is unavailable, not that no receipt exists.
@@ -123,6 +128,7 @@ final class LearningPresentation {
         pruneExpired()
         let viewer = JournalViewerModel(journal: journal)
         viewer.deliveries = deliveries
+        viewer.folder = folder
         viewer.learningEnabled = { [weak self] in self?.enabled ?? false }
         self.viewer = viewer; self.rules = RulesPaneModel(store: rules, journal: viewer)
         focus = FocusObserver(source: source, policies: policies,
@@ -221,7 +227,7 @@ final class LearningPresentation {
         withObservationTracking {
             _ = policies.policy(1); _ = policies.policy(2); _ = policies.policy(3); _ = policies.policy(4); _ = policies.screenPerHour; _ = policies.typingWordsHours
             _ = learn.settings.enabled; _ = learn.settings.pausedUntil
-            _ = learn.settings.excludedApps; _ = learn.settings.retentionDays
+            _ = learn.settings.excludedApps; _ = learn.settings.retentionDays; _ = learn.settings.coverPictures
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self, self.observing else { return }

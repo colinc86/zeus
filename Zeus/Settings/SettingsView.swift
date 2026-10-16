@@ -118,6 +118,8 @@ struct SettingsView: View {
                     Text("Learn from me").settingsTitle()
                     if learning.enabled { Text(learning.redactionCaption).settingsCaption() }
                     LearningStorageWarningView(warnings: learning.storageWarnings)
+                    LearningFolderView(model: learning.folder, managed: managed.enabled)
+                    SettingsDivider()
                     PrivacySettingsView(learn: learn, observations: learning.policies,
                         onObservationChange: { learning.settingsChanged() }, deleteAll: { learning.deleteEverything() })
                     SettingsDivider()
@@ -137,7 +139,7 @@ struct SettingsView: View {
                     KeyboardButton("Open What Zeus Kept…") { openJournal() }.accessibilityLabel("Open What Zeus Kept…")
                         .disabled(learning.viewer == nil)
                     SettingsDivider()
-                    JournalPrivacyActions(learn: learn, enabled: learning.enabled, delete: { learning.deleteEverything() })
+                    JournalPrivacyActions(learn: learn, enabled: learning.enabled, delete: { learning.deleteEverything(includeAssistantNotes: $0) })
                     if let error = learning.error ?? learning.focus?.error ?? learning.typing?.observer?.lastError ?? learning.runtimeProblem() { Text(error).settingsError() }
                 } else if let learn { PrivacySettingsView(learn: learn) }
                 else { Text("Learn from me isn't available here.").settingsCaption() }

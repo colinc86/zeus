@@ -5,6 +5,7 @@ struct JournalTypingGroupView: View {
     let group: JournalTypingGroup
     let initiallyExpanded: Bool
     var search = ""
+    var folder: LearningFolderModel?
     var deleteRun: @MainActor @Sendable (JournalTypingRun) -> Void = { _ in }
     var deleteGroup: @MainActor @Sendable (JournalTypingGroup) -> Void = { _ in }
     @State private var manuallyExpanded: Bool?
@@ -23,7 +24,9 @@ struct JournalTypingGroupView: View {
             }.buttonStyle(.plain).accessibilityLabel(JournalDisplay.appName(group.app) + " · " + group.rangeLabel())
                 .accessibilityValue(expanded ? "Expanded" : "Collapsed")
             if expanded {
-                ForEach(group.runs) { run in JournalTypingRunView(run: run, delete: { deleteRun(run) }) }
+                ForEach(group.runs) { run in
+                    JournalTypingRunView(run: run, delete: { deleteRun(run) }, folder: folder)
+                }
             }
         }
         .contextMenu {
@@ -36,6 +39,7 @@ struct JournalTypingGroupView: View {
 struct JournalTypingRunView: View {
     let run: JournalTypingRun
     var delete: @MainActor @Sendable () -> Void = {}
+    var folder: LearningFolderModel?
     @State private var hovered = false
     @Environment(\.zeusPalette) private var palette
     var body: some View {
@@ -58,13 +62,20 @@ struct JournalTypingRunView: View {
                     }
                 } else if !run.missingWordsCaption.isEmpty { Text(run.missingWordsCaption).settingsCaption() }
             }.frame(maxWidth: .infinity, alignment: .leading)
-        }.padding(.trailing, 60).fixedSize(horizontal: false, vertical: true)
+        }.padding(.trailing, folder == nil ? 60 : 180).fixedSize(horizontal: false, vertical: true)
             .overlay(alignment: .topTrailing) {
-                if hovered { KeyboardButton("Delete", action: delete).accessibilityLabel("Delete typing stretch") }
+                if hovered { HStack {
+                    if let folder { KeyboardButton("Show in Finder") { folder.show(run.item) }.accessibilityLabel("Show typing stretch in Finder") }
+                    KeyboardButton("Delete", action: delete).accessibilityLabel("Delete typing stretch")
+                } }
             }
             .contentShape(Rectangle()).onHover { hovered = $0 }
-            .contextMenu { Button("Delete", action: delete) }
+             .contextMenu {
+                if let folder { Button("Show in Finder") { folder.show(run.item) } }
+                Button("Delete", action: delete)
+            }
             .accessibilityAction(named: Text("Delete typing stretch"), delete)
+            .modifier(JournalFinderAccessibility(folder: folder, item: run.item))
     }
 }
 

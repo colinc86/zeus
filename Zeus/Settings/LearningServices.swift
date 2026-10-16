@@ -6,6 +6,7 @@ import Foundation
     let rules: any RulesStore
     let redactor: any Redactor
     let source: any FocusCaptureSource
+    var folder: (any LearningFolderProviding)? = nil
 
     static func production() throws -> LearningServices {
         LearningServices(journal: EncryptedJournalStore(), rules: try PersistentRulesStore(),
