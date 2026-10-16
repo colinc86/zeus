@@ -63,7 +63,7 @@ final class LearningPresentation {
     var redactionCaption: String {
         let prefix = "Private details are removed on this Mac before anything is kept."
         if SystemLanguageModel.default.isAvailable { return prefix }
-        return prefix + " Apple Intelligence is off, so only fixed patterns (emails, card numbers, passwords…) are caught."
+        return prefix + " Apple Intelligence is off, so Zeus catches names, emails, phone numbers, addresses, passwords, keys, card and account numbers and ID numbers, and may miss private details written in other ways."
     }
     func deleteEverything(includeAssistantNotes: Bool = false) {
         focus?.invalidate(); screen?.invalidate(); typing?.invalidate(); ask?.invalidate(); learn.invalidatePendingCapture(); viewer?.forgetUndo()
