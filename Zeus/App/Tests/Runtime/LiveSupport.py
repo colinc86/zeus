@@ -152,6 +152,8 @@ def finish_host_build(out,package):
     # declarations. The host never constructs a key provider or opens a keychain.
     for name in ["JournalEncryption.swift", "LearningStorageRecovery.swift"]:
         (package/"Sources/Host"/name).write_text((REPO/"Zeus/Learn/Journal"/name).read_text())
+    for name in ["MessageRatingSeams.swift", "MessageRatingStore.swift", "MessageSimilarity.swift"]:
+        (package/"Sources/Host"/name).write_text((REPO/"Zeus/Learn"/name).read_text())
     # Headless hosts also need the value/protocol seams.
     # App-owned durable explicit-context intents accompany CardStore in every headless host.
     context_intent = REPO/"Zeus/Cards/ContextSendIntent.swift"

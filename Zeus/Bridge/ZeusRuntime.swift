@@ -30,6 +30,13 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored let learnings: any LearningsProviding
     @ObservationIgnored let learningRules: (any RulesStore)?
     @ObservationIgnored let learningJournal: (any JournalStore)?
+    @ObservationIgnored let messageRatings: MessageRatingStore?
+    @ObservationIgnored let ratingSimilarity: any MessageSimilarityComparing
+    @ObservationIgnored var ratingSignalTimer: Task<Void, Never>?
+    @ObservationIgnored var ratingDeliveryTask: Task<Void, Never>?
+    @ObservationIgnored var ratingExportVersion: UUID?
+    @ObservationIgnored var onShowMuted: (([String]) -> Void)?
+    var ratingError: String?
     @ObservationIgnored let learningFolder: (any LearningFolderRecording)?
     @ObservationIgnored let learningRedactor: (any Redactor)?
     @ObservationIgnored let learningContext: () -> LearningContext
@@ -135,8 +142,10 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
          ownScreenReader: any OwnSessionScreenReading = OwnSessionScreenReader(),
          rules: (any RulesStore)? = nil, journal: (any JournalStore)? = nil, redactor: (any Redactor)? = nil,
          learningFolder: (any LearningFolderRecording)? = nil,
+         messageRatings: MessageRatingStore? = nil, ratingSimilarity: any MessageSimilarityComparing = LocalMessageSimilarity(),
          learningContext: @escaping () -> LearningContext = { .init() },
          reflectionEnabled: @escaping () -> Bool = { false }, learningCalendar: Calendar = .current) {
+        self.messageRatings = messageRatings; self.ratingSimilarity = ratingSimilarity
         self.learningFolder = learningFolder
         self.learningRules = rules; self.learningJournal = journal; self.learningRedactor = redactor
         self.learningContext = learningContext; self.reflectionEnabled = reflectionEnabled; self.learningCalendar = learningCalendar
@@ -185,6 +194,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         syncLearningFolder()
         learningFolder?.start(learnings: learnings)
         startLearning()
+        scheduleRatingDelivery(); scheduleRatingSuggestions()
         observeLearningAvailability()
         publishUserMessageDeliveries(loaded.records)
         contextReceiptIDs.removeAll()
@@ -225,6 +235,8 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         // when the next process decides whether the 60-second grace period elapsed.
         for session in sessions { disconnectedAt[session.sessionKey] = clock.now }
         running = false
+        ratingSignalTimer?.cancel(); ratingSignalTimer = nil
+        ratingDeliveryTask?.cancel(); ratingDeliveryTask = nil
         stopLearning()
         learningFolder?.stop()
         learnings.onNewLearning = nil

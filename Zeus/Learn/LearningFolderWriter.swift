@@ -20,6 +20,7 @@ import UniformTypeIdentifiers
     @ObservationIgnored private var learnings: (any LearningsProviding)?
     @ObservationIgnored private var safeLearnings: [String: Learning] = [:]
     @ObservationIgnored private var safeRules: [String: (String, String)] = [:]
+    @ObservationIgnored private var messageRatings: [MessageRating]?
     @ObservationIgnored private var reflections: [String: LearningFolderReflection] = [:]
     @ObservationIgnored private var running = false
     @ObservationIgnored private var generation = UUID()
@@ -220,6 +221,7 @@ import UniformTypeIdentifiers
             }
         }
         if day == nil {
+        if let messageRatings { try append("Zeus/preferences.md", id: "preferences", text: MessageRatingStore.preferences(messageRatings)) }
         let history = (learnings as? any LearningHistoryProviding)?.allLearnings ?? learnings?.unreadLearnings() ?? []
         let retained = Set(history.map(\.id))
         if learnings is any LearningHistoryProviding { safeLearnings = safeLearnings.filter { retained.contains($0.key) } }
@@ -283,4 +285,14 @@ import UniformTypeIdentifiers
 
     Zeus never sends your data anywhere itself. Your assistant reads its folder; where that goes depends on the assistant you chose.
     """
+}
+
+extension LearningFolderWriter: RatingFolderRecording {
+    func clearRatingPreferences() { messageRatings = nil; refresh() }
+    func recordRatings(_ ratings: [MessageRating]) async -> [String] {
+        messageRatings = ratings
+        await flush()
+        guard lastWriteError == nil, let root = folderURL, disk?.existing(root, path: "Zeus/preferences.md") != nil else { return [] }
+        return ["Zeus/preferences.md"]
+    }
 }

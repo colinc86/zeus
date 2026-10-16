@@ -8,7 +8,9 @@ extension ZeusRuntime {
     /// Central transport selection; a connected polling session intentionally has no push transport.
     func transport(for key: String, delivery: Delivery? = nil) -> ((any DeliveryConnector), ConnectedSession, DeliveryRoutingContext)? {
         if let delivery, learningWasErased(delivery.id) { return nil }
-        guard delivery?.kind != .learning || learnings.learningsEnabled else { return nil }
+        if let delivery, delivery.meta["learning_kind"] == "rating",
+           let first = ledger?.records.first(where: { $0.isPending && $0.delivery.meta["learning_kind"] == "rating" }), first.delivery.id != delivery.id { return nil }
+        guard delivery?.kind != .learning || delivery?.meta["learning_kind"] == "rating" || learnings.learningsEnabled else { return nil }
         guard let session = sessions.first(where: { $0.sessionKey == key }) else { return nil }
         let managed = managedController.enabled && managedController.sessionKey == key
         let recoveringPaste = delivery?.meta["tmux_paste_destination"] != nil
@@ -55,7 +57,7 @@ extension ZeusRuntime {
         guard running, let ledger, let record = ledger.record(id: id), record.isPending, record.awaitingAssistant != true,
               (record.delivery.meta["tmux_paste_destination"] != nil || (record.delivery.failedAt == nil && record.delivery.attempts < 5)),
               let (connector, session, context) = transport(for: record.delivery.sessionKey, delivery: record.delivery) else { return nil }
-        guard record.delivery.kind != .learning || learnings.learningsEnabled else { return nil }
+        guard record.delivery.kind != .learning || record.delivery.meta["learning_kind"] == "rating" || learnings.learningsEnabled else { return nil }
         let recoveringPaste = record.delivery.meta["tmux_paste_destination"] != nil
         if !recoveringPaste, let recoveredAt = record.tmuxPasteRecoveredAt,
            recoveredAt.addingTimeInterval(180) > clock.now { return nil }
@@ -192,6 +194,7 @@ extension ZeusRuntime {
     }
     func processDueDeliveries() {
         guard running else { return }
+        scheduleRatingDelivery()
         expireManagedChannels()
         if !unsaved.isEmpty, let ledger {
             for record in unsaved {
