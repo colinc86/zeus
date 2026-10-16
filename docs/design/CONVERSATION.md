@@ -716,7 +716,7 @@ SF Mono: the Default size times the preset's factor (0.85 · 1.0 · 1.18 · 1.36
 | `.button` | 10 | 12 | 14 | 16.5 |
 | `.badge` | 10 | 10 | 10 | 10 |
 
-The badge and the warning marker sit on the desktop at the avatar, not in the conversation, so they never scale. At Small the pixel title is the body size and reads as a title by its gold color alone, as bold already does (D10). Tests: every pixel size is a multiple of 5.5; every SF Mono size is a multiple of 0.5; Default equals the pre-FS1 sizes.
+The badge and the warning marker sit on the desktop at the avatar, not in the conversation, so they never scale; the peek's "+N more" tag is in the conversation and uses `.caption` (it used `.badge`), so it grows with the text. At Small the pixel title is the body size and reads as a title by its gold color alone, as bold already does (D10). Tests: every pixel size is a multiple of 5.5; every SF Mono size is a multiple of 0.5; Default equals the pre-FS1 sizes.
 
 ### 19.3 What holds at every size
 
