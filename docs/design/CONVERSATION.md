@@ -559,13 +559,13 @@ Clicking ⋯ (or ⌘R) opens the row inside the bubble, under everything else in
 │ You're on call from 22:00. The pager   │
 │ is set to loud.                        │
 │ ─────────────────────────────────────  │
-│ [👍 More like this] [Neutral] [👎 Stop these] │  small secondary ZeusButtonStyle; wraps to two lines when they don't fit
+│ [More like this] [Neutral] [Stop these]  │  small secondary ZeusButtonStyle; wraps to two lines when they don't fit
 │ For all “On-call reminders” · Edit · Just this one │  caption, secondaryText; links in title
 └────────────────────────────────────────┘
 ```
 
-- **The three choices**, left to right: "More like this" with `ZeusGlyph(.thumbUp)` leading, "Neutral", "Stop these" with `ZeusGlyph(.thumbDown)` leading. Neutral's tooltip and VoiceOver hint: "Only when I need to know". Rules that act are elsewhere; these three never do anything to the message itself.
-- **The kind line:** "For all “<label>” · Edit · Just this one". The label is the card's `about`; without one it's the card's title, else the first 30 characters of the body with "…". Edit turns the line into a one-line field holding the label (1–60 characters, Return saves, Esc cancels, blank reverts). "Just this one" flips the line to "For this message only · All of this kind", and the three choices then rate only this message.
+- **The three choices**, left to right: "More like this", "Neutral", "Stop these". Words only: a 7-px thumb doesn't read on the text grid (the FB1-A renders proved it), and the words say it. Neutral's tooltip and VoiceOver hint: "Only when I need to know". Rules that act are elsewhere; these three never do anything to the message itself.
+- **The kind line:** "For all “<label>” · Edit · Just this one", with the "·" separators in `secondaryText` as the status strip draws them, so the links don't run together. The label is the card's `about`; without one it's the card's title, else the first 30 characters of the body with "…". Edit turns the line into a one-line field holding the label (1–60 characters, Return saves, Esc cancels, blank reverts). "Just this one" flips the line to "For this message only · All of this kind", and the three choices then rate only this message.
 - **Choosing** collapses the row to one caption line in the same place (`secondaryText`, Undo in `title`), which stays as long as the rating exists:
 
 | Choice | For the kind | Just this one |
@@ -584,7 +584,7 @@ Clicking ⋯ (or ⌘R) opens the row inside the bubble, under everything else in
 A new unprompted card whose kind is stopped is held: it lands in the thread at its time as one collapsed notice line, never deleted.
 
 - **Collapsed:** "Muted: On-call reminder · Show", using the card's own `about` (or the matched kind's label when it has none). Notice style (§16): `secondaryText`, no peek, no sound, no badge, not unread; the status strip ignores it.
-- **Show** expands it in place: the full bubble in the muted style (§4, `muted: true`), options still live, with a caption under it:
+- **Show** expands it under the line, which stays and reads "Muted: On-call reminder · Hide" (the §4.2 View/Hide disclosure): the full bubble in the muted style (§4, `muted: true`), options still live, no ⋯ and no rating line of its own (it was held by a rating on another card; only the card that was rated carries one), with a caption under it:
   - exact match: "Stopped kind: On-call reminders · Not this kind · Change rating"
   - look-alike: "Looks like On-call reminders · Not this kind · Change rating"
   - The reason carries a tooltip with the decision: "Matched by the on-device model, 0.82" (engine and score from FB1-P), or "Same label".
@@ -595,7 +595,7 @@ A new unprompted card whose kind is stopped is held: it lands in the thread at i
 
 ### 17.4 Settings › Rules › "What you hear about"
 
-The first section of the Rules pane, above the "New rules" dial and followed by a `SettingsDivider`: ratings don't depend on Learn from me, so they come first and are always there. `settingsTitle` "What you hear about" with a count ("What you hear about · 6"). While something is muted today, a line under the title: "Muted today: 3 · Show" (opens the panel with them shown).
+The first section of the Rules pane, above the "New rules" dial and followed by a `SettingsDivider`: ratings don't depend on Learn from me, so they come first and are always there. `settingsTitle` "What you hear about" with a count ("What you hear about · 6"; no count while empty). While something is muted today, a line under the title: "Muted today: 3 · Show" (opens the panel with them shown).
 
 Rows are grouped under `settingsBody` subheads "More like this", "Need-to-know" and "Stopped"; empty groups are hidden.
 
@@ -604,11 +604,11 @@ Rows are grouped under `settingsBody` subheads "More like this", "Need-to-know" 
 | title | the kind label |
 | caption 1 | the example, quoted and redacted, cut at 80 characters with "…" |
 | caption 2 | "Last matched Tue 14:02", or "Not seen since you rated it" |
-| switcher | `SettingsSegments` with three stops: thumb-up glyph, "Neutral", thumb-down glyph; VoiceOver "More like this", "Only when I need to know", "Stop these" |
+| switcher | `SettingsSegments` with three stops "More", "Neutral", "Stop"; VoiceOver "More like this", "Only when I need to know", "Stop these" |
 | buttons | "Edit Label" (inline field, as 17.2) and "Remove" (no confirmation; the bubble's line goes with it) |
 
 - **Empty state:** "Nothing rated yet. Hover a message your assistant sent on its own and click ⋯ to say whether you want more of that kind, none, or only when you need to know."
-- **Footer caption:** "Your assistant gets each rating as a message and keeps the list in its folder as Zeus/preferences.md. Stopped kinds are held by Zeus even if your assistant still sends them."
+- **Footer caption**, once, after the last group: "Your assistant gets each rating as a message and keeps the list in its folder as Zeus/preferences.md. Stopped kinds are held by Zeus even if your assistant still sends them."
 - "Just this one" ratings aren't rows; they're in What Zeus Kept (`PRIVACY.md` §13).
 
 ### 17.5 The suggestion line
