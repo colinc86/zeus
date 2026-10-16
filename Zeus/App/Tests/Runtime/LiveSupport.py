@@ -154,6 +154,8 @@ def finish_host_build(out,package):
         (package/"Sources/Host"/name).write_text((REPO/"Zeus/Learn/Journal"/name).read_text())
     for name in ["MessageRatingSeams.swift", "MessageRatingStore.swift", "MessageSimilarity.swift"]:
         (package/"Sources/Host"/name).write_text((REPO/"Zeus/Learn"/name).read_text())
+    for path in (REPO/"Zeus/Learn/Redactor").glob("*.swift"):
+        (package/"Sources/Host"/path.name).write_text(path.read_text())
     # Headless hosts also need the value/protocol seams.
     # App-owned durable explicit-context intents accompany CardStore in every headless host.
     context_intent = REPO/"Zeus/Cards/ContextSendIntent.swift"
