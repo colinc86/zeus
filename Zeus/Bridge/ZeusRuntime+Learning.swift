@@ -346,7 +346,9 @@ extension ZeusRuntime: LearningRuntimeControlling {
                 try journal.append(.init(id: receiptID, time: receivedAt ?? clock.now, level: .activity, kind: .sentToAssistant,
                     payload: .init(payload, report: text.report)))
             }
-            (cards as? any LearningNoticeRecording)?.recordLearningNotice(.init(id: "n_" + id, kind: .reflection, createdAt: existing?.time ?? receivedAt ?? clock.now, summary: summary, actionTitle: "View", detail: text.value, ruleID: nil), action: nil)
+            if kind != "rating" {
+                (cards as? any LearningNoticeRecording)?.recordLearningNotice(.init(id: "n_" + id, kind: .reflection, createdAt: existing?.time ?? receivedAt ?? clock.now, summary: summary, actionTitle: "View", detail: text.value, ruleID: nil), action: nil)
+            }
         } catch { learningError = "Zeus couldn't record this learning receipt." }
     }
     static func sentLearningSummary(kind: String, text: String) -> String {

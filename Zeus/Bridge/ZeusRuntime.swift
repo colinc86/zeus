@@ -34,6 +34,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored let ratingSimilarity: any MessageSimilarityComparing
     @ObservationIgnored var ratingSignalTimer: Task<Void, Never>?
     @ObservationIgnored var ratingDeliveryTask: Task<Void, Never>?
+    @ObservationIgnored var ratingRetryTask: Task<Void, Never>?
     @ObservationIgnored var ratingExportVersion: UUID?
     @ObservationIgnored var onShowMuted: (([String]) -> Void)?
     var ratingError: String?
@@ -194,6 +195,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         syncLearningFolder()
         learningFolder?.start(learnings: learnings)
         startLearning()
+        messageRatings?.onChange = { [weak self] in self?.scheduleRatingDelivery(); self?.scheduleRatingSuggestions() }
         scheduleRatingDelivery(); scheduleRatingSuggestions()
         observeLearningAvailability()
         publishUserMessageDeliveries(loaded.records)
@@ -235,8 +237,10 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         // when the next process decides whether the 60-second grace period elapsed.
         for session in sessions { disconnectedAt[session.sessionKey] = clock.now }
         running = false
+        messageRatings?.onChange = nil
         ratingSignalTimer?.cancel(); ratingSignalTimer = nil
         ratingDeliveryTask?.cancel(); ratingDeliveryTask = nil
+        ratingRetryTask?.cancel(); ratingRetryTask = nil
         stopLearning()
         learningFolder?.stop()
         learnings.onNewLearning = nil

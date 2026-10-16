@@ -282,6 +282,7 @@ import UniformTypeIdentifiers
     - days/YYYY-MM-DD/outcomes.md and sent.md: outcomes and exact sent ledger content
     - reflections/YYYY-MM-DD.md: reflection text as delivered
     - rules.md: current rules, status, confidence and author
+    - preferences.md: message kinds rated Up, Need-to-know or Stop, with redacted examples
 
     Zeus never sends your data anywhere itself. Your assistant reads its folder; where that goes depends on the assistant you chose.
     """
