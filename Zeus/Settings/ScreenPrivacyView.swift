@@ -47,7 +47,7 @@ private struct ScreenPolicyControls: View {
             Text("Pictures are deleted after 7 days.").settingsCaption()
             Toggle("Cover pictures and faces", isOn: Binding(get: { model.privacy.coverPictures }, set: model.setCoverPictures))
                 .accessibilityLabel("Cover pictures and faces")
-            Text("Private text is covered and pictures and faces are pixellated before a screenshot is kept.").settingsCaption()
+            Text(model.privacy.coverPictures ? "Private text is covered and pictures and faces are pixellated before a screenshot is kept." : "Screenshots are kept as they are. Passwords, keys, card and account numbers and ID numbers are still covered.").settingsCaption()
         }
     }
 }

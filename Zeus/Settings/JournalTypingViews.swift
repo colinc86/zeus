@@ -70,7 +70,7 @@ struct JournalTypingRunView: View {
                 } }
             }
             .contentShape(Rectangle()).onHover { hovered = $0 }
-             .contextMenu {
+            .contextMenu {
                 if let folder { Button("Show in Finder") { folder.show(run.item) } }
                 Button("Delete", action: delete)
             }

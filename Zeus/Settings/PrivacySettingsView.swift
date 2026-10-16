@@ -43,7 +43,7 @@ struct PrivacySettingsView: View {
                 .accessibilityLabel("Let Zeus learn when and in what I work")
                 .disabled(!learn.isAvailable)
             Text(Self.scope).settingsCaption()
-            Text(Self.caveat).settingsCaption()
+            if observations == nil { Text(Self.caveat).settingsCaption() }
             SettingsDivider()
             if let observations {
                 ObservationScopeView(settings: observations, privacy: settings, level: 1, onChange: onObservationChange)

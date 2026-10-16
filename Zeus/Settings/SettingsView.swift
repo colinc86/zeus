@@ -116,6 +116,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 if let learning, let learn {
                     Text("Learn from me").settingsTitle()
+                    Text(PrivacySettingsView.caveat).settingsCaption()
                     if learning.enabled { Text(learning.redactionCaption).settingsCaption() }
                     LearningStorageWarningView(warnings: learning.storageWarnings)
                     LearningFolderView(model: learning.folder, managed: managed.enabled)

@@ -104,7 +104,7 @@ struct JournalViewerView: View {
                 }
                 Spacer()
                 if !model.sentOnly {
-                    KeyboardButton("Show in Finder", action: model.showDayInFinder)
+                    KeyboardButton("Show Day in Finder", action: model.showDayInFinder)
                         .disabled(model.dayFiles.isEmpty).accessibilityLabel("Show this journal day in Finder")
                     KeyboardButton("Delete This Day…") { requestDelete(.day(model.day), "Delete everything Zeus kept on \(model.day.formatted(date: .abbreviated, time: .omitted))? This can't be undone.") }
                         .accessibilityLabel("Delete this journal day")
@@ -265,7 +265,7 @@ private struct JournalRecordRow: View {
             }
         }
         .contentShape(Rectangle()).onHover { hovered = $0 }
-         .contextMenu { if !sent {
+        .contextMenu { if !sent {
             if let folder { Button("Show in Finder") { folder.show(item) } }
             Button("Delete", action: delete)
         } }
