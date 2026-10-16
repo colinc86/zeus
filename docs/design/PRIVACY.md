@@ -710,6 +710,7 @@ Label **"Your assistant's folder"**, then one line and actions by state:
 | State | Line | Actions |
 |---|---|---|
 | Zeus runs the assistant | "Kept in ~/Zeus Assistant/Zeus" (path abbreviated with ~) | "Show in Finder" |
+| Zeus runs the assistant, no folder yet | "Not kept in a folder yet. Choose your assistant's folder under Assistant." | "Assistant Settings" (switches to that tab; no ellipsis, it opens no window) |
 | Connect your own, folder chosen | "Kept in ~/Assistant/Zeus" | "Show in Finder", "Choose…", "Stop keeping a folder" |
 | Connect your own, none | "Not kept in a folder. Choose one and Zeus writes what it keeps there for your assistant." | "Choose…" |
 | Write failed (any state) | the line above and its buttons, then a second line "Zeus can't write to this folder." in `settingsError` colour, with no button of its own: the row's buttons already offer the next step | |
