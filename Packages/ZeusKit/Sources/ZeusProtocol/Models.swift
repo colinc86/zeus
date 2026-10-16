@@ -112,6 +112,24 @@ public struct CardResponse: Codable, Sendable, Equatable {
 }
 
 /// Shared card state for the Mac and iOS clients.
+/// Runtime-classified source. Agents cannot choose this value.
+public enum CardOrigin: String, Codable, Sendable { case reply, unprompted }
+/// Persisted explanation of a local rating hold. A release never replays a notification.
+public struct CardMuteDecision: Codable, Equatable, Sendable {
+    public var ratingID: String
+    public var kindLabel: String
+    public var reason: String
+    public var engine: String
+    public var score: Double
+    public var threshold: Double
+    public var decidedAt: Date
+    public var releasedAt: Date?
+    public init(ratingID: String, kindLabel: String, reason: String, engine: String, score: Double, threshold: Double, decidedAt: Date, releasedAt: Date? = nil) {
+        self.ratingID = ratingID; self.kindLabel = kindLabel; self.reason = reason; self.engine = engine
+        self.score = score; self.threshold = threshold; self.decidedAt = decidedAt; self.releasedAt = releasedAt
+    }
+}
+
 public struct Card: Codable, Sendable, Equatable, Identifiable {
     /// Stable identifier for this value.
     public var id: String
@@ -135,6 +153,12 @@ public struct Card: Codable, Sendable, Equatable, Identifiable {
     public var mood: AvatarState?
     /// Stable originating session identity, used for reply routing.
     public var sessionKey: String?
+    /// Assistant's short kind label, validated by Zeus. Nil on legacy/local cards.
+    public var about: String?
+    /// Nil on legacy/local cards: never infer that those are unprompted.
+    public var origin: CardOrigin?
+    /// Published before add/onAdd so a held card never produces an alert.
+    public var muteDecision: CardMuteDecision?
     /// Creation time, serialized as ISO-8601.
     public var createdAt: Date
     /// Most recent card modification time, serialized as ISO-8601.
@@ -147,7 +171,7 @@ public struct Card: Codable, Sendable, Equatable, Identifiable {
     public var response: CardResponse?
 
     /// Creates Card.
-    public init(id: String = "c_" + UUID().uuidString.prefix(8).lowercased(), kind: Kind, title: String? = nil, body: String, options: [CardOption] = [], input: InputSpec? = nil, attachments: [Attachment] = [], progress: Double? = nil, priority: Priority = .normal, mood: AvatarState? = nil, sessionKey: String? = nil, createdAt: Date = Date(), updatedAt: Date = Date(), expiresAt: Date? = nil, status: Status = .open, response: CardResponse? = nil) {
+    public init(id: String = "c_" + UUID().uuidString.prefix(8).lowercased(), kind: Kind, title: String? = nil, body: String, options: [CardOption] = [], input: InputSpec? = nil, attachments: [Attachment] = [], progress: Double? = nil, priority: Priority = .normal, mood: AvatarState? = nil, sessionKey: String? = nil, createdAt: Date = Date(), updatedAt: Date = Date(), expiresAt: Date? = nil, status: Status = .open, response: CardResponse? = nil, about: String? = nil, origin: CardOrigin? = nil, muteDecision: CardMuteDecision? = nil) {
         self.id = id
         self.kind = kind
         self.title = title
@@ -164,6 +188,7 @@ public struct Card: Codable, Sendable, Equatable, Identifiable {
         self.expiresAt = expiresAt
         self.status = status
         self.response = response
+        self.about = about; self.origin = origin; self.muteDecision = muteDecision
     }
     /// Content category of a card.
     public enum Kind: String, Codable, Sendable, CaseIterable { case message, question, content, progress, userMessage }

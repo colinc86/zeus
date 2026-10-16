@@ -21,7 +21,8 @@ struct FixtureLearningRedactor: Redactor {
     let journal: EncryptedJournalStore
     let rules: PersistentRulesStore
     let folder: LearningFolderWriter?
-    init(learnings: (any LearningsProviding)? = nil, redactor: any Redactor = FixtureLearningRedactor(), exportFolder: Bool = false) throws {
+    let ratingStore: MessageRatingStore?
+    init(learnings: (any LearningsProviding)? = nil, redactor: any Redactor = FixtureLearningRedactor(), exportFolder: Bool = false, messageRatings: Bool = false, ratingSimilarity: any MessageSimilarityComparing = LocalMessageSimilarity()) throws {
         clock.now = ISO8601DateFormatter().date(from: "2026-10-14T18:15:00Z") ?? clock.now
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = .gmt
         cards = FakeCards(clock: clock)
@@ -35,11 +36,12 @@ struct FixtureLearningRedactor: Redactor {
                 enabledLevels: { [.activity, .focus] }, redactor: redactor, calendar: calendar)
             folder?.setFolder(destination)
         } else { folder = nil }
+        ratingStore = messageRatings ? try MessageRatingStore(fileURL: root.appendingPathComponent("ratings.zratings"), keyProvider: FixtureJournalKey()) : nil
         let box = box
         runtime = ZeusRuntime(cards: cards, status: FakeStatus(), characters: FakeCharacters(), routing: FakeRouting(),
             clock: clock, socketPath: root.appendingPathComponent("bridge.sock").path, ledgerURL: root.appendingPathComponent("deliveries.json"),
             connectors: [connector], targetIsDead: { _ in false }, learnings: learnings, rules: rules, journal: journal, redactor: redactor,
-            learningFolder: folder, learningContext: { box.context }, reflectionEnabled: { box.enabled }, learningCalendar: calendar)
+            learningFolder: folder, messageRatings: ratingStore, ratingSimilarity: ratingSimilarity, learningContext: { box.context }, reflectionEnabled: { box.enabled }, learningCalendar: calendar)
         try runtime.start()
         runtime.registerSession(.init(id: UUID(), sessionKey: "claude:/fixture#123.1", agent: .claude, cwd: "/fixture", clientName: "Fixture", supportsChannel: true, tmuxPane: nil, connectedAt: clock.now))
     }

@@ -168,9 +168,9 @@ Tool results are returned as `text` (compact JSON) plus `structuredContent`.
 
 | Tool | Arguments (`*` = required) | Result |
 |---|---|---|
-| `zeus_say` | `text*`, `title`, `mood`, `attachments[{kind,label,target}]`, `priority`, `ttl_seconds` | `{card_id}` |
-| `zeus_ask` | `text*`, `title`, `options[{id,label,style}]`, `allow_text` (default: true if no options), `placeholder`, `multiline`, `priority`, `wait_seconds` (default 45, clamped to 0…600) | `{status:"answered", card_id, option_id?, option_label?, text?}`, `{status:"skipped", card_id}` (the user skipped it: don't re-ask; proceed with your best judgement or move on) or `{status:"pending", card_id}`. Polled items (`zeus_get_responses`) carry `kind:"skipped"` for the same case. |
-| `zeus_present` | `title*`, `body*`, `attachments`, `actions[{id,label,style}]`, `allow_text`, `mood`, `priority` | `{card_id}`. The chosen action comes back like a reply (§5). |
+| `zeus_say` | `text*`, `title`, `about` (1–60 characters), `mood`, `attachments[{kind,label,target}]`, `priority`, `ttl_seconds` | `{card_id}` |
+| `zeus_ask` | `text*`, `title`, `about` (1–60 characters), `options[{id,label,style}]`, `allow_text` (default: true if no options), `placeholder`, `multiline`, `priority`, `wait_seconds` (default 45, clamped to 0…600) | `{status:"answered", card_id, option_id?, option_label?, text?}`, `{status:"skipped", card_id}` (the user skipped it: don't re-ask; proceed with your best judgement or move on) or `{status:"pending", card_id}`. Polled items (`zeus_get_responses`) carry `kind:"skipped"` for the same case. |
+| `zeus_present` | `title*`, `body*`, `about` (1–60 characters), `attachments`, `actions[{id,label,style}]`, `allow_text`, `mood`, `priority` | `{card_id}`. The chosen action comes back like a reply (§5). |
 | `zeus_update_card` | `card_id*`, `title`, `text`, `append_text`, `progress` (0…1 or null) | `{ok}` |
 | `zeus_dismiss` | `card_id*` | `{ok}` |
 | `zeus_set_status` | `state*` (an AvatarState or `"auto"`), `detail`, `progress`, `ttl_seconds` (default 600) | `{ok}` |
@@ -322,6 +322,8 @@ The protocols live in `Zeus/Shared/AppSeams.swift`, which the PM owns. That file
 ## 10. Conversation model (v2 UX, decided 2026-10-11, replaces the card-stack UX)
 
 Zeus is a **conversation**, not a stack of cards to clear.
+
+The runtime classifies new say/ask/present cards as `CardOrigin.reply` only while a response row started by a user message or answer is open; otherwise they are `unprompted`. An agent status override alone cannot make a reply. The optional `about` is a plain kind label, not an agent-controlled origin. Classification happens before the new card ends that response row. Legacy and local cards may have no origin. Stopped kinds hold only unprompted cards, including high-priority cards, before CardStore publication; replies are never held (§13, FB1).
 
 1. **One conversation panel.**
    - Every click target in the conversation panel responds to the first click, whether or not the panel is key.
@@ -526,3 +528,17 @@ items disappearing. The ready/sent thread line retains `n_<learning.id>` and exa
 History backfills in bounded day/file batches. Destination changes leave the previous folder untouched and re-arm observation. Retention, journal deletion and Undo reconcile the export; Finder-deleted files remain deleted. Delete Everything empties only `Zeus/`; `Notes/` is emptied only with explicit `includeAssistantNotes`. Other assistant files are never removed. Retained digests and moments accumulate even when unsent. Digest, moment and reflection deliveries append a final `Files: ` line of existing folder-relative paths; sent receipts preserve that exact body. Reflections use their redacted delivery body including the file line.
 
 `LearnSettings.coverPictures` defaults true and propagates through `ScreenPolicy`. Turning it off skips optional text-region, picture and face coverage; OCR spans classified secret, card, iban or identity are still covered. All capture hard stops and text redaction remain enforced. Previously stored frames are never un-covered.
+
+### FB1 message kinds and ratings
+
+`zeus_say`, `zeus_ask` and `zeus_present` accept optional `about`, a plain kind label of 1–60 characters. Cards persist `about`, runtime-classified `origin` (`reply` or `unprompted`) and an optional `muteDecision`. Missing fields on legacy/local cards stay nil; they are not assumed unsolicited. A reply requires an open, unexpired activity record started by a user-message or answer delivery for that session; a status override or a learning/reflection delivery alone does not qualify. Origin is captured before posting ends the response row. Agents cannot set origin or muting.
+
+The optional runtime `MessageRatingsProviding` capability exposes ratings, retained per-card mute decisions, today's held IDs, quiet suggestions, revision/error and typed mutations. Rate/edit/remove/correct return an encrypted, durable compare-and-swap Undo receipt; a later preference mutation invalidates it. Undo is a new preference delivery, never recall of information already sent. `correctMuted` releases only that card and does not replay a notification or change the kind rule. `showMuted` invokes the app's navigation callback without releasing cards.
+
+Ratings are encrypted with an injected key provider (fixture keys in tests). Labels are normalized for case, diacritics, width, punctuation and whitespace; examples are redacted and limited to the first 300 characters. Only Down with kind scope holds an unsolicited message. Exact keys take precedence, including explicit Up/Neutral; otherwise an on-device sentence embedding compares label plus example against the incoming label plus first 300 characters. A hold records engine, similarity score, threshold, reason and timestamp. High priority never bypasses a rating hold, and replies are never held. The decision is persisted and placed on the card before `CardStore.add`; UI excludes held cards from peek, sound, badge and question/activity presentation while retaining them collapsed in the thread.
+
+Every preference mutation uses a transactional encrypted outbox and a durable `learning` delivery with `learning_kind=rating`, independent of capture switches. Pushes retain preference order; only acknowledgment or successful polling-result consumption counts as Sent. `Zeus/preferences.md` groups kind ratings under Up / Need-to-know / Stop; delivery Files references name only an existing exported file. Reflection inputs include the current preferences. Delete Everything clears ratings, their pending deliveries and signal history; late receipts cannot restore erased content.
+
+Quiet signals never mute automatically. An unsolicited kind with five distinct messages within seven days that remain unread for 24 hours or are dismissed within three seconds of actual display gets one suggestion with a source card ID. Explicit kind ratings suppress suggestions. The app owns the end-of-day summary at quiet-hours start or 21:00, navigation and persistent read/display edges.
+
+Message preference startup distinguishes an unavailable key from corrupt data. An unavailable key keeps the store waiting and retries without replacing persisted state; user replies remain usable, but new unprompted cards wait for preferences to load. Explicit preference edits must persist before succeeding. Corrupt data is a surfaced startup error, never an empty preference fallback. Erasure removes the encrypted state even while the key is unavailable.

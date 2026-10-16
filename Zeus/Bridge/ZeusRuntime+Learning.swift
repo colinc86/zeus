@@ -10,7 +10,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         (learningJournal as? any JournalDeletionObserving)?.onJournalDeletion = { [weak self] ids in self?.journalEvidenceDeleted(ids) }
         (learnings as? any LearningDeletionObserving)?.onLearningDeletion = { [weak self] ids in self?.eraseLearningDeliveries(ids: ids) }
         if let source = learnings as? any LearningDeletionObserving {
-            eraseLearningDeliveries(ids: Set((ledger?.records ?? []).filter { $0.delivery.kind == .learning && !source.retainedLearningIDs.contains($0.delivery.id) }.map { $0.delivery.id }))
+            eraseLearningDeliveries(ids: Set((ledger?.records ?? []).filter { $0.delivery.kind == .learning && $0.delivery.meta["learning_kind"] != "rating" && !source.retainedLearningIDs.contains($0.delivery.id) }.map { $0.delivery.id }))
         }
         (learningRules as? any LearningRuleOutcomeSource)?.onRuleOutcome = { [weak self] outcome, ids, eventID, at in
             self?.recordJournalOutcome(outcome, ruleIDs: ids, eventID: eventID, at: at)
@@ -269,6 +269,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
             Read zeus_get_rules. Propose at most three useful rules with zeus_propose_rules; evidence must use IDs below. Evaluable rules require two IDs from different days; respect suppression fingerprints. Every purchase always asks with its amount, including amounts higher than the rule or last purchase.
             Prefer timing/tone/preparation rules. External acts start in shadow; do not execute them. Do not repeat habits or private details to the user.
             \(safe.value)
+            Message preferences:
+            \(MessageRatingStore.preferences(self.ratings))
             Evidence IDs (already-redacted journal records): \(evidence.joined(separator: ", "))
             """
             let paths = await self.learningFolder?.recordReflection(id: id, text: .init(content), at: self.clock.now) ?? []
@@ -311,6 +313,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
               [.reflection, .learning].contains(record.delivery.kind), !record.delivery.content.isEmpty else { return }
         if record.delivery.kind == .learning {
             recordSentLearning(id: id, kind: record.delivery.meta["learning_kind"] ?? "moment", text: .init(record.delivery.content), sessionKey: record.delivery.meta["learning_consumed_by"] ?? record.delivery.sessionKey, receivedAt: record.delivery.ackedAt)
+            if record.delivery.meta["learning_kind"] == "rating" { return }
             if let exact = learnings as? any LearningReadRecording { exact.markLearningRead(id: id) }
             else { markAcknowledgedLearningsRead() }
             return
@@ -343,10 +346,13 @@ extension ZeusRuntime: LearningRuntimeControlling {
                 try journal.append(.init(id: receiptID, time: receivedAt ?? clock.now, level: .activity, kind: .sentToAssistant,
                     payload: .init(payload, report: text.report)))
             }
-            (cards as? any LearningNoticeRecording)?.recordLearningNotice(.init(id: "n_" + id, kind: .reflection, createdAt: existing?.time ?? receivedAt ?? clock.now, summary: summary, actionTitle: "View", detail: text.value, ruleID: nil), action: nil)
+            if kind != "rating" {
+                (cards as? any LearningNoticeRecording)?.recordLearningNotice(.init(id: "n_" + id, kind: .reflection, createdAt: existing?.time ?? receivedAt ?? clock.now, summary: summary, actionTitle: "View", detail: text.value, ruleID: nil), action: nil)
+            }
         } catch { learningError = "Zeus couldn't record this learning receipt." }
     }
     static func sentLearningSummary(kind: String, text: String) -> String {
+        if kind == "rating" { return "Sent your message preference" }
         if kind == "reflection" { return "Sent a daily reflection" }
         if kind == "digest" { return "Sent your daily summary" }
         let moments = [("First activity today", "first activity today"), ("Back at the Mac", "back from a break"),

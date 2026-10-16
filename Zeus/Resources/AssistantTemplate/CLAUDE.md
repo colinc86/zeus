@@ -1,2 +1,2 @@
-<!-- zeus-template: 2 -->
+<!-- zeus-template: 3 -->
 @AGENTS.md

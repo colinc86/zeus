@@ -43,14 +43,19 @@ extension ZeusRuntime {
             if Self.appToolNames.contains(name) {
                 return try await callAppTool(name, args: args, sessionKey: sessionKey, deferResultCommit: deferResultCommit)
             }
+            if ["zeus_say", "zeus_ask", "zeus_present"].contains(name), let about = try args.string("about") {
+                _ = try MessageRatingStore.validateLabel(about)
+            }
             switch name {
             case "zeus_say":
                 let now = clock.now
-                let card = Card(kind: .message, title: try args.string("title"), body: try args.requiredString("text"),
+                var card = Card(kind: .message, title: try args.string("title"), body: try args.requiredString("text"),
                                 attachments: try args.attachments(), priority: try args.enumeration("priority", as: Card.Priority.self) ?? .normal,
                                 mood: try args.enumeration("mood", as: AvatarState.self), sessionKey: sessionKey,
                                 createdAt: now, updatedAt: now, expiresAt: try args.ttl().map { now.addingTimeInterval($0) })
+                card.origin = ratingOrigin(sessionKey: sessionKey)
                 endAssistantActivity(sessionKey: sessionKey)
+                card = try await prepareRatedCard(card, about: args.string("about"))
                 try addCard(card)
                 return result(["card_id": .string(card.id)])
             case "zeus_ask": return try await ask(args, sessionKey: sessionKey, deferResultCommit: deferResultCommit)
@@ -58,11 +63,13 @@ extension ZeusRuntime {
                 let actions = try args.options("actions")
                 let allowText = try args.bool("allow_text", default: false)
                 let now = clock.now
-                let card = Card(kind: .content, title: try args.requiredString("title"), body: try args.requiredString("body"),
+                var card = Card(kind: .content, title: try args.requiredString("title"), body: try args.requiredString("body"),
                                 options: actions, input: allowText ? InputSpec() : nil, attachments: try args.attachments(),
                                 priority: try args.enumeration("priority", as: Card.Priority.self) ?? .normal,
                                 mood: try args.enumeration("mood", as: AvatarState.self), sessionKey: sessionKey, createdAt: now, updatedAt: now)
+                card.origin = ratingOrigin(sessionKey: sessionKey)
                 endAssistantActivity(sessionKey: sessionKey)
+                card = try await prepareRatedCard(card, about: args.string("about"))
                 try addCard(card)
                 return result(["card_id": .string(card.id)])
             case "zeus_update_card":
@@ -101,7 +108,7 @@ extension ZeusRuntime {
                 return result(["ok": true])
             case "zeus_get_responses":
                 bindWaitingUserMessages()
-                let pending = (ledger?.records ?? []).filter { $0.delivery.sessionKey == sessionKey && $0.isPending && !learningWasErased($0.delivery.id) && ($0.delivery.kind != .learning || learnings.learningsEnabled) }
+                let pending = (ledger?.records ?? []).filter { $0.delivery.sessionKey == sessionKey && $0.isPending && !learningWasErased($0.delivery.id) && ($0.delivery.kind != .learning || $0.delivery.meta["learning_kind"] == "rating" || learnings.learningsEnabled) }
                 let batch = try pollingBatch(pending)
                 if !deferResultCommit { _ = try acknowledge(ids: Set(batch.map { $0.delivery.id }), sessionKey: sessionKey) }
                 let transport = transport(for: sessionKey)
@@ -138,11 +145,13 @@ extension ZeusRuntime {
         let placeholder = try args.string("placeholder"), multiline = try args.bool("multiline", default: false)
         let wait = min(600, max(0, try args.number("wait_seconds") ?? 45))
         let now = clock.now
-        let card = Card(kind: .question, title: try args.string("title"), body: try args.requiredString("text"), options: options,
+        var draft = Card(kind: .question, title: try args.string("title"), body: try args.requiredString("text"), options: options,
                         input: allowText ? .init(placeholder: placeholder, multiline: multiline) : nil,
                         priority: try args.enumeration("priority", as: Card.Priority.self) ?? .normal,
                         sessionKey: sessionKey, createdAt: now, updatedAt: now)
+        draft.origin = ratingOrigin(sessionKey: sessionKey)
         endAssistantActivity(sessionKey: sessionKey)
+        let card = try await prepareRatedCard(draft, about: args.string("about"))
         appQuestionIDs.insert(card.id)
         try responseJournal?.prepare(card.id)
         guard wait > 0, !Task.isCancelled else { try addCard(card); return pendingResult(card.id) }
