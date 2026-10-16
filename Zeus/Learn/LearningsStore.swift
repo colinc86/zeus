@@ -5,7 +5,7 @@ import Observation
 /// the raw events. The runtime reads it through `LearningsProviding`; it never sees raw events.
 @MainActor
 @Observable
-final class LearningsStore: LearningsProviding, LearningReadRecording, LearningDeletionObserving {
+final class LearningsStore: LearningsProviding, LearningReadRecording, LearningDeletionObserving, LearningHistoryProviding {
     static let fileName = "learnings.json"
     static let keepDays = 365
 
@@ -40,6 +40,7 @@ final class LearningsStore: LearningsProviding, LearningReadRecording, LearningD
     var retainedLearningIDs: Set<String> { Set(state.learnings.map(\.id)) }
 
     var learnings: [Learning] { state.learnings }
+    var allLearnings: [Learning] { state.learnings }
     var learningsEnabled: Bool { isEnabled() }
 
     func unreadLearnings() -> [Learning] {

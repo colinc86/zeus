@@ -4,7 +4,8 @@ import Observation
 import ZeusProtocol
 
 /// Per-day AES-GCM storage. Full-text matching is indexed in memory only; no plaintext index is written.
-@MainActor @Observable final class EncryptedJournalStore: JournalStore, FrameJournalStoring, TypingJournalStoring, LearningStorageRecovering, JournalDeletionObserving {
+@MainActor @Observable final class EncryptedJournalStore: JournalStore, FrameJournalStoring, TypingJournalStoring, LearningStorageRecovering, JournalDeletionObserving, JournalFolderSource {
+    @ObservationIgnored var onFolderDeletion: ((Set<String>?) -> Void)?
     @ObservationIgnored var onJournalDeletion: ((Set<String>?) -> Void)?
     private(set) var revision: UInt64 = 0
     private(set) var lastError: String?
@@ -158,7 +159,7 @@ import ZeusProtocol
             // reclaimed by prune/Delete Everything, never a readable picture or a half-deleted description pair.
             try? FileManager.default.removeItem(at: frameFile(id))
             index.removeAll(); revision &+= 1
-            onJournalDeletion?(ids.subtracting(Set(after.map(\.id))))
+            reportDeletion(ids.subtracting(Set(after.map(\.id))))
             return .init(frameID: id, epoch: forgetEpoch, frame: image, before: before, after: after)
         }
     }
@@ -207,7 +208,7 @@ import ZeusProtocol
     func delete(_ selection: JournalDeletion) throws {
         // Forget is authoritative over queued data even when protected files cannot yet be read.
         var removed = Set<String>()
-        defer { if !removed.isEmpty { onJournalDeletion?(removed) } }
+        defer { if !removed.isEmpty { reportDeletion(removed) } }
         pendingEntries.removeAll { entry in
             let item = entry.0
             let matches: Bool = switch selection {
@@ -233,7 +234,7 @@ import ZeusProtocol
                 for url in try files() + frameFiles() { try FileManager.default.removeItem(at: url); revision &+= 1 }
                 index.removeAll(); typingExpiryTask?.cancel(); typingExpiryTask = nil
                 nextTypingExpiry = nil; typingExpiryInitialized = true
-                onJournalDeletion?(nil); return
+                reportDeletion(nil); return
             }
             for url in try files() {
                 let old = try read(url)
@@ -310,7 +311,7 @@ import ZeusProtocol
             guard selected.allSatisfy({ file($0.time) == url }) else { throw TypingJournalError.conflict }
             try LearningEncryption.write(try read(url).filter { !ids.contains($0.id) }, to: url, key: keyProvider)
             index.removeAll(); revision &+= 1
-            onJournalDeletion?(ids)
+            reportDeletion(ids)
             return .init(epoch: typingForgetEpoch, items: selected)
         }
     }
@@ -444,6 +445,19 @@ import ZeusProtocol
     private func file(_ date: Date) -> URL {
         let c = calendar.dateComponents([.year, .month, .day], from: date)
         return root.appendingPathComponent(String(format: "%04d-%02d-%02d.zjournal", c.year ?? 0, c.month ?? 0, c.day ?? 0))
+    }
+    private func reportDeletion(_ ids: Set<String>?) {
+        onFolderDeletion?(ids)
+        onJournalDeletion?(ids)
+    }
+    func folderDays() throws -> [Date] {
+        let format = DateFormatter(); format.locale = Locale(identifier: "en_US_POSIX")
+        format.calendar = calendar; format.timeZone = calendar.timeZone; format.dateFormat = "yyyy-MM-dd"
+        return try files().compactMap { format.date(from: $0.deletingPathExtension().lastPathComponent) }
+    }
+    func folderItems(on day: Date) throws -> [JournalItem] {
+        try expireTypingWords(now: retentionClock())
+        return try read(file(day))
     }
     private func files() throws -> [URL] {
         guard FileManager.default.fileExists(atPath: root.path) else { return [] }

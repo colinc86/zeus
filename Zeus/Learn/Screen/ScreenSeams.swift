@@ -21,6 +21,8 @@ struct ScreenPolicy: Equatable, Sendable {
     var scope: Scope = .everywhereExcept
     var apps: Set<String> = []
     var privateApps: Set<String> = []
+    /// Apply LearnSettings.coverPictures. Mandatory secret covering and hard stops never depend on this.
+    var coverPictures = true
     var capturesPerHour = 12
     var descriptionRetentionDays = 90
     /// App sets this for Low Power Mode or battery below 30%; pictures still work.

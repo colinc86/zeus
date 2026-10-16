@@ -30,6 +30,7 @@ import ImageIO
     @ObservationIgnored private var due: Date?
     @ObservationIgnored private var kept: [Date] = []
     @ObservationIgnored private var previous: (ScreenContext, ScreenFingerprint)?
+    @ObservationIgnored private var previousCoverPictures: Bool?
     @ObservationIgnored private var lastResult: ScreenCaptureResult?
     @ObservationIgnored private var completedResult: ScreenCaptureResult?
     @ObservationIgnored private var permissionWasGranted = false
@@ -143,7 +144,7 @@ import ImageIO
                 let raw = try await source.capture(startContext)
                 guard valid(token, startContext, startPolicy) else { return }
                 let fingerprint = try ScreenFingerprint(image: raw.image)
-                if let previous, previous.0.bundleID == startContext.bundleID,
+                if previousCoverPictures == startPolicy.coverPictures, let previous, previous.0.bundleID == startContext.bundleID,
                    previous.0.windowTitle == startContext.windowTitle, fingerprint.isUnchanged(from: previous.1) {
                     if let result = lastResult {
                         var query = JournalQuery(); query.limit = 100_000
@@ -158,7 +159,7 @@ import ImageIO
                     }
                     return
                 }
-                let covered = try await processor.redact(raw, context: startContext)
+                let covered = try await processor.redact(raw, context: startContext, coverPictures: startPolicy.coverPictures)
                 guard valid(token, startContext, startPolicy) else { return }
                 let description = startPolicy.deferDescriptions ? nil : await describer.describe(covered)
                 guard valid(token, startContext, startPolicy) else { return }
@@ -170,10 +171,10 @@ import ImageIO
                                   "description_pending": startPolicy.deferDescriptions ? "true" : "false"])
                     try journal.appendFrame(covered.frame, item: .init(id: frameID, time: now, level: .screen,
                         app: startContext.bundleID, kind: .frame, payload: .init(metadata, report: covered.frame.report)))
-                    pendingDescriptions = true; kept.append(now); previous = (startContext, fingerprint)
+                    pendingDescriptions = true; kept.append(now); previous = (startContext, fingerprint); previousCoverPictures = startPolicy.coverPictures
                 }
                 if let description { try storeDescription(description, frameID: frameID, at: now, app: startContext.bundleID) }
-                if privateImage { kept.append(now); previous = (startContext, fingerprint) }
+                if privateImage { kept.append(now); previous = (startContext, fingerprint); previousCoverPictures = startPolicy.coverPictures }
                 let result = ScreenCaptureResult(identity: .init(bundleID: startContext.bundleID, processID: startContext.processID, windowID: startContext.windowID),
                     time: now, frameID: privateImage ? nil : frameID, descriptionID: description == nil ? nil : "description_" + frameID,
                     frame: privateImage ? nil : covered.frame, description: description)

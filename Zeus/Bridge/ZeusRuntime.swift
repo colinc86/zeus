@@ -30,6 +30,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored let learnings: any LearningsProviding
     @ObservationIgnored let learningRules: (any RulesStore)?
     @ObservationIgnored let learningJournal: (any JournalStore)?
+    @ObservationIgnored let learningFolder: (any LearningFolderRecording)?
     @ObservationIgnored let learningRedactor: (any Redactor)?
     @ObservationIgnored let learningContext: () -> LearningContext
     @ObservationIgnored let reflectionEnabled: () -> Bool
@@ -133,8 +134,10 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
          appControl: (any AppControlling)? = nil, learnings: (any LearningsProviding)? = nil,
          ownScreenReader: any OwnSessionScreenReading = OwnSessionScreenReader(),
          rules: (any RulesStore)? = nil, journal: (any JournalStore)? = nil, redactor: (any Redactor)? = nil,
+         learningFolder: (any LearningFolderRecording)? = nil,
          learningContext: @escaping () -> LearningContext = { .init() },
          reflectionEnabled: @escaping () -> Bool = { false }, learningCalendar: Calendar = .current) {
+        self.learningFolder = learningFolder
         self.learningRules = rules; self.learningJournal = journal; self.learningRedactor = redactor
         self.learningContext = learningContext; self.reflectionEnabled = reflectionEnabled; self.learningCalendar = learningCalendar
         self.ownScreenReader = ownScreenReader
@@ -174,11 +177,13 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         let recoveredBlocks = localCards.filter { !$0.id.hasPrefix(Self.managedDraftPrefix) }
         managedBlockedCardID = recoveredBlocks.last?.id
         for card in recoveredBlocks.dropLast() { resolveManagedCard(card.id) }
-        loaded.onChange = { [weak self] records in self?.publishUserMessageDeliveries(records); self?.publishPendingLearnings(records) }
+        loaded.onChange = { [weak self] records in self?.publishUserMessageDeliveries(records); self?.publishPendingLearnings(records); self?.syncLearningFolder() }
         ledger = loaded; responseJournal = journal; server = listener; running = true; generation = UUID()
         appQuestionIDs = Set(((cards as? any CardPersistenceReporting)?.persistedCards ?? [])
             .filter { $0.kind == .question && $0.status == .open }.map(\.id))
         learnings.onNewLearning = { [weak self] learning in self?.notifyLearning(learning) }
+        syncLearningFolder()
+        learningFolder?.start(learnings: learnings)
         startLearning()
         observeLearningAvailability()
         publishUserMessageDeliveries(loaded.records)
@@ -196,6 +201,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         processDueDeliveries()
         managedController.onChange = { [weak self] in
             guard let self, self.running else { return }
+            self.syncLearningFolder()
             self.managedController.considerSessions(self.sessions)
             self.noteManagedScreenActivity(); self.reconcileOwnScreenSampling(); self.updateManagedPresentation(); self.probeManagedChannel()
             self.bindWaitingUserMessages(); self.processDueDeliveries()
@@ -220,6 +226,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         for session in sessions { disconnectedAt[session.sessionKey] = clock.now }
         running = false
         stopLearning()
+        learningFolder?.stop()
         learnings.onNewLearning = nil
         checkedUpdateVersions.removeAll(); pendingUpdateErrors.removeAll(); installingSessions.removeAll(); activeToolCalls.removeAll()
         managedController.shutdown()
