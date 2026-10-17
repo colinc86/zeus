@@ -15,6 +15,28 @@ import ZeusProtocol
         #expect(state.newBelow == 1 && state.showsLatest)
         let noGeometry = ConversationJumpState.make(entries: entries, visible: [], seen: [], questions: [], atBottom: false, pending: false, awayFromLatest: false)
         #expect(noGeometry == ConversationJumpState())
+        #expect(ConversationJumpState.make(entries: [], visible: [], seen: [], questions: [], atBottom: false,
+            pending: true, awayFromLatest: true) == ConversationJumpState())
+    }
+    @Test func heldCardsNoticesAndAnswerEchoesNeverCountAsUnread() {
+        var held = Card(id: "held", kind: .message, body: "Muted")
+        held.muteDecision = .init(ratingID: "r", kindLabel: "Updates", reason: "exact", engine: "exact", score: 1, threshold: 1, decidedAt: Date())
+        let entries = [entry("old"),
+            ConversationEntry(id: "card:held", timestamp: Date(), content: .agentCard(held)),
+            ConversationEntry(id: "notice:n", timestamp: Date(), content: .notice(.init(kind: .learning, createdAt: Date(), summary: "Notice"))),
+            ConversationEntry(id: "answer:q", timestamp: Date(), content: .userAnswer(cardID: "q", response: .init(text: "Yes", device: .mac))),
+            entry("new")]
+        let state = ConversationJumpState.make(entries: entries, visible: ["answer:q"], seen: [], questions: [], atBottom: false, pending: false, awayFromLatest: false)
+        #expect(state.unreadAbove == ["old"] && state.newBelow == 1)
+    }
+    @Test func allVisibleQuestionsHideThePillAndOffPageQuestionsRemainReachable() {
+        let entries = (0..<400).map { entry("q\($0)") }
+        let visible: Set<String> = ["card:q399"]
+        let state = ConversationJumpState.make(entries: entries, visible: visible, seen: [], questions: ["q0", "q399"], atBottom: true, pending: false, awayFromLatest: false)
+        #expect(state.questionID == "q0" && state.questionDirection == .up)
+        #expect(state.unreadAbove.count == 399 && !state.showsLatest)
+        let visibleOnly = ConversationJumpState.make(entries: entries, visible: visible, seen: [], questions: ["q399"], atBottom: true, pending: false, awayFromLatest: false)
+        #expect(visibleOnly.questionID == nil)
     }
     @Test func latestUsesOneViewportAndRespectsTallNewestCap() {
         let viewport = ConversationViewport(offset: 100, contentHeight: 1400, height: 300)
@@ -31,7 +53,7 @@ import ZeusProtocol
         for expected in ["a", "c", "a"] {
             let snapshot = ConversationJumpState.make(entries: entries, visible: ["card:b"], seen: [], questions: questions, after: cursor, atBottom: false, pending: false, awayFromLatest: false)
             #expect(snapshot.questionID == expected)
-            #expect(snapshot.questionCount == 2)
+            #expect(snapshot.questionCount == 3)
             #expect(snapshot.questionDirection == (expected == "a" ? .up : .down))
             cursor = ConversationJumpState.nextQuestion(questions: questions, visible: ["card:b"], after: cursor)
             #expect(cursor == snapshot.questionID)
@@ -44,12 +66,16 @@ import ZeusProtocol
         defer { try? FileManager.default.removeItem(at: root) }
         let store = CardStore(fileURL: url)
         for id in ["old", "visible", "new"] { store.add(Card(id: id, kind: .message, body: id)) }
+        var read: [String] = []
+        store.onRatingRead = { read.append($0) }
         store.markSeen(ids: ["old"])
+        #expect(read == ["old"])
         #expect(CardStore(fileURL: url).seenIDs == ["old"])
         try FileManager.default.removeItem(at: url)
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
         store.markSeen(ids: ["visible", "new"])
         #expect(store.seenIDs == ["old"])
         #expect(store.persistenceError != nil)
+        #expect(read == ["old"])
     }
 }

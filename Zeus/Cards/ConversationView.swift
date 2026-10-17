@@ -221,6 +221,7 @@ struct ConversationView: View {
             }
             .onChange(of: panel.isVisible) {
                 if panel.isVisible {
+                    visibility.jumpsReady = false
                     lastQuestionJump = nil
                     model.openPanel(viewportManaged: true)
                     pageCount = ConversationLayout.pageSize
@@ -228,6 +229,7 @@ struct ConversationView: View {
                     if ratings?.drafts.isEmpty != false { focusComposer() }; openTarget(proxy)
                     withAnimation(.easeOut(duration: 0.12)) { appeared = true }
                 } else {
+                    visibility.jumpsReady = false
                     model.closePanel(); composerFocused = false
                     withAnimation(.easeOut(duration: 0.08)) { appeared = false }
                 }
@@ -287,6 +289,9 @@ struct ConversationView: View {
             await Task.yield()
             guard panel.isVisible, panel.scrollTargetCardID == id else { return }
             proxy.scrollTo("card:\(id)", anchor: .top)
+            await Task.yield()
+            guard panel.isVisible, panel.scrollTargetCardID == id else { return }
+            visibility.jumpsReady = true
             if panel.focusScrollTarget, let card = store.card(id: id), card.status == .open {
                 if !card.id.hasPrefix(ZeusRuntime.managedCardPrefix) { model.rearmReplyTarget(cardID: id); lastQuestionJump = id }
                 if let target = StatusStripState.firstControl(card) {
@@ -386,6 +391,8 @@ struct ConversationView: View {
             else { proxy.scrollTo("bottom", anchor: .bottom) }
             await Task.yield()
             followLatest()
+            await Task.yield()
+            if panel.isVisible { visibility.jumpsReady = true }
         }
     }
 
@@ -494,11 +501,19 @@ struct ConversationView: View {
             else if (newestChanged && value["latestMessage"] != nil) || bottomGrew { followLatest() }
             if !atBottom, let previousNewest, let newest = value["latestMessage"], newest.height > previousNewest.height + 1 { pendingLatest = true }
         }
-        .overlay(alignment: .bottomTrailing) {
-            ConversationLatestButton(visibility: visibility, entries: loadedEntries, store: store,
-                                     atBottom: atBottom, pending: pendingLatest, panel: panel, jump: { latest(proxy) })
-        }
+        .overlay(alignment: .top) { jumpPills(edge: .top, proxy: proxy) }
+        .overlay(alignment: .bottom) { jumpPills(edge: .bottom, proxy: proxy) }
+        .clipped()
         .accessibilityLabel("Conversation")
+    }
+    private func jumpPills(edge: ZeusJumpPillCluster.Edge, proxy: ScrollViewProxy) -> some View {
+        ConversationJumpOverlay(edge: edge, visibility: visibility, entries: model.thread, store: store,
+            questions: StatusStripState.questions(stripCards).map(\.id), lastQuestion: lastQuestionJump,
+            atBottom: atBottom, pending: pendingLatest, panel: panel,
+            unread: { id in
+                panel.scrollTargetCardID = id; panel.focusScrollTarget = false; openTarget(proxy)
+            }, latest: { latest(proxy) }, question: { jumpQuestion(proxy) })
+            .environment(\.zeusAnimationsActive, activity.conversation && !atBottom)
     }
     private func rowContent(_ row: ConversationThreadRow, sources: [String: Card], labeledEntries: Set<String>, latestID: String?, shortcutID: String?) -> some View {
         let entry = row.entry
@@ -738,11 +753,12 @@ private struct ConversationThreadRow: Identifiable {
 }
 
 /// Visibility changes update only these consumers, not the thread's data/row factory.
-@MainActor @Observable private final class ConversationVisibility {
+@MainActor @Observable final class ConversationVisibility {
     var ids: Set<String> = []
     var seenIDs: Set<String> = []
     var navigationIDs: Set<String> = []
     var awayFromLatest = false
+    var jumpsReady = false
 }
 
 private struct ConversationVisibleBubble: View {
@@ -785,29 +801,53 @@ private struct ConversationSeenTracker: View {
             }
     }
 }
-private struct ConversationLatestButton: View {
+/// Only this small overlay observes scrolling visibility; rows do not rebuild for pill changes.
+struct ConversationJumpOverlay: View {
+    let edge: ZeusJumpPillCluster.Edge
     let visibility: ConversationVisibility
     let entries: [ConversationEntry]
     let store: CardStore
+    let questions: [String]
+    let lastQuestion: String?
     let atBottom: Bool
     let pending: Bool
     let panel: ConversationPanelState
-    let jump: () -> Void
+    let unread: (String) -> Void
+    let latest: () -> Void
+    let question: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.zeusAnimationsActive) private var animationsActive
     var body: some View {
-        let unseen = ConversationLayout.unseenBelow(entries: entries, visible: visibility.navigationIDs, seen: store.seenIDs)
-        let show = !atBottom && (pending || unseen > 0)
+        let state = ConversationJumpState.make(entries: entries, visible: visibility.navigationIDs,
+            seen: store.seenIDs, questions: questions, after: lastQuestion, atBottom: atBottom,
+            pending: pending, awayFromLatest: visibility.awayFromLatest)
+        let ready = panel.isVisible && visibility.jumpsReady
+        let pills = ready ? items(state) : []
         Group {
-            if show {
-                Button(action: jump) { Text("↓ New message").zeusFont(.caption) }
-                    .buttonStyle(ZeusButtonStyle(.primary, size: .small))
-                    .accessibilityLabel("Jump to the newest message").padding(.bottom, 4)
+            if !pills.isEmpty {
+                ZeusJumpPillCluster(edge: edge, items: pills)
+                    .transition(ZeusJumpPillCluster.transition(edge: edge, reduceMotion: reduceMotion, animationsActive: animationsActive))
             }
         }
-        .onChange(of: show, initial: true) { _, visible in
-            #if DEBUG || ZEUS_PERFORMANCE_PROBE
-            panel.latestButtonVisibleForDiagnostics = visible
-            #endif
+            .animation(reduceMotion || !animationsActive ? nil : .easeOut(duration: ZeusJumpPillCluster.duration), value: pills.map(\.id))
+            .onChange(of: ready && state.showsLatest, initial: true) { _, visible in
+                #if DEBUG || ZEUS_PERFORMANCE_PROBE
+                if edge == .bottom { panel.latestButtonVisibleForDiagnostics = visible }
+                #endif
+            }
+    }
+    private func items(_ state: ConversationJumpState) -> [ZeusJumpPillCluster.Item] {
+        var result: [ZeusJumpPillCluster.Item] = []
+        if edge == .top, let first = state.unreadAbove.first {
+            result.append(.init(.unread(state.unreadAbove.count), onMarkRead: { store.markSeen(ids: Set(state.unreadAbove)) },
+                                action: { unread(first) }))
         }
+        if edge == .bottom && state.showsLatest { result.append(.init(.latest(newCount: state.newBelow), action: latest)) }
+        if let direction = state.questionDirection,
+           (edge == .top && direction == .up) || (edge == .bottom && direction == .down) {
+            result.append(.init(.question(count: state.questionCount, direction: direction == .up ? .up : .down), action: question))
+        }
+        return result
     }
 }
 

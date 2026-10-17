@@ -13,6 +13,7 @@ struct ConversationJumpState: Equatable {
     static func make(entries: [ConversationEntry], visible: Set<String>, seen: Set<String>,
                      questions: [String], after lastQuestion: String? = nil,
                      atBottom: Bool, pending: Bool, awayFromLatest: Bool) -> Self {
+        guard !entries.isEmpty else { return Self() }
         var result = Self()
         result.showsLatest = !atBottom && (pending || awayFromLatest)
         // No positional guesses while the lazy thread is opening or changing pages.
@@ -24,7 +25,7 @@ struct ConversationJumpState: Equatable {
         }
         result.showsLatest = !atBottom && (result.showsLatest || result.newBelow > 0)
         let offscreen = questions.filter { !visible.contains("card:\($0)") }
-        result.questionCount = offscreen.count
+        result.questionCount = questions.count
         if !offscreen.isEmpty,
            let id = nextQuestion(questions: questions, visible: visible, after: lastQuestion),
            let index = entries.firstIndex(where: { $0.id == "card:\(id)" }) {

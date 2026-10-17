@@ -15,7 +15,8 @@ import ZeusProtocol
 }
 
 @MainActor private final class Q3OffscreenPanel: NSPanel {
-    override var canBecomeKey: Bool { false }
+    var allowsKey = false
+    override var canBecomeKey: Bool { allowsKey }
     override var canBecomeMain: Bool { false }
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
 }
@@ -317,6 +318,87 @@ import ZeusProtocol
         f.panel.keyboardScroll = .latest; f.panel.keyboardScrollRequest += 1
         try await f.settle()
         #expect(f.panel.atBottom)
+        try expectNewestVisible(f)
+    }
+
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["JB1_KEYS"] == "1", "Requires an unlocked console; fixture-local focus only."))
+    func nativePillsFollowComposerInTabLoop() async throws {
+        let f = try Q3ScrollHarness(longNewest: false); defer { f.cleanup() }
+        let origin = try #require(f.cards.cards.first?.createdAt)
+        f.cards.add(Card(id: "tab-question", kind: .question, body: "Choose", options: [.init(id: "yes", label: "Yes")], createdAt: origin))
+        f.model.draft = "A draft"
+        f.mount(accessibilityEnabled: true); try await f.settle()
+        let host = try #require(f.host)
+        (f.window as? Q3OffscreenPanel)?.allowsKey = true
+        NSApp.activate(); f.window.makeKey(); try await f.settle()
+        try #require(f.window.isKeyWindow && NSApp.isActive)
+        let controls = jumpAXNodes(host).filter { node in
+            let role = (node as AnyObject).accessibilityRole?()?.rawValue
+            return role == "AXButton" || role == "AXTextArea"
+        }
+        var labels: [String] = []
+        for _ in 0..<30 {
+            let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0,
+                windowNumber: f.window.windowNumber, context: nil, characters: "\t", charactersIgnoringModifiers: "\t", isARepeat: false, keyCode: 48))
+            NSApp.sendEvent(event)
+            try await Task.sleep(for: .milliseconds(30))
+            guard let view = f.window.firstResponder as? NSView else { continue }
+            let frame = f.window.convertToScreen(view.convert(view.bounds, to: nil))
+            let node = controls.first { ($0 as AnyObject).isAccessibilityFocused?() == true } ?? controls.first { node in
+                guard let rect = (node as AnyObject).accessibilityFrame?() else { return false }
+                return rect.insetBy(dx: -1, dy: -1).contains(CGPoint(x: frame.midX, y: frame.midY))
+            }
+            let identifier = node.flatMap { ($0 as AnyObject).accessibilityIdentifier?() }
+            let label = node.flatMap { ($0 as AnyObject).accessibilityLabel?() }
+            labels.append(identifier.flatMap { $0.isEmpty ? nil : $0 } ?? label ?? "other:\(type(of: view))")
+        }
+        print("JB1 Tab loop: \(labels)")
+        let send = try #require(labels.firstIndex(of: "Send"))
+        #expect(labels[(send + 1) % labels.count] == "jump-unread")
+        #expect(labels[(send + 2) % labels.count] == "jump-mark-read")
+        #expect(labels[(send + 3) % labels.count] == "jump-question")
+    }
+
+    @Test func questionPillAndCommandJShareOneCycleAndRequestControlFocus() async throws {
+        let f = try Q3ScrollHarness(longNewest: false); defer { f.cleanup() }
+        let origin = try #require(f.cards.cards.first?.createdAt)
+        for (id, seconds) in [("jump-q1", 1.5), ("jump-q2", 15.5)] {
+            f.cards.add(Card(id: id, kind: .question, body: "Choose an option", options: [.init(id: "yes", label: "Yes")], createdAt: origin.addingTimeInterval(seconds)))
+        }
+        f.cards.markAllSeen()
+        f.mount(accessibilityEnabled: true); try await f.settle()
+        let host = try #require(f.host)
+        let pill = try #require(jumpAXNodes(host).first { node in
+            let selector = NSSelectorFromString("accessibilityIdentifier")
+            return node.responds(to: selector) && node.perform(selector)?.takeUnretainedValue() as? String == "jump-question"
+        })
+        #expect((pill as AnyObject).accessibilityPerformPress?() == true)
+        try await f.settle()
+        #expect(f.panel.scrollTargetCardID == "jump-q1" && f.panel.focusScrollTarget)
+        func keyView(_ view: NSView) -> ConversationStripKeys.KeyView? {
+            if let key = view as? ConversationStripKeys.KeyView { return key }
+            return view.subviews.lazy.compactMap(keyView).first
+        }
+        let key = try #require(keyView(host))
+        let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command, timestamp: 0,
+            windowNumber: f.window.windowNumber, context: nil, characters: "j", charactersIgnoringModifiers: "j", isARepeat: false, keyCode: 38))
+        #expect(key.performKeyEquivalent(with: event))
+        try await f.settle()
+        #expect(f.panel.scrollTargetCardID == "jump-q2" && f.panel.focusScrollTarget)
+    }
+
+    @Test func jumpLatestRemainsAvailableWhenAllHistoryWasAlreadyRead() async throws {
+        let f = try Q3ScrollHarness(longNewest: false); defer { f.cleanup() }
+        f.cards.markAllSeen()
+        f.mount(); try await f.settle()
+        #expect(!f.panel.latestButtonVisibleForDiagnostics)
+        f.panel.keyboardScroll = .oldest; f.panel.keyboardScrollRequest += 1
+        try await f.settle()
+        #expect(f.panel.latestButtonVisibleForDiagnostics)
+        #expect(!f.panel.atBottom)
+        f.panel.keyboardScroll = .latest; f.panel.keyboardScrollRequest += 1
+        try await f.settle()
+        #expect(!f.panel.latestButtonVisibleForDiagnostics)
         try expectNewestVisible(f)
     }
 
