@@ -19,13 +19,13 @@ sys.path.insert(0, str(ROOT / 'Zeus/App/Tests/Runtime'))
 from LiveSupport import cleanup_root, scrub_paths
 
 AGENTS = ('claude', 'codex', 'opencode')
-PROBES = {'at1': ('claude',), 'fb1': ('claude',), 'lm4': ('claude',), 'ac1': ('claude',), 'lv1': ('claude',), 'sa1': ('claude',),
+PROBES = {'dv1': ('claude',), 'at1': ('claude',), 'fb1': ('claude',), 'lm4': ('claude',), 'ac1': ('claude',), 'lv1': ('claude',), 'sa1': ('claude',),
           'sa2': ('codex', 'opencode'), 'sa3': AGENTS, 'sa4': AGENTS, 'pc1': AGENTS, 'cy1': AGENTS, 'e2e': ('—',)}
-SCRIPTS = {'at1': 'Zeus/App/Tests/Runtime/AT1LiveProbe.py', 'fb1': 'Zeus/App/Tests/Runtime/FB1LiveProbe.py', 'lm4': 'Zeus/App/Tests/Runtime/LM4LiveProbe.py', 'ac1': 'Zeus/App/Tests/Runtime/AC1LiveProbe.py', 'lv1': 'Zeus/App/Tests/Runtime/AC1LiveProbe.py',
+SCRIPTS = {'dv1': 'Zeus/App/Tests/Runtime/DV1LiveProbe.py', 'at1': 'Zeus/App/Tests/Runtime/AT1LiveProbe.py', 'fb1': 'Zeus/App/Tests/Runtime/FB1LiveProbe.py', 'lm4': 'Zeus/App/Tests/Runtime/LM4LiveProbe.py', 'ac1': 'Zeus/App/Tests/Runtime/AC1LiveProbe.py', 'lv1': 'Zeus/App/Tests/Runtime/AC1LiveProbe.py',
            'sa1': 'Zeus/App/Tests/SA1LiveProbe.py',
            **{p: f'Zeus/App/Tests/Runtime/{p.upper()}LiveProbe.py' for p in ('sa2','sa3','sa4')},
            'pc1': 'Zeus/App/Tests/Runtime/PC1LiveScreens.py'}
-TIMEOUTS = {'at1': 420, 'fb1': 420, 'lm4': 420, 'ac1': 360, 'lv1': 600, 'sa1': 600, 'sa2': 420, 'sa3': 420, 'sa4': 360, 'pc1': 480, 'cy1': 360, 'e2e': 420}
+TIMEOUTS = {'dv1': 420, 'at1': 420, 'fb1': 420, 'lm4': 420, 'ac1': 360, 'lv1': 600, 'sa1': 600, 'sa2': 420, 'sa3': 420, 'sa4': 360, 'pc1': 480, 'cy1': 360, 'e2e': 420}
 
 
 def comma_values(value, allowed):
