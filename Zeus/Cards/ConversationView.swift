@@ -285,7 +285,7 @@ struct ConversationView: View {
         pageCount = max(ConversationLayout.pageSize, model.thread.count - index)
         Task { @MainActor in
             await Task.yield()
-            guard panel.isVisible else { return }
+            guard panel.isVisible, panel.scrollTargetCardID == id else { return }
             proxy.scrollTo("card:\(id)", anchor: .top)
             if panel.focusScrollTarget, let card = store.card(id: id), card.status == .open {
                 if !card.id.hasPrefix(ZeusRuntime.managedCardPrefix) { model.rearmReplyTarget(cardID: id); lastQuestionJump = id }
@@ -309,10 +309,8 @@ struct ConversationView: View {
         if store.skip(id: card.id), !store.hasOpenQuestion || focusedControl?.entryID == "card:\(card.id)" { focusComposer() }
     }
     private func jumpStatus(_ proxy: ScrollViewProxy) {
-        guard var target = StatusStripState.jump(cards: stripCards, status: stripStatus, managed: stripManaged, activity: indicator) else { return }
-        if case .question = target, let id = StatusStripState.nextQuestion(cards: stripCards, after: lastQuestionJump) {
-            lastQuestionJump = id; target = .question(id)
-        }
+        guard let target = StatusStripState.jump(cards: stripCards, status: stripStatus, managed: stripManaged, activity: indicator) else { return }
+        if case .question = target { jumpQuestion(proxy); return }
         switch target {
         case .latest: latest(proxy)
         case .terminal: performOpenTerminal()
@@ -321,6 +319,16 @@ struct ConversationView: View {
             switch target { case .question, .prompt: panel.focusScrollTarget = true; default: panel.focusScrollTarget = false }
             openTarget(proxy)
         }
+    }
+    /// Both the strip and floating question pill advance this single cursor.
+    private func jumpQuestion(_ proxy: ScrollViewProxy) {
+        guard let id = ConversationJumpState.nextQuestion(
+            questions: StatusStripState.questions(stripCards).map(\.id),
+            visible: visibility.navigationIDs, after: lastQuestionJump) else { return }
+        lastQuestionJump = id
+        panel.scrollTargetCardID = id
+        panel.focusScrollTarget = true
+        openTarget(proxy)
     }
     private func stripButton(_ button: ZeusStatusStripModel.Button) {
         switch button {
@@ -340,6 +348,8 @@ struct ConversationView: View {
     private func updateSeenVisibility() {
         let ids = ConversationViewportVisibility.visibleIDs(frames: frames, viewport: viewport)
         if visibility.navigationIDs != ids { visibility.navigationIDs = ids }
+        let away = ConversationJumpState.awayFromLatest(viewport: viewport, newestMessageTop: newestMessageTop)
+        if visibility.awayFromLatest != away { visibility.awayFromLatest = away }
         let seenIDs = ids.filter { $0.hasPrefix("card:") }
         if visibility.seenIDs != seenIDs { visibility.seenIDs = seenIDs }
     }
@@ -732,6 +742,7 @@ private struct ConversationThreadRow: Identifiable {
     var ids: Set<String> = []
     var seenIDs: Set<String> = []
     var navigationIDs: Set<String> = []
+    var awayFromLatest = false
 }
 
 private struct ConversationVisibleBubble: View {

@@ -363,12 +363,16 @@ final class CardStore: CardStoring {
         _ = commit(next)
     }
 
-    func markSeen(id: String) {
-        guard let card = card(id: id), card.kind != .userMessage, !seenIDs.contains(id) else { return }
+    func markSeen(id: String) { markSeen(ids: [id]) }
+
+    /// Persist the pill's exact eligible selection in one transaction, without consuming newer rows.
+    func markSeen(ids: Set<String>) {
+        let eligible = cards.filter { ids.contains($0.id) && $0.kind != .userMessage && !$0.isRatingHeld && !seenIDs.contains($0.id) }
+        guard !eligible.isEmpty else { return }
         var next = snapshot
-        next.seenIDs.insert(id)
-        if commit(next) {
-            if card.status == .open, isPlainMessage(card) { retainHistory(keepingNewest: 500, pendingCardIDs: []) }
+        next.seenIDs.formUnion(eligible.map(\.id))
+        if commit(next), eligible.contains(where: { $0.status == .open && isPlainMessage($0) }) {
+            retainHistory(keepingNewest: 500, pendingCardIDs: [])
         }
     }
 
