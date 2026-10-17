@@ -776,7 +776,7 @@ Slack-style floating buttons over the thread: one at the top for what the user h
 
 ### 20.3 Narrow form
 
-When the two pills of a cluster don't fit in the thread's width minus `2·Spacing.m`, both switch to their short labels in the same row (`ViewThatFits`: the full row, else the short row). A lone pill is never shortened.
+When the two pills of a cluster don't fit in the thread's width minus `2·Spacing.m`, both switch to their short labels in the same row (`ViewThatFits`: the full row, else the short row). A lone pill is never shortened. At the Larger pixel size two full pills no longer fit the 348-pt thread, so a two-pill cluster is short there by design; a single pill keeps its words.
 
 | Pill | Full | Short |
 |---|---|---|
