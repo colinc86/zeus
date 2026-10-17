@@ -522,9 +522,18 @@ public struct ZeusFolderRow: View {
     @State private var hovering = false
     @FocusState private var focused: Bool
     @Environment(\.zeusPalette) private var palette
+    @Environment(\.zeusFontChoice) private var choice
+    @Environment(\.zeusFontScale) private var scale
 
-    /// Width of each trailing column.
-    public static let columnWidth: CGFloat = 88
+    /// The trailing columns at the Default caption size: kind, then modified ("12 Oct 2025" fits). They scale with
+    /// the caption so a Larger date never truncates.
+    public static let kindColumnWidth: CGFloat = 80
+    public static let modifiedColumnWidth: CGFloat = 76
+
+    /// A column's width for the caption size in use.
+    nonisolated public static func columnWidth(_ base: CGFloat, choice: ZeusFontChoice, scale: ZeusFontScale) -> CGFloat {
+        (base * ZeusTextRole.caption.size(for: choice, scale: scale) / ZeusTextRole.caption.size(for: choice)).rounded()
+    }
     /// Rows shown before "and N more · Show in Finder".
     public static let limit = 500
     public static let folderKind = "Folder"
@@ -547,8 +556,8 @@ public struct ZeusFolderRow: View {
         Button(action: action) {
             // The name wins: a column is dropped before the name truncates (§21.6).
             ViewThatFits(in: .horizontal) {
-                row(columns: [kind, modified], truncating: false)
-                row(columns: [modified], truncating: false)
+                row(columns: [(kind, Self.kindColumnWidth), (modified, Self.modifiedColumnWidth)], truncating: false)
+                row(columns: [(modified, Self.modifiedColumnWidth)], truncating: false)
                 row(columns: [], truncating: true)
             }
             .padding(.horizontal, ZeusTheme.Spacing.xs + px)
@@ -569,20 +578,20 @@ public struct ZeusFolderRow: View {
         .accessibilityLabel("\(name), \(kind), modified \(modified)")
     }
 
-    private func row(columns: [String], truncating: Bool) -> some View {
+    private func row(columns: [(String, CGFloat)], truncating: Bool) -> some View {
         HStack(spacing: ZeusTheme.Spacing.s) {
             Image(systemName: symbol).font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(hovering || focused ? palette.title : palette.secondaryText).frame(width: 14)
             Text(name).zeusFont(.body).foregroundStyle(palette.text).lineLimit(1).truncationMode(.middle)
                 .fixedSize(horizontal: !truncating, vertical: false)
             Spacer(minLength: ZeusTheme.Spacing.s)
-            ForEach(columns, id: \.self) { column($0) }
+            ForEach(columns, id: \.0) { column($0.0, width: $0.1) }
         }
     }
 
-    private func column(_ text: String) -> some View {
+    private func column(_ text: String, width: CGFloat) -> some View {
         Text(text).zeusFont(.caption).foregroundStyle(palette.secondaryText).lineLimit(1).truncationMode(.tail)
-            .frame(width: Self.columnWidth, alignment: .trailing)
+            .frame(width: Self.columnWidth(width, choice: choice, scale: scale), alignment: .trailing)
     }
 }
 

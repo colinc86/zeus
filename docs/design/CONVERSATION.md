@@ -855,9 +855,9 @@ The area between the header and the status strip. One renderer at a time, chosen
 | Kind | Rendering |
 |---|---|
 | **Markdown** | `ZeusMarkdownText(…, layout: .document)` (§21.5), selectable, wrapped at the content width. **Source** toggle (⋯ menu, ⌥⌘U) shows the file as text/code; the choice is per document and not persisted. Local images from the document's own folder render inline; remote images are never loaded. |
-| **Text and code** | `.body` in `palette.text` (both fonts are monospaced), selectable, soft-wrapped at the content width, tabs as four spaces, no line numbers. An empty file shows "This file is empty." (§21.7). |
-| **Images** | Native, centered on the panel colour, fitted to the width at first; ⌘+ / ⌘− / ⌘0 (fit) and pinch zoom; scrolls when larger than the area. Animated images play unless Reduce Motion is on. |
-| **PDF** | PDFKit, continuous vertical pages fitted to the width, the same zoom keys, the page indicator in the context line; ⌘F searches. |
+| **Text and code** | `.body` in `palette.text` (both fonts are monospaced), selectable, soft-wrapped at the content width, tabs as four spaces, no line numbers. Links in a native text host take `palette.link` with a single underline, as in bubbles. An empty file shows "This file is empty." (§21.7). |
+| **Images** | Native, centered in the area (both axes) on the panel colour; fitted to the width when the image is wider than the area, at its natural size when smaller (never upscaled); ⌘+ / ⌘− / ⌘0 (fit) and pinch zoom; scrolls when larger than the area. Animated images play unless Reduce Motion is on. |
+| **PDF** | PDFKit, continuous vertical pages fitted to the width on the panel colour (the view's background is `palette.panel`, not PDFKit's grey), the same zoom keys, the page indicator in the context line; ⌘F searches. |
 | **Everything else** (docx, xlsx, pages, keynote, csv, html, video, …) | Quick Look (`QLPreviewView`), the same preview as Finder's Space, rendered out of process, filling the area with no chrome of its own. Quick Look's own interaction (pages, playback) is kept. No find. |
 | **Folder** | A folder listing (§21.6). |
 
@@ -894,7 +894,8 @@ The same `spokenText` serves VoiceOver in both layouts.
 │ ▢ Q3 Planning.key            Keynote       12 Oct       │
 ```
 
-- One `ZeusFolderRow` per entry, 22 pt min, full width, `Spacing.xxs` apart: the kind's SF Symbol at 11 pt (`folder.fill`, `doc.fill`, the chip's symbols) in `secondaryText`, the name `.body` in `palette.text` one line middle-truncated, the kind (`UTType.localizedDescription`, or "Folder") and the modified date (§3's divider format without the time for older days) both `.caption` `secondaryText`, right-aligned in two columns of 88 pt that drop one at a time when the row is too narrow (`ViewThatFits`: kind goes first; the tooltip keeps "Kind · Modified").
+- One `ZeusFolderRow` per entry, 22 pt min, full width, `Spacing.xxs` apart: the kind's SF Symbol at 11 pt (`folder.fill`, `doc.fill`, the chip's symbols) in `secondaryText`, the name `.body` in `palette.text` one line middle-truncated, the kind (`UTType.localizedDescription`, or "Folder") and the modified date (§3's divider format without the time for older days) both `.caption` `secondaryText`, right-aligned in two columns (kind 80 pt, modified 76 pt at the Default size, scaling with the caption) that drop one at a time before the name would truncate (`ViewThatFits`: kind goes first; the tooltip keeps "Kind · Modified"). At the chat width that keeps both columns for names up to about 16 characters.
+- **Kind:** "Folder" for folders; the type's description with its first letter capitalised ("Text", "PDF document"); a file without a description shows its extension in capitals ("SWIFT"), or "Document" when it has none.
 - **Order:** folders first, then files, each A–Z case-insensitive. Hidden entries (dot files, `.DS_Store`) are skipped. At most 500 rows, then one caption line "and 212 more · Show in Finder" whose link reveals the folder.
 - **Click** (or Return/Space on a focused row): a file previews, pushing the stack; a folder steps into it, with `‹ <parent name>` as Back. Reveal-only entries show in Finder and the safety caption appears as a caption line under the list for 4 s. Hover: `palette.field` fill; focus: the field focus ring, as chips.
 - **Header actions** act on the folder being shown: Open opens it in Finder (the button reads "Open in Finder" with Finder's icon), Show in Finder selects it in its parent, Copy Path copies its path.
