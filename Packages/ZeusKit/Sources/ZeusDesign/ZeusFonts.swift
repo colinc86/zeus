@@ -37,7 +37,7 @@ public enum ZeusTextRole: Sendable, Hashable, CaseIterable {
     /// Point size per font. Departure Mono is drawn on an 11 px/em grid, so it's only crisp at multiples of
     /// 5.5 pt (one font pixel = whole device pixels on 2× displays). Default is 11 for text and 16.5 for titles.
     /// Its x-height at 11 pt matches the old 15 pt body; hierarchy comes from size and color (one weight).
-    func size(for choice: ZeusFontChoice, scale: ZeusFontScale = .default) -> CGFloat {
+    public func size(for choice: ZeusFontChoice, scale: ZeusFontScale = .default) -> CGFloat {
         let index = switch scale { case .small: 0; case .default: 1; case .large: 2; case .larger: 3 }
         let sizes: [CGFloat] = switch (self, choice) {
         case (.title, .pixel): [11, 16.5, 22, 22]
@@ -56,7 +56,8 @@ public enum ZeusTextRole: Sendable, Hashable, CaseIterable {
     /// The pixel font's grid step: pixel sizes must be multiples of this to render crisp on 2× displays.
     static let pixelGridStep: CGFloat = 5.5
 
-    var weight: Font.Weight {
+    /// The system font's weight for the role (the pixel font has one weight).
+    public var weight: Font.Weight {
         switch self {
         case .title, .button, .badge: .semibold
         case .body, .caption: .regular
@@ -102,6 +103,17 @@ public enum ZeusFonts {
             ? pixelCTFont(size: role.size(for: .pixel, scale: scale))
             : CTFontCreateWithName("SFMono-Regular" as CFString, role.size(for: .system, scale: scale), nil)
         return ceil(CTFontGetAscent(font) + CTFontGetDescent(font) + CTFontGetLeading(font))
+    }
+
+    /// The same font as `font(_:choice:scale:)` for native text hosts (toll-free bridged to `NSFont`/`UIFont`):
+    /// the pixel font with ligatures off, or SF Mono at the role's weight. The document viewer's text storage
+    /// uses it so native runs match the SwiftUI table (CONVERSATION.md §21).
+    public static func ctFont(_ role: ZeusTextRole, choice: ZeusFontChoice, scale: ZeusFontScale = .default) -> CTFont {
+        if choice == .pixel, isPixelFontAvailable { return pixelCTFont(size: role.size(for: .pixel, scale: scale)) }
+        let traits: [CFString: Any] = [kCTFontWeightTrait: role.weight == .semibold ? 0.3 : 0.0]
+        let attributes: [CFString: Any] = [kCTFontFamilyNameAttribute: "SF Mono", kCTFontTraitsAttribute: traits]
+        return CTFontCreateWithFontDescriptor(CTFontDescriptorCreateWithAttributes(attributes as CFDictionary),
+                                              role.size(for: .system, scale: scale), nil)
     }
 
     /// The font for a text role. Falls back to SF Mono if the pixel font isn't registered.
