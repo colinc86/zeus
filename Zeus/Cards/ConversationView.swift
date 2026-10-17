@@ -53,6 +53,8 @@ struct ConversationView: View {
     // Replace the old 2-point separator with a 24-point strip and its 1-point rule.
     private var stripExtraHeight: CGFloat { ZeusStatusStrip.height(for: settings.fontChoice, scale: settings.fontScale) - 1 }
     private var threadHeight: CGFloat { ConversationLayout.threadHeight(content: contentHeight, composer: composerHeight, screen: panel.screenHeight, strip: stripExtraHeight) }
+    private var documentHeight: CGFloat { DocumentPanelGeometry.contentHeight(composer: composerHeight, strip: stripExtraHeight, screen: panel.screenHeight, expanded: panel.document.expanded, tail: panel.tail == nil ? 0 : ZeusDialogTail.height) }
+    private var surfaceHeight: CGFloat { panel.document.isOpen ? documentHeight : threadHeight }
     private var assistant: ConnectedSession? {
         if settings.managedSession?.enabled == true { return nil }
         if let key = settings.assistantSessionKey { return messaging.sessions.first { $0.sessionKey == key } }
@@ -85,7 +87,7 @@ struct ConversationView: View {
     private var replyTitle: String? {
         model.replyTarget.map { $0.title ?? String($0.body.prefix(40)) + ($0.body.count > 40 ? "…" : "") }
     }
-    private var totalHeight: CGFloat { threadHeight + composerHeight + 54 + stripExtraHeight + (panel.tail == nil ? 0 : ZeusDialogTail.height) }
+    private var totalHeight: CGFloat { surfaceHeight + composerHeight + 54 + stripExtraHeight + (panel.tail == nil ? 0 : ZeusDialogTail.height) }
     private var stripCards: StatusStripState.Cards {
         .init(values: store.cards, seen: store.seenIDs, outgoing: store.outgoingStates,
               pendingIDs: store.pendingHistoryIDs?() ?? [], canClear: !store.cards.isEmpty || !store.notices.isEmpty)
@@ -123,14 +125,28 @@ struct ConversationView: View {
     @ViewBuilder private var rootBody: some View {
         ScrollViewReader { proxy in
             VStack(spacing: 8) {
-                thread(proxy: proxy)
+                ZStack(alignment: .top) {
+                    thread(proxy: proxy)
+                        .opacity(panel.document.isOpen ? 0 : 1)
+                        .allowsHitTesting(!panel.document.isOpen)
+                        .accessibilityHidden(panel.document.isOpen)
+                    if panel.document.isOpen {
+                        DocumentViewerView(model: panel.document, conversation: model,
+                            back: { backFromDocument() }, context: { returnFromDocument(proxy) })
+                            .frame(height: documentHeight)
+                            .overlay(alignment: .top) { documentPills(edge: .top, proxy: proxy) }
+                            .overlay(alignment: .bottom) { documentPills(edge: .bottom, proxy: proxy) }
+                            .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
+                    }
+                }.frame(height: surfaceHeight, alignment: .top).clipped()
+                    .animation(.easeOut(duration: reduceMotion ? 0.12 : 0.18), value: panel.document.isOpen)
                 ZeusStatusStrip(StatusStripState.make(cards: stripCards, status: stripStatus, managed: stripManaged, activity: indicator),
                     onJump: StatusStripState.jump(cards: stripCards, status: stripStatus, managed: stripManaged, activity: indicator) == nil ? nil : { jumpStatus(proxy) },
                     onSkip: canSkipFromStrip ? { skipFromStrip() } : nil,
                     onButton: stripButton)
                 VStack(spacing: 8) {
                     attachmentDraft
-                    ZeusComposer(text: $model.draft, placeholder: Self.composerPlaceholder(managed: currentManagedConfiguration,
+                    ZeusComposer(text: $model.draft, placeholder: panel.document.current.map { "Ask about \($0.attachment.label)…" } ?? Self.composerPlaceholder(managed: currentManagedConfiguration,
                         status: managedController?.managedStatus,
                         assistantLabel: Self.composerAssistantName(assistant)),
                                  replyingTo: replyTitle, isSending: model.isSending, hasAttachments: !model.draftAttachments.isEmpty, focus: $composerFocused,
@@ -138,9 +154,10 @@ struct ConversationView: View {
                                  onSend: {
                                      Task {
                                          await Self.sendFromComposer(model)
+                                         if model.draft.isEmpty { panel.document.autoAttachedPage = nil }
                                          focusComposer()
                                          // An accepted send returns from history or a thread control to the new bubble.
-                                         if model.draft.isEmpty { latest(proxy) }
+                                         if model.draft.isEmpty && !panel.document.isOpen { latest(proxy) }
                                      }
                                  })
                     if let error = model.attachmentError { Text(error).zeusFont(.caption).foregroundStyle(palette.destructive) }
@@ -158,6 +175,16 @@ struct ConversationView: View {
             .frame(width: panel.width)
             .padding(.bottom, 4)
             .environment(\.zeusAnimationsActive, activity.conversation)
+            .environment(\.openDocument, { attachment, entryID in
+                let id = entryID.flatMap { $0.hasPrefix("card:") ? String($0.dropFirst(5)) : nil }
+                let card = id.flatMap { store.card(id: $0) }
+                let offset = scrollDriver.viewport?.offset ?? viewport.offset
+                guard panel.document.open(attachment, siblings: card?.attachments ?? [attachment], sourceCardID: id,
+                                          context: card.map { $0.title ?? ZeusMarkdown.spokenText(markdown: $0.body).components(separatedBy: ".").first ?? "" }) else { return false }
+                panel.document.threadOffset = offset; panel.document.threadPageCount = pageCount; panel.document.fromPeek = false
+                setPinned(false); scrollDriver.stopFollowing(); composerFocused = false; focusedControl = nil
+                return true
+            })
             .environment(\.zeusFontChoice, settings.fontChoice)
             .environment(\.zeusFontScale, settings.fontScale)
             .environment(\.openURL, OpenURLAction { url in
@@ -177,6 +204,12 @@ struct ConversationView: View {
                 Button("Cancel", role: .cancel) {}
             } message: { Text(ConversationHistoryCopy.confirmation) }
             .onChange(of: totalHeight, initial: true) { resize(totalHeight) }
+            .onChange(of: panel.document.isOpen) { if panel.document.isOpen { setPinned(false); scrollDriver.stopFollowing() } }
+            .onChange(of: panel.document.expanded) { resize(totalHeight) }
+            .onChange(of: panel.document.backRequest) { backFromDocument() }
+            .onChange(of: panel.document.composerRequest) { focusComposer() }
+            .onChange(of: model.draft) { panel.document.typed(in: model) }
+            .onChange(of: store.conversationClearRevision) { panel.document.close() }
             .onChange(of: composerHeight) { followLatest() }
             .onChange(of: composerFocused) { panel.composerFocused = composerFocused }
             .onChange(of: panel.keyboardScrollRequest) {
@@ -205,7 +238,7 @@ struct ConversationView: View {
                 setPinned(false)
                 // A pointer already reached its target. Centering it now moves the button
                 // out from under a held press. Keyboard focus still reveals its target.
-                guard !panel.focusCameFromPointer else { return }
+                guard !panel.focusCameFromPointer, !panel.document.isOpen else { return }
                 Task { @MainActor in
                     await Task.yield()
                     guard panel.isVisible, focusedControl == target, !panel.focusCameFromPointer else { return }
@@ -213,10 +246,14 @@ struct ConversationView: View {
                 }
             }
             .onChange(of: panel.focusRequest) { focusComposer() }
-            .onChange(of: panel.scrollRequest) { openTarget(proxy) }
+            .onChange(of: panel.scrollRequest) { if !panel.document.isOpen { openTarget(proxy) } }
             .onAppear {
                 guard panel.isVisible else { return }
-                if ratings?.drafts.isEmpty != false { focusComposer() }; openTarget(proxy)
+                if panel.document.isOpen {
+                    pageCount = panel.document.threadPageCount; setPinned(false)
+                    Task { @MainActor in await Task.yield(); if let offset = panel.document.threadOffset { scrollDriver.scroll(to: offset) } }
+                }
+                if ratings?.drafts.isEmpty != false { focusComposer() }; if !panel.document.isOpen { openTarget(proxy) }
                 withAnimation(.easeOut(duration: 0.12)) { appeared = true }
             }
             .onChange(of: panel.isVisible) {
@@ -224,9 +261,9 @@ struct ConversationView: View {
                     visibility.jumpsReady = false
                     lastQuestionJump = nil
                     model.openPanel(viewportManaged: true)
-                    pageCount = ConversationLayout.pageSize
+                    if !panel.document.isOpen { pageCount = ConversationLayout.pageSize }
                     userHasScrolled = false
-                    if ratings?.drafts.isEmpty != false { focusComposer() }; openTarget(proxy)
+                    if ratings?.drafts.isEmpty != false { focusComposer() }; if !panel.document.isOpen { openTarget(proxy) }
                     withAnimation(.easeOut(duration: 0.12)) { appeared = true }
                 } else {
                     visibility.jumpsReady = false
@@ -248,7 +285,7 @@ struct ConversationView: View {
                 let arrivals = model.thread.filter { !old.contains($0.id) }
                 let added = arrivals.filter { !$0.isRatingHeld }
                 guard arrivals.isEmpty || !added.isEmpty else { return }
-                if atBottom && !userScrolling { frames.removeValue(forKey: "latestMessage"); latest(proxy) } else { pendingLatest = true }
+                if atBottom && !userScrolling && !panel.document.isOpen { frames.removeValue(forKey: "latestMessage"); latest(proxy) } else { pendingLatest = true }
                 if let entry = added.last(where: { !$0.isUser }) {
                     NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested,
                         userInfo: [.announcement: announcement(entry), .priority: NSAccessibilityPriorityLevel.medium.rawValue])
@@ -259,6 +296,50 @@ struct ConversationView: View {
                 ConversationSeenTracker(visibility: visibility, entries: entries, store: store, panel: panel, activity: activity)
             }
         }
+    }
+
+    private func backFromDocument() {
+        guard panel.document.back() else { return }
+        let offset = panel.document.threadOffset
+        let target = panel.document.fromPeek ? nil : panel.document.returnTarget
+        panel.focusCameFromPointer = true // Focus restoration must not center the original chip.
+        Task { @MainActor in
+            await Task.yield()
+            if let offset { scrollDriver.scroll(to: offset) }
+            if let target { composerFocused = false; focusedControl = target } else { focusComposer() }
+            await Task.yield()
+            if let offset { scrollDriver.scroll(to: offset) }
+        }
+    }
+    private func returnFromDocument(_ proxy: ScrollViewProxy) {
+        let id = panel.document.current?.sourceCardID
+        let target = panel.document.fromPeek ? nil : panel.document.returnTarget
+        panel.document.close()
+        panel.scrollTargetCardID = id; panel.focusScrollTarget = false
+        openTarget(proxy)
+        Task { @MainActor in
+            await Task.yield(); await Task.yield()
+            panel.focusCameFromPointer = true
+            if let target { composerFocused = false; focusedControl = target } else { focusComposer() }
+        }
+    }
+    private func documentPills(edge: ZeusJumpPillCluster.Edge, proxy: ScrollViewProxy) -> some View {
+        let unseen = model.thread.filter { !$0.isUser && !$0.isNotice && !$0.isRatingHeld && !store.seenIDs.contains($0.sourceCardID) }
+        let questions = StatusStripState.questions(stripCards).map(\.id)
+        let next = ConversationJumpState.nextQuestion(questions: questions, visible: visibility.navigationIDs, after: lastQuestionJump)
+        let nextIndex = next.flatMap { id in model.thread.firstIndex { $0.sourceCardID == id } } ?? 0
+        let currentIndex = panel.document.current?.sourceCardID.flatMap { id in model.thread.firstIndex { $0.sourceCardID == id } } ?? 0
+        let up = nextIndex < currentIndex
+        var items: [ZeusJumpPillCluster.Item] = []
+        if edge == .bottom && !unseen.isEmpty {
+            items.append(.init(.latest(newCount: unseen.count), action: {
+                panel.document.close(); panel.scrollTargetCardID = unseen.first?.sourceCardID; panel.focusScrollTarget = false; openTarget(proxy)
+            }))
+        }
+        if next != nil && ((edge == .top) == up) {
+            items.append(.init(.question(count: questions.count, direction: up ? .up : .down), action: { panel.document.close(); jumpQuestion(proxy) }))
+        }
+        return ZeusJumpPillCluster(edge: edge, items: items).padding(.vertical, ZeusTheme.Spacing.xs)
     }
 
     @ViewBuilder private var attachmentDraft: some View {
@@ -280,6 +361,7 @@ struct ConversationView: View {
         Task { @MainActor in await Task.yield(); composerFocused = panel.isVisible }
     }
     private func openTarget(_ proxy: ScrollViewProxy) {
+        panel.document.close()
         guard let id = panel.scrollTargetCardID,
               let index = model.thread.firstIndex(where: { $0.sourceCardID == id }) else { latest(proxy); return }
         if id == model.thread.last?.sourceCardID && !panel.focusScrollTarget { latest(proxy); return }
@@ -309,6 +391,7 @@ struct ConversationView: View {
         StatusStripState.make(cards: stripCards, status: stripStatus, managed: stripManaged, activity: indicator).skipTitle != nil
     }
     private func skipFromStrip() {
+        panel.document.close()
         guard canSkipFromStrip, let card = StatusStripState.questions(stripCards).first else { return }
         setPinned(false)
         if store.skip(id: card.id), !store.hasOpenQuestion || focusedControl?.entryID == "card:\(card.id)" { focusComposer() }
@@ -351,6 +434,7 @@ struct ConversationView: View {
         }
     }
     private func updateSeenVisibility() {
+        guard !panel.document.isOpen else { return }
         let ids = ConversationViewportVisibility.visibleIDs(frames: frames, viewport: viewport)
         if visibility.navigationIDs != ids { visibility.navigationIDs = ids }
         let away = ConversationJumpState.awayFromLatest(viewport: viewport, newestMessageTop: newestMessageTop)
@@ -375,18 +459,19 @@ struct ConversationView: View {
     }
 
     private func followLatest() {
-        guard panel.isVisible, atBottom, !userScrolling else { return }
+        guard panel.isVisible, atBottom, !userScrolling, !panel.document.isOpen else { return }
         guard model.thread.isEmpty || newestMessageTop != nil else { return }
         scrollDriver.followLatest(newestMessageTop: newestMessageTop)
     }
 
     private func latest(_ proxy: ScrollViewProxy) {
+        panel.document.close()
         setPinned(true)
         // Realize the newest lazy row before applying its measured cap. Top alignment is safe
         // even before measurements: short rows clamp to the end, tall rows start at their top.
         Task { @MainActor in
             await Task.yield()
-            guard panel.isVisible, atBottom, !userScrolling else { return }
+            guard panel.isVisible, atBottom, !userScrolling, !panel.document.isOpen else { return }
             if let last = model.thread.last { proxy.scrollTo(last.id, anchor: .top) }
             else { proxy.scrollTo("bottom", anchor: .bottom) }
             await Task.yield()
@@ -790,11 +875,11 @@ private struct ConversationSeenTracker: View {
     private struct Request: Equatable { let ids: Set<String>; let open: Bool }
     var body: some View {
         Color.clear.frame(width: 0, height: 0).allowsHitTesting(false).accessibilityHidden(true)
-            .task(id: Request(ids: visibility.seenIDs, open: panel.isVisible && activity.conversation)) {
-                guard panel.isVisible && activity.conversation else { return }
+            .task(id: Request(ids: visibility.seenIDs, open: panel.isVisible && activity.conversation && !panel.document.isOpen)) {
+                guard panel.isVisible && activity.conversation && !panel.document.isOpen else { return }
                 let ids = visibility.seenIDs
                 do { try await Task.sleep(for: .milliseconds(300)) } catch { return }
-                guard panel.isVisible && activity.conversation else { return }
+                guard panel.isVisible && activity.conversation && !panel.document.isOpen else { return }
                 for entry in entries where ids.contains(entry.id) && visibility.seenIDs.contains(entry.id) && !entry.isUser {
                     store.markSeen(id: entry.sourceCardID)
                 }

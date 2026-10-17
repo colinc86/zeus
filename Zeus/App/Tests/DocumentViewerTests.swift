@@ -39,6 +39,17 @@ import ZeusProtocol
         viewer.expanded = true
         #expect(viewer.back() && !viewer.isOpen && viewer.expanded)
     }
+    @Test func folderMetadataUsesShortDatesAndReadableKinds() throws {
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = try #require(TimeZone(secondsFromGMT: 0))
+        let now = try #require(calendar.date(from: DateComponents(year: 2026, month: 10, day: 16, hour: 8, minute: 2)))
+        #expect(DocumentLoader.modifiedLabel(now, now: now, calendar: calendar) == "Today 8:02")
+        #expect(DocumentLoader.modifiedLabel(now.addingTimeInterval(-86400), now: now, calendar: calendar) == "Yesterday")
+        #expect(DocumentLoader.modifiedLabel(now.addingTimeInterval(-4 * 86400), now: now, calendar: calendar) == "12 Oct")
+        #expect(DocumentLoader.folderKind(isFolder: true, description: nil, extension: "") == "Folder")
+        #expect(DocumentLoader.folderKind(isFolder: false, description: nil, extension: "swift") == "SWIFT")
+        #expect(DocumentLoader.folderKind(isFolder: false, description: "text", extension: "txt") == "Text")
+        #expect(DocumentLoader.folderKind(isFolder: false, description: nil, extension: "") == "Document")
+    }
     @Test func renderingSafetyAndCappedLoading() throws {
         let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let script = try file("pretend.txt", in: root, text: "#!/bin/sh\necho unsafe")
@@ -84,4 +95,42 @@ import ZeusProtocol
         #expect(conversation.draft == "My existing thought\n\n> First line\n> Second line\n\n")
         #expect(conversation.draftAttachments.map(\.target) == [attachment.target])
     }
+    @Test func typingAttachesOnceRemovalSticksAndQuoteIsTrimmedAndCapped() throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let attachment = try file("notes.md", in: root)
+        let viewer = DocumentViewerModel(); defer { viewer.close() }
+        #expect(viewer.open(attachment))
+        let conversation = ConversationModel(cards: CardStore(fileURL: root.appendingPathComponent("cards.json")), messaging: DocumentMessages())
+        conversation.draft = "A"; viewer.typed(in: conversation)
+        #expect(conversation.draftAttachments.count == 1)
+        conversation.draftAttachments = []; conversation.draft = "Another character"; viewer.typed(in: conversation)
+        #expect(conversation.draftAttachments.isEmpty)
+        viewer.ask(in: conversation)
+        #expect(conversation.draftAttachments.count == 1)
+        conversation.draft = ""
+        viewer.selectedText = "   " + String(repeating: "a", count: 2_050) + "   "
+        viewer.quote(in: conversation)
+        #expect(conversation.draft == "> " + String(repeating: "a", count: 2_000) + "…\n\n")
+    }
+
+    @Test func watchesInPlaceWritesAndRearmsAfterReplacementAndReappearance() async throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let attachment = try file("watched.txt", in: root, text: "Initial")
+        let viewer = DocumentViewerModel(); defer { viewer.close() }
+        #expect(viewer.open(attachment)); try await settled(viewer)
+        let url = try #require(viewer.current?.url)
+        for (text, atomic) in [("In place", false), ("Atomic replacement", true), ("New inode in place", false)] {
+            let revision = viewer.revision
+            try text.write(to: url, atomically: atomic, encoding: .utf8)
+            try await settled(viewer, revision: revision)
+            #expect(viewer.current?.content?.text == text)
+        }
+        var revision = viewer.revision
+        try FileManager.default.removeItem(at: url); try await settled(viewer, revision: revision)
+        #expect(viewer.current?.content?.renderer == .missing)
+        revision = viewer.revision
+        try "Restored".write(to: url, atomically: true, encoding: .utf8); try await settled(viewer, revision: revision)
+        #expect(viewer.current?.content?.text == "Restored")
+    }
+
 }

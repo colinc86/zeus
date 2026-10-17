@@ -318,6 +318,7 @@ The protocols live in `Zeus/Shared/AppSeams.swift`, which the PM owns. That file
   ```
   The runtime owns the `BridgeServer` delegate, tool handling (§4 → the seams), `zeus_ask` waiters, the delivery ledger and redelivery (§5), and the connectors.
 - **Composition.** appdev's app delegate creates the models, then `ZeusRuntime`, then calls `start()`. A start failure (for example, the socket is in use) appears in the menu bar status. The compose box and Settings depend only on `AgentMessaging`.
+- **Document presentation (DV1).** The app owns `DocumentViewerModel` on `ConversationPanelState`: a per-open file/folder back stack, source choice, scroll bookmarks, expanded-size preference and local file watcher. File chips in the thread and peek enter this one panel; URLs and reveal-only targets keep their workspace behavior. The hidden thread does not mark arrivals read or follow them. Back restores its scroll/focus/draft, while composer sends still use `ConversationModel` and the existing runtime routing. Renderers revalidate local targets; Markdown never fetches remote images, local images stay inside the document folder, and text previews stop at 5 MB. No runtime or Shared protocol is added. `docs/design/CONVERSATION.md` §21 defines presentation and keys.
 - **Responses.** The UI records responses only through `CardStore`. Routing happens only in the runtime, through `responseHandler`. No UI code talks to sessions directly.
 
 ---

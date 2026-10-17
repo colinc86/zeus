@@ -16,12 +16,13 @@ struct DocumentTextHost: NSViewRepresentable {
         return view
     }
     func updateNSView(_ view: DocumentTextScrollView, context: Context) {
+        view.textView.linkTextAttributes = [.foregroundColor: NSColor(context.environment.zeusPalette.link), .underlineStyle: NSUnderlineStyle.single.rawValue]
         context.coordinator.model = model
         context.coordinator.url = page.url
         view.textView.quote = quote
         view.update(text, pageID: page.id, revision: revision, source: page.source, saved: model.offsets[page.id])
         view.find(model.findText, index: model.findIndex, request: model.findRequest, palette: context.environment.zeusPalette) { count in
-            if model.findCount != count { model.findCount = count }
+            Task { @MainActor [weak model] in if model?.findCount != count { model?.findCount = count } }
         }
         view.onScroll = { [weak model] point in model?.offsets[page.id] = point }
     }
@@ -32,7 +33,8 @@ struct DocumentTextHost: NSViewRepresentable {
         init(model: DocumentViewerModel, url: URL) { self.model = model; self.url = url }
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let view = notification.object as? NSTextView else { return }
-            model.selectedText = (view.string as NSString).substring(with: view.selectedRange())
+            let selection = (view.string as NSString).substring(with: view.selectedRange())
+            Task { @MainActor [weak model] in if model?.selectedText != selection { model?.selectedText = selection } }
         }
         func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
             let reference = (link as? URL)?.absoluteString ?? (link as? String) ?? ""
@@ -84,6 +86,7 @@ struct DocumentTextHost: NSViewRepresentable {
         let key = "\(query):\(index):\(request):\(revision)"
         guard key != findKey else { return }; findKey = key
         let text = textView.string as NSString
+        textView.layoutManager?.removeTemporaryAttribute(.foregroundColor, forCharacterRange: NSRange(location: 0, length: text.length))
         textView.layoutManager?.removeTemporaryAttribute(.backgroundColor, forCharacterRange: NSRange(location: 0, length: text.length))
         var ranges: [NSRange] = []; var start = 0
         if !query.isEmpty {
@@ -98,6 +101,7 @@ struct DocumentTextHost: NSViewRepresentable {
         if !ranges.isEmpty {
             let range = ranges[((index % ranges.count) + ranges.count) % ranges.count]
             textView.layoutManager?.addTemporaryAttribute(.backgroundColor, value: NSColor(palette.accent), forCharacterRange: range)
+            textView.layoutManager?.addTemporaryAttribute(.foregroundColor, value: NSColor(palette.onAccent), forCharacterRange: range)
             textView.scrollRangeToVisible(range)
         }
     }
@@ -109,7 +113,7 @@ struct DocumentTextHost: NSViewRepresentable {
         let offset = same ? contentView.bounds.origin : saved ?? .zero
         let selection = textView.selectedRange()
         let contentChanged = same && self.revision != revision
-        self.pageID = pageID; self.revision = revision; self.source = source; previousText = value
+        self.pageID = pageID; self.revision = revision; self.source = source; previousText = value; findKey = ""
         textView.textStorage?.setAttributedString(value)
         textView.frame.size.width = contentSize.width
         if let container = textView.textContainer { textView.layoutManager?.ensureLayout(for: container) }

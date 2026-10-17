@@ -402,6 +402,41 @@ import ZeusProtocol
         try expectNewestVisible(f)
     }
 
+    @Test func documentViewerReturnsToOriginalChipAndScrollWithoutReadingNewMessages() async throws {
+        // Lazy SwiftUI rows expose their AX children only when the app's enhanced AX mode is on.
+        let enhanced = NSSelectorFromString("accessibilitySetValue:forAttribute:")
+        let previous = NSApp.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? NSNumber(value: false)
+        defer { if NSApp.responds(to: enhanced) { NSApp.perform(enhanced, with: previous, with: "AXEnhancedUserInterface") } }
+        if NSApp.responds(to: enhanced) { NSApp.perform(enhanced, with: NSNumber(value: true), with: "AXEnhancedUserInterface") }
+
+        let f = try Q3ScrollHarness(longNewest: false); defer { f.cleanup() }
+        let url = f.root.appendingPathComponent("viewer.md")
+        try "# A document\n\nA paragraph to read.".write(to: url, atomically: true, encoding: .utf8)
+        let attachment = ZeusProtocol.Attachment(kind: .file, label: "viewer.md", target: url.path, summary: "A document to read in Zeus.")
+        let card = Card(id: "viewer-source", kind: .message, body: "Here is the document.", attachments: [attachment], createdAt: Date())
+        f.cards.add(card); f.model.draft = "Keep my draft"
+        (f.window as? Q3OffscreenPanel)?.allowsKey = true
+        f.mount(target: card.id, accessibilityEnabled: true); f.window.makeKey(); try await f.settle()
+        let host = try #require(f.host)
+        let nodes = jumpAXNodes(host)
+        let chip = try #require(nodes.first { ($0 as AnyObject).accessibilityLabel?() == AttachmentChip.accessibilityLabel(attachment) })
+        let before = f.panel.viewportForDiagnostics.offset
+        #expect((chip as AnyObject).accessibilityPerformPress?() == true)
+        try await f.settle()
+        #expect(f.panel.document.isOpen && f.panel.document.current?.content?.renderer == .markdown)
+        #expect(f.model.draft == "Keep my draft")
+        f.append("A new message must stay unread while reading the document.")
+        let arrival = try #require(f.newestID)
+        try await f.settle()
+        #expect(f.panel.document.isOpen && !f.cards.seenIDs.contains(arrival))
+        f.panel.document.backRequest += 1
+        try await f.settle()
+        #expect(!f.panel.document.isOpen)
+        #expect(abs(f.panel.viewportForDiagnostics.offset - before) < 2)
+        #expect(f.panel.focusedControlForDiagnostics == .init(entryID: "card:viewer-source", controlID: "open:\(attachment.id)"))
+        #expect(f.model.draft == "Keep my draft")
+    }
+
     private func expectNewestVisible(_ f: Q3ScrollHarness) throws {
         let scroll = try #require(f.nativeScrollView())
         let frame = try #require(f.panel.newestMessageFrameForDiagnostics)

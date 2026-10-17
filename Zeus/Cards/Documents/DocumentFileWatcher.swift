@@ -1,18 +1,22 @@
 import Foundation
 import Darwin
 
-/// Watch the parent directory so atomic replacement at the same path also refreshes the document.
+/// The file catches in-place writes; its parent catches atomic replacement and later reappearance.
 final class DocumentFileWatcher: @unchecked Sendable {
-    private let source: DispatchSourceFileSystemObject
+    private let sources: [DispatchSourceFileSystemObject]
     init?(url: URL, changed: @escaping @Sendable () -> Void) {
-        let directory = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
-        let descriptor = open((directory ? url : url.deletingLastPathComponent()).path, O_EVTONLY)
-        guard descriptor >= 0 else { return nil }
-        source = DispatchSource.makeFileSystemObjectSource(fileDescriptor: descriptor,
-            eventMask: [.write, .rename, .delete, .attrib], queue: .global(qos: .utility))
-        source.setEventHandler(handler: changed)
-        source.setCancelHandler { close(descriptor) }
-        source.resume()
+        var watched: [DispatchSourceFileSystemObject] = []
+        for path in Set([url.path, url.deletingLastPathComponent().path]) {
+            let descriptor = open(path, O_EVTONLY)
+            guard descriptor >= 0 else { continue }
+            let source = DispatchSource.makeFileSystemObjectSource(fileDescriptor: descriptor,
+                eventMask: [.write, .rename, .delete, .attrib, .extend], queue: .global(qos: .utility))
+            source.setEventHandler(handler: changed)
+            source.setCancelHandler { close(descriptor) }
+            source.resume(); watched.append(source)
+        }
+        guard !watched.isEmpty else { return nil }
+        sources = watched
     }
-    deinit { source.cancel() }
+    deinit { for source in sources { source.cancel() } }
 }

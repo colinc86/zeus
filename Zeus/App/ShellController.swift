@@ -61,6 +61,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     @ObservationIgnored private var sessionInactive = false
     @ObservationIgnored private var screenLocked = false
     @ObservationIgnored private var stopped = false
+    @ObservationIgnored private var previousDocumentMode = "thread"
     @ObservationIgnored private(set) var scheduledDeadline: Date?
     private var suspended: Bool { displayAsleep || systemAsleep || sessionInactive || screenLocked }
     @ObservationIgnored private var peekExitTask: Task<Void, Never>?
@@ -174,7 +175,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         }
         cards.onAdd = { [weak self] newCard in self?.receivedCard(newCard) }
         learn.learnings?.onRecorded = { [weak cards] in cards?.recordNotice(LearningDeliveryModel.preparedNotice($0)) }
-        learn.onDeleteEverything = { [weak cards] in cards?.removeNotices(kind: .learning) }
+        learn.onDeleteEverything = { [weak self] in self?.cards.removeNotices(kind: .learning); self?.cardPanelState.document.close() }
     }
 
     var unreadCountText: String { "\(cards.unseenCount) unread \(cards.unseenCount == 1 ? "message" : "messages")" }
@@ -211,7 +212,13 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         card.contentView = nil
         peekPanel.title = "Zeus says"
         peekPanel.contentView = PeekHostingView(rootView: PeekView(model: peek, panel: peekPanelState, settings: settings, activity: surfaceActivity, ratings: ratings,
-            open: { [weak self] in self?.expandPeek($0) }))
+            open: { [weak self] in self?.expandPeek($0) }, openDocument: { [weak self] attachment, source in
+                guard let self, self.cardPanelState.document.open(attachment, siblings: source.attachments, sourceCardID: source.id,
+                    context: source.title ?? ZeusMarkdown.spokenText(markdown: source.body).components(separatedBy: ".").first ?? "") else { return false }
+                self.cardPanelState.document.fromPeek = true
+                self.openConversation(at: source.id)
+                return true
+            }))
         observePeekVisibility()
         observePeekLayoutInputs()
         avatar.title = "Zeus avatar"
@@ -220,7 +227,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         card.delegate = self
         card.onEscape = { [weak self] in
             guard let self else { return }
-            if self.warning.isShown { self.warning.performClose(nil) } else { self.closeCard() }
+            if self.warning.isShown { self.warning.performClose(nil) }
+            else if self.cardPanelState.document.isOpen { self.cardPanelState.document.handle(.back, conversation: self.conversation) }
+            else { self.closeCard() }
         }
         let view = AvatarInteractionView(rootView: SpriteAvatarView(settings: settings, status: status, messaging: messaging, artLayout: artLayout, activity: surfaceActivity))
         view.setAccessibilityElement(true)
@@ -324,6 +333,15 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     /// Return false to leave ordinary keys, including Tab, in AppKit's native focus traversal.
     func handleConversationKey(_ event: NSEvent) -> Bool {
+        if cardPanelState.document.isOpen {
+            if let command = DocumentKeyboard.command(event) {
+                let selectFind = command == .find && cardPanelState.document.findVisible
+                let handled = cardPanelState.document.handle(command, conversation: conversation)
+                if selectFind { DocumentKeyboard.selectFindText(in: card.contentView) }
+                return handled
+            }
+            return false
+        }
         let lines = (card.firstResponder as? NSTextView).map(ConversationScrollPolicy.caretLines) ?? (first: false, last: false)
         let character = event.characters?.unicodeScalars.first?.value
         let scrollKey: UInt16 = character == UInt32(NSPageUpFunctionKey) ? 116 : character == UInt32(NSPageDownFunctionKey) ? 121 : event.keyCode
@@ -344,8 +362,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             openSettings: { [weak self] in self?.showSettings(tab: .agent) },
             copySetup: { [weak self] in self?.copySetupCommands() },
             resize: { [weak self] height in
-                guard let self, abs(self.cardPanelState.height - height) > 1 else { return }
-                self.cardPanelState.height = height; self.positionCard()
+                guard let self else { return }
+                if abs(self.cardPanelState.height - height) > 1 { self.cardPanelState.height = height }
+                self.positionCard()
             }, ratings: ratings, managed: managed,
             openTerminal: { [weak self] in try await self?.openConversationTerminal() },
             newConversation: { [weak self] in self?.performManagedAction(.newConversation) },
@@ -853,8 +872,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         guard let screen = PanelPlacement.screen(for: avatar.frame, in: screenRects) else { return }
         cardPanelState.screenHeight = screen.height
         let height = cardPanelState.height
-        let width = ConversationWidth.clamp(settings.conversationWidth, screenWidth: screen.width)
-        if width >= ConversationWidth.minimum && settings.conversationWidth != width { settings.conversationWidth = width }
+        let chatWidth = ConversationWidth.clamp(settings.conversationWidth, screenWidth: screen.width)
+        if chatWidth >= ConversationWidth.minimum && settings.conversationWidth != chatWidth { settings.conversationWidth = chatWidth }
+        let width = DocumentPanelGeometry.width(chat: chatWidth, expanded: cardPanelState.document.isOpen && cardPanelState.document.expanded, screen: screen.width)
         var placement = DialogPlacement.place(art: screenArtRect, anchor: screenAnchor,
                                                size: CGSize(width: width, height: height), screen: screen)
         if let fixed = resizeFixedX, let host = card.contentView as? ConversationHostingView {
@@ -863,7 +883,15 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         }
         cardPanelState.width = placement.frame.width
         cardPanelState.tail = placement.tail
-        card.setFrame(placement.frame, display: true)
+        let mode = cardPanelState.document.isOpen ? (cardPanelState.document.expanded ? "expanded" : "document") : "thread"
+        let animate = previousDocumentMode != mode && card.isVisible && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        previousDocumentMode = mode
+        if animate {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.2
+                card.animator().setFrame(placement.frame, display: true)
+            }
+        } else { card.setFrame(placement.frame, display: true) }
         if let host = card.contentView as? ConversationHostingView, resizeFixedX == nil {
             host.resizeEdge = ConversationWidth.edge(avatarX: screenAnchor.x, panel: placement.frame, screen: screen)
         }
@@ -873,7 +901,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         guard let screen = PanelPlacement.screen(for: avatar.frame, in: screenRects) else { return }
         if resizeFixedX == nil { resizeFixedX = edge == .left ? card.frame.maxX : card.frame.minX }
         if let host = card.contentView as? ConversationHostingView { host.resizeEdge = edge; host.resizeHandle.edge = edge }
-        settings.conversationWidth = ConversationWidth.clamp(width, screenWidth: screen.width)
+        settings.conversationWidth = ConversationWidth.clamp(width / (cardPanelState.document.isOpen && cardPanelState.document.expanded ? 2 : 1), screenWidth: screen.width)
         positionCard()
     }
 
@@ -942,7 +970,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
                 userInfo: [.announcement: newCard.title ?? String(newCard.body.split(separator: ".").first ?? ""),
                            .priority: NSAccessibilityPriorityLevel.medium.rawValue])
         } else {
-            conversation.noteArrival(newCard, visible: cardPanelState.isVisible && cardPanelState.atBottom,
+            conversation.noteArrival(newCard, visible: cardPanelState.isVisible && cardPanelState.atBottom && !cardPanelState.document.isOpen,
                                      animate: settings.typewriterEnabled && !reduceMotion)
             if !peek.isVisible { status.noteNewCard(newCard) }
         }

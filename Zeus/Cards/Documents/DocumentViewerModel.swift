@@ -18,6 +18,7 @@ final class DocumentViewerModel {
     private(set) var revision = 0
     private(set) var updatedAt: Date?
     var expanded = false
+    private(set) var navigationDirection = 1
     var selectedText = ""
     var findRequest = 0
     var findVisible = false
@@ -28,13 +29,16 @@ final class DocumentViewerModel {
     var zoomDirection = 0
     var pdfPage: String?
     var backRequest = 0
-    var returnToMessageRequest = 0
     var composerRequest = 0
+    var quoteRequest = 0
     var autoAttachedPage: UUID?
     var threadOffset: CGFloat?
+    var threadPageCount = ConversationLayout.pageSize
     var fromPeek = false
     var attachmentPosition: String? { attachments.count > 1 ? "\(attachmentIndex + 1)/\(attachments.count)" : nil }
     var returnTarget: ConversationControlTarget?
+    @ObservationIgnored var openExternally: (Page) -> Void = { DocumentActions.open($0) }
+    @ObservationIgnored var revealExternally: (Page) -> Void = { DocumentActions.reveal($0) }
     @ObservationIgnored var offsets: [UUID: CGPoint] = [:]
     @ObservationIgnored private var attachments: [Attachment] = []
     @ObservationIgnored private var attachmentIndex = 0
@@ -56,6 +60,7 @@ final class DocumentViewerModel {
         if let index = attachments.firstIndex(where: { $0.id == attachment.id }) { attachmentIndex = index }
         else { attachments = [value]; attachmentIndex = 0 }
         returnTarget = sourceCardID.map { .init(entryID: "card:\($0)", controlID: "open:\(attachment.id)") }
+        offsets.removeAll()
         pages = [.init(attachment: value, sourceCardID: sourceCardID, context: context)]
         activate()
         return true
@@ -65,22 +70,25 @@ final class DocumentViewerModel {
         let value = Attachment(kind: kind, label: url.lastPathComponent, target: url.path)
         guard url.isFileURL, case .open(let safe)? = AttachmentTarget.action(for: value), safe.isFileURL else { return false }
         let parent = current
+        navigationDirection = 1
         pages.append(.init(attachment: .init(kind: kind, label: safe.lastPathComponent, target: safe.path), sourceCardID: parent?.sourceCardID, context: parent?.context))
         activate(); return true
     }
     /// Returns true when Back reaches the conversation rather than another document.
     @discardableResult func back() -> Bool {
         guard !pages.isEmpty else { return true }
+        navigationDirection = -1
         pages.removeLast()
         if pages.isEmpty { stop() } else { activate() }
         return pages.isEmpty
     }
-    func close() { pages.removeAll(); stop() }
+    func close() { pages.removeAll(); offsets.removeAll(); stop() }
     @discardableResult func step(_ direction: Int) -> Bool {
         let next = attachmentIndex + direction
         guard attachments.indices.contains(next), let root = pages.first else { return false }
         let item = attachments[next]
         guard case .open(let url)? = AttachmentTarget.action(for: item), url.isFileURL else { return false }
+        navigationDirection = direction < 0 ? -1 : 1
         attachmentIndex = next
         var value = item; value.target = url.path
         pages = [.init(attachment: value, sourceCardID: root.sourceCardID, context: root.context)]
@@ -89,6 +97,7 @@ final class DocumentViewerModel {
     func toggleSource() { guard !pages.isEmpty else { return }; pages[pages.count - 1].source.toggle() }
     func ask(in conversation: ConversationModel) {
         guard let page = current else { return }
+        autoAttachedPage = page.id
         if !conversation.draftAttachments.contains(where: { $0.target == page.attachment.target }) {
             conversation.draftAttachments.append(page.attachment)
         }
@@ -111,10 +120,13 @@ final class DocumentViewerModel {
         stop(); selectedText = ""; updatedAt = nil; findVisible = false; findText = ""; findCount = 0; pdfPage = nil; autoAttachedPage = nil
         guard let url = current?.url else { return }
         fingerprint = Self.fingerprint(url)
+        installWatch(url)
+        load(updated: false)
+    }
+    private func installWatch(_ url: URL) {
         watcher = DocumentFileWatcher(url: url) { [weak self] in
             Task { @MainActor [weak self] in self?.scheduleRefresh() }
         }
-        load(updated: false)
     }
     private func stop() {
         generation = UUID(); watcher = nil; loadTask?.cancel(); refreshTask?.cancel()
@@ -127,7 +139,7 @@ final class DocumentViewerModel {
             guard !Task.isCancelled, let self, let url = self.current?.url else { return }
             let value = Self.fingerprint(url)
             guard self.fingerprint != value else { return }
-            self.fingerprint = value; self.load(updated: true)
+            self.fingerprint = value; self.installWatch(url); self.load(updated: true)
         }
     }
     private func load(updated: Bool) {
@@ -144,6 +156,6 @@ final class DocumentViewerModel {
     }
     private static func fingerprint(_ url: URL) -> String {
         let values = try? FileManager.default.attributesOfItem(atPath: url.path)
-        return "\(String(describing: values?[.modificationDate])):\(String(describing: values?[.size])):\(String(describing: values?[.systemFileNumber]))"
+        return "\((values?[.modificationDate] as? Date)?.timeIntervalSinceReferenceDate ?? 0):\(String(describing: values?[.size])):\(String(describing: values?[.systemFileNumber]))"
     }
 }

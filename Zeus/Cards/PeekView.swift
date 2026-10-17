@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import Observation
 import ZeusDesign
+import ZeusProtocol
 
 @MainActor @Observable
 final class PeekPanelState {
@@ -16,6 +17,7 @@ struct PeekView: View {
     let activity: SurfaceActivity
     var ratings: MessageRatingsModel? = nil
     let open: (PeekModel.OpenAction) -> Void
+    var openDocument: ((Attachment, Card) -> Bool)? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // T1: the selected theme reaches every view below through \.zeusTheme (and so \.zeusPalette).
@@ -28,6 +30,7 @@ struct PeekView: View {
                             answeredOptionID: model.answeredOptionID, tail: panel.tail,
                             reveal: !model.isTyping || reduceMotion || !settings.typewriterEnabled ? .full : .typing(start: model.startedAt),
                             ratings: ratings, rate: { ratings?.begin(card); open(.message) }, open: open, answer: { _ = model.answer(optionID: $0) }, close: { ratings?.provider?.ratingCardDismissed(id: card.id); model.close(markSeen: true) })
+                    .environment(\.openDocument, { attachment, _ in openDocument?(attachment, card) ?? false })
                     .background { Color.clear.contentShape(Rectangle()).onTapGesture { open(.message) } }
                     .onHover { model.setHovering($0) }
                     .transition(.zeusPeek(reduceMotion: reduceMotion, edge: panel.tail.edge))
