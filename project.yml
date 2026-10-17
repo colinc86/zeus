@@ -40,8 +40,8 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Zeus
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: NO
-        MARKETING_VERSION: 0.2.8
-        CURRENT_PROJECT_VERSION: 21
+        MARKETING_VERSION: 0.2.9
+        CURRENT_PROJECT_VERSION: 22
       configs:
         Release:
           ENABLE_HARDENED_RUNTIME: YES
