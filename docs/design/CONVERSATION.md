@@ -855,9 +855,9 @@ The area between the header and the status strip. One renderer at a time, chosen
 | Kind | Rendering |
 |---|---|
 | **Markdown** | `ZeusMarkdownText(…, layout: .document)` (§21.5), selectable, wrapped at the content width. **Source** toggle (⋯ menu, ⌥⌘U) shows the file as text/code; the choice is per document and not persisted. Local images from the document's own folder render inline; remote images are never loaded. |
-| **Text and code** | `.body` in `palette.text` (both fonts are monospaced), selectable, soft-wrapped at the content width, tabs as four spaces, no line numbers. An empty file shows "This file is empty." (§21.7). |
-| **Images** | Native, centered on the panel colour, fitted to the width at first; ⌘+ / ⌘− / ⌘0 (fit) and pinch zoom; scrolls when larger than the area. Animated images play unless Reduce Motion is on. |
-| **PDF** | PDFKit, continuous vertical pages fitted to the width, the same zoom keys, the page indicator in the context line; ⌘F searches. |
+| **Text and code** | `.body` in `palette.text` (both fonts are monospaced), selectable, soft-wrapped at the content width, tabs as four spaces, no line numbers. Links in a native text host take `palette.link` with a single underline, as in bubbles. An empty file shows "This file is empty." (§21.7). |
+| **Images** | Native, centered in the area (both axes) on the panel colour; fitted to the width when the image is wider than the area, at its natural size when smaller (never upscaled); ⌘+ / ⌘− / ⌘0 (fit) and pinch zoom; scrolls when larger than the area. Animated images play unless Reduce Motion is on. |
+| **PDF** | PDFKit, continuous vertical pages fitted to the width on the panel colour (the view's background is `palette.panel`, not PDFKit's grey), the same zoom keys, the page indicator in the context line; ⌘F searches. |
 | **Everything else** (docx, xlsx, pages, keynote, csv, html, video, …) | Quick Look (`QLPreviewView`), the same preview as Finder's Space, rendered out of process, filling the area with no chrome of its own. Quick Look's own interaction (pages, playback) is kept. No find. |
 | **Folder** | A folder listing (§21.6). |
 
