@@ -1,0 +1,79 @@
+{
+  "agent": "2.1.302 (Claude Code)",
+  "tools": [
+    "Read",
+    "zeus_say",
+    "Edit",
+    "zeus_say"
+  ],
+  "before": {
+    "body": "The plan recommends a staged rollout.",
+    "attachments": [
+      {
+        "kind": "file",
+        "summary": "The plan describes the staged rollout to review before launch.",
+        "label": "Launch plan.md",
+        "target": "/FIXTURE/project/plan.md",
+        "id": "B03515AE-16ED-4268-95D2-D40F3EAB827B"
+      }
+    ],
+    "updatedAt": "2026-10-17T03:03:49.253Z",
+    "kind": "message",
+    "sessionKey": "claude:/FIXTURE/project#70004.1792206228284202",
+    "createdAt": "2026-10-17T03:03:49.253Z",
+    "origin": "unprompted",
+    "id": "c_a031bbf1",
+    "status": "open",
+    "options": [],
+    "priority": "normal"
+  },
+  "after": [
+    {
+      "body": "The plan recommends a staged rollout.",
+      "attachments": [
+        {
+          "kind": "file",
+          "summary": "The plan describes the staged rollout to review before launch.",
+          "label": "Launch plan.md",
+          "target": "/FIXTURE/project/plan.md",
+          "id": "B03515AE-16ED-4268-95D2-D40F3EAB827B"
+        }
+      ],
+      "updatedAt": "2026-10-17T03:03:49.253Z",
+      "sessionKey": "claude:/FIXTURE/project#70004.1792206228284202",
+      "origin": "unprompted",
+      "createdAt": "2026-10-17T03:03:49.253Z",
+      "kind": "message",
+      "id": "c_a031bbf1",
+      "status": "open",
+      "options": [],
+      "priority": "normal"
+    },
+    {
+      "body": "I added a rollback checkpoint to the launch plan.",
+      "attachments": [
+        {
+          "kind": "file",
+          "summary": "The plan describes the staged rollout to review before launch.",
+          "label": "Launch plan.md",
+          "target": "/FIXTURE/project/plan.md",
+          "id": "923ED528-3594-4E24-8229-BE9C3ED34FEE"
+        }
+      ],
+      "updatedAt": "2026-10-17T03:03:49.382Z",
+      "kind": "message",
+      "sessionKey": "claude:/FIXTURE/project#70004.1792206228284202",
+      "createdAt": "2026-10-17T03:03:49.382Z",
+      "origin": "unprompted",
+      "id": "c_cf17e0e9",
+      "status": "open",
+      "options": [],
+      "priority": "normal"
+    }
+  ],
+  "initial_file": "# Launch plan\n\nUse a staged rollout.\n",
+  "updated_file": "# Launch plan\n\nUse a staged rollout with a rollback checkpoint.\n",
+  "same_path": true,
+  "viewer": "Not exercised by this headless probe; native viewer rendering/refresh requires separate app tests.",
+  "isolation": "private tmux, disposable HOME/config, scratch document, localhost model, fixture key"
+}
