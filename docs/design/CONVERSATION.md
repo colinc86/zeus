@@ -24,6 +24,7 @@
  ┌──────────────────────────────────────────┐ ← .zeusDialog(tail:), width 380
  │ ───────────── Today 8:02 ─────────────── │ ← ZeusThreadDivider
  │ ■ Claude · Zeus                          │ ← ZeusSessionLabel (only if >1 session, §3)
+ │            [↑ 3 unread ×] [↑ ? Question]  │ ← ZeusJumpPillCluster, top (only when they're above, §20)
  │ ┌ Talk tomorrow ─────────────── 8:02 ┐   │ ← agent ZeusBubble + ZeusBubbleHeader
  │ │ Your talk is tomorrow at 10:00…    │   │
  │ │ ✓ No                               │   │ ← ZeusOptionButtons(.answered)
@@ -34,7 +35,7 @@
  │ └────────────────────────────────────┘   │
  │ ┌ ▪▪▪ Uploading v0.3 ┐                   │ ← ZeusTypingIndicator: last row while an agent works (§11)
  │ └ ▬▬▬▬▬▬▬▬▬░░░░░░ 40% ┘                   │
- │                             [↓ 2 new]    │ ← ZeusJumpToLatest (only when scrolled up)
+ │                 [↓ 2 new]                │ ← ZeusJumpPillCluster, bottom (only when scrolled up, §20)
  │ ? Waiting for your answer · Skip ▣ ⊞ ▥ ✲ │ ← ZeusStatusStrip (§15), always shown
  ├──────────────────────────────────────────┤ ← its 1 px rule, palette.divider
  │ ▌↩ Replying to: Ship the build?       ✕  │ ← ZeusReplyChip (inside ZeusComposer)
@@ -170,10 +171,11 @@ Use `ZeusComposer`.
 
 - **At bottom** means the last item's bottom edge is within 24 pt of the visible bottom.
 - **A new item arrives while at bottom:** scroll to it, animated 150 ms ease-out (or instantly under Reduce Motion). It's seen at once if the panel is open.
-- **A new item arrives while scrolled up:** don't move. Show `ZeusJumpToLatest(newCount:)` overlaid bottom-trailing on the thread, 4 pt above the rule.
+- **A new item arrives while scrolled up:** don't move. The latest pill (§20) shows bottom-center over the thread: "↓ 2 new".
   - Clicking it or pressing ⌘↓ scrolls to the bottom.
   - The count is the number of unseen items below the viewport.
   - Progress updates never count.
+- **Unseen items above the viewport** (older messages the user never scrolled past, kept in `seenIDs`) get the unread pill at the top; an open question that is off-screen gets the question pill on its side. §20 has the rules.
 - **Seen.** An item is marked seen when the panel is open and the item has been inside the visible thread area for at least 300 ms (an `onAppear` debounce is fine).
   - Opening the panel scrolls to the bottom, so everything that shows is seen.
   - This drives the badge (unseen count) and the `alert` state (CONTRACT §10.3).
@@ -191,7 +193,7 @@ All keys work while the panel is key. Only ⌥⌘Z is global.
 | Backspace | composer, empty, chip showing | Clear the reply chip (handled by `ZeusComposer`) |
 | ⌘K | panel | Clear the reply chip (handled by `ZeusComposer`) |
 | ⌘1 … ⌘9 | panel | Pick option N on the **newest open question or content card that has options**; only that bubble shows the ⌘N hints. Works even while typing. |
-| ⌘↓ | panel | Jump to latest (handled by `ZeusJumpToLatest`; add a hidden button with the same shortcut when the pill isn't shown) |
+| ⌘↓ | panel | Jump to latest, the same jump as the latest pill (§20); the key works whether or not a pill is shown |
 | ⌘R | panel | Rate the focused assistant message, or the newest message the assistant sent on its own: opens its rating row (§17). Esc closes the row only. |
 | Tab / ⇧Tab | panel | Native key-view traversal; Zeus doesn't intercept Tab. Focus moves in reading order through every control in the loaded thread, then the composer, and wraps. See the note below. |
 | Space | a focused button | Activate it (standard) |
@@ -731,3 +733,82 @@ The badge and the warning marker sit on the desktop at the avatar, not in the co
 ### 19.4 Renders
 
 `fs1/fs1-<size>-<theme>-<scheme>-<font>`: a thread with a title, body, chip, rating line and strip, plus the peek, at each of the four sizes, light and dark, both fonts, from `build/fs1-renders/`. The Larger-pixel-short render shows the peek on a 240 pt-tall display.
+
+## 20. Jump pills (JB1)
+
+Slack-style floating buttons over the thread: one at the top for what the user has not read yet, one at the bottom for the newest message, and one for the next open question on whichever side it is. They replace the "↓ New message" button. Components: `ZeusJumpPill` and `ZeusJumpPillCluster` in `ZeusConversation.swift`; the app decides what to show with a pure helper over `visibility.navigationIDs` (no per-frame geometry), and every click reuses a jump the panel already has.
+
+### 20.1 Which pills, and when
+
+| Pill | Shown while | Label | Click |
+|---|---|---|---|
+| **Unread** (top) | unseen agent messages sit *above* the viewport. Unseen means not the user's, not a notice, not rating-held and not in `seenIDs`: the `unseenBelow` rule, looking up. | `↑ 3 unread` (`↑ 1 unread`) | scroll to the **oldest** unseen message, anchored at the top (the same jump as the strip's "Show", §15.2). The messages become seen as they show (§7), so the count falls and the pill goes away on its own. |
+| **Latest** (bottom) | the user is scrolled up by more than about a viewport, or unseen messages sit *below* the viewport. | `↓ 2 new` when something unseen is below, else `↓ Latest` | `latest(proxy)`, the same as ⌘↓. |
+| **Question** (top or bottom) | an open question (`StatusStripState.questions`) is off-screen. | `↑ ? Question` / `↓ ? Question`, or `↑ ? 2 questions` with the count of open questions | the strip's jump (§15.2): the next question in the shared cycle, through the one `lastQuestionJump`, so the pill, the strip and ⌘J never double-step. Focus lands on its first control, as today. |
+
+- **Direction.** The question pill's arrow points at the *next* question the shared cycle will jump to; the pill sits in the cluster on that side. The unread pill always points up and the latest pill always down.
+- **Counts** are plain integers in the label, never "9+"; the pixel font is monospaced, so the pill just widens.
+- **Opening the panel** scrolls to the bottom and marks what shows as seen (§2). The pills are evaluated after that scroll lands, so nothing flashes during the open. Unread state persists across opens (`seenIDs`); an old pile of unseen messages shows the unread pill on the next open too, which is the point.
+- **Not shown:** in the peek bubble, in an empty thread, or while the panel is closing. Progress updates and typing never count as new.
+
+### 20.2 Anatomy and placement
+
+```
+ ┌──────────────────────────────────────────┐
+ │        ┌─────────────┐ ┌──────────────┐  │  top cluster: centered, Spacing.xs below the thread's top edge
+ │        │ ↑ 3 unread │×│ │ ↑ ? Question │  │  pills Spacing.xs apart; unread first, then the question
+ │        └─────────────┘ └──────────────┘  │
+ │ ┌ Talk tomorrow ───────────────── 8:02 ┐ │
+ │ │ …                                    │ │
+ │                 ┌─────────┐              │  bottom cluster: centered, Spacing.xs above the thread's bottom edge
+ │                 │ ↓ 2 new │              │  (the strip and the composer are below the thread, so a pill never covers them)
+ │                 └─────────┘              │
+ │ ? 2 questions · Go to oldest · Skip  …   │ ← status strip, untouched
+```
+
+- **One pill:** `.caption` text in `palette.text`, padding `Spacing.s` horizontally and `Spacing.xs + pixel` vertically, at least **22 pt** tall (the standard target), on a `PixelRoundedRectangle(steps: 1)` filled `palette.panel` with a 1-px `palette.outline` and the panel's hard shadow (`palette.shadow`, offset one pixel right and two down, as `.zeusDialog` draws it). That shadow is what makes it float; nothing is blurred or translucent.
+- **The arrow and the count** are in `palette.title` when the pill has something new (`↑ 3 unread`, `↓ 2 new`, every question pill); `↓ Latest` is all `secondaryText`, because nothing is waiting there. The question pill's `?` is the avatar's glyph in `palette.title`, as on the strip.
+- **Hover:** fill `palette.field`. **Press:** the pill drops onto its shadow (offset one pixel down, shadow gone), as buttons do. **Focus:** the outline becomes `palette.focusRing` (the field rule, §8), no system ring.
+- **Mark as read (×):** only on the unread pill. A `ZeusGlyph(.close)` in `secondaryText` (`title` on hover) in its own 22-pt target at the trailing end, after a 1-px `palette.divider` rule the text's height, inside the same capsule. Click marks every unseen message above as seen (`seenIDs`), which also clears the badge and the "!" if nothing else is unseen; the pill fades out. Tooltip "Mark as read". It is a separate button: its own focus stop and its own accessibility label; it never jumps.
+- **Both pills on one side** sit side by side in one row, `Spacing.xs` apart, centered as a group: the unread or latest pill first, the question pill second. They are never stacked vertically, so the cluster covers one row of the thread at most.
+- **Over the thread, not in it.** The clusters are overlays on the thread's scroll view; the thread's content and its scroll range don't change when a pill appears. A pill may cover a bubble's first or last line; it goes away as soon as the user acts on it or scrolls past what it points at. The top cluster covers the "Load earlier messages" line while it shows; the line is still reachable by Tab.
+- **Text size** (§19): the pill's text and height follow `\.zeusFontScale`; padding, the pixel outline, the 22-pt minimum and the × glyph don't scale.
+
+### 20.3 Narrow form
+
+When the two pills of a cluster don't fit in the thread's width minus `2·Spacing.m`, both switch to their short labels in the same row (`ViewThatFits`: the full row, else the short row). A lone pill is never shortened.
+
+| Pill | Full | Short |
+|---|---|---|
+| Unread | `↑ 3 unread` + × | `↑ 3` + × |
+| Latest | `↓ 2 new` / `↓ Latest` | `↓ 2` / `↓` |
+| Question | `↑ ? Question` / `↑ ? 2 questions` | `↑ ?` (the count moves to the tooltip and the accessibility label) |
+
+### 20.4 Motion
+
+- **Appear:** fade in over 120 ms ease-out while sliding 4 pt in from its edge (the top cluster slides down, the bottom cluster up). **Disappear:** fade out over 120 ms, sliding back. A pill joining a cluster moves the other pill over with the same 120 ms curve.
+- **Counts** change in place with no animation.
+- **Reduce Motion:** opacity only, no slide, no reflow animation; the jump itself lands without an animated scroll (§15.4).
+- The pills never animate while the panel is resizing or while the thread is following a new message at the bottom; `\.zeusAnimationsActive` gates them like the typing dots.
+
+### 20.5 Keys and accessibility
+
+- No new keys. ⌘↓ is the latest pill, ⌘J the question pill (§15.4), ⌘↑ the top of the thread; the keys work whether or not a pill shows. The unread pill has no key; the strip's "Show" (⌘J while "!" shows) is the same jump.
+- **Tab:** each pill is one focus stop, the × a second; the top cluster comes right after the composer, then the bottom cluster, then the thread wraps back to "Load earlier messages". Return and Space activate.
+- **Labels:** the unread pill "Jump to 3 unread messages" ("Jump to 1 unread message"), the × "Mark unread messages as read", the latest pill "Jump to the newest message" with "2 new messages. " in front when there are, the question pill "Jump to the next question" ("Jump to the next of 2 questions"). The short form keeps the full label. VoiceOver reads the direction as "above" or "below" after the label.
+- **Tooltips** (`.help`, system font): "Jump to the oldest unread message", "Mark as read", "Jump to the newest message (⌘↓)", "Jump to the next question (⌘J)" with the count in front when there are several ("2 questions · Jump to the next (⌘J)").
+
+### 20.6 Component
+
+```swift
+ZeusJumpPill(.unread(3), onMarkRead: { … }) { jump() }
+ZeusJumpPill(.latest(newCount: 0)) { jump() }
+ZeusJumpPill(.question(count: 2, direction: .up)) { jump() }
+ZeusJumpPillCluster(edge: .top, items: [.init(.unread(3), action: …, onMarkRead: …), .init(.question(count: 1, direction: .up), action: …)])
+```
+
+`ZeusJumpPill.Kind` is `.unread(Int)`, `.latest(newCount: Int)` or `.question(count: Int, direction: .up | .down)`. `ZeusJumpPill.title(_:compact:)` and `accessibilityLabel(_:)` are the copy; tests read them rather than restating the strings. The cluster lays out one or two items for its edge, picks the full or short labels, and carries the slide-and-fade transition for that edge; the app places one cluster per edge in an `.overlay(alignment: .top / .bottom)` on the thread and keeps the pills' state in `ConversationJumpState`.
+
+### 20.7 Renders
+
+`jb1/jb1-<state>-<theme>-<scheme>-<font>-<size>` from `build/jb1-renders/`: `unread` (top, with ×), `latest`, `new` (bottom, `↓ 2 new`), `question-above` and `question-below` (two pills in a cluster), `narrow` (the short row at a 260-pt thread), `short` (a 160-pt thread with both clusters), light and dark, both fonts, Default and Larger.
