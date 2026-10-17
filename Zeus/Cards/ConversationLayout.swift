@@ -5,6 +5,7 @@ import ZeusProtocol
 
 @MainActor @Observable
 final class ConversationPanelState {
+    let document = DocumentViewerModel()
     var isVisible = false
     var focusRequest = 0
     var scrollTargetCardID: String?

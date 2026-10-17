@@ -24,6 +24,7 @@ struct AttachmentChip: View {
     @State private var feedback: String?
     @FocusState private var focused: Control?
     @Environment(\.zeusPalette) private var palette
+    @Environment(\.openDocument) private var openDocument
 
     private var summary: String? {
         guard let value = attachment.summary?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return nil }
@@ -131,6 +132,7 @@ struct AttachmentChip: View {
     }
     private func activate(_ action: Action) {
         guard action == .copy || Self.targetState(attachment) != .invalid else { return }
+        if action == .open, openDocument?(attachment, entryID) == true { return }
         feedback = perform(attachment, action)
     }
     static func targetState(_ attachment: Attachment) -> TargetState {
