@@ -29,6 +29,8 @@ struct ZeusViewerTests {
         #expect(ZeusViewerStatus.Copy.openForRest(app: "BBEdit") == "Open in BBEdit for the rest.")
         #expect(ZeusViewerStatus.Copy.sizeLimit == 5_000_000 && ZeusViewerStatus.Copy.tooLarge == "Showing the first 5 MB.")
         #expect(ZeusFolderRow.moreCaption(212) == "and 212 more · Show in Finder")
+        #expect(ZeusFolderRow.columnWidth(ZeusFolderRow.modifiedColumnWidth, choice: .pixel, scale: .default) == 76)
+        #expect(ZeusFolderRow.columnWidth(ZeusFolderRow.modifiedColumnWidth, choice: .pixel, scale: .larger) == 114)
         #expect(ZeusFindBar.countText(current: 2, total: 7) == "2 of 7")
         #expect(ZeusFindBar.countText(current: 0, total: 0) == "No matches")
         #expect(ZeusFindBar.countText(current: 0, total: nil) == nil)
