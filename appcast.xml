@@ -6,6 +6,48 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.2.9</title>
+      <pubDate>Sat, 17 Oct 2026 04:12:32 GMT</pubDate>
+      <sparkle:version>22</sparkle:version>
+      <sparkle:shortVersionString>0.2.9</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Read documents right in the conversation.</strong> Click a file your assistant attached, and the panel slides over to a document viewer. <strong>← Messages</strong> (Esc or ⌘[) takes you back to exactly where you were.</li>
+<li><strong>Open it your way.</strong> The viewer's header has <strong>Open in </strong> (⌘O), <strong>Show in Finder</strong> (⌘⇧R), and a menu with Copy Path and Open With.</li>
+<li><strong>Room to read.</strong> The viewer opens at the chat's size. <strong>Expand</strong> grows it to a reading size, and Collapse shrinks it back.</li>
+<li><strong>Every kind of file.</strong>
+<ul dir="auto">
+<li>Markdown is shown formatted, with a <strong>Source</strong> toggle for the raw text.</li>
+<li>Text and code appear in a monospaced font.</li>
+<li>Images and PDFs are shown directly.</li>
+<li>Word, Excel, Pages, Keynote, CSV and more use the same previews as Finder's Quick Look.</li>
+<li>Attached folders open as a list you can click into.</li>
+</ul>
+</li>
+<li><strong>Always current.</strong> When your assistant edits a document you're reading, the view updates in place and keeps your scroll position.</li>
+<li><strong>Talk about it while you read.</strong> The message box stays under the document, and what you send refers to it. Select a passage and choose <strong>Quote in reply</strong> to quote it.</li>
+<li><strong>Get around quickly.</strong>
+<ul dir="auto">
+<li>⌃⌘← and ⌃⌘→ step through a message's attachments.</li>
+<li>Links to local files inside a document open in the viewer.</li>
+<li>⌘F finds text.</li>
+<li>New messages and questions show as jump buttons instead of pulling you away.</li>
+</ul>
+</li>
+<li><strong>Safe by default.</strong> The viewer reads only the file you clicked and loads nothing from the internet. Apps and scripts are shown in Finder instead of being previewed.</li>
+<li><strong>Your assistant knows.</strong> The instructions Zeus writes for your assistant now say you read documents in Zeus, so it prefers Markdown, keeps the same file when it updates one, and says what changed. Restart Assistant picks them up if you haven't edited your copy.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.2.9/Zeus-0.2.9.zip" type="application/octet-stream" sparkle:edSignature="WbMR1NRCRKaizDV+M9k4Lk9zNAsinSHSKkH7WHHccxbQFNqxBAzZ0yNRURlEf5XmoVhGz/n/VMeESY35npcAAA==" length="14211866"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.2.8</title>
       <pubDate>Sat, 17 Oct 2026 02:17:22 GMT</pubDate>
       <sparkle:version>21</sparkle:version>
