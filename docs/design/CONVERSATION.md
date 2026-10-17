@@ -816,7 +816,7 @@ ZeusJumpPillCluster(edge: .top, items: [.init(.unread(3), action: …, onMarkRea
 
 ## 21. Document viewer (DV1)
 
-Click a file or folder chip and the panel turns into a reader for it, with the composer still underneath. The user asked for this as a productivity feature: room to read, real rendering, live updates when the assistant edits the file, and a way to talk about the document without leaving it. Components: `ZeusViewerHeader`, `ZeusViewerContextLine`, `ZeusViewerStatus`, `ZeusFolderRow`, `ZeusFindBar` and `ZeusMarkdown`'s document layout, all in `ZeusViewer.swift`; the app owns the viewer state, the back stack, the renderers (text, PDFKit, Quick Look, images), file watching and the panel resizing.
+Click a file or folder chip and the panel turns into a reader for it, with the composer still underneath. The user asked for this as a productivity feature: room to read, real rendering, live updates when the assistant edits the file, and a way to talk about the document without leaving it. Components: `ZeusViewerHeader` (with `ZeusViewerHeaderModel` and `ZeusViewerMenuItem`), `ZeusViewerContextLine`, `ZeusViewerStatus` (its `Copy` holds every state message), `ZeusFolderRow`, `ZeusFindBar` in `ZeusViewer.swift`, and `ZeusMarkdown`'s document layout (`layout: .document`, `documentSegments`, `HeadingLevelAttribute`); native text hosts take sizes from `ZeusTextRole.size(for:scale:)` and fonts from `ZeusFonts.ctFont(_:choice:scale:)`; the app owns the viewer state, the back stack, the renderers (text, PDFKit, Quick Look, images), file watching and the panel resizing.
 
 ### 21.1 Opening, Back and the stack
 
@@ -876,7 +876,7 @@ The area between the header and the status strip. One renderer at a time, chosen
 | H2 | body size, `palette.title`, strongly emphasised (bold in SF Mono; the pixel font's bold is the title colour already), a blank line before, one newline after. |
 | H3–H6 | body size, `palette.text`, strongly emphasised; in the pixel font they read as H2 does (two heading levels is what the font gives; the structure is still in `spokenText` for VoiceOver). |
 | Lists | `•` / `–` / `1.` markers in `secondaryText` with two-space nested indents, as today. |
-| Task items (`- [ ]`, `- [x]`) | the marker becomes `□` (`secondaryText`) or `■` (`palette.title`); a done item's text goes `secondaryText`. Both glyphs are in Departure Mono. |
+| Task items (`- [ ]`, `- [x]`) | the marker becomes `□` (`secondaryText`) or `■` (`palette.title`); a done item's text goes `secondaryText`. Both glyphs are in Departure Mono. This one also applies to messages, so an assistant's checklist reads the same in a bubble. |
 | Quotes | `▌ ` bar and text in `secondaryText`, as today. |
 | Code blocks | the tinted block pads to the longest line instead of the message layout's 36-column cap, so it reads as one block across the document; long lines soft-wrap. Inline code keeps its tint. |
 | Tables | monospaced columns: each cell padded to its column's width, cells joined with ` │ `, the header row emphasised and followed by a rule row of `─` and `┼`; a table wider than the area wraps its rows rather than clipping (not pretty, but never hidden). |
