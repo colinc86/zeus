@@ -277,26 +277,295 @@ public struct ZeusThreadDivider: View {
     }
 }
 
-/// The floating "↓ 3 new" pill, shown when the user has scrolled up and new messages arrive.
-public struct ZeusJumpToLatest: View {
-    public var newCount: Int
-    public var action: () -> Void
+// MARK: - Jump pills (JB1)
 
-    public init(newCount: Int, action: @escaping () -> Void) {
-        self.newCount = newCount
+/// A floating pill over the thread that jumps to what the user hasn't seen: unread messages above, the newest
+/// message below, or the next open question (CONVERSATION.md §20). The app decides when one shows and what its
+/// click does; `ZeusJumpPillCluster` places one or two of them on an edge.
+public struct ZeusJumpPill: View {
+    /// Where the pill's target is, relative to the viewport.
+    public enum Direction: Sendable, Equatable { case up, down }
+
+    /// What the pill points at.
+    public enum Kind: Sendable, Equatable {
+        /// Unseen agent messages above the viewport; always points up.
+        case unread(Int)
+        /// The newest message, below; `newCount` is the unseen messages below the viewport (0 = "↓ Latest").
+        case latest(newCount: Int)
+        /// The next open question, in the shared strip cycle; `count` is every open question.
+        case question(count: Int, direction: Direction)
+
+        public var direction: Direction {
+            switch self {
+            case .unread: .up
+            case .latest: .down
+            case .question(_, let direction): direction
+            }
+        }
+
+        /// Whether something new waits there, so the arrow and count take the title colour.
+        public var isNew: Bool {
+            switch self {
+            case .unread, .question: true
+            case .latest(let newCount): newCount > 0
+            }
+        }
+
+        /// Stable `accessibilityIdentifier` for the jump button (the × is `Identifier.markRead`).
+        public var identifier: String {
+            switch self {
+            case .unread: Identifier.unread
+            case .latest: Identifier.latest
+            case .question: Identifier.question
+            }
+        }
+    }
+
+    /// `accessibilityIdentifier`s of the pill's buttons, for the app's key loop and tests.
+    public enum Identifier {
+        public static let unread = "jump-unread"
+        public static let markRead = "jump-mark-read"
+        public static let latest = "jump-latest"
+        public static let question = "jump-question"
+    }
+
+    public var kind: Kind
+    /// The short label (§20.3): arrow and count only. The cluster sets it when two full pills don't fit.
+    public var compact: Bool
+    public var action: () -> Void
+    /// Marks the unread messages above as seen; only the unread pill shows the ×.
+    public var onMarkRead: (() -> Void)?
+
+    @State private var hovering = false
+    @State private var pressed = false
+    @FocusState private var focused: Bool
+    @Environment(\.zeusPalette) private var palette
+
+    /// The pill's minimum height: the standard 22-pt target.
+    public static let minHeight: CGFloat = 22
+    /// VoiceOver label of the ×.
+    public static let markReadLabel = "Mark unread messages as read"
+    /// Tooltip of the ×.
+    public static let markReadTooltip = "Mark as read"
+
+    public init(_ kind: Kind, compact: Bool = false, onMarkRead: (() -> Void)? = nil, action: @escaping () -> Void) {
+        self.kind = kind
+        self.compact = compact
+        self.onMarkRead = onMarkRead
         self.action = action
     }
 
-    /// The pill's text: "↓ 3 new", or "↓ Latest" when nothing is new.
-    nonisolated public static func title(newCount: Int) -> String {
-        newCount > 0 ? "↓ \(newCount) new" : "↓ Latest"
+    /// The label split into the mark (arrow, count and the question's "?") and the words after it, if any.
+    nonisolated public static func parts(_ kind: Kind, compact: Bool = false) -> (mark: String, words: String?) {
+        let arrow = kind.direction == .up ? "↑" : "↓"
+        switch kind {
+        case .unread(let count):
+            return ("\(arrow) \(count)", compact ? nil : "unread")
+        case .latest(let newCount):
+            if newCount > 0 { return ("\(arrow) \(newCount)", compact ? nil : "new") }
+            return (arrow, compact ? nil : "Latest")
+        case .question(let count, _):
+            if compact { return ("\(arrow) ?", nil) }
+            return ("\(arrow) ?", count > 1 ? "\(count) questions" : "Question")
+        }
+    }
+
+    /// The pill's text: "↑ 3 unread", "↓ 2 new", "↓ Latest", "↑ ? Question", "↓ ? 2 questions"; short: "↑ 3", "↓", "↑ ?".
+    nonisolated public static func title(_ kind: Kind, compact: Bool = false) -> String {
+        let (mark, words) = parts(kind, compact: compact)
+        return words.map { "\(mark) \($0)" } ?? mark
+    }
+
+    /// VoiceOver label of the jump button; the same in both forms.
+    nonisolated public static func accessibilityLabel(_ kind: Kind) -> String {
+        switch kind {
+        case .unread(let count): "Jump to \(count) unread \(count == 1 ? "message" : "messages")"
+        case .latest(let newCount): newCount > 0 ? "\(newCount) new \(newCount == 1 ? "message" : "messages"). Jump to the newest message" : "Jump to the newest message"
+        case .question(let count, _): count > 1 ? "Jump to the next of \(count) questions" : "Jump to the next question"
+        }
+    }
+
+    /// Native tooltip of the jump button.
+    nonisolated public static func tooltip(_ kind: Kind) -> String {
+        switch kind {
+        case .unread: "Jump to the oldest unread message"
+        case .latest: "Jump to the newest message (⌘↓)"
+        case .question(let count, _): count > 1 ? "\(count) questions · Jump to the next (⌘J)" : "Jump to the next question (⌘J)"
+        }
     }
 
     public var body: some View {
-        Button(Self.title(newCount: newCount), action: action)
-            .buttonStyle(ZeusButtonStyle(newCount > 0 ? .primary : .secondary, size: .small))
-            .keyboardShortcut(.downArrow, modifiers: .command)
-            .accessibilityLabel(newCount > 0 ? "\(newCount) new messages. Jump to latest" : "Jump to latest")
+        let px = ZeusTheme.pixel
+        let (mark, words) = Self.parts(kind, compact: compact)
+        HStack(spacing: 0) {
+            PillButton(identifier: kind.identifier, label: Self.accessibilityLabel(kind), pressed: $pressed, focused: $focused, action: action) {
+                HStack(spacing: ZeusTheme.Spacing.xs) {
+                    Text(mark).foregroundStyle(kind.isNew ? palette.title : palette.secondaryText)
+                    if let words { Text(words).foregroundStyle(kind.isNew ? palette.text : palette.secondaryText) }
+                }
+                .zeusFont(.caption).lineLimit(1).fixedSize()
+                .padding(.horizontal, ZeusTheme.Spacing.s)
+                .padding(.vertical, ZeusTheme.Spacing.xs + px)
+                .frame(minHeight: Self.minHeight)
+            }
+            .help(Self.tooltip(kind))
+            .accessibilityValue(kind.direction == .up ? "above" : "below")
+            if let onMarkRead {
+                Rectangle().fill(palette.divider).frame(width: px).padding(.vertical, ZeusTheme.Spacing.xs + px)
+                MarkReadButton(action: onMarkRead)
+            }
+        }
+        // The capsule is as tall as its button, never the overlay it floats in.
+        .fixedSize()
+        .background {
+            ZStack {
+                if !pressed {
+                    PixelRoundedRectangle(steps: 1).fill(palette.shadow).offset(x: px, y: px * 2)
+                }
+                PixelFrame(outline: focused ? palette.focusRing : palette.outline, frame: nil,
+                           fill: hovering ? palette.field : palette.panel, steps: 1)
+            }
+        }
+        .offset(y: pressed ? px : 0)
+        .onHover { hovering = $0 }
+    }
+
+    /// The jump button: plain, focusable by Tab without the system's Keyboard Navigation setting, Return/Space activate.
+    private struct PillButton<Label: View>: View {
+        let identifier: String
+        let label: String
+        @Binding var pressed: Bool
+        /// The pill's focus state, so the capsule draws the ring when its button is focused.
+        var focused: FocusState<Bool>.Binding
+        let action: () -> Void
+        @ViewBuilder let content: () -> Label
+        @Environment(\.isEnabled) private var enabled
+
+        var body: some View {
+            SwiftUI.Button(action: action) { content().contentShape(Rectangle()) }
+                .buttonStyle(PressReporting(pressed: $pressed))
+                .focusable(false)
+                .focusable(enabled, interactions: .edit).focusEffectDisabled().focused(focused)
+                .onKeyPress(keys: [.space, .return]) { press in
+                    guard enabled, press.modifiers.intersection([.command, .option, .control]).isEmpty else { return .ignored }
+                    action(); return .handled
+                }
+                .accessibilityLabel(label)
+                .accessibilityIdentifier(identifier)
+        }
+    }
+
+    /// The ×: its own 22-pt target and focus stop inside the capsule; never jumps.
+    private struct MarkReadButton: View {
+        let action: () -> Void
+        @State private var hovering = false
+        @FocusState private var focused: Bool
+        @Environment(\.zeusPalette) private var palette
+        @Environment(\.isEnabled) private var enabled
+
+        var body: some View {
+            SwiftUI.Button(action: action) {
+                ZeusGlyph.GlyphShape(rows: ZeusGlyph.Symbol.close.rows, pixel: 1)
+                    .fill(hovering || focused ? palette.title : palette.secondaryText)
+                    .frame(width: 7, height: 7)
+                    .frame(width: ZeusJumpPill.minHeight, height: ZeusJumpPill.minHeight)
+                    .overlay(Rectangle().strokeBorder(focused ? palette.focusRing : .clear, lineWidth: ZeusTheme.pixel))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+            .focusable(enabled, interactions: .edit).focusEffectDisabled().focused($focused)
+            .onKeyPress(keys: [.space, .return]) { press in
+                guard enabled, press.modifiers.intersection([.command, .option, .control]).isEmpty else { return .ignored }
+                action(); return .handled
+            }
+            .onHover { hovering = $0 }
+            .help(ZeusJumpPill.markReadTooltip)
+            .accessibilityLabel(ZeusJumpPill.markReadLabel)
+            .accessibilityIdentifier(ZeusJumpPill.Identifier.markRead)
+        }
+    }
+
+    /// A plain style that tells the pill when its button is pressed, so the whole capsule drops onto its shadow.
+    private struct PressReporting: ButtonStyle {
+        @Binding var pressed: Bool
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.label
+                .onChange(of: configuration.isPressed) { _, now in pressed = now }
+        }
+    }
+}
+
+/// One or two jump pills on an edge of the thread (CONVERSATION.md §20.2): side by side, centered, the unread or
+/// latest pill first and the question pill second. When two full pills don't fit the width, both go short.
+/// Place it in `.overlay(alignment: .top)` or `.bottom` on the thread, and show or hide it with `transition`.
+public struct ZeusJumpPillCluster: View {
+    /// A pill and what its buttons do.
+    public struct Item: Identifiable {
+        public var kind: ZeusJumpPill.Kind
+        public var action: () -> Void
+        public var onMarkRead: (() -> Void)?
+        public var id: String { kind.identifier }
+
+        public init(_ kind: ZeusJumpPill.Kind, onMarkRead: (() -> Void)? = nil, action: @escaping () -> Void) {
+            self.kind = kind
+            self.onMarkRead = onMarkRead
+            self.action = action
+        }
+    }
+
+    /// The thread edge the cluster hugs; it decides which way the pills slide in.
+    public enum Edge: Sendable, Equatable { case top, bottom }
+
+    public var edge: Edge
+    public var items: [Item]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.zeusAnimationsActive) private var animationsActive
+
+    /// Fade and slide length, in seconds.
+    public static let duration: TimeInterval = 0.12
+    /// How far a cluster slides in from its edge, in points.
+    public static let slide: CGFloat = 4
+    /// The width the pills keep clear on each side of the thread before the short labels kick in.
+    public static let margin: CGFloat = ZeusTheme.Spacing.m
+
+    public init(edge: Edge, items: [Item]) {
+        self.edge = edge
+        self.items = items
+    }
+
+    /// The cluster's enter and exit: a fade with a 4-pt slide from its edge, opacity only under Reduce Motion,
+    /// nothing while the surface's animations are paused.
+    public static func transition(edge: Edge, reduceMotion: Bool, animationsActive: Bool = true) -> AnyTransition {
+        guard animationsActive else { return .identity }
+        let fade = AnyTransition.opacity.animation(.easeOut(duration: duration))
+        if reduceMotion { return fade }
+        return .offset(y: edge == .top ? -slide : slide).combined(with: fade)
+    }
+
+    /// The transition for the current environment, for a caller that already reads it.
+    public var transition: AnyTransition {
+        Self.transition(edge: edge, reduceMotion: reduceMotion, animationsActive: animationsActive)
+    }
+
+    public var body: some View {
+        ViewThatFits(in: .horizontal) {
+            row(compact: false)
+            if items.count > 1 { row(compact: true) }
+        }
+        .padding(.horizontal, Self.margin)
+        .padding(edge == .top ? .top : .bottom, ZeusTheme.Spacing.xs)
+        .animation(reduceMotion || !animationsActive ? nil : .easeOut(duration: Self.duration), value: items.map(\.id))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(edge == .top ? "Jump up" : "Jump down")
+    }
+
+    private func row(compact: Bool) -> some View {
+        HStack(spacing: ZeusTheme.Spacing.xs) {
+            ForEach(items) { item in
+                ZeusJumpPill(item.kind, compact: compact, onMarkRead: item.onMarkRead, action: item.action)
+            }
+        }
     }
 }
 

@@ -90,8 +90,11 @@ private struct MockPanel: View {
                 }
             }
             .padding(.bottom, ZeusTheme.Spacing.s)
-            .overlay(alignment: .bottomTrailing) {
-                ZeusJumpToLatest(newCount: 2) {}.offset(y: -ZeusTheme.Spacing.xs)
+            .overlay(alignment: .top) {
+                ZeusJumpPillCluster(edge: .top, items: [.init(.unread(3), onMarkRead: {}) {}, .init(.question(count: 1, direction: .up)) {}])
+            }
+            .overlay(alignment: .bottom) {
+                ZeusJumpPillCluster(edge: .bottom, items: [.init(.latest(newCount: 2)) {}])
             }
             VStack(alignment: .leading, spacing: ZeusTheme.Spacing.s) {
                 ZeusActivityRow("Uploading v0.3", progress: 0.4)
