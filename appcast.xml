@@ -6,6 +6,33 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.2.8</title>
+      <pubDate>Sat, 17 Oct 2026 02:17:22 GMT</pubDate>
+      <sparkle:version>21</sparkle:version>
+      <sparkle:shortVersionString>0.2.8</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<ul dir="auto">
+<li><strong>Choose your text size.</strong> Settings › Appearance has a new <strong>Text size</strong> control under Conversation font: Small, Default, Large or Larger. It sizes the conversation, the message box, the status line, the speech bubble and attachment chips. The pixel font stays sharp at every size.</li>
+<li><strong>Jump around the conversation, Slack-style.</strong> Small floating buttons now help you find your place:
+<ul dir="auto">
+<li><strong>↑ N unread</strong> at the top takes you to the oldest message you haven't read. Its <strong>×</strong> marks them all as read.</li>
+<li><strong>↓ N new</strong> or <strong>↓ Latest</strong> at the bottom brings you back to the newest message when you've scrolled up.</li>
+<li><strong>? Question</strong> appears when one of your assistant's questions is off screen, with an arrow pointing to it. Click again to step through open questions, together with the status line.</li>
+</ul>
+</li>
+<li>At narrow widths the buttons shrink to an arrow and a count.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.2.8/Zeus-0.2.8.zip" type="application/octet-stream" sparkle:edSignature="chtshPnCTRgksScJfTjUsKNiwUt73DgheIYY8N92c+Cch4W/3GgpwNr5Mh6tX80IYZZV5gPGhRdurM8bFcq1BA==" length="13497784"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.2.7</title>
       <pubDate>Fri, 16 Oct 2026 20:23:08 GMT</pubDate>
       <sparkle:version>20</sparkle:version>
