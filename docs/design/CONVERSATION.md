@@ -811,4 +811,4 @@ ZeusJumpPillCluster(edge: .top, items: [.init(.unread(3), action: …, onMarkRea
 
 ### 20.7 Renders
 
-`jb1/jb1-<state>-<theme>-<scheme>-<font>-<size>` from `build/jb1-renders/`: `unread` (top, with ×), `latest`, `new` (bottom, `↓ 2 new`), `question-above` and `question-below` (two pills in a cluster), `narrow` (the short row at a 260-pt thread), `short` (a 160-pt thread with both clusters), light and dark, both fonts, Default and Larger.
+`jb1/jb1-<state>-<theme>-<scheme>-<font>-<size>` from `build/jb1-renders/`: `unread` (top, with ×), `latest`, `new` (bottom, `↓ 2 new`), `question-above` and `question-below` (two pills in a cluster), `narrow` (a 260-pt thread: the full row still fits at Default, and the short row shows at Larger), `short` (a 160-pt thread with both clusters), light and dark, both fonts, Default and Larger.
