@@ -199,6 +199,7 @@ All keys work while the panel is key. Only ⌥⌘Z is global.
 | Space | a focused button | Activate it (standard) |
 | Esc | panel | Close the panel and return focus. If the warning popover is open, close only the popover. |
 | ⌘, | panel | Settings |
+| Esc, ⌘[, ⌘O, ⌘⇧R, ⌃⌘F, ⌘F, ⌃⌘←/→, ⌘⇧', ⌥⌘U | document viewer | §21.10 |
 
 Notes:
 - Register ⌥⌘Z with Carbon `RegisterEventHotKey`. It needs no Accessibility permission. If registration fails because another app owns the combination, show "⌥⌘Z is in use; choose another" in Settings → Agent.
@@ -649,7 +650,7 @@ Here's the first draft. Slides 7–9 need your numbers.      body, as before
 
 ### 18.2 Click, hover, reveal
 
-- **Click anywhere on the chip = Open**, through `AttachmentTarget.action(for:)` exactly as today: apps, scripts, packages, aliases and executables are shown in Finder instead and the safety caption appears under the bubble ("Zeus shows apps and scripts in Finder instead of opening them.", `secondaryText`); folders open in Finder; links open in the browser. It is a first-click target: the panel needn't be key. The click-time errors stay: "This attachment has an invalid target." and "Could not open <name>." (`palette.destructive`, under the bubble).
+- **Click anywhere on the chip = Open**: a file or folder opens in the document viewer (§21); a link opens in the browser; apps, scripts, packages, aliases and executables are shown in Finder instead (`AttachmentTarget.action(for:)` decides) and the safety caption appears under the bubble ("Zeus shows apps and scripts in Finder instead of opening them.", `secondaryText`); folders open in Finder; links open in the browser. It is a first-click target: the panel needn't be key. The click-time errors stay: "This attachment has an invalid target." and "Could not open <name>." (`palette.destructive`, under the bubble).
 - **Tooltip** on the chip: the location (`AttachmentTarget.locationCaption`, the folder in `~` form) for files and folders, the host for links; for a reveal-only target the safety caption instead.
 - **Reveal icon:** `magnifyingglass` at 11 pt, in a 20×20 target at the trailing end of the name line. The slot is always reserved so the name's truncation never shifts; the icon is drawn only while the chip is hovered or focused, `secondaryText`, and `title` while the icon itself is hovered or focused. Click: Show in Finder (`reveal: true`), without opening. Tooltip "Show in Finder". Not shown for links, for reveal-only targets (the chip's own click already reveals) or when the file is missing.
 - **Missing file or folder** (`url(for:)` resolves but nothing is there when the chip appears, re-checked on click): a third line "Not found" in `secondaryText` under the summary (or under the name when there is no summary); the name goes `mutedText`; no reveal icon. Click: Show in Finder of the nearest existing parent folder, so the user can see where it was; tooltip "Zeus will show the folder it was in." Copy Path still works.
@@ -672,11 +673,11 @@ Copy Path puts the expanded absolute path on the pasteboard (`~` resolved, symli
 
 ### 18.4 Peek bubble
 
-The peek shows the card's **first** attachment as a chip in place of the old "1 attachment" caption: icon, name on one line, summary on **one** line ("…"), no reveal icon, no More, no context menu. Clicking the chip opens the attachment with the same routing as §18.2 (a reveal-only target reveals; nothing else changes in the peek). When the card has more, a caption under the chip in `secondaryText`: "and 1 more attachment" / "and 2 more attachments"; clicking it opens the panel at the card. The body keeps the limit CONTRACT §10.7 sets (up to 6 lines, then "…" and "More"); the chip never shortens it, and the §14.2 anatomy's older 3/2-line figures do not apply (A9 superseded them). Legacy or link attachments without a summary are a one-line chip.
+The peek shows the card's **first** attachment as a chip in place of the old "1 attachment" caption: icon, name on one line, summary on **one** line ("…"), no reveal icon, no More, no context menu. Clicking the chip opens the panel straight into the viewer for that attachment (§21.1); a link opens in the browser and a reveal-only target reveals, as §18.2, without opening the panel. When the card has more, a caption under the chip in `secondaryText`: "and 1 more attachment" / "and 2 more attachments"; clicking it opens the panel at the card. The body keeps the limit CONTRACT §10.7 sets (up to 6 lines, then "…" and "More"); the chip never shortens it, and the §14.2 anatomy's older 3/2-line figures do not apply (A9 superseded them). Legacy or link attachments without a summary are a one-line chip.
 
 ### 18.5 Keyboard and accessibility
 
-- The chip is one focus stop in the §8 Tab order (where Reveal then Open used to be two). Return or Space opens, as a click does. ⌘Return shows in Finder when that item exists. The "More" button is the next stop when present; Return toggles it.
+- The chip is one focus stop in the §8 Tab order (where Reveal then Open used to be two). Return or Space opens, as a click does (the viewer for files and folders, §21). ⌘Return shows in Finder when that item exists. The "More" button is the next stop when present; Return toggles it.
 - VoiceOver: the chip is one element, label "<kind>: <name>, <summary>" ("File: Q3 Planning.key, 12 slides built from your planning notes."), with "Not found" or "Can't be opened" appended in those states. Custom actions: "Open" (or "Show in Finder" when that is what the click does), "Show in Finder", "Copy Path" or "Copy Link", and "Show the full summary" while the summary is clipped. The reveal icon is `accessibilityHidden`: its action is in the chip.
 - Reduce Motion: the More/Less expansion is instant.
 
@@ -749,7 +750,7 @@ Slack-style floating buttons over the thread: one at the top for what the user h
 - **Direction.** The question pill's arrow points at the *next* question the shared cycle will jump to; the pill sits in the cluster on that side. The unread pill always points up and the latest pill always down.
 - **Counts** are plain integers in the label, never "9+"; the pixel font is monospaced, so the pill just widens.
 - **Opening the panel** scrolls to the bottom and marks what shows as seen (§2). The pills are evaluated after that scroll lands, so nothing flashes during the open. Unread state persists across opens (`seenIDs`); an old pile of unseen messages shows the unread pill on the next open too, which is the point.
-- **Not shown:** in the peek bubble, in an empty thread, or while the panel is closing. Progress updates and typing never count as new.
+- **Not shown:** in the peek bubble, in an empty thread, or while the panel is closing. Progress updates and typing never count as new. In the document viewer the clusters float over the document with the rules in §21.9.
 
 ### 20.2 Anatomy and placement
 
@@ -812,3 +813,144 @@ ZeusJumpPillCluster(edge: .top, items: [.init(.unread(3), action: …, onMarkRea
 ### 20.7 Renders
 
 `jb1/jb1-<state>-<theme>-<scheme>-<font>-<size>` from `build/jb1-renders/`: `unread` (top, with ×), `latest`, `new` (bottom, `↓ 2 new`), `question-above` and `question-below` (two pills in a cluster), `narrow` (a 260-pt thread: the full row still fits at Default, and the short row shows at Larger), `short` (a 160-pt thread with both clusters), light and dark, both fonts, Default and Larger.
+
+## 21. Document viewer (DV1)
+
+Click a file or folder chip and the panel turns into a reader for it, with the composer still underneath. The user asked for this as a productivity feature: room to read, real rendering, live updates when the assistant edits the file, and a way to talk about the document without leaving it. Components: `ZeusViewerHeader` (with `ZeusViewerHeaderModel` and `ZeusViewerMenuItem`), `ZeusViewerContextLine`, `ZeusViewerStatus` (its `Copy` holds every state message), `ZeusFolderRow`, `ZeusFindBar` in `ZeusViewer.swift`, and `ZeusMarkdown`'s document layout (`layout: .document`, `documentSegments`, `HeadingLevelAttribute`); native text hosts take sizes from `ZeusTextRole.size(for:scale:)` and fonts from `ZeusFonts.ctFont(_:choice:scale:)`; the app owns the viewer state, the back stack, the renderers (text, PDFKit, Quick Look, images), file watching and the panel resizing.
+
+### 21.1 Opening, Back and the stack
+
+- **Opens from** a file or folder chip in the thread (click, Return or Space, §18.5), a chip in the peek bubble (the panel opens straight into the viewer), a row in a folder listing, or a local link in a Markdown document. Links (`url`) keep opening in the browser. Reveal-only targets (apps, scripts, packages, aliases, executables: `AttachmentTarget.requiresReveal`) never enter the viewer: the chip or row shows them in Finder exactly as today, with the safety caption.
+- **The file is read at click time** through `AttachmentTarget`: resolved, revalidated, and only that file. Nothing is fetched from the network, ever.
+- **Back** (`‹ Messages`, Esc, ⌘[) pops one level: a linked document returns to the document that linked it, a previewed file returns to its folder listing, and the root returns to the thread. Leaving the viewer restores the thread **exactly**: the same scroll offset, keyboard focus on the chip you came from (or the composer if you came from the peek), and the composer draft untouched. Esc closes the panel only when there is nothing to go back to; with the find bar open, Esc closes the find bar first.
+- **The stack is per open.** Closing the panel while a document shows keeps the viewer; reopening the panel returns to it (the thread's focus and scroll are still saved underneath). Clear Conversation or Delete Everything leaves the viewer and drops the stack.
+- **Transition:** the thread slides out to the left while the viewer slides in from the right, 180 ms ease-out, the header and the strip staying put; Back reverses it. A step to the next attachment slides left, to the previous right; a folder → file or document → linked-document push slides like an open. Reduce Motion: a 120 ms cross-fade, no movement.
+
+### 21.2 Size: chat size and Expanded
+
+- **Chat size** is the default. The viewer takes the panel's current width (the user may have resized it, `ConversationWidth`) and the thread's **maximum** height for this screen, `min(maxThreadHeight, maxHeightFraction × visibleFrame.height − composer − strip)`, not the content-fitting height a short thread has, so a document never opens into a 160-pt slot. The panel grows per §2's anchor rule and keeps its tail on the avatar.
+- **Expand** (the header's ⤢ icon, ⌃⌘F, tooltip "Expand"): the panel animates to the reading size: width `ConversationWidth.clamp(2 × chat width, screenWidth)` (twice the chat width, at most half the screen), height the full visible frame minus 8 pt margins, re-anchored so it stays on screen with the tail still pointing at the avatar (offset clamped as §2). The content re-wraps live. **Collapse** (the same icon, now ⤡, tooltip "Collapse", ⌃⌘F) animates back. 200 ms ease-in-out; Reduce Motion: the frame jumps.
+- **Memory:** `viewer.expanded` persists; the next document opens at the size the last one was left in. Back to Messages always returns to chat size (animated, or instantly under Reduce Motion), so the thread never appears at reading size.
+- The user's own width drag and ⌥⌘←/→ keep working in the viewer; they set the chat width (and the expanded width follows as 2× of it).
+
+### 21.3 Header
+
+```
+│ ‹ Messages                      [▣ Open in Keynote]  ⌕  ⋯  ⤢ │  row 1: actions, 24 pt
+│ Q3 Planning.md · ~/Documents/Talks                  ‹ 2/3 › │  row 2: title, 24 pt
+│ From: Here's the first draft. Slides 7–9 need your… Updated │  row 3: context line, 20 pt
+├──────────────────────────────────────────────────────────────┤  1 px, palette.divider
+```
+
+- **Row 1.** Leading: `‹ Messages` in `palette.title`, `.caption`, a `ZeusGlyph(.left)` before the word, one 22-pt button with the strip's focus underline (§15.1); it reads "‹ Talks" (the folder's name) or "‹ Back" (a linked document) when Back pops to a folder or a document instead of the thread. Trailing, 2 pt apart, each a 22-pt target: **Open in <App>** as a `ZeusButtonStyle(.secondary, size: .small)` with the default app's 12-pt icon (`NSWorkspace` icon, supplied by the app as an `Image`) before the name, tooltip "Open in Keynote (⌘O)"; **Show in Finder** as the chip's `magnifyingglass` at 11 pt (`secondaryText`, `title` on hover or focus), tooltip "Show in Finder (⌘⇧R)"; **⋯** as `ZeusGlyph(.more)`, tooltip "More"; **Expand / Collapse** as a 12-px pixel icon (`ZeusViewerHeaderModel.Icon.expand` / `.collapse`, drawn like the strip's icons), tooltip "Expand (⌃⌘F)" / "Collapse (⌃⌘F)". When the row doesn't fit, "Open in Keynote" drops its words and keeps the icon (`ViewThatFits`); the tooltip keeps the name. No default app: the button reads "Open" with no icon.
+- **Row 2.** The file name, `.body` in `palette.text`, one line, `truncationMode(.middle)`; then " · " and the location caption (`AttachmentTarget.locationCaption`, `secondaryText`) which truncates first. Folders show the folder name. Trailing, when the message has several attachments: `‹ 2/3 ›`, the two glyphs as 22-pt buttons (`secondaryText`, `title` on hover), tooltips "Previous attachment (⌃⌘←)" / "Next attachment (⌃⌘→)", the count in `.caption` `secondaryText`. Stepping keeps the stack at the root.
+- **Row 3, the context line** (`ZeusViewerContextLine`): "From: " in `secondaryText` then the message's takeaway, `.caption` in `palette.text`, one line, tail-truncated: the card's title if it has one, else the first sentence of its body (`ZeusMarkdown.spokenText`). The whole line is one button: it goes Back to Messages scrolled to that message with its chip focused; tooltip "Go to this message". A file opened from a folder reads "In: <folder name>"; a linked document reads "Linked from: <document name>". Trailing: the live mark (§21.8) or, for a PDF, "Page 3 of 12" in `secondaryText`.
+- **The ⋯ menu:** Copy Path · Open With ▸ (the app supplies the apps) · Show Source / Show Rendered (Markdown only, ⌥⌘U) · Ask About This · Quote in Reply (enabled with a selection) · Find… (⌘F, when the renderer supports it).
+- Colors from the palette only; the rows sit on `palette.panel` with the strip's 1-px `divider` under row 3. Everything scales with `\.zeusFontScale` except the icons and the 22-pt targets (§19.3).
+
+### 21.4 Content area
+
+The area between the header and the status strip. One renderer at a time, chosen by type (`UTType`), in this order: Markdown (`.md`, `.markdown`, `net.daringfireball.markdown`), plain text and code (`public.plain-text`, `public.source-code`, `.json`, `.yaml`, `.csv` is Quick Look), images (`public.image`), PDF, everything else Quick Look, and `ZeusViewerStatus` when none applies. Padding `Spacing.m`; content scrolls vertically inside the area; the JB1 pills float over it (§21.9).
+
+| Kind | Rendering |
+|---|---|
+| **Markdown** | `ZeusMarkdownText(…, layout: .document)` (§21.5), selectable, wrapped at the content width. **Source** toggle (⋯ menu, ⌥⌘U) shows the file as text/code; the choice is per document and not persisted. Local images from the document's own folder render inline; remote images are never loaded. |
+| **Text and code** | `.body` in `palette.text` (both fonts are monospaced), selectable, soft-wrapped at the content width, tabs as four spaces, no line numbers. Links in a native text host take `palette.link` with a single underline, as in bubbles. An empty file shows "This file is empty." (§21.7). |
+| **Images** | Native, centered in the area (both axes) on the panel colour; fitted to the width when the image is wider than the area, at its natural size when smaller (never upscaled); ⌘+ / ⌘− / ⌘0 (fit) and pinch zoom; scrolls when larger than the area. Animated images play unless Reduce Motion is on. |
+| **PDF** | PDFKit, continuous vertical pages fitted to the width on the panel colour (the view's background is `palette.panel`, not PDFKit's grey), the same zoom keys, the page indicator in the context line; ⌘F searches. |
+| **Everything else** (docx, xlsx, pages, keynote, csv, html, video, …) | Quick Look (`QLPreviewView`), the same preview as Finder's Space, rendered out of process, filling the area with no chrome of its own. Quick Look's own interaction (pages, playback) is kept. No find. |
+| **Folder** | A folder listing (§21.6). |
+
+- **Size cap:** text, code and Markdown files over **5 MB** show the first 5 MB, cut at a line end, then a `ZeusViewerStatus` footer: "Showing the first 5 MB." with "Open in <App> for the rest." PDFs, images and Quick Look previews have no cap of their own.
+- **Selection** is native text selection in text, Markdown (rendered and source) and PDF. The selection's context menu adds "Quote in Reply" (§21.8) above the system items.
+- **Find** (⌘F, text, Markdown and PDF): `ZeusFindBar` slides down under the header (120 ms, instant under Reduce Motion): a `ZeusTextField("Find")`, a count "2 of 7" (`.caption`, `secondaryText`; "No matches" when none), `‹` `›` glyph buttons (22 pt, tooltips "Previous (⇧Return)" / "Next (Return)"), and "Done" as a plain `title`-coloured text button (Esc). Matches are highlighted in `palette.accent` at 35 %, the current one in full `accent` with `onAccent` text, and the view scrolls the current match to the middle. The bar keeps its text while the document is open; ⌘F with the bar open selects the field's text.
+
+### 21.5 Markdown document styles
+
+`ZeusMarkdown.attributed(_:choice:palette:layout:)` gains `layout: .message` (today's rendering, the default) and `.document`. The document layout is for reading at length, in both fonts and every theme:
+
+| Block | Document layout |
+|---|---|
+| Paragraph | `.body`, `palette.text`, one blank line between blocks, single line breaks kept (as today). |
+| H1 | `.title` role in `palette.title`, a blank line before and after. |
+| H2 | body size, `palette.title`, strongly emphasised (bold in SF Mono; the pixel font's bold is the title colour already), a blank line before, one newline after. |
+| H3–H6 | body size, `palette.text`, strongly emphasised; in the pixel font they read as H2 does (two heading levels is what the font gives; the structure is still in `spokenText` for VoiceOver). |
+| Lists | `•` / `–` / `1.` markers in `secondaryText` with two-space nested indents, as today. |
+| Task items (`- [ ]`, `- [x]`) | the marker becomes `□` (`secondaryText`) or `■` (`palette.title`); a done item's text goes `secondaryText`. Both glyphs are in Departure Mono. This one also applies to messages, so an assistant's checklist reads the same in a bubble. |
+| Quotes | `▌ ` bar and text in `secondaryText`, as today. |
+| Code blocks | the tinted block pads to the longest line instead of the message layout's 36-column cap, so it reads as one block across the document; long lines soft-wrap. Inline code keeps its tint. |
+| Tables | monospaced columns: each cell padded to its column's width, cells joined with ` │ `, the header row emphasised and followed by a rule row of `─` and `┼`; a table wider than the area wraps its rows rather than clipping (not pretty, but never hidden). |
+| Rules | a `─` line 24 characters long, `secondaryText`. |
+| Links | `palette.link`, underlined. A relative or `file:` link to a previewable local file opens it in the viewer (pushing the stack); `http(s)` opens the browser; anything else does nothing and the tooltip shows the target. |
+| Images | an image on its own line (`![alt](path)`) splits the text: `ZeusMarkdown.documentSegments` returns `.text` and `.image(path, alt)` runs; the app draws a local image from the document's folder (fitted to the width, at most 320 pt tall, the alt text as a caption in `secondaryText` under it) and never loads a remote one: it shows "[image: alt]" in `secondaryText` instead. Inline images inside a sentence render as that placeholder too. |
+
+The same `spokenText` serves VoiceOver in both layouts.
+
+### 21.6 Folder listing
+
+```
+│ ▸ Notes                      Folder        Today 8:02  │
+│ ▢ Outline.md                 Markdown      Yesterday    │
+│ ▢ Q3 Planning.key            Keynote       12 Oct       │
+```
+
+- One `ZeusFolderRow` per entry, 22 pt min, full width, `Spacing.xxs` apart: the kind's SF Symbol at 11 pt (`folder.fill`, `doc.fill`, the chip's symbols) in `secondaryText`, the name `.body` in `palette.text` one line middle-truncated, the kind (`UTType.localizedDescription`, or "Folder") and the modified date (§3's divider format without the time for older days) both `.caption` `secondaryText`, right-aligned in two columns (kind 80 pt, modified 76 pt at the Default size, scaling with the caption) that drop one at a time before the name would truncate (`ViewThatFits`: kind goes first; the tooltip keeps "Kind · Modified"). At the chat width that keeps both columns for names up to about 16 characters.
+- **Kind:** "Folder" for folders; the type's description with its first letter capitalised ("Text", "PDF document"); a file without a description shows its extension in capitals ("SWIFT"), or "Document" when it has none.
+- **Order:** folders first, then files, each A–Z case-insensitive. Hidden entries (dot files, `.DS_Store`) are skipped. At most 500 rows, then one caption line "and 212 more · Show in Finder" whose link reveals the folder.
+- **Click** (or Return/Space on a focused row): a file previews, pushing the stack; a folder steps into it, with `‹ <parent name>` as Back. Reveal-only entries show in Finder and the safety caption appears as a caption line under the list for 4 s. Hover: `palette.field` fill; focus: the field focus ring, as chips.
+- **Header actions** act on the folder being shown: Open opens it in Finder (the button reads "Open in Finder" with Finder's icon), Show in Finder selects it in its parent, Copy Path copies its path.
+- **Empty:** `ZeusViewerStatus` "This folder is empty." **Unreadable:** "Zeus can't read this folder." with Show in Finder.
+- Live: the listing refreshes when the folder changes (§21.8), keeping the scroll position and the selection.
+
+### 21.7 States
+
+`ZeusViewerStatus(icon:name:detail:message:actions:)` centers in the content area: the file's icon (the app passes Finder's 32-pt icon as an `Image`; `doc.fill` at 24 pt in `secondaryText` when there is none), the name `.body` `palette.text` (or `mutedText` when missing), a detail line `.caption` `secondaryText` ("Keynote · 1.2 MB · Modified Today 8:02"), the message `.body` `palette.text` centered and wrapped, then the actions as small buttons: the first `.primary`, the rest `.secondary`.
+
+| State | Message | Actions |
+|---|---|---|
+| Unsupported (no renderer and Quick Look has no preview) | "No preview for this kind of file." | Open in <App> · Show in Finder |
+| Missing (gone at click time or while open) | "Not found. Zeus will show the folder it was in." | Show in Finder (the nearest existing parent) |
+| Unreadable (permission denied, unreadable bytes) | "Zeus can't read this file." | Open in <App> · Show in Finder |
+| Too large (text, code, Markdown over 5 MB) | a footer under the shown part: "Showing the first 5 MB." | Open in <App> for the rest |
+| Empty file | "This file is empty." | Open in <App> · Show in Finder |
+| Empty folder | "This folder is empty." | Open in Finder |
+| Loading | nothing for the first 150 ms, then "Loading…" `.caption` `secondaryText` centered | none |
+| Reveal-only reached by a link or listing | "Zeus shows apps and scripts in Finder instead of opening them." | Show in Finder |
+
+The header stays in every state, so Back, Open and Show in Finder keep working.
+
+### 21.8 Live updates, Ask and Quote
+
+- **Live:** the app watches the open file (and a listed folder). On change the renderer refreshes in place, keeping the scroll offset as a fraction of the content (and the current find match if it still exists), and the context line's trailing end shows **"Updated"** in `palette.positive`, `.caption`, for 2 s with a 300 ms fade (opacity only; nothing moves). VoiceOver: "Document updated". A file that disappears turns into the Missing state; one that reappears at the same path renders again.
+- **Ask about this.** The composer stays under the viewer and its placeholder reads "Ask about Q3 Planning.md…". Typing the first character attaches the document to the draft: the usual draft chip (`ZeusAttachmentChip`, §5's draft flow) appears above the composer with its ×; removing it detaches and the draft doesn't re-attach until the next document. "Ask About This" in the ⋯ menu or the context line attaches it and focuses the composer without typing. Sending keeps the viewer open; the user bubble lands in the thread behind it, and the reply shows up as a `↓ 1 new` pill (§21.9).
+- **Quote in reply** (⌘⇧', the selection's context menu, or the ⋯ menu): the selected passage goes into the composer as a Markdown quote, each line prefixed `> `, followed by a blank line with the caret after it, appended after a blank line if the draft already has text; the document is attached as above. Passages are trimmed and capped at 2 000 characters (the rest is cut with "…"). The user bubble renders it with `▌` bars.
+- **Stepping** (⌃⌘← / ⌃⌘→, the `‹ ›` in row 2) moves between the message's attachments in their order, wrapping at neither end (the glyph goes 50 % when there is nothing further). ⌥⌘←/→ stay the panel's width keys (§2), which is why stepping doesn't use them.
+
+### 21.9 Pills, strip and interruptions
+
+- New messages never leave the viewer. The JB1 clusters float over the content area at its top and bottom: `↓ 1 new` whenever unseen messages exist anywhere in the thread (there's no "Latest" in the viewer), and `↑ ? Question` / `↓ ? 2 questions` when a question is open (the arrow is the question's position in the thread, as the strip would jump). Clicking a pill goes Back to Messages at that target with the same jump as in the thread; the viewer stack is dropped.
+- The status strip stays live under the content; its jump and Skip work and also leave the viewer.
+- Opening the panel from the peek bubble's chip goes straight into the viewer for that attachment (no thread flash).
+
+### 21.10 Keys and accessibility
+
+| Key | Does |
+|---|---|
+| Esc, ⌘[ | Back (one level; the find bar closes first; the panel closes only from the thread) |
+| ⌘O | Open in <App> |
+| ⌘⇧R | Show in Finder |
+| ⌃⌘F | Expand / Collapse |
+| ⌘F | Find (text, Markdown, PDF) |
+| ⌃⌘←, ⌃⌘→ | Previous / next attachment of the same message |
+| ⌘⇧' | Quote in Reply |
+| ⌥⌘U | Show Source / Show Rendered (Markdown) |
+| ⌘+, ⌘−, ⌘0 | Zoom in, out, fit (images, PDF) |
+| Return, Space (chip or row) | Open in the viewer; ⌘Return still shows in Finder |
+
+- **Tab order:** `‹ Messages`, Open in <App>, Show in Finder, ⋯, Expand, the step buttons, the context line, the content (one focusable scroll area; a folder listing's rows are each a stop), the find bar's field and buttons when open, then the composer, which wraps to the start.
+- **VoiceOver:** the viewer is a group "Document: Q3 Planning.md, Markdown" (or "Folder: Talks"); opening announces "Showing Q3 Planning.md"; row 1's buttons carry their tooltip text without the key; the context line is "From the message: <takeaway>"; folder rows read "<name>, <kind>, modified <date>"; the find count is announced as it changes. Back puts focus on the chip it came from, which VoiceOver reads as usual.
+- **Reduce Motion:** cross-fades for open, Back and stepping; the Expand frame jumps; the find bar and the Updated mark appear without movement. **Reduce Transparency:** the panel is opaque already.
+
+### 21.11 Renders
+
+`dv1/dv1-<kind>-<size>-<theme>-<scheme>-<font>` from `build/dv1-renders/`: `md`, `md-source`, `text`, `image`, `pdf`, `quicklook` (a .docx), `folder`, `missing`, `too-large`, `unsupported`, `find` (the bar with a current match), `quote` (the composer holding a quoted passage and the draft chip), at `chat` and `expanded`, light and dark, both fonts.

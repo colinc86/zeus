@@ -42,6 +42,7 @@ final class CardStore: CardStoring {
     /// App-local option actions are handled before any answer is saved or delivered.
     @ObservationIgnored var localActionHandler: ((Card, CardResponse) -> Bool)?
     @ObservationIgnored var responseHandler: ((Card, CardResponse) -> Void)?
+    private(set) var conversationClearRevision = 0
     @ObservationIgnored var onHistoryCleared: (() -> Void)?
     @ObservationIgnored var pendingHistoryIDs: (() -> Set<String>)?
     @ObservationIgnored var onRatingRead: ((String) -> Void)?
@@ -255,6 +256,7 @@ final class CardStore: CardStoring {
         pruneNoticeActions()
         pendingAppChanges.removeAll()
         if pendingOutgoingStates.isEmpty && pendingAppChanges.isEmpty { persistenceError = nil }
+        conversationClearRevision += 1
         onHistoryCleared?()
         return true
     }

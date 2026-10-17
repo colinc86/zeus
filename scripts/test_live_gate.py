@@ -37,6 +37,13 @@ class GateTests(unittest.TestCase):
         self.assertNotIn('--record',gate.command('sa4','claude',out,True,False))
         self.assertIn('--native-updater',gate.command('pc1','claude',out,False,True))
         self.assertNotIn('scripts/build.sh',gate.command('e2e','—',out,False,False))
+    def test_document_probe_is_in_quick_gate(self):
+        self.assertIn(('dv1', 'claude', 'run'), gate.plan(('claude',), tuple(gate.PROBES), {'claude'}))
+        argv = gate.command('dv1', 'claude', pathlib.Path('/tmp/private-proof'), True, False)
+        self.assertIn('Zeus/App/Tests/Runtime/DV1LiveProbe.py', argv)
+        self.assertIn('--quick', argv)
+        self.assertNotIn('--record', argv)
+
     def test_private_environment_does_not_copy_credentials_or_tmux(self):
         root=create_root('zsa4_')
         try:

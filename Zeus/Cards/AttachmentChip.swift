@@ -24,6 +24,7 @@ struct AttachmentChip: View {
     @State private var feedback: String?
     @FocusState private var focused: Control?
     @Environment(\.zeusPalette) private var palette
+    @Environment(\.openDocument) private var openDocument
 
     private var summary: String? {
         guard let value = attachment.summary?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return nil }
@@ -32,7 +33,7 @@ struct AttachmentChip: View {
     private var overflow: Bool { fullHeight > limitedHeight + 0.5 }
     private var isExpanded: Bool { expanded || previewInteraction == .expanded }
     private var isHovered: Bool { previewInteraction.map { $0 == .hover } ?? hovering }
-    private var isFocused: Bool { previewInteraction.map { $0 == .focused } ?? (focused != nil) }
+    private var isFocused: Bool { previewInteraction.map { $0 == .focused } ?? (focused != nil || (entryID != nil && threadFocus?.wrappedValue?.entryID == entryID)) }
     var body: some View {
         let state = Self.targetState(attachment)
         let canReveal = attachment.kind != .url && state != .invalid
@@ -60,7 +61,7 @@ struct AttachmentChip: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusable(false).focusable(interactions: .edit).focusEffectDisabled()
-                .focused($focused, equals: .open).id(target(.open))
+                .modifier(AttachmentControlFocus(local: $focused, control: .open, thread: threadFocus, target: target(.open))).id(target(.open))
                 .accessibilityLabel(Self.accessibilityLabel(attachment))
                 .accessibilityActions {
                     if state != .invalid { Button(state == .open ? "Open" : "Show in Finder") { activate(.open) } }
@@ -84,7 +85,7 @@ struct AttachmentChip: View {
                 if !compact, summary != nil, overflow || isExpanded {
                     KeyboardButton(isExpanded ? "Less" : "More") { expanded = !isExpanded }
                         .buttonStyle(.plain).zeusFont(.caption).foregroundStyle(palette.title)
-                        .focused($focused, equals: .more).frame(minHeight: 22).padding(.leading, 26).padding(.bottom, 6)
+                        .modifier(AttachmentControlFocus(local: $focused, control: .more, thread: threadFocus, target: target(.more))).frame(minHeight: 22).padding(.leading, 26).padding(.bottom, 6)
                         .accessibilityLabel(isExpanded ? "Show less" : "Show the full summary")
                         .accessibilityValue(isExpanded ? "Expanded" : "Collapsed").id(target(.more))
                 }
@@ -108,11 +109,7 @@ struct AttachmentChip: View {
                     .foregroundStyle(feedback == AttachmentTarget.safetyCaption || feedback == "Not found" ? palette.secondaryText : palette.destructive)
             }
         }
-        .onChange(of: focused) { _, value in if let value { threadFocus?.wrappedValue = target(value) } }
-        .onChange(of: threadFocus?.wrappedValue) { _, target in
-            guard let target, target.entryID == entryID else { return }
-            focused = [Control.open, .more].first { self.target($0) == target }
-        }
+
     }
     private func summaryText(_ text: String) -> some View {
         Text(text).zeusFont(.caption).foregroundStyle(muted ? palette.mutedText : palette.secondaryText)
@@ -131,6 +128,7 @@ struct AttachmentChip: View {
     }
     private func activate(_ action: Action) {
         guard action == .copy || Self.targetState(attachment) != .invalid else { return }
+        if action == .open, openDocument?(attachment, entryID) == true { return }
         feedback = perform(attachment, action)
     }
     static func targetState(_ attachment: Attachment) -> TargetState {
@@ -194,5 +192,16 @@ private struct AttachmentContextMenu: ViewModifier {
                 Button(attachment.kind == .url ? "Copy Link" : "Copy Path") { action(.copy) }
             }
         } else { content }
+    }
+}
+
+private struct AttachmentControlFocus: ViewModifier {
+    let local: FocusState<AttachmentChip.Control?>.Binding
+    let control: AttachmentChip.Control
+    let thread: FocusState<ConversationControlTarget?>.Binding?
+    let target: ConversationControlTarget
+    @ViewBuilder func body(content: Content) -> some View {
+        if let thread { content.focused(thread, equals: target) }
+        else { content.focused(local, equals: control) }
     }
 }
