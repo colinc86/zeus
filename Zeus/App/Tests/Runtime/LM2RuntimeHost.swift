@@ -40,7 +40,7 @@ import ZeusSprites
     var openCodeServerPassword: String? { nil }
 }
 @MainActor private final class LM2Clock: RuntimeClock {
-    let now = ISO8601DateFormatter().date(from: "2026-10-14T18:15:00Z") ?? Date()
+    var now = ISO8601DateFormatter().date(from: "2026-10-14T18:15:00Z") ?? Date()
     func sleep(until date: Date) async throws { try await Task.sleep(for: .seconds(max(0, date.timeIntervalSince(now)))) }
 }
 private struct LM2Runner: ProcessRunning {
@@ -56,22 +56,40 @@ private struct LM2Runner: ProcessRunning {
         let root = URL(fileURLWithPath: CommandLine.arguments[1]), tmux = URL(fileURLWithPath: CommandLine.arguments[2])
         guard root.path.hasPrefix("/private/tmp/zlv1_") || root.path.hasPrefix("/tmp/zlv1_") else { throw ManagedSessionError.command("Refused fixture root: " + root.path) }
         let routing = LM2Routing(), cards = LM2Cards(), clock = LM2Clock()
+        let patternFixture = CommandLine.arguments.contains("--rf1")
+        if patternFixture { clock.now = ISO8601DateFormatter().date(from: "2026-10-15T01:15:00Z") ?? clock.now }
         let socket = root.appendingPathComponent("tmux.sock").path
-        let journal = EncryptedJournalStore(root: root.appendingPathComponent("Journal"), keyProvider: LM2Key())
+        let journal = EncryptedJournalStore(root: root.appendingPathComponent("Journal"), keyProvider: LM2Key(), clock: { clock.now })
         let rules = try PersistentRulesStore(fileURL: root.appendingPathComponent("rules.zrules"), keyProvider: LM2Key())
-        try journal.append(.init(id: "synthetic-editor", time: clock.now.addingTimeInterval(-1), level: .focus, app: "com.example.Editor", kind: .focus,
-            payload: .init(.init(description: "Editing a synthetic test document; a test failed."))))
-        try journal.append(.init(id: "synthetic-editor-yesterday", time: clock.now.addingTimeInterval(-86401), level: .focus, app: "com.example.Editor", kind: .focus,
-            payload: .init(.init(description: "Editing a synthetic test document yesterday."))))
+        if !patternFixture {
+            try journal.append(.init(id: "synthetic-editor", time: clock.now.addingTimeInterval(-1), level: .focus, app: "com.example.Editor", kind: .focus,
+                payload: .init(.init(description: "Editing a synthetic test document; a test failed."))))
+            try journal.append(.init(id: "synthetic-editor-yesterday", time: clock.now.addingTimeInterval(-86401), level: .focus, app: "com.example.Editor", kind: .focus,
+                payload: .init(.init(description: "Editing a synthetic test document yesterday."))))
+        }
         var enabled = false
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = .gmt
+        if patternFixture {
+            calendar.timeZone = TimeZone(identifier: "America/Chicago") ?? .gmt
+            for offset in 0..<14 {
+                let day = calendar.date(byAdding: .day, value: -offset, to: calendar.startOfDay(for: clock.now)) ?? clock.now
+                for (suffix, minute, app) in [("mail", 0, "com.apple.mail"), ("calendar", 5, "com.apple.calendar"), ("editor", 10, "com.apple.Xcode")] {
+                    let at = calendar.date(bySettingHour: 9, minute: minute, second: 0, of: day) ?? day
+                    try journal.append(.init(id: "j_\(offset)_\(suffix)", time: at, level: .activity, app: app, kind: .activity,
+                        payload: .init(.init(description: "Synthetic morning routine", details: ["kind": "activate"]))))
+                }
+                let at = calendar.date(bySettingHour: 9, minute: 15, second: 0, of: day) ?? day
+                try journal.append(.init(id: "j_\(offset)_focus", time: at, level: .focus, app: "com.apple.Xcode", kind: .focus,
+                    payload: .init(.init(description: "Editing synthetic project notes"))))
+            }
+        }
         let live = ZeusRuntime(cards: cards, status: LM2Status(), characters: LM2Characters(), routing: routing,
             clock: clock, socketPath: root.appendingPathComponent("bridge.sock").path, ledgerURL: root.appendingPathComponent("deliveries.json"),
             connectors: [TmuxConnector(executable: tmux, runner: LM2Runner(socket: socket))],
             rules: rules, journal: journal, redactor: LocalRedactor(useOnDeviceModel: false),
             learningContext: { .init(frontmostApp: "com.example.Editor", idleSince: clock.now.addingTimeInterval(-601)) },
             reflectionEnabled: { enabled }, learningCalendar: calendar)
-        live.journalAccessPolicy = { .init(enabledLevels: [.focus]) }
+        live.journalAccessPolicy = { .init(enabledLevels: patternFixture ? [.activity, .focus] : [.focus]) }
         try live.start(); defer { live.stop() }
         try write(["ready": true])
         await Task.detached {

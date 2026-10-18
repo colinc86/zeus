@@ -54,7 +54,7 @@ def main():
         assert len(control.call('state')['deliveries'])==1
         proof={'agent':pane.version,'isolation':'private tmux, disposable HOME/config, localhost synthetic model, fixed test key; no user credentials',
                'path':'production ZeusRuntime -> production TmuxConnector -> real Claude -> real zeus-mcp -> production rules store',
-               'tools':seen,'state':state,'pane':pane.snapshot(),'model_received_reflection':any('Zeus reflection for 20261014' in json.dumps(b.get('messages',[])) for b in Model.requests)}
+               'tools':seen,'state':state,'pane':pane.snapshot(),'model_received_reflection':any('Zeus reflection for Wednesday 14 October' in json.dumps(b.get('messages',[])) for b in Model.requests)}
         assert proof['model_received_reflection']
         proof=scrub_paths(proof,{str(pane.root):'/FIXTURE',str(REPO):'<worktree>'})
         target=REPO/'TestFixtures/live/lm2';target.mkdir(parents=True,exist_ok=True)
