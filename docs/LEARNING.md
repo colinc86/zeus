@@ -4,7 +4,7 @@
 
 Learn from me keeps a local record that your assistant can use for context, timing and rules. All four levels are independent and off by default. Open **Settings › Privacy** to choose them. Each first-use consent sheet explains its scope before capture starts.
 
-Message ratings are separate from observation: you can [rate what you hear about](CONVERSATION.md#rate-what-you-hear-about) with every level off.
+Message ratings and the [morning brief](#morning-brief) work with every observation level off. You can [rate what you hear about](CONVERSATION.md#rate-what-you-hear-about) without enabling capture.
 
 ## Levels at a glance
 
@@ -115,7 +115,19 @@ Zeus updates the files it wrote, so edits to those files can be overwritten. Oth
 
 A file you remove in Finder stays removed from this export; that does not delete the underlying journal records or preferences. Delete observations through **What Zeus Kept**; manage kind ratings under **Settings › Rules › What you hear about**.
 
-The version 4 template tells the assistant to read relevant records when useful, learn repeated tasks and preferences across days, revise its own notes, and propose rules supported by evidence. It must not repeat private observations unprompted or put them into material you did not ask it to send. Reading the folder does not itself authorize an action, and purchases still ask every time.
+The version 6 template tells the assistant to read relevant records when useful, learn repeated tasks and preferences across days, revise its own notes, and propose rules supported by evidence. It must not repeat private observations unprompted or put them into material you did not ask it to send. Reading the folder does not itself authorize an action, and purchases still ask every time.
+
+## Morning brief
+
+Start the day with what needs your attention. Zeus asks your assistant for one short brief: what's coming up, what's at risk, and what it has prepared. The template asks for a card titled **Today**, with at most six lines and the kind **Morning brief**. If nothing matters today, the assistant should acknowledge the request and send nothing.
+
+Find **Ask my assistant for a morning brief** under **Settings › Assistant › Morning brief**. It starts on for **Zeus runs it**, off for **Connect your own**; your explicit choice is saved. **When** offers **After my first activity** (the default) or **At a fixed time**, initially 08:00 local time. Zeus queues at most one request per local day, including across relaunch. Waking the Mac alone is not activity. A fixed time missed while Zeus was closed is reconsidered when it opens or the Mac unlocks.
+
+The brief works with any learning level, or all levels off. With learning off, the request contains no journal data; the assistant can use its own `Notes/`, rules and calendar, mail or task tools if available. Detecting the start of your day uses only recent input timing, not the contents of what you type. With learning enabled, the request can include redacted descriptions and topics from yesterday's permitted records, never picture bytes or retained typing words. The previous-day summary remains a separate learning record.
+
+Rate the **Morning brief** kind with **More like this**, **Neutral** or **Stop these**, just like other unprompted messages. The [daily message limit](CONVERSATION.md#daily-limit-on-unprompted-messages) also applies. **Stop these** holds matching messages; turning off **Ask my assistant for a morning brief** stops the requests themselves.
+
+A prepared request appears as **Morning brief request ready for your assistant**. After acknowledgment, **Sent the morning brief request · View** shows exactly what was delivered. In **What Zeus Kept › Sent to your assistant**, **Waiting** can contain a **Morning brief request** while the assistant is disconnected, busy or has an unsent Terminal draft. These are request receipts, not confirmation that the assistant has produced a brief.
 
 ## What your assistant receives
 
@@ -126,7 +138,9 @@ A morning summary describes the previous day. With Apps and timing enabled, it i
 - **A later start than usual**
 - **Day winding down (no input for 20 min after 17:00)**
 
-These produce up to four notes a day. Summaries can include context from other enabled levels. The deliveries carry descriptions and topics, not picture bytes or retained typing words. Those retained details are available separately in the folder.
+These produce up to four notes a day. Template v6 asks the assistant to decide whether a summary or note calls for useful preparation or something to flag now, then send one short labeled message if needed; otherwise it acknowledges quietly. It must respect ratings, the daily message limit and action approvals.
+
+Summaries can include context from other enabled levels. The deliveries carry descriptions and topics, not picture bytes or retained typing words. Those retained details are available separately in the folder.
 
 At most once a day, Zeus prepares a reflection for the assistant: normally after ten minutes of idle time after 18:00, with a catch-up path for an earlier day. It includes redacted context, rule outcomes, current message preferences and evidence IDs. The assistant can use it to propose rules. A reflection is context, not a request to take an external action.
 
@@ -142,7 +156,7 @@ Each successful journal answer is recorded in **Sent to your assistant**, with a
 
 Each rating, edit, removal, Undo or **Not this kind** correction is saved and queued for the assistant, even with capture off. It includes the kind and scope, plus a redacted example for a rating. A `Files: Zeus/preferences.md` line is added when that exported file exists. **Just this one** feedback is delivered but does not enter the file's kind list or create a hold.
 
-The assistant template v4 tells the assistant to read `Zeus/preferences.md` at session start and after rating deliveries, generalize preferences across wording, and keep dated conclusions in its own `Notes/preferences.md`. Zeus writes the first file and does not read or update the second. Current preferences also enter reflections when those are produced.
+The assistant template v6 tells the assistant to read `Zeus/preferences.md` at session start and after rating deliveries, generalize preferences across wording, and keep dated conclusions in its own `Notes/preferences.md`. Zeus writes the first file and does not read or update the second. Current preferences also enter reflections when those are produced.
 
 The saved rating confirmation does not mean the assistant has received it. **What Zeus Kept › Sent to your assistant** shows an acknowledged or successfully polled receipt as **Sent your message preference**; expand it for the exact text. Pending deliveries appear under **Waiting**. There is no additional conversation receipt notice for ratings.
 
@@ -167,7 +181,7 @@ Press **Open What Zeus Kept…** in Privacy.
 
 **Kept on this Mac** shows records as stored, including placeholders. Choose a day, filter by level or app, and search. Picture rows open the stored frame with its description and retention date. **Show in Finder** opens its exported file when available. **Delete Picture** keeps the description; **Delete Both…** asks before removing both. Typing is grouped by app and hour, with topics above any retained words.
 
-**Sent to your assistant** shows exact outgoing summaries, notes, reflections, message preferences, journal answers and context attachments. Expand a row to inspect it. **Waiting** items are separate from received records; they do not count as sent. This ledger covers learning/context delivery, not all ordinary chat or anything the assistant independently reads.
+**Sent to your assistant** shows exact outgoing summaries, notes, reflections, morning brief requests, rule triggers, message preferences, journal answers and context attachments. Expand a row to inspect it. **Waiting** items are separate from received records; they do not count as sent. This ledger covers learning/context delivery, not all ordinary chat or anything the assistant independently reads.
 
 **Show Day in Finder** opens the selected day’s export when it exists. Record rows also offer **Show in Finder** in their context menu or hover actions; a missing item file falls back to its day folder when available.
 
@@ -197,7 +211,13 @@ Rules guide timing, tone and work. **Settings › Rules** is always available, w
 | **Balanced** | Passive timing/tone rules become active; acting rules start in shadow, waiting for approval. |
 | **Just do it** | Passive rules start immediately. Acting rules still begin in shadow; the implemented approval path must be completed before they act. |
 
-For an acting rule, the assistant first reports what it would have done. **OK next time?** approves the rule; **Not this** retires it. After an approved action, **Did: …** offers **Undo** when the assistant supplied a reversal instruction, otherwise **Not again**. Undo asks the original assistant to reverse the action; it does not guarantee the external action can be undone.
+When an acting rule's time, app or state conditions start matching, Zeus sends the assistant a **Rule trigger** with the rule, what matched and whether it is in shadow or active. This includes preparation such as drafting a recap. Passive timing/tone rules do not send trigger deliveries; guidance without a checkable condition does not fire.
+
+Zeus sends one trigger per matching window. A timed window does not repeat just because you switch away from and back to its app; a context-only trigger can fire again after its conditions stop matching and then match again. Pending triggers wait behind busy sessions and unsent drafts, and are cancelled when the window closes or the rule's status changes. Approving a shadow rule does not trigger it again in the same window.
+
+For a shadow rule, the assistant reports what it would have done through `zeus_rule_shadow` and must not perform the action. For an active rule, it can act within its permissions while the trigger is still valid, then report promptly through `zeus_rule_acted`; if nothing needs doing, it acknowledges quietly. **Sent a rule trigger: “…” · View** records delivery of the trigger, not completion of the action.
+
+The shadow report asks **OK next time?** to approve the rule; **Not this** retires it. After an approved action, **Did: …** offers **Undo** when the assistant supplied a reversal instruction, otherwise **Not again**. Undo asks the original assistant to reverse the action; it does not guarantee the external action can be undone.
 
 Purchases always require a fresh, amount-specific approval. A spending rule never becomes standing permission to pay. Zeus records approvals and reported actions; the assistant performs external work through its own tools and permissions.
 
@@ -207,4 +227,4 @@ Use a rule's **… › Why?** to see its retained evidence and dated outcomes. A
 
 **Add Rule…** creates a passive rule. You can edit its sentence, days, time window, apps and state; **Save** applies it. For an acting rule, ask the assistant to propose one. **Turn Back On** restores a retired rule; acting rules return through shadow approval.
 
-Implementation references: [learning settings](../Zeus/Learn/LearnSettings.swift), [level policies](../Zeus/Settings/ObservationSettings.swift), [learning presentation](../Zeus/Settings/LearningPresentation.swift), [journal queries](../Zeus/Bridge/ZeusRuntime+Journal.swift), [rules](../Zeus/Learn/PersistentRulesStore.swift), [rule actions](../Zeus/Bridge/ZeusRuntime+RuleActions.swift), [folder writer](../Zeus/Learn/LearningFolderWriter.swift) and [folder routing](../Zeus/Bridge/ZeusRuntime+LearningFolder.swift).
+Implementation references: [learning settings](../Zeus/Learn/LearnSettings.swift), [level policies](../Zeus/Settings/ObservationSettings.swift), [learning presentation](../Zeus/Settings/LearningPresentation.swift), [journal queries](../Zeus/Bridge/ZeusRuntime+Journal.swift), [rules](../Zeus/Learn/PersistentRulesStore.swift), [rule actions](../Zeus/Bridge/ZeusRuntime+RuleActions.swift), [briefs, triggers and daily limit](../Zeus/Bridge/ZeusRuntime+Proactive.swift), [folder writer](../Zeus/Learn/LearningFolderWriter.swift) and [folder routing](../Zeus/Bridge/ZeusRuntime+LearningFolder.swift).

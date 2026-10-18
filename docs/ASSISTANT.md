@@ -21,13 +21,19 @@ You can edit its `AGENTS.md` and `CLAUDE.md`. The built-in **Instructions** fiel
 
 With learning enabled, Zeus writes its retained record into `Zeus/` inside this folder. It includes enabled levels after their privacy safeguards, whether or not a delivery reached the assistant. Explicit message ratings write `Zeus/preferences.md` even with observation off. Zeus owns and updates these files. [Folder contents and lifecycle](LEARNING.md#your-assistants-folder) explains the layout, retention and deletion.
 
-The version 4 assistant template teaches the agent to read relevant days and the paths named in deliveries, notice repeated tasks and preferences across days, and propose supported rules. The assistant can keep dated, revisable conclusions in `Notes/about-you.md`, `Notes/patterns.md` and `Notes/preferences.md`, alongside `Zeus/`. Zeus does not write or read those notes. They are the assistant's conclusions, not a second copy of every observation.
+The version 6 assistant template teaches the agent to read relevant days and the paths named in deliveries, notice repeated tasks and preferences across days, and propose supported rules. The assistant can keep dated, revisable conclusions in `Notes/about-you.md`, `Notes/patterns.md` and `Notes/preferences.md`, alongside `Zeus/`. Zeus does not write or read those notes. They are the assistant's conclusions, not a second copy of every observation.
 
 The template also teaches [message ratings](LEARNING.md#message-preferences): read `Zeus/preferences.md`, respect stopped kinds across wording, and use Neutral as need-to-know guidance.
 
-When sharing work, template v4 tells the assistant to put the takeaway in the message and summarize each file or folder attachment. It should attach only things worth opening, so you can understand the result before leaving the conversation. See [attachments from your assistant](CONVERSATION.md#attachments-from-your-assistant).
+When sharing work, template v6 tells the assistant to put the takeaway in the message and summarize each file or folder attachment. It should attach only things worth opening, so you can understand the result before leaving the conversation. See [attachments from your assistant](CONVERSATION.md#attachments-from-your-assistant).
 
 With **Connect your own**, choose a separate destination under **Settings › Privacy › Your assistant's folder**. Until you choose one, Zeus keeps its internal journal without writing an assistant-folder copy. The agent must have access to the folder you select.
+
+## Help before you ask
+
+Template v6 asks the assistant to read its rules, current message preferences and its own notes at session start. When a learning note or summary arrives, it decides whether something needs preparing or flagging now, then sends one short labeled message if useful. It should stay quiet when there is nothing to add, respect stopped kinds, and avoid quoting private observations back to you.
+
+The [morning brief](LEARNING.md#morning-brief) gives it a daily chance to look ahead, even with learning off. [Acting-rule triggers](LEARNING.md#rules) tell it when an approved task is due or when it should show what it would have done in shadow. The [daily message limit](CONVERSATION.md#daily-limit-on-unprompted-messages) keeps ordinary unprompted messages bounded. Its tools and permissions still determine what it can do; Zeus does not add calendar or mail access.
 
 ## Session controls
 
@@ -88,6 +94,8 @@ There are three separate update paths:
 - **Zeus updates:** the app's updater installs a release and relaunches Zeus. The tmux assistant can keep running.
 - **Agent updates:** when the managed agent reports an installed update awaiting restart, Zeus offers **Restart assistant**. Clicking it requests a safe restart of the same conversation.
 - **New Zeus tools or template instructions:** after a Zeus update, a quiet notice and Settings can offer a restart to load them. Zeus refreshes template files only when they still exactly match a shipped template. Edited files are preserved; **Open Folder** lets you compare, and **Use the new template…** asks before replacing them.
+
+To pick up template v6 and the proactive instructions, use **Restart Assistant** in the Zeus menu, **Restart** in Assistant settings, or **Restart assistant** on the setup-update notice. A waiting delivery marked **it was started with an older setup** also offers **Restart Assistant**. If you edited the template, compare or approve its replacement first; restarting alone does not overwrite those edits. With **Connect your own**, restart your own agent to reload Zeus's tool instructions and keep your folder instructions in sync.
 
 An update notice alone does not restart the assistant. Unrestricted modes retain their confirmation.
 

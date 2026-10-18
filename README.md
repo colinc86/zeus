@@ -32,11 +32,11 @@ Less explaining. More picking up where you left off.
 
 - **It notices.** The work you return to, from the context you choose.
 - **It remembers.** Morning summaries and evening reflections help it connect the days.
-- **It helps.** Find your place, ask about the window in front, or approve a useful habit.
+- **It helps.** A morning brief looks ahead; approved rules prompt useful work when the moment arrives.
 
-All four learning levels start off. Rules that act for you need approval; purchases always ask.
+All four learning levels start off; the morning brief works with them off too. Rules that act for you need approval; purchases always ask.
 
-[Explore Learn from me →](docs/LEARNING.md) · [Your privacy controls](docs/PRIVACY.md)
+[Explore Learn from me →](docs/LEARNING.md) · [Morning brief](docs/LEARNING.md#morning-brief) · [Your privacy controls](docs/PRIVACY.md)
 
 ## A memory you can open
 

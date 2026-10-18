@@ -41,7 +41,7 @@ See [fonts and text size](CUSTOMIZATION.md#fonts-and-text-size) for choosing a p
 
 ## Assistant
 
-The setup choice defaults to **Zeus runs it**. **Who may talk to Zeus** and **Quiet hours** are shared by both modes.
+The setup choice defaults to **Zeus runs it**. **Who may talk to Zeus**, **Morning brief** and **Quiet hours** are shared by both modes.
 
 ### Zeus runs it
 
@@ -75,6 +75,18 @@ Changing agent/folder uses **Switch Now** or **Later**. A permission or supporte
 | Setup commands / **Copy** | Generated for the installed bridge | Configures and launches the agent when you run the commands. |
 | **Read the full setup guide** | Collapsed | Expands the generated in-app instructions. |
 | **Send Test Message** | Action | Sends through the selected route and reports the result. |
+
+### Morning brief
+
+Under **Settings › Assistant › Morning brief**, Zeus can ask your assistant for one short look ahead at the day. This works with Learn from me off.
+
+| Control | Default | Effect |
+|---|---|---|
+| **Ask my assistant for a morning brief** | On for Zeus runs it; off for Connect your own | Requests a brief once per local day. An explicit on/off choice is saved across mode changes. |
+| **When** | After my first activity | Choose **After my first activity** or **At a fixed time**. |
+| **Brief time** | 08:00 local time | Used with **At a fixed time**; the schedule controls are disabled while the brief is off. |
+
+The assistant uses permitted context, its notes and any calendar, mail or task tools it already has. It should stay quiet when nothing matters today. Rate its **Morning brief** messages to guide what you hear; turn off the switch to stop the requests. [Morning brief](LEARNING.md#morning-brief) explains timing, delivery and learning-off behavior.
 
 ### Shared controls
 
@@ -165,4 +177,4 @@ The editor offers **Choose App…** and **Remove** for apps, **Any**, **Tests fa
 
 Shows the app icon, version and build, description and basic interaction hints. There are no preferences in this pane.
 
-Implementation references: [app defaults](../Zeus/Settings/AppSettings.swift), [General](../Zeus/Settings/GeneralSettingsView.swift), [Appearance](../Zeus/Settings/AppearanceSettingsView.swift), [assistant](../Zeus/Settings/AssistantSettingsView.swift), [connection options](../Zeus/Settings/AgentSettingsView.swift), [learning defaults](../Zeus/Learn/LearnSettings.swift), [observation defaults](../Zeus/Settings/ObservationSettings.swift), [Rules](../Zeus/Settings/RulesSettingsView.swift), and [message ratings](../Zeus/Settings/MessageRatingsSettingsView.swift).
+Implementation references: [app defaults](../Zeus/Settings/AppSettings.swift), [General](../Zeus/Settings/GeneralSettingsView.swift), [Appearance](../Zeus/Settings/AppearanceSettingsView.swift), [assistant](../Zeus/Settings/AssistantSettingsView.swift), [morning brief](../Zeus/Settings/MorningBriefSettingsView.swift), [brief defaults](../Zeus/Learn/ProactiveAssistantSeams.swift), [connection options](../Zeus/Settings/AgentSettingsView.swift), [learning defaults](../Zeus/Learn/LearnSettings.swift), [observation defaults](../Zeus/Settings/ObservationSettings.swift), [Rules](../Zeus/Settings/RulesSettingsView.swift), and [message ratings](../Zeus/Settings/MessageRatingsSettingsView.swift).

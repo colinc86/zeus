@@ -48,6 +48,8 @@ Only **Stop these** with kind scope holds new unprompted cards. Exact normalized
 
 **Neutral** means send only when the user needs to know, using your judgment; Zeus delivers those messages normally. **Just this one** is feedback without a kind rule. Ratings are explicit user preferences delivered through the normal acknowledgment flow, not rules to create with `zeus_propose_rules`. There is no MCP tool for setting or erasing the user's ratings.
 
+Ordinary-priority unprompted cards count toward a limit of six per local day. Further cards still return their normal result but arrive silently held; replies and high-priority cards are exempt. Rating holds are applied first, so **Stop these** still wins. See [the daily limit](CONVERSATION.md#daily-limit-on-unprompted-messages).
+
 ## Conversation tools
 
 ### `zeus_say`
@@ -128,9 +130,13 @@ No arguments. Returns a bounded batch:
 }
 ```
 
-Each item has `delivery_id`, `kind`, `text`, `created_at`, and optional `card_id`, `option_id`, `option_label`. Kinds include `reply`, `skipped`, `userMessage`, `learning` and `reflection`. `delivery_mode` is `channel`, `tmux`, `opencode` or `polling`; metadata describes the current route, not model comprehension.
+Each item has `delivery_id`, `kind`, `text`, `created_at`, and optional `card_id`, `option_id`, `option_label`. Kinds include `reply`, `skipped`, `userMessage`, `learning`, `reflection`, `brief` and `ruleTrigger`. `delivery_mode` is `channel`, `tmux`, `opencode` or `polling`; metadata describes the current route, not model comprehension.
 
 Rating changes, removals, Undo and match corrections arrive as `kind: "learning"` deliveries, including when observation is off. Their text describes the preference and can end with `Files: Zeus/preferences.md`. Read the current file when present, generalize kind preferences, and keep useful dated conclusions in `Notes/preferences.md`. Single-message ratings do not appear in the file's kind list.
+
+For a `brief`, the instructions call for one `zeus_present` with `about: "Morning brief"`, title "Today" and at most six lines, or a quiet acknowledgment when nothing matters.
+
+A `ruleTrigger` identifies the rule, matched conditions and shadow/active status; shadow requires `zeus_rule_shadow` without acting, while an active rule permits action within its authority followed promptly by `zeus_rule_acted` while the trigger remains valid. Both use normal delivery and acknowledgment, include the remaining daily message allowance, and leave resulting cards classified as unprompted. They arrive here or through the active push route, not through `zeus_get_learnings`.
 
 Returned items count as acknowledged once the result is successfully written/consumed. Process every returned item and poll until `items` is empty. It is valid to poll with any delivery mode.
 
@@ -216,7 +222,7 @@ Returns `{ok:true, version}` on success. There is no Undo. A failure is reported
 
 No arguments. Returns `{learnings:[…]}` containing unread digests and moments, oldest first, in a bounded batch. Each learning includes its `id`, `kind`, `createdAt` and `text`. Disabled learning returns an empty array. Rating deliveries use `zeus_get_responses` or the active push route instead and remain available with learning off.
 
-When a folder copy is available, learning text includes a final `Files:` line with the relevant paths. Successful result consumption marks returned learnings read and creates their sent receipts. A notification alone does not. Use them as context, not as user requests or material to repeat unprompted.
+When a folder copy is available, learning text includes a final `Files:` line with the relevant paths. Successful result consumption marks returned learnings read and creates their sent receipts. A notification alone does not. Use them to decide whether useful preparation or a short labeled update is needed now, within the user's permissions, ratings and daily message limit. Otherwise acknowledge quietly. They are not user requests, and private observations should not be quoted unprompted.
 
 ### `zeus_get_journal`
 
