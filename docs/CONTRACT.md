@@ -291,7 +291,7 @@ The first rule that matches wins:
 
 1. **Transient event.** For 2.5 seconds after a new card appears: the card's `mood`, or `talking` if it has none.
 2. **Agent override.** An explicit `zeus_set_status` that hasn't expired yet (TTL). Sending `"auto"` clears it.
-3. **Unseen cards.** At least one card the user hasn't seen yet → `alert`.
+3. **Unseen cards.** At least one card the user hasn't seen yet → `alert`. Cards the assistant dismissed or that expired stay in the thread, muted, and never count as unseen (FX16).
 3b. **Assistant activity** (§10.8). `assistantActivity` is non-nil → `thinking` (or `working` when its phase is `.working`).
 4. **Open question.** An open card is waiting on the user → `waiting`.
 5. **Quiet hours** (Settings) → `sleeping`.
@@ -357,7 +357,7 @@ The runtime classifies new say/ask/present cards as `CardOrigin.reply` only whil
 1. **One conversation panel.**
    - Every click target in the conversation panel responds to the first click, whether or not the panel is key.
    - Clicking Zeus, or the global hotkey, toggles a single panel: a scrolling thread with the newest message at the bottom and a **composer that's always there**.
-   - Agent cards render inline as message bubbles. Questions keep their option buttons live until answered, and content cards show attachments. A progress card updates in place, and a card dismissed by the agent fades to muted.
+   - Agent cards render inline as message bubbles. Questions keep their option buttons live until answered, and content cards show attachments. A progress card updates in place, and a card dismissed by the agent, or one that expired, fades to muted and never counts as unread (FX16).
    - The user's own messages and answers appear as right-aligned bubbles.
    - Users never have to dismiss anything. Opening the panel marks everything visible as seen.
 2. **Answers.**
