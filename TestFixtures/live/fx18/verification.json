@@ -1,0 +1,22 @@
+{
+  "app": {
+    "result": "Passed",
+    "totalTestCount": 1242,
+    "passedTests": 1204,
+    "failedTests": 0,
+    "skippedTests": 38
+  },
+  "appSuites": 252,
+  "appSeconds": 463.406,
+  "packageTests": 276,
+  "focusedTests": 23,
+  "focusedSuites": 4,
+  "liveQuick": {
+    "result": "PASS",
+    "jobs": 26,
+    "e2eTests": 28,
+    "seconds": 647.22
+  },
+  "publicCheck": "PASS",
+  "tmuxHygiene": "No new shared-directory entries or orphan managed fixture servers"
+}

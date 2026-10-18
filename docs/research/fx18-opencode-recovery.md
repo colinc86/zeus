@@ -84,7 +84,10 @@ a new model request, then a Zeus-delivered message and actual `zeus_say` reply.
   28 private-tmux end-to-end scenarios. Hygiene found no new shared-directory
   entries or orphan managed fixture servers.
 - `scripts/check-public.sh`: passed.
-- Final `scripts/test.sh`: result pending below.
+- Final `scripts/test.sh`: 1,242 app tests / 252 suites passed in 463.406 seconds
+  (1,204 passed, 38 expected opt-in skips), plus 276 package tests and offline gates.
+  The final full run includes all fixes and updated expectations.
+- The build inside the live gate passed without new compiler warnings.
 
 All build products were routed to `build/tmp/fx18/` using temporary build aliases.
 Only scrubbed proof is retained; task build products and aliases are removed
