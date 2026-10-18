@@ -3,9 +3,9 @@ import Foundation
 
 /// A disposable environment must not regain the account's folders through preferences or Foundation defaults.
 enum ManagedProbeIsolation {
-    private static var accountHome: String {
+    private static let accountHome: String = {
         getpwuid(getuid()).map { String(cString: $0.pointee.pw_dir) } ?? NSHomeDirectory()
-    }
+    }()
     static func canonical(_ path: String) -> String {
         var url = URL(fileURLWithPath: path, isDirectory: true).standardizedFileURL
         var missing: [String] = []
@@ -38,7 +38,7 @@ enum ManagedProbeIsolation {
             throw ManagedSessionError.command("The probe's HOME and CFFIXED_USER_HOME disagree.")
         }
         for key in ["CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME", "XDG_STATE_HOME"] {
-            if let path = environment[key], !path.isEmpty, !contains(path, in: home) {
+            if let path = environment[key], !path.isEmpty, (!path.hasPrefix("/") || path.contains("\0") || !contains(path, in: home)) {
                 throw ManagedSessionError.command("A probe or test cannot use agent configuration outside its disposable HOME.")
             }
         }

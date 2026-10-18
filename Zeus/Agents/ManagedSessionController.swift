@@ -355,6 +355,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         case .activate:
             guard enabled else { setStatus(.off); return }
             let token = activation
+            if ManagedProbeIsolation.requiresBoundary(environment, isolatedSocket: isolatedSocket) { _ = try ManagedProbeIsolation.home(environment) }
             await refreshInstructionResumeSupport()
             guard attached, enabled, activation == token else { return }
             try load()

@@ -61,7 +61,11 @@ def isolated_environment(home, extra=None):
     # Pass only gate-owned diagnostic paths, never inherited agent credentials/config.
     for key in ["ZEUS_LIVE_OUTPUT","ZEUS_LIVE_REGISTRY"]:
         if key in os.environ:env[key]=os.environ[key]
-    env.update(extra or {})
+    additions=extra or {}
+    protected={"HOME","CFFIXED_USER_HOME","CLAUDE_CONFIG_DIR","CODEX_HOME","XDG_CONFIG_HOME","XDG_DATA_HOME","XDG_CACHE_HOME","XDG_STATE_HOME","TMUX_TMPDIR","TMUX","TMUX_PANE"}
+    if any(key in protected and value != env.get(key) for key,value in additions.items()):
+        raise ValueError("A live fixture cannot override its private profile or tmux namespace")
+    env.update(additions)
     return env
 
 
@@ -119,8 +123,7 @@ def cleanup_root(root,remove=True):
     def signal_owned(pid,signum):
         if stamp(pid)!=owned[pid]:return
         try:
-            if os.getpgid(pid)==pid:os.killpg(pid,signum)
-            else:os.kill(pid,signum)
+            os.kill(pid,signum)
         except ProcessLookupError:pass
     def live_owned():return any(stamp(pid)==identity for pid,identity in owned.items())
     # First allow the launcher to observe HUP, reap its child, and journal exit.

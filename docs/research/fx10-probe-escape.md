@@ -44,7 +44,7 @@ preference bytes cannot be recovered or claimed as directly reproduced.
 
 - Eight Python tmux-hygiene tests pass, including a real private server with its
   socket and root removed before cleanup, and PID-reuse/default-server controls.
-- Fourteen live-gate offline tests pass.
+- Fifteen live-gate offline tests pass.
 - A standalone compilation of the production isolation guard allows a HOME child
   and refuses a sibling, prefix sibling, symlink escape, missing HOME, and default
   tmux. Swift files parse successfully. App regressions cover saved-folder startup,
