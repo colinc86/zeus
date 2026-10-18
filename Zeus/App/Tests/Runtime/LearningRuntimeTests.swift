@@ -22,9 +22,10 @@ struct FixtureLearningRedactor: Redactor {
     let rules: PersistentRulesStore
     let folder: LearningFolderWriter?
     let ratingStore: MessageRatingStore?
-    init(learnings: (any LearningsProviding)? = nil, redactor: any Redactor = FixtureLearningRedactor(), exportFolder: Bool = false, messageRatings: Bool = false, ratingSimilarity: any MessageSimilarityComparing = LocalMessageSimilarity(), morningBriefSettings: MorningBriefSettings? = nil, morningBriefLevels: @escaping () -> Set<JournalLevel> = { [] }) throws {
+    init(learnings: (any LearningsProviding)? = nil, redactor: any Redactor = FixtureLearningRedactor(), exportFolder: Bool = false, messageRatings: Bool = false, ratingSimilarity: any MessageSimilarityComparing = LocalMessageSimilarity(), morningBriefSettings: MorningBriefSettings? = nil, morningBriefLevels: @escaping () -> Set<JournalLevel> = { [] }, calendar overrideCalendar: Calendar? = nil) throws {
         clock.now = ISO8601DateFormatter().date(from: "2026-10-14T18:15:00Z") ?? clock.now
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = .gmt
+        if let overrideCalendar { calendar = overrideCalendar }
         cards = FakeCards(clock: clock)
         let clock = self.clock
         journal = EncryptedJournalStore(root: root.appendingPathComponent("Journal"), keyProvider: FixtureJournalKey(), calendar: calendar, clock: { clock.now })
@@ -42,6 +43,7 @@ struct FixtureLearningRedactor: Redactor {
             clock: clock, socketPath: root.appendingPathComponent("bridge.sock").path, ledgerURL: root.appendingPathComponent("deliveries.json"),
             connectors: [connector], targetIsDead: { _ in false }, learnings: learnings, rules: rules, journal: journal, redactor: redactor,
             learningFolder: folder, messageRatings: ratingStore, ratingSimilarity: ratingSimilarity, learningContext: { box.context }, reflectionEnabled: { box.enabled }, learningCalendar: calendar, morningBriefSettings: morningBriefSettings, morningBriefLevels: morningBriefLevels)
+        runtime.journalAccessPolicy = { .init(enabledLevels: box.enabled ? Set(JournalLevel.allCases) : []) }
         try runtime.start()
         runtime.registerSession(.init(id: UUID(), sessionKey: "claude:/fixture#123.1", agent: .claude, cwd: "/fixture", clientName: "Fixture", supportsChannel: true, tmuxPane: nil, connectedAt: clock.now))
     }
@@ -77,8 +79,8 @@ struct FixtureLearningRedactor: Redactor {
         #expect(!sent.content.contains("NEVER_FRAME_METADATA")); #expect(!sent.content.contains("heic"))
         #expect(sent.content.contains("Typing a synthetic project update"))
         #expect(!sent.content.contains("NEVER_TYPED") && !sent.content.contains("NEVER_IME"))
-        for index in [0, 3, 6, 9] { #expect(sent.content.contains("sample-\(index)")) }
-        for index in [1, 2, 4, 5, 7, 8] { #expect(!sent.content.contains("sample-\(index)")) }
+        #expect(sent.content.contains("Today, last records (at most 20)"))
+        for index in 0..<10 { #expect(sent.content.contains("sample-\(index)")) }
     }
     @Test func contextAttachmentReceiptsRequireDeliveryAndUseActualTargetAcrossRelaunch() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }

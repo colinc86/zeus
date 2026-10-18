@@ -1,0 +1,90 @@
+{
+  "agent": "2.1.302 (Claude Code)",
+  "tools": [
+    "Write",
+    "Write",
+    "zeus_get_rules",
+    "zeus_propose_rules",
+    "zeus_ack"
+  ],
+  "evidence": [
+    "j_13_mail",
+    "j_0_mail"
+  ],
+  "notes": {
+    "about-you.md": "# About you\n\n14 October: Morning planning comes before focused project work, based on repeated observed days.\n",
+    "patterns.md": "# Patterns\n\n14 October: Mail and Calendar precede the editor around nine on observed mornings. These repeated observations support a quiet project-work window.\n"
+  },
+  "state": {
+    "notices": [
+      "New rule: Keep routine updates quiet during morning project work",
+      "Sent a daily reflection"
+    ],
+    "sessions": 1,
+    "rules": [
+      {
+        "author": "agent",
+        "updated": "2026-10-15T01:15:00.000Z",
+        "evidence": [
+          "j_13_mail",
+          "j_0_mail"
+        ],
+        "status": "active",
+        "kind": "passive",
+        "updatedBy": "agent",
+        "sentence": "Keep routine updates quiet during morning project work",
+        "id": "rule_8A118333-0574-4BFA-97D5-6EB6DDBE73C0",
+        "created": "2026-10-15T01:15:00.000Z",
+        "trigger": {
+          "apps": [
+            "com.apple.Xcode"
+          ]
+        },
+        "confidence": 0.6
+      }
+    ],
+    "deliveries": [
+      {
+        "id": "d_reflection_20261014",
+        "kind": "reflection",
+        "acked": true,
+        "attempts": 1
+      }
+    ],
+    "ok": true,
+    "actions": [],
+    "receipts": [
+      {
+        "level": 1,
+        "payload": {
+          "value": {
+            "text": "Zeus reflection for Wednesday 14 October. A redacted summary of how I've used my Mac over the last 28 days, built on this Mac. It isn't a new request from me; it's your evening to learn and get ahead.\n\nDo these, in this order:\n1. Update your notes. Revise Notes/about-you.md (what you've concluded about me) and Notes/patterns.md (my routines and recurring tasks) from the patterns below. Date each change and say what changed your mind. Conclusions, not copies: don't paste these lines in.\n2. Propose rules, if any. Call zeus_get_rules, then zeus_propose_rules with at most three, only for a pattern that held on two or more days, each with two evidence IDs from different days taken from the lines below. Don't propose anything listed under \"Don't propose again\", even reworded. Acting rules start in shadow; every purchase asks.\n3. Get ahead of tomorrow. If one thing needs preparing or flagging (something due, a meeting, a reply I owe, a task I keep putting off), do the prep and send me one short message with an about label. Otherwise zeus_ack and stay quiet. Unprompted messages left today: 6 (high priority doesn't count).\nNever repeat my habits, numbers or private details back to me. A placeholder like \u2039name\u203a is something Zeus removed: don't guess it, don't ask me for it.\n\nRhythm\nLast activity is a wind-down clue, not proof you stopped.\n- First activity about 09:00; last activity about 09:15 (14 days seen). [j_13_mail Thu 1 Oct, j_9_mail Mon 5 Oct, j_5_mail Fri 9 Oct, j_0_mail Wed 14 Oct]\n- First window: Xcode about 09:15 (14 days seen). [j_13_focus Thu 1 Oct, j_9_focus Mon 5 Oct, j_5_focus Fri 9 Oct, j_0_focus Wed 14 Oct]\n\nFocus\nDurations are estimates from adjacent events, capped at 15 min between them.\n- Mornings: Calendar, about 5 min (every day seen). [j_13_calendar Thu 1 Oct, j_9_calendar Mon 5 Oct, j_5_calendar Fri 9 Oct, j_0_calendar Wed 14 Oct]\n- Mornings: Mail, about 5 min (every day seen). [j_13_mail Thu 1 Oct, j_9_mail Mon 5 Oct, j_5_mail Fri 9 Oct, j_0_mail Wed 14 Oct]\n\nSequences\nSwitches within 15 minutes of each other.\n- Calendar then Xcode about 09:05, every day seen. [j_13_calendar Thu 1 Oct, j_9_calendar Mon 5 Oct, j_5_calendar Fri 9 Oct, j_0_calendar Wed 14 Oct]\n- Mail then Calendar about 09:00, every day seen. [j_13_mail Thu 1 Oct, j_9_mail Mon 5 Oct, j_5_mail Fri 9 Oct, j_0_mail Wed 14 Oct]\n\nToday vs usual\n- Today's first activity was about when it usually is (09:00). [j_3_mail Sun 11 Oct, j_2_mail Mon 12 Oct, j_1_mail Tue 13 Oct, j_0_mail Wed 14 Oct]\n\nToday, last records (at most 20)\n- 09:00 Mail \u00b7 Synthetic morning routine [j_0_mail Wed 14 Oct]\n- 09:05 Calendar \u00b7 Synthetic morning routine [j_0_calendar Wed 14 Oct]\n- 09:10 Xcode \u00b7 Synthetic morning routine [j_0_editor Wed 14 Oct]\n- 09:15 Xcode \u00b7 Editing synthetic project notes [j_0_focus Wed 14 Oct]",
+            "details": {
+              "delivery_id": "d_reflection_20261014",
+              "kind": "reflection",
+              "sessionLabel": "Claude \u00b7 Assistant",
+              "agent": "claude",
+              "sessionID": "146a26dd918a0357e3b2317a0ff301b5843eeb6e88119d454adbd86b870673e2"
+            },
+            "description": "Sent a daily reflection"
+          },
+          "report": {
+            "counts": [],
+            "semanticEngine": "patternsOnly"
+          }
+        },
+        "kind": "sentToAssistant",
+        "time": "2026-10-15T01:15:00.000Z",
+        "id": "sent:d_reflection_20261014:146a26dd918a0357e3b2317a"
+      }
+    ],
+    "outcomes": [],
+    "reflectionTexts": [
+      "Zeus reflection for Wednesday 14 October. A redacted summary of how I've used my Mac over the last 28 days, built on this Mac. It isn't a new request from me; it's your evening to learn and get ahead.\n\nDo these, in this order:\n1. Update your notes. Revise Notes/about-you.md (what you've concluded about me) and Notes/patterns.md (my routines and recurring tasks) from the patterns below. Date each change and say what changed your mind. Conclusions, not copies: don't paste these lines in.\n2. Propose rules, if any. Call zeus_get_rules, then zeus_propose_rules with at most three, only for a pattern that held on two or more days, each with two evidence IDs from different days taken from the lines below. Don't propose anything listed under \"Don't propose again\", even reworded. Acting rules start in shadow; every purchase asks.\n3. Get ahead of tomorrow. If one thing needs preparing or flagging (something due, a meeting, a reply I owe, a task I keep putting off), do the prep and send me one short message with an about label. Otherwise zeus_ack and stay quiet. Unprompted messages left today: 6 (high priority doesn't count).\nNever repeat my habits, numbers or private details back to me. A placeholder like \u2039name\u203a is something Zeus removed: don't guess it, don't ask me for it.\n\nRhythm\nLast activity is a wind-down clue, not proof you stopped.\n- First activity about 09:00; last activity about 09:15 (14 days seen). [j_13_mail Thu 1 Oct, j_9_mail Mon 5 Oct, j_5_mail Fri 9 Oct, j_0_mail Wed 14 Oct]\n- First window: Xcode about 09:15 (14 days seen). [j_13_focus Thu 1 Oct, j_9_focus Mon 5 Oct, j_5_focus Fri 9 Oct, j_0_focus Wed 14 Oct]\n\nFocus\nDurations are estimates from adjacent events, capped at 15 min between them.\n- Mornings: Calendar, about 5 min (every day seen). [j_13_calendar Thu 1 Oct, j_9_calendar Mon 5 Oct, j_5_calendar Fri 9 Oct, j_0_calendar Wed 14 Oct]\n- Mornings: Mail, about 5 min (every day seen). [j_13_mail Thu 1 Oct, j_9_mail Mon 5 Oct, j_5_mail Fri 9 Oct, j_0_mail Wed 14 Oct]\n\nSequences\nSwitches within 15 minutes of each other.\n- Calendar then Xcode about 09:05, every day seen. [j_13_calendar Thu 1 Oct, j_9_calendar Mon 5 Oct, j_5_calendar Fri 9 Oct, j_0_calendar Wed 14 Oct]\n- Mail then Calendar about 09:00, every day seen. [j_13_mail Thu 1 Oct, j_9_mail Mon 5 Oct, j_5_mail Fri 9 Oct, j_0_mail Wed 14 Oct]\n\nToday vs usual\n- Today's first activity was about when it usually is (09:00). [j_3_mail Sun 11 Oct, j_2_mail Mon 12 Oct, j_1_mail Tue 13 Oct, j_0_mail Wed 14 Oct]\n\nToday, last records (at most 20)\n- 09:00 Mail \u00b7 Synthetic morning routine [j_0_mail Wed 14 Oct]\n- 09:05 Calendar \u00b7 Synthetic morning routine [j_0_calendar Wed 14 Oct]\n- 09:10 Xcode \u00b7 Synthetic morning routine [j_0_editor Wed 14 Oct]\n- 09:15 Xcode \u00b7 Editing synthetic project notes [j_0_focus Wed 14 Oct]"
+    ],
+    "error": null
+  },
+  "isolation": "private tmux, disposable HOME/config, localhost scripted model, injected test key",
+  "pane": "220x120 for full-envelope paste verification",
+  "scope": "Real CLI/tool integration; scripted local model, not evidence of model reasoning quality"
+}

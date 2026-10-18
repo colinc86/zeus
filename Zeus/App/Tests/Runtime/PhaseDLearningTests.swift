@@ -19,9 +19,9 @@ import ZeusProtocol
         try await eventually { !f.connector.deliveries.isEmpty }
         let reflection = try #require(f.connector.deliveries.first)
         #expect(reflection.kind == .reflection)
-        #expect(reflection.content.contains("signal=toggledOff"))
-        #expect(reflection.content.contains("source=explicit"))
-        #expect(reflection.content.contains("Do not re-propose fingerprint="))
+        #expect(reflection.content.contains("turned off"))
+        #expect(reflection.content.contains("explicitly"))
+        #expect(reflection.content.contains("Don't propose again"))
         #expect(reflection.content.contains("Drafting a project update"))
         #expect(!reflection.content.contains("NEVER_WORDS"))
         #expect(reflection.content.utf8.count < 24_000)
