@@ -81,6 +81,7 @@
 | The journal/rules cannot be opened | Unlock the Keychain or sign in again. New records wait in memory; quitting before recovery loses unsaved records. |
 | No observation files appear in the assistant folder | Enable a learning level and check **Settings › Privacy › Your assistant's folder**. Managed mode uses the working folder; Connect your own needs an explicit destination. |
 | **Zeus can't write to this folder.** | Check that the selected folder is available and writable. The retained journal is separate. Choose an accessible destination to backfill retained records. |
+| **Zeus didn't replace …** | A file Zeus did not write occupies an export path. Zeus leaves it alone and reports the path under **Settings › Privacy › Your assistant's folder**. Move or rename it to let Zeus write there. |
 | A file deleted in Finder does not return | Intentional: the export does not recreate files you removed. Finder deletion does not erase the internal journal or ratings; use What Zeus Kept for observations and Settings › Rules for kind ratings. |
 | Pictures are not covered | Check **Cover pictures and faces**. The setting applies to new captures; turning it on does not modify earlier frames. |
 | An old folder still has records after deletion | Retention and deletion apply to the current destination. A previous folder is left alone when you switch destinations. |
@@ -118,7 +119,7 @@ No. The managed tmux agent keeps running. Use **Stop** if you want it to stop.
 No. It clears eligible Zeus history, retaining pending items and message preferences. Starting a new assistant conversation and deleting learning records are separate actions. Agent files/provider history have their own lifecycle.
 
 **Does Delete Everything delete rules?**  
-It deletes the learning journal, summaries, Sent ledger, message ratings, corrections and quiet signals, empties `Zeus/` in the current assistant folder, and cancels pending rating deliveries and affected learning deliveries. **Also delete your assistant's notes** can additionally empty `Notes/`. Manage rules separately in **Settings › Rules**. It cannot retract data already received by the assistant.
+It deletes the learning journal, summaries, Sent ledger, message ratings, corrections and quiet signals, removes the files Zeus wrote in `Zeus/` inside the current assistant folder, and cancels pending rating deliveries and affected learning deliveries. Anything else in that folder stays. **Also delete your assistant's notes** deletes everything in `Notes/` when selected, including files you or your assistant put there. This can't be undone. Manage rules separately in **Settings › Rules**. It cannot retract data already received by the assistant.
 
 **Can Undo reverse every action?**  
 Rating Undo restores the preceding preference while no later edit has superseded it; it sends a new correction, not a recall. Appearance Undo is local to Zeus. A rule's Undo sends a reversal instruction to the assistant; whether the external action can actually be reversed depends on that action.

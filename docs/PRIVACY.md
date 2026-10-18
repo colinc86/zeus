@@ -55,7 +55,9 @@ The encrypted ratings store does not encrypt every copy: rating text also enters
 
 An unavailable Keychain leaves new journal/rules writes queued in memory. The Privacy pane reports this; they are saved when access returns. Unsaved records are lost if Zeus quits first. Ratings differ: an unsaved preference edit fails visibly and leaves the previous preferences unchanged. If saved ratings cannot be read at startup, new unprompted posts are refused until recovery; replies remain usable.
 
-Retention and deletion update the active assistant-folder record. Changing folders leaves the earlier copy alone. Finder deletion prevents that exported file from being recreated, but does not delete the underlying journal records or ratings. **Delete Everything…** also clears ratings, corrections, quiet signals and pending rating deliveries, and empties the current `Zeus/` including `preferences.md`; its unchecked **Also delete your assistant's notes** option additionally empties `Notes/`. Other assistant working files are unaffected.
+Retention and deletion update the active assistant-folder record. Changing folders leaves the earlier copy alone. Finder deletion prevents that exported file from being recreated, but does not delete the underlying journal records or ratings.
+
+**Delete Everything…** also clears ratings, corrections, quiet signals and pending rating deliveries, and removes the files Zeus wrote in `Zeus/` inside the current assistant folder, including its `preferences.md`. Anything else in that folder stays. Its unchecked **Also delete your assistant's notes** option deletes everything in `Notes/`, including files you or your assistant put there. This can't be undone. Other assistant working files are unaffected.
 
 Previously muted cards remain conversation history with their rating holds removed; deleting learning is not clearing the conversation. Late acknowledgments cannot recreate erased rating receipts.
 

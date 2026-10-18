@@ -109,7 +109,11 @@ Choosing a destination backfills retained history for enabled levels. Changing d
 | `Zeus/preferences.md` | Current kind ratings under Up, Need-to-know and Stop, with redacted examples; excludes single-message ratings. |
 | `Notes/about-you.md`, `Notes/patterns.md`, `Notes/preferences.md` | Dated conclusions and communication preferences the assistant may write itself; Zeus does not write or read these files. |
 
-These are ordinary readable files, separate from the encrypted internal journal. Files are written atomically with owner-only permissions. Keep your own material outside `Zeus/`: Zeus updates its records, and edits there can be overwritten. A file you remove in Finder stays removed from this export; that does not delete the underlying journal records or preferences. Delete observations through **What Zeus Kept**; manage kind ratings under **Settings › Rules › What you hear about**.
+These are ordinary readable files, separate from the encrypted internal journal. Files are written atomically with owner-only permissions.
+
+Zeus updates the files it wrote, so edits to those files can be overwritten. Other files in `Zeus/` are left alone. If one occupies a path Zeus needs, **Settings › Privacy › Your assistant's folder** reports **Zeus didn't replace …**. Move or rename that file to let Zeus write there.
+
+A file you remove in Finder stays removed from this export; that does not delete the underlying journal records or preferences. Delete observations through **What Zeus Kept**; manage kind ratings under **Settings › Rules › What you hear about**.
 
 The version 4 template tells the assistant to read relevant records when useful, learn repeated tasks and preferences across days, revise its own notes, and propose rules supported by evidence. It must not repeat private observations unprompted or put them into material you did not ask it to send. Reading the folder does not itself authorize an action, and purchases still ask every time.
 
@@ -177,7 +181,9 @@ Pausing or disabling observation does not disable ratings, their delivery, or `Z
 
 Delete an individual record, typing group, day, or all records from a selected app using the viewer. Individual deletions can offer **Undo**; day/app deletion and **Delete Both…** ask for confirmation. Retention and deletion update matching records in the current assistant folder; Undo restores an exported record when its source is restored. Existing sent receipts are separate evidence and are not removed by deleting only their source record.
 
-**Delete Everything…** removes the learning journal, summaries, Sent ledger, message ratings, matching decisions and quiet-signal history, and empties `Zeus/` in the current assistant folder after confirmation. **Also delete your assistant's notes** starts unchecked; select it to empty `Notes/` too. Other working files are left alone. It also discards pending rating deliveries and affected summaries/reflections; a late acknowledgment cannot recreate a sent receipt. Already-pasted Terminal text is left alone. Rules are managed separately in **Settings › Rules**, and deletion cannot retract material already received by an assistant or its provider.
+**Delete Everything…** removes the learning journal, summaries, Sent ledger, message ratings, matching decisions and quiet-signal history, and the files Zeus wrote in `Zeus/` inside the current assistant folder after confirmation. Anything else in that folder stays. **Also delete your assistant's notes** starts unchecked; selecting it deletes everything in `Notes/`, including files you or your assistant put there. This can't be undone.
+
+Deletion also discards pending rating deliveries and affected summaries/reflections; a late acknowledgment cannot recreate a sent receipt. Already-pasted Terminal text is left alone. Rules are managed separately in **Settings › Rules**, and deletion cannot retract material already received by an assistant or its provider.
 
 If the journal key is unavailable, new records wait in memory. Privacy explains the condition. Unlocking lets Zeus save them; quitting first loses those unsaved records.
 
