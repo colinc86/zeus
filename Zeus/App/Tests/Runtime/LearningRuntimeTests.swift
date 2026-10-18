@@ -265,10 +265,10 @@ struct FixtureLearningRedactor: Redactor {
     }
     @Test func launchCatchupAfterEveningUsesLatestRecordedDayAndStillSendsOnlyOnceToday() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
-        try f.journal.append(.init(id: "earlier", time: f.clock.now.addingTimeInterval(-3*86400), level: .focus, kind: .focus, payload: .init(.init(description: "Earlier synthetic activity"))))
+        try f.journal.append(.init(id: "earlier", time: f.clock.now.addingTimeInterval(-2*86400), level: .focus, kind: .focus, payload: .init(.init(description: "Earlier synthetic activity"))))
         f.box.enabled = true; f.runtime.learningContextDidChange()
         try await eventually { f.connector.deliveries.count == 1 }
-        #expect(f.connector.deliveries[0].meta["reflection_day"] == "20261011")
+        #expect(f.connector.deliveries[0].meta["reflection_day"] == "20261012")
         try f.journal.append(.init(id: "today", time: f.clock.now, level: .focus, kind: .focus, payload: .init(.init(description: "Today's activity"))))
         f.box.context.idleSince = f.clock.now.addingTimeInterval(-601); f.runtime.learningContextDidChange()
         for _ in 0..<20 { await Task.yield() }

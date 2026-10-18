@@ -69,14 +69,14 @@ import Testing
         ("zeus_update_card", ["card_id", "title", "text", "append_text", "progress"], ["card_id"]),
         ("zeus_dismiss", ["card_id"], ["card_id"]),
         ("zeus_set_status", ["state", "detail", "progress", "ttl_seconds"], ["state"]),
-        ("zeus_get_responses", [], []), ("zeus_ack", ["delivery_ids"], ["delivery_ids"]),
+        ("zeus_get_responses", ["id"], []), ("zeus_ack", ["delivery_ids"], ["delivery_ids"]),
         ("zeus_list_characters", [], []), ("zeus_set_character", ["id"], ["id"]),
         ("zeus_app_state", [], []), ("zeus_create_character", ["name", "json"], ["name", "json"]),
         ("zeus_set_theme", ["id"], ["id"]), ("zeus_create_theme", ["name", "json"], ["name", "json"]),
         ("zeus_move", ["position"], ["position"]), ("zeus_set_size", ["size"], ["size"]),
         ("zeus_hide", ["minutes", "until"], []),
         ("zeus_set_appearance", ["ghost_mode", "ghost_opacity", "ghost_delay_seconds", "popup_sound", "popup_sound_name", "font", "panel_width", "quiet_hours", "quiet_start_hour", "quiet_end_hour"], []),
-        ("zeus_check_for_updates", [], []), ("zeus_install_update", ["version"], ["version"]), ("zeus_get_learnings", [], []), ("zeus_get_journal", ["query", "from", "to", "kinds", "raw", "limit"], []),
+        ("zeus_check_for_updates", [], []), ("zeus_install_update", ["version"], ["version"]), ("zeus_get_learnings", ["id"], []), ("zeus_get_journal", ["query", "from", "to", "kinds", "raw", "limit"], []),
         ("zeus_rule_shadow", ["ruleID", "wouldHave", "amount", "currency"], ["ruleID", "wouldHave"]),
         ("zeus_rule_acted", ["ruleID", "did", "undo", "approvalID"], ["ruleID", "did"]), ("zeus_get_rules", [], []), ("zeus_propose_rules", ["rules"], ["rules"])
     ]

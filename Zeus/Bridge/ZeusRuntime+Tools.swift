@@ -109,7 +109,8 @@ extension ZeusRuntime {
             case "zeus_get_responses":
                 bindWaitingUserMessages()
                 let pending = (ledger?.records ?? []).filter { $0.delivery.sessionKey == sessionKey && $0.isPending && !learningWasErased($0.delivery.id) && proactiveDeliveryAllowed($0.delivery) && ($0.delivery.kind != .learning || $0.delivery.meta["learning_kind"] == "rating" || learnings.learningsEnabled) }
-                let batch = try pollingBatch(pending)
+                let requested = try args.string("id")
+                let batch = try pollingBatch(try requested.map { [try fetchedDelivery(id: $0, sessionKey: sessionKey, learning: false)] } ?? pending)
                 if !deferResultCommit { _ = try acknowledge(ids: Set(batch.map { $0.delivery.id }), sessionKey: sessionKey) }
                 let transport = transport(for: sessionKey)
                 let mode: String = transport?.0 is ChannelDeliveryConnector ? "channel" : (transport == nil ? "polling" : routing.deliveryMethod.rawValue)
@@ -118,7 +119,7 @@ extension ZeusRuntime {
                     if connector is TmuxConnector, session.tmuxPane != nil { return context.tmuxSocketPath != nil }
                     return true
                 } ?? false
-                return result(["items": .array(batch.map(pollItem)), "delivery_mode": .string(mode), "push_active": .bool(active)])
+                return result(["items": .array(batch.map { pollItem($0, exactBody: requested != nil) }), "delivery_mode": .string(mode), "push_active": .bool(active)])
             case "zeus_ack":
                 guard args.values["delivery_ids"] != nil else { throw ToolArgumentError("Missing delivery_ids") }
                 let ids = try args.array("delivery_ids").map { value in
@@ -211,11 +212,28 @@ extension ZeusRuntime {
         }
         return batch
     }
-    private func pollItem(_ record: DeliveryRecord) -> JSONValue {
+    /// Pointer fetches are scoped to the durable recipient and never revive erased input.
+    func fetchedDelivery(id: String, sessionKey: String, learning: Bool) throws -> DeliveryRecord {
+        expireStaleLearningDeliveries()
+        guard let record = ledger?.record(id: id), record.delivery.sessionKey == sessionKey,
+              record.discardedAt == nil, !learningWasErased(id), proactiveDeliveryAllowed(record.delivery),
+              [.learning, .reflection, .brief, .ruleTrigger].contains(record.delivery.kind) == learning else {
+            throw ToolArgumentError("No available delivery with this id for this session.")
+        }
+        if record.delivery.kind == .learning, record.delivery.meta["learning_kind"] != "rating", !learnings.learningsEnabled {
+            throw ToolArgumentError("Learning is disabled.")
+        }
+        guard try ZeusJSON.encoder().encode(record.delivery).count < 1_000_000 else {
+            throw ToolArgumentError("Saved delivery is too large for one result; it remains pending.")
+        }
+        return record
+    }
+
+    private func pollItem(_ record: DeliveryRecord, exactBody: Bool = false) -> JSONValue {
         let delivery = record.delivery
         let skipped = record.response?.skipped == true
         var item: [String: JSONValue] = ["delivery_id": .string(delivery.id), "kind": .string(skipped ? "skipped" : delivery.kind.rawValue),
-            "text": .string((delivery.meta["earlier_session"] == nil ? "" : Self.earlierSessionPrefix + " ") + (skipped ? delivery.content : (record.response?.text ?? record.response?.summary ?? record.userText ?? delivery.content))),
+            "text": .string((delivery.meta["earlier_session"] == nil ? "" : Self.earlierSessionPrefix + " ") + (exactBody || skipped ? delivery.content : (record.response?.text ?? record.response?.summary ?? record.userText ?? delivery.content))),
             "created_at": .string(delivery.createdAt.ISO8601Format(.init(includingFractionalSeconds: true)))]
         if let cardID = delivery.cardID { item["card_id"] = .string(cardID) }
         if !skipped, let option = record.response?.optionID { item["option_id"] = .string(option) }

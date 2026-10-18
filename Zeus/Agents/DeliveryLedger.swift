@@ -74,6 +74,22 @@ final class DeliveryLedger {
         }
     }
 
+    /// Old size-only holds get another attempt under the pointer transport. Other
+    /// failures and already-mutated native input retain their existing recovery rules.
+    func preparePointerDeliveries() throws {
+        try transact { records in
+            for i in records.indices where records[i].isPending
+                && records[i].delivery.meta["tmux_paste_destination"] == nil
+                && records[i].queueReason == ConnectorError.inputTooLong.localizedDescription {
+                records[i].delivery.attempts = 0
+                records[i].delivery.failedAt = nil
+                records[i].delivery.lastAttemptAt = nil
+                records[i].queueReason = nil
+                records[i].holdSince = nil; records[i].holdReason = nil
+            }
+        }
+    }
+
     private static func hasProcessIdentity(_ key: String) -> Bool {
         guard let separator = key.lastIndex(of: "#") else { return false }
         let parts = key[key.index(after: separator)...].split(separator: ".", omittingEmptySubsequences: false)

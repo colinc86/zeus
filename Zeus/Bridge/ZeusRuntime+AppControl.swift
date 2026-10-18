@@ -20,6 +20,10 @@ extension ZeusRuntime {
     func callAppTool(_ name: String, args: ToolArguments, sessionKey: String, deferResultCommit: Bool) async throws -> ToolResult {
         if name == "zeus_app_state" { return result(try JSONValue.from(appControl.appControlState)) }
         if name == "zeus_get_learnings" {
+            if let id = try args.string("id") {
+                let record = try fetchedDelivery(id: id, sessionKey: sessionKey, learning: true)
+                return result(["delivery": try JSONValue.from(record.delivery)])
+            }
             let items = learnings.learningsEnabled ? learnings.unreadLearnings().filter { !learningWasErased($0.id) && ledger?.record(id: $0.id)?.delivery.ackedAt == nil } : []
             // Keep both text and structured copies within the link's 4 MiB frame limit.
             var batch: [Learning] = [], bytes = 1024

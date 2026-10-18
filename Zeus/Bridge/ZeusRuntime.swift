@@ -184,7 +184,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         }
         let listener = BridgeServer(socketPath: socketPath)
         try listener.start(delegate: self)
-        do { try loaded.prepareLegacyUserMessages() }
+        do { try loaded.prepareLegacyUserMessages(); try loaded.preparePointerDeliveries() }
         catch { listener.stop(); throw error }
         recoveredUserMessageIDs = Set(loaded.records.filter { $0.delivery.kind == .userMessage }.map { $0.delivery.id })
         let localCards = ((cards as? any CardPersistenceReporting)?.persistedCards ?? []).filter { $0.id.hasPrefix(Self.managedCardPrefix) && $0.status == .open }
@@ -199,6 +199,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         appQuestionIDs = Set(((cards as? any CardPersistenceReporting)?.persistedCards ?? [])
             .filter { $0.kind == .question && $0.status == .open }.map(\.id))
         learnings.onNewLearning = { [weak self] learning in self?.notifyLearning(learning) }
+        expireStaleLearningDeliveries()
         syncLearningFolder()
         learningFolder?.start(learnings: learnings)
         startLearning()

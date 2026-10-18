@@ -27,7 +27,7 @@ enum ZeusAppTools {
             ]), "minProperties", 1)),
             tool("zeus_check_for_updates", "Check for an update without installing. Only a version returned by a successful check in this session may be installed.", [:]),
             tool("zeus_install_update", "Install the exact version this session saw in zeus_check_for_updates. Only when asked, or told to keep Zeus current. Zeus announces the update and waits for in-flight work and blocking prompts, up to 60 seconds. The managed session survives relaunch.", ["version": string], ["version"]),
-            tool("zeus_get_learnings", "Read unread daily digests and moments, oldest first (newest last); returned learnings are marked read only after the result is written. Call at the start of a day. Use them for timing and tone, never commentary about the user's habits. Raw activity events are never exposed.", [:])
+            tool("zeus_get_learnings", "Read unread daily digests and moments, oldest first (newest last); returned learnings are marked read only after the result is written. Call at the start of a day. Use them for timing and tone, never commentary about the user's habits. Raw activity events are never exposed. Optional id fetches the exact saved delivery (including reflection, brief and ruleTrigger) for this session as delivery; process it and call zeus_ack.", ["id": string])
         ]
     }()
     private static func object(_ properties: [String: JSONValue], _ required: [String] = []) -> JSONValue {

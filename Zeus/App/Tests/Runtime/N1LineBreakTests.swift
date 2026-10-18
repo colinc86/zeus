@@ -185,17 +185,18 @@ private actor N1PasteRunner: ProcessRunning {
         }
     }
 
-    @Test func openCodeRefusesTextThatWouldHideTheHeaderBeforeMutatingInput() async throws {
+    @Test func openCodeUsesPointerButNeverSubmitsAnUnverifiedPaste() async throws {
         let before = try N1Messages.frame(.opencode, "before")
         let snapshot = try N1Messages.snapshot(before)
         let delivery = N1Messages.delivery(1) // Deliberately more than the visible textarea cap.
         #expect(!snapshot.canVerifyPaste(AgentInjectionText.format(delivery)))
         let runner = N1PasteRunner(before: before, pasted: before)
         let settings = FakeRouting(); settings.deliveryMethod = .tmux
-        await #expect(throws: ConnectorError.inputTooLong) {
+        await #expect(throws: ConnectorError.inputChanged) {
             try await TmuxConnector(executable: URL(fileURLWithPath: "/fixture/tmux"), runner: runner)
                 .deliver(delivery, to: connectorSession(agent: .opencode, pane: "%0"), bridge: nil, routing: settings)
         }
-        #expect(await runner.calls.allSatisfy { !$0.arguments.contains("load-buffer") && !$0.arguments.contains("paste-buffer") && !$0.arguments.contains("send-keys") })
+        #expect(await runner.calls.contains { $0.arguments.contains("load-buffer") && $0.input == Data(AgentInjectionText.pointer(delivery).utf8) })
+        #expect(await runner.calls.allSatisfy { !$0.arguments.contains("send-keys") })
     }
 }

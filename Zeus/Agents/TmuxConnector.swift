@@ -26,6 +26,14 @@ enum TmuxExecutable {
 /// Shared envelope for text-injection transports. Multiline text keeps its line breaks.
 enum AgentInjectionText {
     static func format(_ delivery: Delivery) -> String {
+        if delivery.meta["tmux_pointer"] == "true" { return pointer(delivery) }
+        return fullEnvelope(delivery)
+    }
+    static func pointer(_ delivery: Delivery) -> String {
+        let tool = [.learning, .reflection, .brief, .ruleTrigger].contains(delivery.kind) ? "zeus_get_learnings" : "zeus_get_responses"
+        return "[zeus delivery_id=\(delivery.id)] Too long to paste here. Read \(tool) with this id, follow its text, then zeus_ack."
+    }
+    static func fullEnvelope(_ delivery: Delivery) -> String {
         let card = delivery.cardID.map { " card_id=" + $0 } ?? ""
         let kind = [.learning, .reflection].contains(delivery.kind) ? " kind=" + delivery.kind.rawValue : ""
         let normalized = MessageText.preservingLines(delivery.content)
@@ -589,7 +597,7 @@ struct TmuxConnector: DeliveryConnector {
             guard let value = TmuxInputSnapshot(metadata: metadata.stdout, screen: screen.stdout) else { throw ConnectorError.inputBusy }
             return value
         }
-        let text = AgentInjectionText.format(delivery)
+        var text = AgentInjectionText.format(delivery)
         let context = routing as? DeliveryRoutingContext
         func submitted(didSubmit: Bool = false) throws {
             pastes.values.removeValue(forKey: destination)
@@ -599,6 +607,11 @@ struct TmuxConnector: DeliveryConnector {
         do {
             let initial = try await snapshot()
             let pending = pastes.values[destination]
+            if pending == nil, delivery.meta["tmux_paste_destination"] == nil,
+               (!text.contains("\n") || initial.acceptsMultilinePaste), !initial.canVerifyPaste(text) {
+                text = AgentInjectionText.pointer(delivery)
+                context?.usesTmuxPointer = true
+            } else { context?.usesTmuxPointer = delivery.meta["tmux_pointer"] == "true" }
             let recovering = pending?.deliveryID == delivery.id || delivery.meta["tmux_paste_destination"] == destination
             if context?.onlySubmitRecordedTmuxPaste == true {
                 guard delivery.meta["tmux_paste_destination"] == destination else { throw ConnectorError.mismatchedTmuxSocket }

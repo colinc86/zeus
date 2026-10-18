@@ -102,6 +102,7 @@ extension ZeusRuntime {
                   self.ledger?.record(id: id)?.isPending == true else { throw CancellationError() }
             try self.ledger?.updateRecord(id: id) {
                 $0.delivery.meta["tmux_paste_destination"] = destination
+                if destination != nil { $0.delivery.meta["tmux_pointer"] = context?.usesTmuxPointer == true ? "true" : nil }
                 if recoveringPaste && destination == nil && context?.didSubmitRecordedTmuxPaste == true {
                     $0.delivery.failedAt = nil
                     $0.tmuxPasteRecoveredAt = self.clock.now
@@ -145,6 +146,10 @@ extension ZeusRuntime {
             }
             self.recordUserMessageOutcome(id: id, outcome: outcome)
             if outcome == .delivered {
+                if self.ledger?.record(id: id)?.delivery.meta["tmux_pointer"] == "true" {
+                    do { try self.ledger?.updateRecord(id: id) { $0.transportDeliveredAt = self.clock.now } }
+                    catch { self.storageProblem = "Couldn't save the pointer delivery receipt." }
+                }
                 self.recordReflectionReceipt(id: id)
                 if self.ledger?.record(id: id)?.delivery.kind == .reply, self.ledger?.record(id: id)?.transportDeliveredAt == nil {
                     do { try self.ledger?.updateRecord(id: id) { $0.transportDeliveredAt = self.clock.now } }
@@ -195,6 +200,7 @@ extension ZeusRuntime {
     }
     func processDueDeliveries() {
         guard running else { return }
+        expireStaleLearningDeliveries()
         scheduleRatingDelivery()
         expireManagedChannels()
         if !unsaved.isEmpty, let ledger {
