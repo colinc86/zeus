@@ -138,7 +138,7 @@ struct ConversationView: View {
                         .accessibilityHidden(panel.document.isOpen)
                     if panel.document.isOpen {
                         DocumentViewerView(model: panel.document, conversation: model,
-                            back: { backFromDocument() }, context: { returnFromDocument(proxy) })
+                            back: { backFromDocument(proxy) }, context: { returnFromDocument(proxy) })
                             .frame(height: documentHeight)
                             .overlay(alignment: .top) { documentPills(edge: .top, proxy: proxy) }
                             .overlay(alignment: .bottom) { documentPills(edge: .bottom, proxy: proxy) }
@@ -223,7 +223,7 @@ struct ConversationView: View {
                 }
             }
             .onChange(of: panel.document.expanded) { resize(totalHeight) }
-            .onChange(of: panel.document.backRequest) { backFromDocument() }
+            .onChange(of: panel.document.backRequest) { backFromDocument(proxy) }
             .onChange(of: panel.document.composerRequest) { focusComposer() }
             .onChange(of: model.draft) { panel.document.typed(in: model) }
             .onChange(of: store.conversationClearRevision) { scrollDriver.stopRestoring(); panel.document.close() }
@@ -321,11 +321,23 @@ struct ConversationView: View {
         }
     }
 
-    private func backFromDocument() {
+    private func backFromDocument(_ proxy: ScrollViewProxy) {
+        let sourceID = panel.document.current?.sourceCardID
         let count = loadedPageCount
         guard panel.document.back() else { return }
         pageCount = count
         resize(totalHeight) // Restore chat width before the hidden lazy thread is presented.
+        if panel.document.fromPeek, panel.document.threadBookmark == nil, panel.document.threadOffset == nil {
+            panel.scrollTargetCardID = sourceID; panel.focusScrollTarget = false
+            openTarget(proxy)
+            Task { @MainActor in
+                await Task.yield(); await Task.yield()
+                guard panel.isVisible, !panel.document.isOpen else { return }
+                focusComposer()
+                panel.document.removeEmptyAutomaticAttachments(in: model)
+            }
+            return
+        }
         let target = panel.document.fromPeek ? nil : panel.document.returnTarget
         panel.focusCameFromPointer = true
         scrollDriver.restore(to: scrollDriver.viewport?.offset ?? panel.document.threadOffset ?? 0) {
