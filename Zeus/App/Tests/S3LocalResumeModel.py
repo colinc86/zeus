@@ -9,7 +9,7 @@ root = pathlib.Path(a.root)
 assert root.name.startswith('zs3_') and root.parent.resolve() == pathlib.Path('/private/tmp')
 assert not root.is_symlink() and a.agent in ('claude', 'codex', 'opencode')
 home = root / 'home'
-project = root / 'project'
+project = root / 'home' / 'project'
 for d in ['.claude', '.codex', '.config/opencode', '.cache', '.local/share', '.local/state', 'tmux']:
     (home / d).mkdir(parents=True, exist_ok=True)
 project.mkdir(exist_ok=True)

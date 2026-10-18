@@ -12,7 +12,7 @@ a = p.parse_args()
 root = register_root(a.root)
 assert root.name.startswith('zcy1_') and root.parent.resolve() == pathlib.Path('/private/tmp')
 assert not root.is_symlink() and a.agent in ('claude', 'codex', 'opencode')
-home, project = root / 'home', root / 'project'
+home, project = root / 'home', root / 'home' / 'project'
 for d in (home, project): d.mkdir(exist_ok=True)
 for d in ('.claude', '.codex', '.config/opencode', '.cache', '.local/share', '.local/state', 'tmux'):
     (home / d).mkdir(parents=True, exist_ok=True)
