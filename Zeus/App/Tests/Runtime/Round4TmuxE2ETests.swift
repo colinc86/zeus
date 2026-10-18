@@ -9,7 +9,7 @@ extension ZeusE2ETests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["ZEUS_TEST_TMUX"] == "1"),
           arguments: [String(repeating: "A long paragraph with Unicode 🐈 and é. ", count: 40),
                       String(repeating: "中文", count: 180), String(repeating: "é é ", count: 180)])
-    func longMessageInShortPaneQueuesWithoutCreatingAnUnsubmittedDraft(content: String) async throws {
+    func longMessageInShortPaneSubmitsPointerAndFetchesExactBody(content: String) async throws {
         let binary = try #require(TmuxExecutable.resolve())
         let runner = try PrivateTestTmuxRunner()
         defer { runner.stop(executable: binary) }
@@ -23,15 +23,19 @@ extension ZeusE2ETests {
         f.routing.deliveryMethod = .tmux; f.routing.tmuxTarget = pane
         f.routing.tmuxTargetSocketPath = environment.split(separator: ",").first.map(String.init)
         let bridge = try await f.bridge("short-pane", agent: .codex, pane: pane, tmuxEnvironment: environment)
-        let result = await f.runtime.sendUserMessage(content)
-        if case .queued(let reason) = result { #expect(reason.contains("too long")) } else { Issue.record("Expected preflight queue") }
-        #expect(f.runtime.ledger?.records.first?.delivery.attempts == 0)
+        #expect(await f.runtime.sendUserMessage(content) == .delivered)
+        let record = try #require(f.runtime.ledger?.records.first)
+        #expect(record.delivery.attempts == 1)
+        #expect(record.delivery.meta["tmux_pointer"] == "true")
+        #expect(record.delivery.ackedAt == nil)
         let capture = try await runner.run(executable: binary, arguments: ["capture-pane", "-p", "-t", pane], input: nil)
-        #expect(String(decoding: capture.stdout, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        let poll = try await bridge.call("zeus_get_responses")
-        let id = try #require(f.runtime.ledger?.records.first?.delivery.id)
-        #expect(poll["items"]?[0]?["delivery_id"] == .string(id))
-        #expect(await f.runtime.sendUserMessage("Short control " + String(repeating: "中文", count: 20) + " é é") == .delivered)
+        let screen = String(decoding: capture.stdout, as: UTF8.self)
+        #expect(screen.contains("zeus_get_responses"))
+        #expect(!screen.contains(content))
+        let poll = try await bridge.call("zeus_get_responses", ["id": .string(record.delivery.id)])
+        #expect(poll["items"]?[0]?["delivery_id"] == .string(record.delivery.id))
+        #expect(poll["items"]?[0]?["text"] == .string(record.delivery.content))
+        #expect(f.runtime.ledger?.records.first?.delivery.ackedAt != nil)
         try await bridge.finish()
     }
 }

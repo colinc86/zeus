@@ -114,7 +114,7 @@ private struct LM4Runner: ProcessRunning {
                             let retained = Set(try journal.items(matching: .init()).map(\.id))
                             for index in 0..<6 where !retained.contains("brief-evidence-\(index)") {
                                 try journal.append(.init(id: "brief-evidence-\(index)", time: proactiveClock.now.addingTimeInterval(-86400 + Double(index)), level: .focus, kind: .focus,
-                                    payload: .init(.init(description: "Synthetic project \(index): " + String(repeating: "reviewed project notes and prepared a draft for tomorrow; ", count: 6)))))
+                                    payload: .init(.init(description: String(repeating: "資料確認準備", count: 50)))))
                             }
                             live.noteProactiveActivity(at: proactiveClock.now)
                         }

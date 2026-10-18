@@ -56,7 +56,7 @@ def main():
             text = state['reflectionTexts'][0]
             assert len(text.encode()) <= 10240 and 'Sequences' in text and 'Notes/patterns.md' in text, text
             assert len(state['rules']) == 1 and state['rules'][0]['status'] == 'active', state
-            assert state['deliveries'][0]['attempts'] == 1, state
+            assert state['deliveries'][0]['attempts'] == 1 and state['deliveries'][0]['pointer'] is True, state
             assert state['receipts'][0]['payload']['value']['text'] == text, state
             notes = {name: (pane.project/'Notes'/name).read_text() for name in ['about-you.md', 'patterns.md']}
             assert all('14 October:' in value for value in notes.values()), notes
