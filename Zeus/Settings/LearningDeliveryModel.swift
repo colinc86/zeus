@@ -72,7 +72,10 @@ import ZeusProtocol
             // An unreadable journal cannot prove that an older Sent notice was false.
             if received == nil && cards.notices.contains(where: { $0.id == "n_" + item.id }) { continue }
             let notice: ThreadNotice
-            if item.kind == .reflection {
+            if item.kind == .brief || item.kind == .ruleTrigger {
+                let summary = item.kind == .brief ? "Morning brief request ready for your assistant" : "Rule trigger ready for your assistant"
+                notice = .init(id: "n_" + item.id, kind: .learning, createdAt: item.preparedAt, summary: summary, actionTitle: "View", detail: item.text)
+            } else if item.kind == .reflection {
                 notice = .init(id: "n_" + item.id, kind: .learning, createdAt: item.preparedAt, summary: "Daily reflection ready", actionTitle: "View", detail: item.text)
             } else {
                 notice = Self.preparedNotice(.init(id: item.id, kind: item.learningKind ?? .digest, createdAt: item.preparedAt, text: item.text))
@@ -92,7 +95,7 @@ import ZeusProtocol
     }
     private func reconcileNotices() {
         guard source() != nil else { return }
-        let active = matureHolds.filter { [.reflection, .learning].contains($0.kind) }
+        let active = matureHolds.filter { [.reflection, .learning, .brief, .ruleTrigger].contains($0.kind) }
             .filter { $0.reason != .olderSetup }
         let ids = Set(active.map { "learning-delivery-hold:" + $0.id })
         for notice in cards.notices where notice.id.hasPrefix("learning-delivery-hold:") && !ids.contains(notice.id) {

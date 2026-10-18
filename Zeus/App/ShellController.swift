@@ -20,6 +20,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     let cards: CardStore
     let status: AvatarStatusModel
     let settings: AppSettings
+    let morningBrief: MorningBriefSettings
+    @ObservationIgnored let proactivePresence = ProactivePresenceMonitor()
     let cardPanelState = ConversationPanelState()
     let messaging = AgentMessagingHub()
     let visibility: AvatarVisibilityModel
@@ -88,6 +90,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
          learningServices: LearningServices? = nil, requirePrivateJournal: Bool = false) {
         self.learningServices = learningServices
         self.defaults = defaults
+        morningBrief = MorningBriefSettings(defaults: defaults)
         self.popupSound = popupSound
         visibility = AvatarVisibilityModel(defaults: defaults)
         let cards = cards ?? CardStore()
@@ -246,7 +249,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         view.onClick = { [weak self] in self?.toggleCard() }
         view.onMove = { [weak self] point in self?.moveAvatar(to: point) }
         view.onDragEnd = { [weak self] in self?.savePosition() }
-        view.onInteraction = { [weak self] in self?.noteGhostInteraction() }
+        view.onInteraction = { [weak self] in self?.proactivePresence.interacted(); self?.noteGhostInteraction() }
         view.onHover = { [weak self] hovered in
             guard let self, self.avatarHovered != hovered else { return }
             self.avatarHovered = hovered
@@ -279,6 +282,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         syncVisibility()
         hotKey.onPressed = { [weak self] in
             guard let self else { return }
+            proactivePresence.interacted()
             if ConversationLayout.hotKeyCloses(isVisible: self.cardPanelState.isVisible, isKey: self.card.isKeyWindow) { self.closeCard() }
             else { self.showTalkPanel() }
         }
@@ -288,6 +292,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         observeMenuBarIconSetting()
         observeAssistantSessionSelection()
         observeDraftCancellation()
+        observeProactiveSettings()
         let welcomeAdded = WelcomeCard.installForLaunch(cards: cards, settings: settings, isHidden: visibility.isHidden)
         if welcomeAdded && !visibility.isHidden {
             cards.markSeen(id: WelcomeCard.id)
@@ -305,6 +310,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     func stop() {
         stopped = true
+        proactivePresence.stop()
         dismissDraftCancellation()
         settings.stopWatchingUserFolders()
         learn.stop()
@@ -431,7 +437,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
             avatar.animator().alphaValue = ghost.alpha
         }
     }
-    func noteGhostInteraction() { refreshGhost(interaction: true); scheduleDeadline() }
+    func noteGhostInteraction() { proactivePresence.check(); refreshGhost(interaction: true); scheduleDeadline() }
 
     private func observeGhostInputs() {
         guard !stopped else { return }
@@ -514,6 +520,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     #endif
 
     private func refreshSurfaceActivity() {
+        refreshProactivePresence()
         func visible(_ window: NSWindow?) -> Bool {
             #if DEBUG || ZEUS_PERFORMANCE_PROBE
             if ignoreOcclusionForPerformance { return window?.isVisible == true }
@@ -559,6 +566,28 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
               window === avatar || window === card || window === peekPanel || window === settingsWindow else { return }
         // willClose arrives before AppKit finishes ordering the retained Settings window out.
         Task { @MainActor [weak self] in self?.refreshSurfaceActivity() }
+    }
+
+    private func observeProactiveSettings() {
+        withObservationTracking {
+            _ = morningBrief.enabled; _ = morningBrief.hasEnabledPreference; _ = morningBrief.schedule; _ = morningBrief.hour; _ = morningBrief.minute
+            _ = settings.managedSession; _ = messaging.runtime
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                guard let self, !self.stopped else { return }
+                (self.messaging.runtime as? any ProactiveAssistantControlling)?.proactiveSettingsDidChange()
+                self.refreshProactivePresence()
+                self.observeProactiveSettings()
+            }
+        }
+        refreshProactivePresence()
+    }
+    private func refreshProactivePresence() {
+        proactivePresence.report = { [weak self] date in
+            (self?.messaging.runtime as? any ProactiveAssistantControlling)?.noteProactiveActivity(at: date)
+        }
+        proactivePresence.configure(enabled: !stopped && !suspended && morningBrief.effectiveEnabled(managed: settings.managedSession?.enabled == true)
+            && messaging.runtime is any ProactiveAssistantControlling)
     }
 
     @objc private func timeChanged(_ notification: Notification) {
@@ -1098,7 +1127,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
                                                                       messaging: messaging, preview: messaging, testMessage: testMessage,
                                                                       injectDemo: { [weak self] in self?.injectDemo($0) },
                                                                       resetPosition: { [weak self] in self?.resetPosition() },
-                                                                      navigation: settingsNavigation, login: login, hotKey: hotKey, activity: surfaceActivity, updater: updater, learn: learn, learning: learning, openJournal: { [weak self] in self?.showJournal() }, ratings: ratings))
+                                                                      navigation: settingsNavigation, login: login, hotKey: hotKey, activity: surfaceActivity, updater: updater, learn: learn, learning: learning, openJournal: { [weak self] in self?.showJournal() }, ratings: ratings, morningBrief: morningBrief))
             host.sizingOptions = []
             window.contentView = host
             SettingsWindowSize.restore(window, from: defaults, screen: NSScreen.main)

@@ -12,7 +12,14 @@ struct WaitingLearningRow: View {
     var start: @MainActor () -> Void = {}
     @State private var expanded = false
     @Environment(\.zeusPalette) private var palette
-    var title: String { item.kind == .reflection ? "Day reflection" : item.learningKind == .moment ? "Note" : "Morning summary" }
+    var title: String {
+        switch item.kind {
+        case .brief: "Morning brief request"
+        case .ruleTrigger: "Rule trigger"
+        case .reflection: "Day reflection"
+        default: item.learningKind == .moment ? "Note" : "Morning summary"
+        }
+    }
     var size: String { let words = item.text.split(whereSeparator: \.isWhitespace).count; return "\(words) \(words == 1 ? "word" : "words")" }
     var waitingLabel: String {
         let since = hold?.since ?? item.preparedAt
