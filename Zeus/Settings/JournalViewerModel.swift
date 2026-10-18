@@ -6,13 +6,18 @@ import Observation
 final class JournalViewerModel {
     @ObservationIgnored let journal: any JournalStore
     @ObservationIgnored var learningEnabled: () -> Bool = { true }
+    /// The morning brief request goes even with every level off (UX5); the empty caption says so.
+    @ObservationIgnored var briefEnabled: () -> Bool = { false }
+    static let emptyNothingPrepared = "Nothing yet. Zeus sends a morning summary, notes during the day and an evening reflection."
+    static let emptyLearningOff = "Nothing yet. Learn from me is off, so Zeus has nothing to send."
+    static let emptyLearningOffBriefOn = "Nothing yet. Learn from me is off. Zeus still asks for a morning brief; see Settings › Assistant."
     private(set) var hasReceivedItems = false
     var emptyCaption: String {
         if !search.isEmpty || (!sentOnly && (level != 0 || !app.isEmpty)) { return "Nothing matches." }
         if !sentOnly { return "Nothing kept on this day." }
         if hasReceivedItems || deliveries?.pending.isEmpty == false || deliveries?.discarded.isEmpty == false { return "Nothing received on this day." }
-        return learningEnabled() ? "Nothing yet. Zeus sends a summary each morning and notes during the day."
-            : "Nothing yet. Learn from me is off, so Zeus has nothing to send."
+        if learningEnabled() { return Self.emptyNothingPrepared }
+        return briefEnabled() ? Self.emptyLearningOffBriefOn : Self.emptyLearningOff
     }
     var activeFolder: LearningFolderModel? { folder?.folderURL == nil ? nil : folder }
     var folder: LearningFolderModel?

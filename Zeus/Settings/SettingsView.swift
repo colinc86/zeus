@@ -141,6 +141,10 @@ struct SettingsView: View {
                         TypingPrivacyView(model: typing.privacy).zeusThemeAppearance(settings.currentTheme)
                         SettingsDivider()
                     }
+                    WhatZeusSendsView(settings: learn.settings, activityOn: learn.settings.enabled, anyLevelOn: learning.enabled,
+                        briefOn: morningBrief?.effectiveEnabled(managed: managed.enabled),
+                        openAssistant: { navigation.tab = .agent }, openRules: { navigation.tab = .rules })
+                    SettingsDivider()
                     Text("What Zeus kept").settingsTitle()
                     Text("Every record exactly as stored, and everything sent to your assistant.").settingsCaption()
                     KeyboardButton("Open What Zeus Kept…") { openJournal() }.accessibilityLabel("Open What Zeus Kept…")

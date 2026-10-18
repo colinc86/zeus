@@ -4,6 +4,8 @@ import ZeusDesign
 struct MorningBriefSettingsView: View {
     @Bindable var settings: MorningBriefSettings
     let managed: Bool
+    static let firstActivityDetail = "When you start using the Mac, within the first hour of the day."
+    static let fixedTimeDetail = "At this time if the Mac is awake, otherwise when you next use it."
     private var selection: Binding<MorningBriefSchedule?> {
         Binding(get: { settings.schedule }, set: { if let value = $0 { settings.schedule = value } })
     }
@@ -26,9 +28,10 @@ struct MorningBriefSettingsView: View {
             VStack(alignment: .leading, spacing: ZeusTheme.Spacing.xs) {
                 Text("When").settingsHeading()
                 ZeusChoiceList([.init(id: MorningBriefSchedule.firstActivity, title: "After my first activity",
-                                     detail: "When you start using the Mac, within the first hour of the day.")], selection: selection)
-                HStack {
-                    ZeusChoiceList([.init(id: MorningBriefSchedule.fixedTime, title: "At a fixed time")], selection: selection)
+                                     detail: Self.firstActivityDetail)], selection: selection)
+                HStack(alignment: .top) {
+                    ZeusChoiceList([.init(id: MorningBriefSchedule.fixedTime, title: "At a fixed time",
+                                         detail: Self.fixedTimeDetail)], selection: selection)
                     ZeusFieldChrome {
                         DatePicker("Brief time", selection: time, displayedComponents: .hourAndMinute)
                             .datePickerStyle(.field).labelsHidden().font(.system(size: 13))

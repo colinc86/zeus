@@ -23,6 +23,8 @@ final class LearningPresentation {
     @ObservationIgnored private var journal: (any JournalStore)?
     @ObservationIgnored var presentationChanged: () -> Void = {}
     @ObservationIgnored var runtimeProblem: () -> String? = { nil }
+    /// Whether the morning brief request is on (Settings › Assistant); the ledger's empty caption reads it (UX5).
+    @ObservationIgnored var briefEnabled: () -> Bool = { false }
     @ObservationIgnored var contextDidChange: () -> Void = {}
     @ObservationIgnored private var observing = false
     @ObservationIgnored private var retentionTask: Task<Void, Never>?
@@ -130,6 +132,7 @@ final class LearningPresentation {
         viewer.deliveries = deliveries
         viewer.folder = folder
         viewer.learningEnabled = { [weak self] in self?.enabled ?? false }
+        viewer.briefEnabled = { [weak self] in self?.briefEnabled() ?? false }
         self.viewer = viewer; self.rules = RulesPaneModel(store: rules, journal: viewer)
         focus = FocusObserver(source: source, policies: policies,
             privateApps: { [weak learn] in learn?.settings.excludedApps ?? ExcludedApp.defaults },

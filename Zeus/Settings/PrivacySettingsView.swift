@@ -69,6 +69,7 @@ struct PrivacySettingsView: View {
             SettingsDivider()
             SettingsSegments(label: "Keep activity for", options: LearnSettings.retentionChoices.map { ($0, "\($0) days") },
                              selection: $settings.retentionDays)
+                .disabled(!settings.enabled)
             Text("Summaries are kept for a year. Older activity is deleted every night.").settingsCaption()
 
             if settings.enabled && observations == nil { pauseRow }
@@ -78,16 +79,10 @@ struct PrivacySettingsView: View {
             Text("What Zeus has recorded").settingsHeading()
             RecordedTodayList(events: learn.today)
 
-            SettingsDivider()
-            Text("Notes to your assistant").settingsHeading()
-            Text("Each morning Zeus sends a short summary of the day before. It can also send up to four notes a day:").settingsCaption()
-            ForEach(MomentKind.allCases) { kind in
-                Toggle(kind.title, isOn: Binding(get: { settings.momentKinds.contains(kind) },
-                                                 set: { if $0 { settings.momentKinds.insert(kind) } else { settings.momentKinds.remove(kind) } }))
-                    .accessibilityLabel(kind.title)
-            }
-
+            // With levels, SettingsView places "What Zeus sends your assistant" after them (PRIVACY.md §2.5).
             if observations == nil {
+            SettingsDivider()
+            WhatZeusSendsView(settings: settings, activityOn: settings.enabled, anyLevelOn: settings.enabled, briefOn: nil)
             if confirmingDelete { deleteConfirmation } else {
                 KeyboardButton("Delete Everything…") { confirmingDelete = true }
                     .buttonStyle(ZeusButtonStyle(.destructive, size: .small))
@@ -229,7 +224,7 @@ struct LearnIntroSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Learn from me").settingsTitle()
-            Text("Zeus records how you use this Mac so your assistant can pick better moments to help. Each morning it sends a short summary of the day before.")
+            Text("Zeus records how you use this Mac so your assistant can pick better moments to help. Each morning it sends your assistant a short summary of the day before, and each evening a summary of the last 28 days: your rhythm, focus and recurring tasks.")
                 .settingsBody().fixedSize(horizontal: false, vertical: true)
             list("Zeus records", Self.records)
             list("Zeus never records", Self.never)

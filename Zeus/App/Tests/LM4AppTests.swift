@@ -175,7 +175,7 @@ import ZeusProtocol
         viewer.deliveries = f.deliveries; viewer.sentOnly = true
         viewer.learningEnabled = { false }
         #expect(viewer.emptyCaption.contains("Learn from me is off"))
-        viewer.learningEnabled = { true }; #expect(viewer.emptyCaption.contains("each morning"))
+        viewer.learningEnabled = { true }; #expect(viewer.emptyCaption.contains("morning summary"))
         f.pending(); viewer.day = f.now.addingTimeInterval(-86400)
         #expect(viewer.waiting.count == 1 && viewer.waiting[0].text.contains("\n"))
         viewer.search = "missing"; #expect(viewer.waiting.isEmpty && viewer.emptyCaption == "Nothing matches.")

@@ -2474,7 +2474,7 @@ extension DesignerAuditRenders {
     /// UX3: fresh-eyes audit renders. Nothing here reads the user's Mac; stores and capture are the LM2 fakes.
     @Test func ux3() async throws {
         let previousOut = Snap.out
-        Snap.out = Snap.repo.appendingPathComponent("build/tmp/ux3")
+        Snap.out = Snap.repo.appendingPathComponent(ProcessInfo.processInfo.environment["UX_RENDER_DIR"] ?? "build/tmp/ux3")
         defer { Snap.out = previousOut }
         let now = Date()
         func at(_ minutes: Double) -> Date { now.addingTimeInterval(minutes * 60) }
@@ -2583,5 +2583,44 @@ extension DesignerAuditRenders {
             }
         }
         try Snap.dump("ux3-log", Snap.log.joined(separator: "\n"))
+    }
+}
+
+extension DesignerAuditRenders {
+    /// UX5: Settings say everything Zeus sends. Before/after renders go under build/tmp/ux5/<UX_RENDER_DIR>.
+    @Test func ux5() async throws {
+        let previousOut = Snap.out
+        Snap.out = Snap.repo.appendingPathComponent(ProcessInfo.processInfo.environment["UX_RENDER_DIR"] ?? "build/tmp/ux5/after")
+        defer { Snap.out = previousOut }
+        for look in Snap.Look.basic {
+            let r = LM2ReviewFixture(theme: "classic", font: look.font); defer { r.cleanup() }
+            let brief = MorningBriefSettings(defaults: r.f.defaults); brief.enabled = true
+            r.learn.setEnabled(true)
+            try await Snap.render("ux5-settings-privacy-on", look: look, padding: 0, settle: 0.6) { r.settings(.privacy, morningBrief: brief) }
+            r.learn.setEnabled(false)
+            try await Snap.render("ux5-settings-privacy-off", look: look, padding: 0, settle: 0.6) { r.settings(.privacy, morningBrief: brief) }
+            try await Snap.render("ux5-settings-assistant", look: look, padding: 0, settle: 0.6) { r.settings(.agent, morningBrief: brief) }
+            if let viewer = r.learning.viewer {
+                r.journal.records = []; viewer.sentOnly = true
+                viewer.learningEnabled = { false }; viewer.briefEnabled = { true }; viewer.reload()
+                try await Snap.render("ux5-ledger-learning-off-brief-on", look: look, padding: 0, size: CGSize(width: 720, height: 300), settle: 0.6) {
+                    JournalWindowView(model: viewer, settings: r.f.settings).background(Color(nsColor: .windowBackgroundColor))
+                }
+                viewer.briefEnabled = { false }; viewer.reload()
+                try await Snap.render("ux5-ledger-learning-off", look: look, padding: 0, size: CGSize(width: 720, height: 300), settle: 0.6) {
+                    JournalWindowView(model: viewer, settings: r.f.settings).background(Color(nsColor: .windowBackgroundColor))
+                }
+            }
+            try await Snap.render("ux5-folder-connect-own-no-journal", look: look, padding: 16, settle: 0.5) {
+                LearningFolderView(model: LearningFolderModel(provider: nil), managed: false).frame(width: 600)
+                    .environment(\.zeusTheme, r.f.settings.currentTheme).environment(\.zeusFontChoice, .system)
+                    .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).background(Color(nsColor: .windowBackgroundColor))
+            }
+            try await Snap.render("ux5-intro-sheet", look: look, padding: 0, settle: 0.5) {
+                LearnIntroSheet(turnOn: {}, notNow: {}).environment(\.zeusTheme, r.f.settings.currentTheme)
+                    .background(Color(nsColor: .windowBackgroundColor))
+            }
+        }
+        try Snap.dump("ux5-log", Snap.log.joined(separator: "\n"))
     }
 }
