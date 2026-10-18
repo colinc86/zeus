@@ -38,6 +38,10 @@ import ZeusProtocol
         #expect(!viewer.step(1)); #expect(viewer.step(-1))
         viewer.expanded = true
         #expect(viewer.back() && !viewer.isOpen && viewer.expanded)
+        viewer.threadBookmark = .init(entryID: "old", relativeTop: 20, firstEntryID: "old", width: 380)
+        viewer.threadOffset = 500; viewer.fromPeek = true
+        #expect(viewer.open(first))
+        #expect(viewer.threadBookmark == nil && viewer.threadOffset == nil && !viewer.fromPeek)
     }
     @Test func folderMetadataUsesShortDatesAndReadableKinds() throws {
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = try #require(TimeZone(secondsFromGMT: 0))
@@ -111,6 +115,43 @@ import ZeusProtocol
         viewer.selectedText = "   " + String(repeating: "a", count: 2_050) + "   "
         viewer.quote(in: conversation)
         #expect(conversation.draft == "> " + String(repeating: "a", count: 2_000) + "…\n\n")
+    }
+
+    @Test func automaticChipsFollowDraftButExplicitChipsSurvive() throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let attachment = try file("draft.md", in: root)
+        let viewer = DocumentViewerModel(); defer { viewer.close() }
+        let conversation = ConversationModel(cards: CardStore(fileURL: root.appendingPathComponent("cards.json")), messaging: DocumentMessages())
+        #expect(viewer.open(attachment))
+        viewer.selectedText = "Quoted passage"; viewer.quote(in: conversation)
+        #expect(conversation.draftAttachments.count == 1)
+        conversation.draft = " \n\n"; viewer.typed(in: conversation)
+        #expect(conversation.draftAttachments.isEmpty)
+        conversation.draft = "Again"; viewer.typed(in: conversation)
+        #expect(conversation.draftAttachments.count == 1)
+        viewer.back(); viewer.removeEmptyAutomaticAttachments(in: conversation)
+        #expect(conversation.draftAttachments.count == 1)
+        conversation.draft = ""; viewer.removeEmptyAutomaticAttachments(in: conversation)
+        #expect(conversation.draftAttachments.isEmpty)
+        #expect(viewer.open(attachment))
+        conversation.draft = "Again"; viewer.typed(in: conversation)
+        #expect(viewer.navigate(URL(fileURLWithPath: attachment.target)))
+        viewer.ask(in: conversation) // Same path, a new navigation attachment ID.
+        conversation.draft = ""
+        viewer.typed(in: conversation); viewer.back(); viewer.removeEmptyAutomaticAttachments(in: conversation)
+        #expect(conversation.draftAttachments.count == 1)
+    }
+    @Test func removingAutomaticChipThenClearingAndTypingDoesNotReattach() throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let attachment = try file("draft.md", in: root)
+        let viewer = DocumentViewerModel(); defer { viewer.close() }
+        let conversation = ConversationModel(cards: CardStore(fileURL: root.appendingPathComponent("cards.json")), messaging: DocumentMessages())
+        #expect(viewer.open(attachment))
+        conversation.draft = "A"; viewer.typed(in: conversation)
+        conversation.draftAttachments.removeAll { $0.id == attachment.id }
+        conversation.draft = ""; viewer.typed(in: conversation)
+        conversation.draft = "B"; viewer.typed(in: conversation)
+        #expect(conversation.draftAttachments.isEmpty)
     }
 
     @Test func watchesInPlaceWritesAndRearmsAfterReplacementAndReappearance() async throws {

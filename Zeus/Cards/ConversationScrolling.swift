@@ -49,6 +49,17 @@ enum ConversationScrollPolicy {
     }
     private weak var observedDocument: NSView?
     private var following = false
+    private var restoration: (offset: CGFloat, completion: (@MainActor () -> Void)?)?
+    var isRestoring: Bool { restoration != nil }
+
+    /// Keep the requested position through native layout and focus updates, until the next user navigation.
+    func restore(to offset: CGFloat, completion: (@MainActor () -> Void)? = nil) {
+        following = false
+        restoration = (offset, completion ?? restoration?.completion)
+        scheduleFollow()
+    }
+    func stopRestoring() { restoration = nil }
+
     private var newestTop: CGFloat?
     private var layoutTask: Task<Void, Never>?
 
@@ -64,12 +75,20 @@ enum ConversationScrollPolicy {
                                               name: NSView.frameDidChangeNotification, object: document)
         NotificationCenter.default.addObserver(self, selector: #selector(documentLayoutChanged),
                                               name: NSView.boundsDidChangeNotification, object: document)
+        if let clip = scrollView?.contentView {
+            clip.postsBoundsChangedNotifications = true
+            NotificationCenter.default.addObserver(self, selector: #selector(documentLayoutChanged),
+                name: NSView.boundsDidChangeNotification, object: clip)
+            NotificationCenter.default.addObserver(self, selector: #selector(documentLayoutChanged),
+                name: NSView.frameDidChangeNotification, object: clip)
+        }
         scheduleFollow()
     }
 
     /// Retain the follow request until actual native document layout catches up with SwiftUI.
     /// Document-size notifications retry it; there is no polling clock while the panel is idle.
     func followLatest(newestMessageTop: CGFloat?) {
+        stopRestoring()
         following = true
         newestTop = newestMessageTop
         scheduleFollow()
@@ -84,11 +103,19 @@ enum ConversationScrollPolicy {
     @objc private func documentLayoutChanged() { scheduleFollow() }
 
     private func scheduleFollow() {
-        guard following, layoutTask == nil else { return }
+        guard following || restoration != nil, layoutTask == nil else { return }
         layoutTask = Task { @MainActor [weak self] in
             await Task.yield()
             guard let self, !Task.isCancelled else { return }
             self.layoutTask = nil
+            if let request = self.restoration {
+                self.scroll(to: request.offset)
+                if let viewport = self.viewport, abs(viewport.offset - request.offset) < 1 {
+                    self.restoration?.completion = nil
+                    request.completion?()
+                }
+                return
+            }
             guard self.following, let viewport = self.viewport else { return }
             self.scroll(to: ConversationAutoScroll.targetOffset(viewport: viewport,
                                                                 newestMessageTop: self.newestTop, pinned: true))
@@ -115,6 +142,7 @@ enum ConversationScrollPolicy {
     }
 
     func perform(_ command: ConversationScrollCommand) {
+        stopRestoring()
         guard let scrollView, let document = scrollView.documentView else { return }
         let clip = scrollView.contentView
         let amount: CGFloat = switch command {

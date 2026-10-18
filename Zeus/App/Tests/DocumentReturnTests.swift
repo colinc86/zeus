@@ -33,7 +33,7 @@ import ZeusProtocol
     let attachment: ZeusProtocol.Attachment
     let second: ZeusProtocol.Attachment
     let sourceID: String
-    init(index: Int) throws {
+    init(index: Int, count: Int = 430) throws {
         root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defaults = try #require(UserDefaults(suiteName: suite))
@@ -47,7 +47,7 @@ import ZeusProtocol
         try "# Next".write(toFile: second.target, atomically: true, encoding: .utf8)
         sourceID = "history-\(index)"
         let origin = Date().addingTimeInterval(-10000)
-        for i in 0..<430 {
+        for i in 0..<count {
             cards.add(Card(id: "history-\(i)", kind: .message,
                 body: "History \(i). " + String(repeating: "A paragraph that wraps at the conversation width. ", count: i % 4 + 1),
                 attachments: i == index ? [attachment, second] : [], createdAt: origin.addingTimeInterval(Double(i))))
@@ -69,7 +69,7 @@ import ZeusProtocol
         self.host = host; window.contentView = host; panel.isVisible = true
         model.openPanel(viewportManaged: true)
         activity.update(suspended: false, avatar: false, conversation: true, peek: false, settings: false)
-        window.orderFront(nil); window.makeKey()
+        window.orderFront(nil)
     }
     func unmount() { panel.isVisible = false; model.closePanel(); window.contentView = nil; host = nil }
     func cleanup() {
@@ -111,7 +111,9 @@ import ZeusProtocol
 }
 
 @MainActor @Suite(.serialized) struct DocumentReturnTests {
-    @Test(arguments: [100, 400]) func reopeningViewerReturnsToMiddleOfLoadedHistory(index: Int) async throws {
+    enum ReturnPath: String, CaseIterable { case messages, escape, bracket, expanded, collapsed, reopened, stepped, linked, arrival }
+    @Test(arguments: [100, 400, 428], ReturnPath.allCases)
+    func returnsToSameVisibleContent(index: Int, path: ReturnPath) async throws {
         let enhanced = NSSelectorFromString("accessibilitySetValue:forAttribute:")
         let previous = NSApp.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? false
         NSApp.perform(enhanced, with: NSNumber(value: true), with: "AXEnhancedUserInterface")
@@ -121,22 +123,74 @@ import ZeusProtocol
         if index == 100 { try f.press("Load Earlier Messages"); try await f.settle() }
         let driver = ConversationScrollDriver(); driver.scrollView = f.scroll
         driver.scroll(to: f.viewport.offset - 70); try await f.settle()
+        let beforeWidth = f.scroll?.bounds.width
         let before = f.viewport.offset
         let beforeChip = try f.chipFrame()
+        print("DV2 initial index=\(index) offset=\(before) chip=\(beforeChip) viewport=\(f.viewport)")
         try #require(before > 1000)
         try f.press(AttachmentChip.accessibilityLabel(f.attachment)); try await f.settle()
         #expect(f.panel.document.isOpen)
+        print("DV2 bookmark \(String(describing: f.panel.document.threadBookmark))")
         #expect(abs((f.panel.document.threadOffset ?? -1) - before) < 3)
-        f.cards.add(Card(id: "arrival", kind: .message, body: "Arrived while reading"))
-        f.panel.document.expanded = true; try await f.settle()
-        f.unmount(); f.mount(); try await f.settle()
-        try f.press("Back to Messages"); try await f.settle()
-        print("DV2 native return: before=\(before) after=\(f.viewport.offset) content=\(f.viewport.contentHeight)")
+        if path == .arrival || path == .reopened {
+            f.cards.add(Card(id: "arrival", kind: .message, body: "Arrived while reading"))
+        }
+        if [.expanded, .collapsed, .reopened].contains(path) {
+            f.panel.document.expanded = true; try await f.settle()
+            #expect(f.scroll?.bounds.width == beforeWidth)
+        }
+        if path == .collapsed { f.panel.document.expanded = false; try await f.settle() }
+        if path == .reopened { f.unmount(); f.mount(); try await f.settle() }
+        if path == .stepped { #expect(f.panel.document.step(1)); try await f.settle() }
+        if path == .linked {
+            #expect(f.panel.document.navigate(URL(fileURLWithPath: f.second.target))); try await f.settle()
+            f.panel.document.backRequest += 1; try await f.settle()
+            #expect(f.panel.document.isOpen)
+        }
+        if path == .escape || path == .bracket {
+            let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero,
+                modifierFlags: path == .bracket ? .command : [], timestamp: 0,
+                windowNumber: f.window.windowNumber, context: nil, characters: path == .bracket ? "[" : "\u{1b}",
+                charactersIgnoringModifiers: path == .bracket ? "[" : "\u{1b}", isARepeat: false,
+                keyCode: path == .bracket ? 33 : 53))
+            let command = try #require(DocumentKeyboard.command(event))
+            #expect(f.panel.document.handle(command, conversation: f.model))
+        } else { try f.press("Back to Messages") }
+        try await f.settle()
+        print("DV2 \(path.rawValue) native return: before=\(before) after=\(f.viewport.offset) content=\(f.viewport.contentHeight)")
         print("DV2 chip before=\(beforeChip) after=\(try f.chipFrame())")
         #expect(abs(try f.chipFrame().minY - beforeChip.minY) < 3)
         #expect(!f.panel.document.isOpen)
-        #expect(abs(f.viewport.offset - before) < 3)
+        #expect(f.scroll?.bounds.width == beforeWidth)
+        // A rebuilt LazyVStack estimates offscreen rows anew; content-relative position is authoritative.
         #expect(f.model.draft == "Keep this draft")
-        #expect(f.panel.focusedControlForDiagnostics == .init(entryID: "card:\(f.sourceID)", controlID: "open:\(f.attachment.id)"))
+        // Offscreen fixtures do not take keyboard focus from the human. The existing
+        // Q3 native return test checks actual chip focus in a key panel.
+        if path != .reopened { #expect(abs(f.viewport.offset - before) < 3) }
     }
+    @Test(arguments: [false, true])
+    func emptyDraftCleanupRunsOnEveryCloseBoundary(explicit: Bool) async throws {
+        let f = try DV2Fixture(index: 10, count: 30); defer { f.cleanup() }
+        f.model.draft = ""; f.mount(); try await f.settle()
+        for route in 0..<3 {
+            #expect(f.panel.document.open(f.attachment))
+            try await f.settle()
+            f.panel.document.selectedText = "A quoted passage"
+            f.panel.document.quote(in: f.model)
+            if explicit { f.panel.document.ask(in: f.model) }
+            // No intervening render: the text starts and finishes empty. The close
+            // boundary must clean up even when SwiftUI coalesces the draft changes.
+            f.model.draft = ""
+            switch route {
+            case 0: f.panel.document.backRequest += 1
+            case 1: f.panel.document.close() // Pills and strip leave through close().
+            default: _ = f.cards.clearConversation()
+            }
+            try await f.settle()
+            #expect(!f.panel.document.isOpen)
+            #expect(f.model.draftAttachments.isEmpty == !explicit, "close route \(route)")
+            f.model.draftAttachments = []
+        }
+    }
+
 }
