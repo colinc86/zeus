@@ -6,6 +6,31 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.3.3</title>
+      <pubDate>Sun, 18 Oct 2026 20:00:37 GMT</pubDate>
+      <sparkle:version>26</sparkle:version>
+      <sparkle:shortVersionString>0.3.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<h2 dir="auto">Calmer, safer and more reliable</h2>
+<h3 dir="auto">Fixes</h3>
+<ul dir="auto">
+<li><strong>Handed-over work no longer leaves Zeus waiting.</strong> When your assistant hands you something with actions such as "Looks good" or "Revise", Zeus no longer treats it as an unanswered question. The avatar doesn't sit in its waiting pose, and assistant updates and new instructions aren't held back while such a card is open. Replying in the chat closes the actions, and a newer version of the same item replaces them.</li>
+<li><strong>Unread means unread.</strong> Cards your assistant withdrew, or that expired, no longer count as unread or make Zeus look like it wants your attention.</li>
+<li><strong>Restart Assistant waits for a good moment.</strong> Restarting no longer interrupts your assistant mid-task or throws away text you've typed in its Terminal. Zeus restarts it once it's idle, and you can cancel while it waits. If the assistant is stuck or has stopped, Restart Now is offered, with a warning.</li>
+<li><strong>The menu shows its questions.</strong> If Restart Assistant needs you to confirm something, such as a pending switch to another assistant, Zeus now opens Settings at that question instead of doing nothing.</li>
+<li><strong>OpenCode recovers after Zeus restarts.</strong> If Zeus quits while sending a message to OpenCode, it finishes sending it when it starts again, so later messages don't get stuck behind it.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.3.3/Zeus-0.3.3.zip" type="application/octet-stream" sparkle:edSignature="kfmnJL6n42xEEEOXpQKWLINanI1CgaHdmrZf5WoMLaSGUHFwOUKdFpL+SvfjklYrjrH7wikNaWqY5GMFTcL8Dw==" length="14813957"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.3.2</title>
       <pubDate>Sun, 18 Oct 2026 17:13:34 GMT</pubDate>
       <sparkle:version>25</sparkle:version>
