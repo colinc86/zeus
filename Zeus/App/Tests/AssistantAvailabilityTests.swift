@@ -27,6 +27,11 @@ import ZeusProtocol
     func sendUserMessage(_ text: String) async -> MessageSendResult { .delivered }
 }
 
+@MainActor private final class AvailabilityPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
+}
+
 @MainActor private struct AvailabilityPasswords: OpenCodePasswordStoring {
     func read() -> String? { nil }
     func save(_ password: String?) {}
@@ -78,17 +83,16 @@ import ZeusProtocol
     @Test func checkAgainButtonRefreshesAfterInstallingTmux() async throws {
         let f = try AvailabilityFixture(); defer { f.cleanup() }
         ZeusFonts.registerBundled()
-        let host = TestHostingView(rootView: ScrollView {
-            AssistantSettingsView(settings: f.settings, managed: f.model, messaging: f.hub,
-                testMessage: ComposeModel(cards: f.cards, messaging: f.hub)).padding(24)
-        }.environment(\.accessibilityEnabled, true).environment(\.zeusFontChoice, .system))
-        let window = NSPanel(contentRect: .init(x: -20000, y: -20000, width: 720, height: 900),
+        let host = TestHostingView(rootView: AssistantSettingsView(settings: f.settings, managed: f.model, messaging: f.hub,
+                testMessage: ComposeModel(cards: f.cards, messaging: f.hub)).padding(24).frame(width: 720, height: 1800, alignment: .topLeading).environment(\.accessibilityEnabled, true).environment(\.zeusFontChoice, .system))
+        let window = AvailabilityPanel(contentRect: .init(x: -20000, y: -20000, width: 720, height: 1800),
             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.animationBehavior = .none
         window.contentView = host; window.orderFront(nil)
         defer { window.orderOut(nil); window.contentView = nil; window.close() }
         for _ in 0..<8 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
-        let button = try #require(Self.nodes(host).first { Self.label($0) == "Check Again" })
+        let nodes = Self.nodes(host)
+        let button = try #require(nodes.first { Self.label($0) == "Check Again" })
         #expect(!f.model.canStart && f.model.disabledActions.contains(.start))
         f.controller.tmuxInstalled = true
         #expect((button as AnyObject).accessibilityPerformPress?() == true)
@@ -121,7 +125,7 @@ import ZeusProtocol
                 let selector = NSSelectorFromString("accessibilityChildren")
                 children = node.responds(to: selector) ? node.perform(selector)?.takeUnretainedValue() as? [Any] ?? [] : []
             }
-            return [node] + (children.compactMap { $0 as? NSObject } + ((node as? NSView)?.subviews ?? []))
+            return [node] + children.compactMap { $0 as? NSObject }
                 .flatMap { walk($0, depth: depth + 1) }
         }
         return walk(root, depth: 0)
