@@ -6,6 +6,29 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.3.4</title>
+      <pubDate>Sun, 18 Oct 2026 22:48:44 GMT</pubDate>
+      <sparkle:version>27</sparkle:version>
+      <sparkle:shortVersionString>0.3.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<h2 dir="auto">Your privacy settings, honored everywhere</h2>
+<h3 dir="auto">Fixes</h3>
+<ul dir="auto">
+<li><strong>Summaries follow your current privacy settings.</strong> If you make an app private, or turn off screen or typing learning, Zeus's next morning summary, evening reflection and morning brief leave out anything from it, including what was recorded earlier. If one is ready but not yet sent when you change a setting, Zeus rebuilds it, along with the summary file in your assistant's folder. What your assistant already received stays as it was.</li>
+<li><strong>A quieter conversation.</strong> Once a day is over, everything Zeus sent your assistant that day shows as one line: "Zeus sent your assistant 5 things · Show". Show lists each item. Today's items and anything still waiting stay on their own lines.</li>
+<li><strong>Setup can always check again.</strong> If Zeus says something is missing, such as tmux, and tells you to press Check Again, the button is there. Zeus also checks again by itself when you come back to it after installing something.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.3.4/Zeus-0.3.4.zip" type="application/octet-stream" sparkle:edSignature="z0qnzvFXIXbS3th52wBYftYXYNdM5+IR74N9weMki6dxDEdqmvXKErSsR3xLawJuhUSbcpwu+qFYypB9hz2jBg==" length="14908193"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.3.3</title>
       <pubDate>Sun, 18 Oct 2026 20:00:37 GMT</pubDate>
       <sparkle:version>26</sparkle:version>
