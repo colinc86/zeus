@@ -34,6 +34,9 @@ def main():
         return None,{}
     Model.action=action;Model.stage=0;Model.requests=[];Model.completion_text='LM4 ready'
     try:
+        existing_project_file = pane.project/'Zeus/App/Important.swift'
+        existing_project_file.parent.mkdir(parents=True)
+        existing_project_file.write_text('// Synthetic pre-existing user project work\n')
         pane.server,pane.worker=start_model(Model)
         pane.env.update(ANTHROPIC_API_KEY='lm4-local-fixture',ANTHROPIC_BASE_URL=f'http://127.0.0.1:{pane.server.server_port}')
         profile={'hasCompletedOnboarding':True,'theme':'dark','hasAcknowledgedCostThreshold':True,'projects':{str(pane.project):{'hasTrustDialogAccepted':True}}}
@@ -65,7 +68,9 @@ def main():
             assert state['receipts'][0]['payload']['value']['details']['sessionLabel']=='Claude · Zeus',state
             erased=control.call('eraseThenLateAck')
             assert not erased['receipts'] and erased['deliveries'][0]['discarded'],erased
-            proof={'assistant_read_digest_file':True,'erasure_late_ack_suppressed':True,'agent':pane.version,'tools':seen,'state':state,'model_received_digest':any('Synthetic morning summary: working on a fixture project.' in json.dumps(b.get('messages',[])) for b in Model.requests),'isolation':'private tmux, disposable HOME/config, localhost synthetic model, fixture encryption key'}
+            assert existing_project_file.read_text() == '// Synthetic pre-existing user project work\n'
+            assert not (pane.project/relative).exists(), 'Delete Everything must remove the exported summary'
+            proof={'preexisting_project_survives_erasure':True,'owned_summary_erased':True,'assistant_read_digest_file':True,'erasure_late_ack_suppressed':True,'agent':pane.version,'tools':seen,'state':state,'model_received_digest':any('Synthetic morning summary: working on a fixture project.' in json.dumps(b.get('messages',[])) for b in Model.requests),'isolation':'private tmux, disposable HOME/config, localhost synthetic model, fixture encryption key'}
             assert proof['model_received_digest']
             proof=scrub_paths(proof,{str(pane.root):'/FIXTURE',str(REPO):'<worktree>'})
             (OUT/'proof.json').write_text(json.dumps(proof,indent=2)+'\n')
