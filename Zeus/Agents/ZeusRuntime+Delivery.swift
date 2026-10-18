@@ -102,6 +102,7 @@ extension ZeusRuntime {
                   self.ledger?.record(id: id)?.isPending == true else { throw CancellationError() }
             try self.ledger?.updateRecord(id: id) {
                 $0.delivery.meta["tmux_paste_destination"] = destination
+                $0.delivery.meta.removeValue(forKey: "tmux_hidden_paste")
                 if destination != nil { $0.delivery.meta["tmux_pointer"] = context?.usesTmuxPointer == true ? "true" : nil }
                 if recoveringPaste && destination == nil && context?.didSubmitRecordedTmuxPaste == true {
                     $0.delivery.failedAt = nil
@@ -122,6 +123,12 @@ extension ZeusRuntime {
                 try await connector.deliver(saved.delivery, to: session, bridge: bridge, routing: context)
                 outcome = .delivered
             } catch {
+                if case .hidden = error as? TmuxPasteRecoveryError, let self,
+                   self.generation == token, self.sendTokens[id] == sendToken,
+                   self.ledger?.record(id: id)?.isPending == true {
+                    do { try self.ledger?.update(id: id) { $0.meta["tmux_hidden_paste"] = "true" } }
+                    catch { self.storageProblem = "Couldn't save the paste review state." }
+                }
                 postponed = (error as? ConnectorError)?.postponesDelivery == true
                     && self?.ledger?.record(id: id)?.delivery.meta["tmux_paste_destination"] == nil && !context.didMutateTmuxInput
                 if let self, let current = self.ledger?.record(id: id), let problem = self.nativeDestinationProblem(current) {
@@ -340,6 +347,7 @@ extension ZeusRuntime {
     }
 
     static func deliveryErrorDescription(_ error: any Error) -> String {
+        if let recovery = error as? TmuxPasteRecoveryError { return recovery.localizedDescription }
         if let connector = error as? ConnectorError { return connector.localizedDescription }
         if let link = error as? BridgeLinkError {
             switch link {
@@ -497,7 +505,7 @@ extension ZeusRuntime {
         let problems = pending.filter { record in
             let inactiveManaged = belongsToManagedAssistant(record) && [.off, .stopped].contains(managedStatus)
                 || (belongsToManagedAssistant(record) && { if case .failed = managedStatus { return true }; return false }())
-            return record.delivery.failedAt != nil || (clock.now.timeIntervalSince(record.delivery.createdAt) > 120
+            return record.delivery.meta["tmux_hidden_paste"] == "true" || record.delivery.failedAt != nil || (clock.now.timeIntervalSince(record.delivery.createdAt) > 120
                 && (!canConsume(record) || nativeDestinationProblem(record) != nil || inactiveManaged))
         }
         let ids = Set(problems.map { $0.delivery.id })
@@ -514,7 +522,11 @@ extension ZeusRuntime {
             deliveryIssue = DeliveryIssue(title: "Couldn't reach your assistant", detail: "\(explanation) \(count) \(count == 1 ? "message is" : "messages are") waiting. " + (failed > 0 ? "Retry now, or discard them." : "Zeus sends them when it's back."), pendingCount: count,
                                           since: problems.map { $0.delivery.failedAt ?? $0.delivery.createdAt.addingTimeInterval(120) }.min() ?? clock.now)
         }
-        if problems.contains(where: { $0.delivery.meta["tmux_paste_destination"] != nil }) {
+        if problems.contains(where: { $0.delivery.meta["tmux_hidden_paste"] == "true" }) {
+            deliveryIssue = DeliveryIssue(title: "Zeus's saved text is waiting in Terminal",
+                detail: TmuxPasteRecoveryError.hidden.localizedDescription,
+                pendingCount: pending.count, since: deliveryIssue?.since ?? clock.now)
+        } else if problems.contains(where: { $0.delivery.meta["tmux_paste_destination"] != nil }) {
             deliveryIssue = DeliveryIssue(title: "Finishing a saved Zeus message",
                 detail: "Zeus is finishing its saved message in Terminal. Your later messages are queued.",
                 pendingCount: pending.count, since: deliveryIssue?.since ?? clock.now)

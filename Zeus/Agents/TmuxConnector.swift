@@ -4,9 +4,14 @@ import Foundation
 import ZeusLink
 import ZeusProtocol
 
-enum TmuxPasteRecoveryError: Error, LocalizedError {
-    case absent
-    var errorDescription: String? { "Zeus's saved paste is no longer in Terminal. It was not pasted again." }
+enum TmuxPasteRecoveryError: Error, LocalizedError, Equatable {
+    case absent, hidden
+    var errorDescription: String? {
+        switch self {
+        case .absent: "Zeus's saved paste is no longer in Terminal. It was not pasted again."
+        case .hidden: "OpenCode is holding text Zeus pasted before the relaunch, and Zeus can't read it back. Open Terminal to send it or clear it. Zeus never submits text it can't see."
+        }
+    }
 }
 
 /// Shared discovery for managed launch, Settings and per-attempt tmux delivery.
@@ -408,6 +413,44 @@ struct TmuxInputSnapshot: Equatable, Sendable {
         }
         return remaining.isEmpty
     }
+    /// Recover only a fully visible, bounded OpenCode composer. Hidden paste
+    /// labels cannot establish the original bytes after a process restart.
+    func containsOnlyOpenCodePaste(_ text: String) -> Bool {
+        guard let start = openCodeBoxStart, start < y,
+              let border = lines.suffix(4).first(where: { $0.hasPrefix("  ╹") }) else { return false }
+        let edge = border.prefix { $0 == " " || $0 == "╹" || $0 == "▀" || $0 == "━" }
+            .replacingOccurrences(of: " +$", with: "", options: .regularExpression).count
+        guard edge > 8, x < edge,
+              lines[start].prefix(edge).dropFirst(3).trimmingCharacters(in: .whitespaces).isEmpty,
+              let mode = lines.indices.last(where: { $0 > y && lines[$0].hasPrefix("  ┃  ") && lines[$0].contains(" · ") }),
+              ((y + 1)..<mode).allSatisfy({ lines[$0].hasPrefix("  ┃") && lines[$0].prefix(edge).dropFirst(3).trimmingCharacters(in: .whitespaces).isEmpty }),
+              !openCodePasteIsHidden else { return false }
+        var remaining = text[...]
+        for row in (start + 1)...y {
+            guard lines[row].hasPrefix("  ┃  ") else { return false }
+            let body = String(lines[row].prefix(edge).dropFirst(5)).replacingOccurrences(of: " +$", with: "", options: .regularExpression)
+            guard remaining.hasPrefix(body), !body.isEmpty || remaining.first == "\n" else { return false }
+            remaining = remaining.dropFirst(body.count)
+            if row < y {
+                let endSpaces = remaining.prefix { $0 == " " }.count
+                if remaining.dropFirst(endSpaces).first == "\n" { remaining = remaining.dropFirst(endSpaces + 1) }
+                else {
+                    let gap = edge - 6 - Self.cellWidth(body)
+                    let next = remaining.dropFirst(endSpaces).prefix { !$0.isWhitespace }
+                    guard gap >= 0,
+                          endSpaces > 0 ? endSpaces + Self.cellWidth(String(next)) >= gap : (gap == 0 || (gap == 1 && remaining.first.map { Self.cellWidth(String($0)) == 2 } == true)) else { return false }
+                    remaining = remaining.dropFirst(endSpaces)
+                }
+            }
+            else if x != 5 + Self.cellWidth(body) { return false }
+        }
+        return remaining.isEmpty
+    }
+    var openCodePasteIsHidden: Bool {
+        guard let start = openCodeBoxStart else { return false }
+        return lines[start...y].contains { $0.contains("[Pasted ~") }
+    }
+
     /// Verify only the text we pasted is present, including wrapped lines. Extra
     /// human input prevents Enter. Claude submits the complete bounded paragraph
     /// regardless of its caret position; Codex's known composer is also bounded.
@@ -423,20 +466,7 @@ struct TmuxInputSnapshot: Equatable, Sendable {
             // spaces dropped at a wrap boundary. Hidden paste-summary tokens fail.
             guard start < y, lines[start].dropFirst(3).trimmingCharacters(in: .whitespaces).isEmpty,
                   Array(lines.dropFirst(y + 1)) == Array(before.lines.dropFirst(before.y + 1)) else { return false }
-            var remaining = text[...]
-            for row in (start + 1)...y {
-                guard lines[row].hasPrefix("  ┃  ") else { return false }
-                let body = String(lines[row].dropFirst(5)).replacingOccurrences(of: " +$", with: "", options: .regularExpression)
-                guard remaining.hasPrefix(body), !body.isEmpty || remaining.first == "\n" else { return false }
-                remaining = remaining.dropFirst(body.count)
-                if row < y {
-                    let endSpaces = remaining.prefix { $0 == " " }.count
-                    if remaining.dropFirst(endSpaces).first == "\n" { remaining = remaining.dropFirst(endSpaces + 1) }
-                    else { remaining = remaining.drop(while: { $0 == " " }) }
-                }
-                else if x != 5 + Self.cellWidth(body) { return false }
-            }
-            return remaining.isEmpty
+            return containsOnlyOpenCodePaste(text)
         }
         if before.claudeInputStart != nil { return containsOnlyClaudePaste(text) }
         if codexInputRows != nil { return containsOnlyCodexPaste(text) }
@@ -622,8 +652,11 @@ struct TmuxConnector: DeliveryConnector {
             }
             if recovering, !initial.isEmpty {
                 let matches = pending.map { initial.containsOnlyPaste(text, after: $0.before) }
-                    ?? (initial.containsOnlyClaudePaste(text) || initial.containsOnlyCodexPaste(text))
-                guard matches else { throw ConnectorError.inputChanged }
+                    ?? (initial.containsOnlyClaudePaste(text) || initial.containsOnlyCodexPaste(text) || initial.containsOnlyOpenCodePaste(text))
+                guard matches else {
+                    if initial.openCodePasteIsHidden { throw TmuxPasteRecoveryError.hidden }
+                    throw ConnectorError.inputChanged
+                }
                 try await command(["send-keys", "-t", target, "Enter"])
                 try submitted(didSubmit: true)
                 return
