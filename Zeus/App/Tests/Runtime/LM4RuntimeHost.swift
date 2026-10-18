@@ -126,6 +126,7 @@ private struct LM4Runner: ProcessRunning {
                             _ = try rules.propose([.init(sentence: "Draft the synthetic project checklist", trigger: .init(state: "fixture ready"), kind: .acts)], at: proactiveClock.now)
                             context.value.states = ["fixture ready"]; live.learningContextDidChange()
                         }
+                        if command["command"] == "restart" { controller.restartManagedSession() }
                         if command["command"] == "digest" { learnings.digest() }
                         if command["command"] == "eraseThenLateAck" {
                             try journal.delete(.all)
@@ -137,6 +138,8 @@ private struct LM4Runner: ProcessRunning {
                             "cards": .array(try cards.values.map(JSONValue.from)),
                             "ruleActions": .array(try (rules?.ruleActions ?? []).map(JSONValue.from)),
                             "ratings": .number(Double(live.ratings.count)),
+                            "budget": .number(Double(live.remainingUnpromptedBudget)),
+                            "nativeID": controller.record?.conversation?.nativeID.map(JSONValue.string) ?? .null,
                             "muted": .array(live.mutedToday.map(JSONValue.string)),
                             "unread": .number(Double(learnings.values.count)),
                             "receipts": .array(try journal.items(matching: .init()).filter { $0.kind == .sentToAssistant }.map(JSONValue.from)),

@@ -55,6 +55,7 @@ enum LearningDeliveryVocabulary {
         case "moment": "Note"
         case "ruleTrigger": "Rule trigger"
         case "rating": "Message preference"
+        case "restart": "Restart notice"
         default: nil
         }
     }

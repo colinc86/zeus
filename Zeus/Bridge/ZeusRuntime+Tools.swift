@@ -217,7 +217,7 @@ extension ZeusRuntime {
         expireStaleLearningDeliveries()
         guard let record = ledger?.record(id: id), record.delivery.sessionKey == sessionKey,
               record.discardedAt == nil, !learningWasErased(id), proactiveDeliveryAllowed(record.delivery),
-              [.learning, .reflection, .brief, .ruleTrigger].contains(record.delivery.kind) == learning else {
+              [.learning, .reflection, .brief, .ruleTrigger, .restart].contains(record.delivery.kind) == learning else {
             throw ToolArgumentError("No available delivery with this id for this session.")
         }
         if record.delivery.kind == .learning, record.delivery.meta["learning_kind"] != "rating", !learnings.learningsEnabled {

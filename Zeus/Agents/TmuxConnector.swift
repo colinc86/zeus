@@ -30,12 +30,12 @@ enum AgentInjectionText {
         return fullEnvelope(delivery)
     }
     static func pointer(_ delivery: Delivery) -> String {
-        let tool = [.learning, .reflection, .brief, .ruleTrigger].contains(delivery.kind) ? "zeus_get_learnings" : "zeus_get_responses"
+        let tool = [.learning, .reflection, .brief, .ruleTrigger, .restart].contains(delivery.kind) ? "zeus_get_learnings" : "zeus_get_responses"
         return "[zeus delivery_id=\(delivery.id)] Too long to paste here. Read \(tool) with this id, follow its text, then zeus_ack."
     }
     static func fullEnvelope(_ delivery: Delivery) -> String {
         let card = delivery.cardID.map { " card_id=" + $0 } ?? ""
-        let kind = [.learning, .reflection].contains(delivery.kind) ? " kind=" + delivery.kind.rawValue : ""
+        let kind = [.learning, .reflection, .restart].contains(delivery.kind) ? " kind=" + delivery.kind.rawValue : ""
         let normalized = MessageText.preservingLines(delivery.content)
         let multiline = delivery.content.utf8.contains(10)
         let content = multiline ? normalized : delivery.content.split(whereSeparator: \.isWhitespace).joined(separator: " ")

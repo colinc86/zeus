@@ -204,6 +204,7 @@ Same frame as the L1 sheet.
   - "Note"
   - "Rule trigger: “<rule sentence>”"
   - "Message preference"
+  - "Restart notice" (FX15: Zeus restarted the assistant and tells it so, with the time and the reason)
   - "Answer to “<question>”" (Phase D)
 - **Each row shows:** time · kind · session label ("■ Claude · Zeus") · size ("212 words").
   - Click to expand the exact text that was sent, read-only and selectable.
@@ -344,6 +345,7 @@ A line says "Sent" only once the assistant has acked the delivery. Until then th
 | A morning brief request | "Morning brief request ready for your assistant · View" | "Sent the morning brief request · View" |
 | A rule trigger | "Rule trigger ready for your assistant · View" | "Sent a rule trigger: “<rule sentence>” · View" |
 | A message preference | no line (§11) | no line |
+| A restart notice (FX15) | "Restart notice ready for your assistant · View" | "Sent the restart notice · View" |
 
 The kinds are the ledger's (§4.2): one word for one thing, in the thread, the ledger and Settings (UX4).
 

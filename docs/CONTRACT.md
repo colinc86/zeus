@@ -60,7 +60,7 @@ All types are `Codable, Sendable` and public. JSON uses camelCase keys and ISO-8
 - **`InputSpec`**: `{ placeholder?, multiline }`.
 - **`Attachment`**: `{ id, kind: file | folder | url, label, target, summary? }`. For files, `target` is a path and `~` is allowed. `summary` is an assistant-written synopsis; legacy stored attachments decode without it. New tool-created file/folder attachments require at least 20 non-whitespace characters, at most 400 total characters; link summaries are optional (at most 400 characters).
 - **`CardResponse`**: `{ optionID?, optionLabel?, text?, skipped: Bool, respondedAt, device: "mac" | "ios" }`, plus `summary`. `skipped` defaults to false and a missing legacy field decodes as false; a skipped response has no `optionID` (TB1, 2026-10-14).
-- **`Delivery`** (§5): `{ id ("d_"+8), kind: reply | userMessage | reflection | learning | brief | ruleTrigger, cardID?, sessionKey, content, meta: [String:String], createdAt, attempts, lastAttemptAt?, ackedAt?, failedAt? }`.
+- **`Delivery`** (§5): `{ id ("d_"+8), kind: reply | userMessage | reflection | learning | brief | ruleTrigger | restart, cardID?, sessionKey, content, meta: [String:String], createdAt, attempts, lastAttemptAt?, ackedAt?, failedAt? }`.
 - **`ZeusPaths`**:
   - `appSupport` = `~/Library/Application Support/Zeus/`
   - `bridgeSocket` = `appSupport/bridge.sock`
@@ -469,6 +469,21 @@ Zeus can launch and keep alive **one** assistant session of its own. Connecting 
 9. **Agent updates** (UP1, 2026-10-14). When the agent's own TUI shows an installed update waiting for a restart (Claude: "Update installed · Restart to update" in the composer chrome), `ManagedSessionController` publishes `managedAgentUpdatePending` after two consecutive samples and clears it after one sample without it or after a restart. Zeus posts one quiet thread notice per conversation nonce, "<Agent> has an update · Restart assistant", never a peek or badge, never while a question is pending. The action requests a safe-moment restart through the settings-apply path (item 7): it waits until the assistant is idle with nothing in flight, then restarts the same conversation with the agent's resume so context is kept; unrestricted modes keep their confirmation. The request carries a UUID so a completed restart is reported once and honestly; dismissal survives history clearing. Settings › Assistant shows the same state with one Restart button. Nothing restarts without a click.
 
 ---
+
+### Managed resumed-launch notices
+
+Each successful managed launch into an existing native conversation queues one system
+`Delivery.kind = restart` after its owned bridge checks in. A durable launch outbox and
+stable delivery ID make bridge reconnects and application relaunch/adoption idempotent;
+a fresh conversation creates no notice. The notice gives the local launch time and
+reason (app update, Restart Assistant, crash recovery, update or settings change),
+explains that native timers were lost, and asks the assistant to recreate its next check.
+Unacknowledged notices may follow a later launch of the same native conversation;
+starting a different conversation discards them. It uses ordinary transport/acknowledgment and is independent of learning being enabled.
+It is not a user message and does not spend the six-message unprompted budget.
+`zeus_get_learnings {id}` can retrieve its exact body; consumption is recorded only
+through the normal receipt path. Pending/sent ledger vocabulary is **Restart notice**.
+Zeus does not persist or recreate native timers itself; no scheduling tool is added.
 
 ## 12. The assistant controls the app (decided 2026-10-13)
 

@@ -45,9 +45,13 @@ extension ZeusRuntime: LearningDeliveryPresenting {
     }
 
     func journalEvidenceDeleted(_ ids: Set<String>?) {
-        if ids == nil { clearMessageRatings() }
+        if ids == nil {
+            clearMessageRatings()
+            do { try managedController.discardRestartNotices() }
+            catch { learningError = "Zeus couldn't save the cleared restart notices." }
+        }
         reflectionTask?.cancel(); reflectionTask = nil
-        let records = (ledger?.records ?? []).filter { [.learning, .reflection, .brief, .ruleTrigger].contains($0.delivery.kind) }
+        let records = (ledger?.records ?? []).filter { [.learning, .reflection, .brief, .ruleTrigger, .restart].contains($0.delivery.kind) }
         let erased = Set(records.filter { record in
             guard let ids else { return true }
             let evidence = Set(record.delivery.meta["evidence", default: ""].split(separator: ",").map(String.init))
@@ -103,7 +107,7 @@ extension ZeusRuntime: LearningDeliveryPresenting {
     }
 
     func publishPendingLearnings(_ records: [DeliveryRecord]) {
-        let next = records.filter { $0.isPending && !erasedLearningDeliveryIDs.contains($0.delivery.id) && [.learning, .reflection, .brief, .ruleTrigger].contains($0.delivery.kind) }.map { record in
+        let next = records.filter { $0.isPending && !erasedLearningDeliveryIDs.contains($0.delivery.id) && [.learning, .reflection, .brief, .ruleTrigger, .restart].contains($0.delivery.kind) }.map { record in
             let key = record.delivery.sessionKey
             let agent = sessions.first { $0.sessionKey == key }?.agent.rawValue ?? String(key.split(separator: ":").first ?? "")
             let name = ["claude": "Claude", "codex": "Codex", "opencode": "OpenCode"][agent] ?? "Your assistant"
@@ -131,7 +135,7 @@ extension ZeusRuntime: LearningDeliveryPresenting {
     }
 
     func refreshLearningDeliveryPresentation() {
-        let records = (ledger?.records ?? []).filter { $0.isPending && !learningWasErased($0.delivery.id) && $0.transportDeliveredAt == nil && [.userMessage, .learning, .reflection, .brief, .ruleTrigger].contains($0.delivery.kind) }
+        let records = (ledger?.records ?? []).filter { $0.isPending && !learningWasErased($0.delivery.id) && $0.transportDeliveredAt == nil && [.userMessage, .learning, .reflection, .brief, .ruleTrigger, .restart].contains($0.delivery.kind) }
         let previous = deliveryHoldEpisodes
         var next: [String: DeliveryHold] = [:]
         for record in records {

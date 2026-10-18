@@ -225,6 +225,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
             guard let self, self.running else { return }
             self.syncLearningFolder()
             self.managedController.considerSessions(self.sessions)
+            self.enqueueManagedRestartNotices()
             self.noteManagedScreenActivity(); self.reconcileOwnScreenSampling(); self.updateManagedPresentation(); self.probeManagedChannel()
             self.bindWaitingUserMessages(); self.processDueDeliveries(); self.proactiveSettingsDidChange()
         }
@@ -385,6 +386,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         bridges[session.sessionKey] = bridge
         reconcileOwnScreenSampling()
         managedController.considerSessions(sessions)
+        enqueueManagedRestartNotices()
         probeManagedChannel()
         disconnectedAt.removeValue(forKey: session.sessionKey)
         updateDisconnectedTargets()

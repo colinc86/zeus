@@ -45,6 +45,12 @@ class GateTests(unittest.TestCase):
             self.assertIn('--quick', command)
             self.assertEqual(command[command.index('--scenario') + 1], probe)
 
+    def test_restart_probe_is_in_quick_gate(self):
+        self.assertIn(('fx15', 'claude', 'run'), gate.plan(('claude',), tuple(gate.PROBES), {'claude'}))
+        argv = gate.command('fx15', 'claude', pathlib.Path('/tmp/private-proof'), True, False)
+        self.assertIn('Zeus/App/Tests/Runtime/FX15LiveProbe.py', argv)
+        self.assertIn('--quick', argv)
+
     def test_reflection_probe_is_in_quick_gate(self):
         self.assertIn(('rf1', 'claude', 'run'), gate.plan(('claude',), tuple(gate.PROBES), {'claude'}))
         argv = gate.command('rf1', 'claude', pathlib.Path('/tmp/private-proof'), True, False)
