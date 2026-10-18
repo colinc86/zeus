@@ -100,6 +100,10 @@ extension ZeusRuntime: ProactiveAssistantControlling {
         } catch { learningError = "Zeus couldn't prepare your morning brief. It will try again." }
     }
     func proactiveDeliveryAllowed(_ delivery: Delivery) -> Bool {
+        if delivery.kind == .reflection, let raw = delivery.meta["levels"] {
+            let levels = Set(raw.split(separator: ",").compactMap { Int($0).flatMap(JournalLevel.init(rawValue:)) })
+            return reflectionEnabled() && !levels.isEmpty && levels.isSubset(of: journalAccessPolicy().enabledLevels)
+        }
         if delivery.kind == .brief {
             let levels = Set(delivery.meta["levels", default: ""].split(separator: ",").compactMap { Int($0).flatMap(JournalLevel.init(rawValue:)) })
             return briefEnabled && levels.isSubset(of: morningBriefLevels()) && delivery.meta["brief_day"] == proactiveDay(clock.now)
@@ -127,8 +131,8 @@ extension ZeusRuntime: ProactiveAssistantControlling {
         let matching = matching.filter { $0.kind == .acts && $0.trigger.isEvaluable }
         let keys = Dictionary(uniqueKeysWithValues: matching.map { ($0.id, triggerWindowKey($0)) })
         do {
-            let staleBriefs = Set(ledger.records.filter { $0.delivery.kind == .brief && $0.isPending && !proactiveDeliveryAllowed($0.delivery) }.map { $0.delivery.id })
-            eraseLearningDeliveries(ids: staleBriefs)
+            let staleSummaries = Set(ledger.records.filter { ($0.delivery.kind == .brief || $0.delivery.kind == .reflection) && $0.isPending && !proactiveDeliveryAllowed($0.delivery) }.map { $0.delivery.id })
+            eraseLearningDeliveries(ids: staleSummaries)
             let staleTriggers = Set(ledger.records.filter {
                 $0.delivery.kind == .ruleTrigger && $0.isPending && !proactiveDeliveryAllowed($0.delivery)
             }.map { $0.delivery.id })

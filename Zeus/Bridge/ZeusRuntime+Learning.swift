@@ -202,7 +202,11 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let evening = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: today) ?? today
         // A catch-up and this evening cannot both send on the same local day.
         guard !(ledger?.records ?? []).contains(where: { $0.delivery.kind == .reflection && calendar.isDate($0.delivery.createdAt, inSameDayAs: now) }) else { return }
-        var query = JournalQuery(); query.levels = [.activity, .focus, .screen, .typed]
+        let permittedLevels = journalAccessPolicy().enabledLevels
+        guard !permittedLevels.isEmpty else { return }
+        var query = JournalQuery(); query.levels = permittedLevels
+        // A catch-up day also needs its preceding 27 days; the digest itself always selects exactly 28 local days.
+        query.from = calendar.date(byAdding: .day, value: -55, to: today); query.to = now.addingTimeInterval(0.001)
         query.kinds = [.activity, .focus, .description, .typedText, .outcome]; query.limit = 100_000
         let available: [JournalItem]
         do { available = try journal.items(matching: query) }
@@ -211,79 +215,59 @@ extension ZeusRuntime: LearningRuntimeControlling {
         if now >= evening, let idle = context.idleSince, now.timeIntervalSince(idle) >= 600,
            available.contains(where: { calendar.isDate($0.time, inSameDayAs: today) }) { day = today }
         else if learningCatchUpPending {
-            guard let previous = available.last(where: { $0.time < today }) else { return }
+            let oldestCatchUp = calendar.date(byAdding: .day, value: -28, to: today) ?? today
+            guard let previous = available.last(where: { $0.time < today && $0.time >= oldestCatchUp }) else { return }
             day = calendar.startOfDay(for: previous.time)
         } else { return }
         let dayKey = reflectionDayKey(day), id = "d_reflection_" + dayKey
         guard ledger?.record(id: id) == nil else { learningCatchUpPending = false; return }
-        let dayItems = available.filter { calendar.isDate($0.time, inSameDayAs: day) }
+        let local = ReflectionLocalTime(calendar: calendar)
+        let digest = ReflectionPatternDigest(time: local, day: day, levels: permittedLevels, items: available, feedback: reflectionFeedback()).build(byteLimit: 6_200)
+        guard !digest.references.isEmpty else { return }
+        let evidence = digest.references.filter(\.journal).map(\.id)
+        let initialFeedbackDates = Dictionary(digest.references.filter { !$0.journal }.map { ($0.id, $0.at.timeIntervalSince1970) }, uniquingKeysWith: { first, _ in first })
         let lastReflection = (ledger?.records ?? []).filter { $0.delivery.kind == .reflection }.map { $0.delivery.createdAt }.max() ?? .distantPast
-        let lifecycle = learningRules as? any RuleLifecycleStoring
-        let recentOutcomes = (lifecycle?.outcomeEvents ?? []).filter { $0.at > lastReflection }
-        let suppressed = (lifecycle?.suppressedRules ?? []).filter { $0.until > now }
-        // Include a small previous-day evidence sample so cross-day proposals can cite records actually received.
-        let olderEvidence = available.filter { $0.time < day && $0.time >= day.addingTimeInterval(-6 * 86400) && $0.kind != .outcome && ($0.level != .typed || $0.payload.value.topic != nil) }.suffix(6)
-        let descriptions = dayItems.filter { $0.level == .screen && $0.kind == .description }
-        let indices = descriptions.count <= 4 ? Array(descriptions.indices) : (0..<4).map { $0 * (descriptions.count - 1) / 3 }
-        let sampled = Set(indices.map { descriptions[$0].id })
-        let typed = dayItems.filter { $0.level == .typed && $0.kind == .typedText && $0.payload.value.topic != nil }
-        let typedIndices = typed.count <= 4 ? Array(typed.indices) : (0..<4).map { $0 * (typed.count - 1) / 3 }
-        let sampledTopics = Set(typedIndices.map { typed[$0].id })
-        let items = dayItems.filter { item in
-            if item.level == .typed { return sampledTopics.contains(item.id) }
-            return item.level != .screen || sampled.contains(item.id)
-        }
-        guard !items.isEmpty else { return }
-        // Bound the summary and include only evidence actually presented to the model.
-        var lines: [String] = [], evidence: [String] = [], bytes = 0
-        for item in (items + olderEvidence).reversed() {
-            let summary = item.level == .typed ? (item.payload.value.topic ?? "") : item.payload.value.description
-            let line = "\(item.time.ISO8601Format()) id=\(item.id) app=\(item.app ?? "unknown") \(summary)"
-            guard bytes + line.utf8.count <= 8000 else { break }
-            lines.append(line); evidence.append(item.id); bytes += line.utf8.count
-        }
-        guard !lines.isEmpty else { return }
-        var feedback: [String] = []; var feedbackBytes = 0
-        for event in recentOutcomes.suffix(100) {
-            let line = "Outcome rule=\(event.ruleID) event=\(event.id) date=\(event.at.ISO8601Format()) signal=\(event.outcome.rawValue) source=\(event.source.rawValue) delta=\(event.delta)"
-            if feedbackBytes + line.utf8.count > 6000 { break }; feedback.append(line); feedbackBytes += line.utf8.count
-        }
-        for blocked in suppressed.suffix(50) {
-            let line = "Do not re-propose fingerprint=\(blocked.fingerprint) until=\(blocked.until.ISO8601Format()) reason=\(blocked.reason): \(blocked.sentence)"
-            if feedbackBytes + line.utf8.count > 12000 { break }; feedback.append(line); feedbackBytes += line.utf8.count
-        }
+        let feedback = reflectionOutcomeText(since: lastReflection, now: now)
         let token = generation, observationToken = learningObservationToken, revision = journal.revision
         reflectionTask = Task { [weak self] in
-            let safe = await redactor.redact(lines.reversed().joined(separator: "\n") + "\n" + feedback.joined(separator: "\n"))
+            let safe = await redactor.redact(feedback)
             guard let self, self.generation == token, self.learningObservationToken == observationToken else { return }
             defer {
                 self.reflectionTask = nil; self.scheduleLearningBoundary()
                 if Task.isCancelled || journal.revision != revision { self.considerReflection() }
             }
-            guard self.running, !Task.isCancelled, self.reflectionEnabled(), journal.revision == revision,
+            guard self.running, !Task.isCancelled, self.reflectionEnabled(), self.journalAccessPolicy().enabledLevels == permittedLevels, journal.revision == revision,
                   !self.learningContext().isPrivate, !self.learningContext().isLocked,
                   self.assistantTarget == target, self.sessions.contains(where: { $0.id == session.id }), self.ledger?.record(id: id) == nil else { return }
             if calendar.isDate(day, inSameDayAs: today) {
                 guard let idle = self.learningContext().idleSince, self.clock.now.timeIntervalSince(idle) >= 600 else { return }
             }
-            var content = """
-            Zeus reflection for \(dayKey). This is a redacted local summary, not a new user request.
-            Read zeus_get_rules. Propose at most three useful rules with zeus_propose_rules; evidence must use IDs below. Evaluable rules require two IDs from different days; respect suppression fingerprints. Every purchase always asks with its amount, including amounts higher than the rule or last purchase.
-            Prefer timing/tone/preparation rules. External acts start in shadow; do not execute them. Do not repeat habits or private details to the user.
-            \(safe.value)
-            Message preferences:
-            \(MessageRatingStore.preferences(self.ratings))
-            Evidence IDs (already-redacted journal records): \(evidence.joined(separator: ", "))
-            """
+            let request = Self.reflectionRequest(date: local.label(day, "EEEE d MMMM"), budget: self.proactiveBudgetLine)
+            var content = request + "\n\n" + digest.text
+            if !safe.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                content += "\n\n" + Self.boundedReflectionText(safe.value, bytes: 1_600)
+            }
+            let preferences = MessageRatingStore.preferences(self.ratings)
+            if !self.ratings.isEmpty { content += "\n\nMessage preferences:\n" + Self.boundedReflectionText(preferences, bytes: 600) }
+            content = Self.boundedReflectionText(content, bytes: 10_000)
+            var feedbackDates = initialFeedbackDates
+            for (id, date) in self.reflectionFeedbackDates() where content.contains("[" + id + " ") {
+                feedbackDates[id] = date.timeIntervalSince1970
+            }
             let paths = await self.learningFolder?.recordReflection(id: id, text: .init(content), at: self.clock.now) ?? []
             guard self.running, !Task.isCancelled, self.generation == token,
-                  self.learningObservationToken == observationToken, self.reflectionEnabled(), journal.revision == revision,
+                  self.learningObservationToken == observationToken, self.reflectionEnabled(), self.journalAccessPolicy().enabledLevels == permittedLevels, journal.revision == revision,
                   !self.learningContext().isPrivate, !self.learningContext().isLocked,
                   self.assistantTarget == target, self.sessions.contains(where: { $0.id == session.id }), self.ledger?.record(id: id) == nil else { return }
             content = Self.withLearningFiles(content, paths: paths)
             var delivery = Delivery(id: id, kind: .reflection, sessionKey: target, content: content, createdAt: self.clock.now)
             delivery.meta = ["kind": "reflection", "delivery_id": id, "reflection_day": dayKey,
-                             "evidence": evidence.joined(separator: ",")]
+                             "evidence": evidence.joined(separator: ","),
+                             "source_hash": ReflectionPatternDigest.sourceHash(digest.sourceIDs),
+                             "source_from": String((calendar.date(byAdding: .day, value: -27, to: day) ?? day).timeIntervalSince1970),
+                             "source_to": String(min(now.addingTimeInterval(0.001), calendar.date(byAdding: .day, value: 1, to: day) ?? now).timeIntervalSince1970),
+                             "feedback_evidence": String(data: (try? JSONEncoder().encode(feedbackDates)) ?? Data(), encoding: .utf8) ?? "{}",
+                             "levels": permittedLevels.map { String($0.rawValue) }.sorted().joined(separator: ",")]
             do {
                 try self.ledger?.insert(.init(delivery: delivery))
                 if self.learningFolder != nil {
@@ -327,8 +311,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         if let journal = learningJournal {
             var query = JournalQuery(); query.limit = 100_000
             guard let items = try? journal.items(matching: query) else { return }
-            let retained = Set(items.map(\.id))
-            guard record.delivery.meta["evidence", default: ""].split(separator: ",").allSatisfy({ retained.contains(String($0)) }) else {
+            guard reflectionSourcesRetained(record.delivery, items: items) else {
                 reconcileReflectionEvidence(); return
             }
         }
@@ -398,12 +381,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
         guard !reflections.isEmpty else { return }
         do {
             var query = JournalQuery(); query.limit = 100_000
-            let retained = Set(try journal.items(matching: query).map(\.id))
-            let erased = Set(reflections.filter { record in
-                let evidence = record.delivery.meta["evidence", default: ""].split(separator: ",").map(String.init)
-                // Deletion stops automatic submission even if native input was already pasted.
-                return !evidence.allSatisfy(retained.contains)
-            }.map { $0.delivery.id })
+            let items = try journal.items(matching: query)
+            let erased = Set(reflections.filter { !reflectionSourcesRetained($0.delivery, items: items) }.map { $0.delivery.id })
             guard !erased.isEmpty else { return }
             eraseLearningDeliveries(ids: erased)
         } catch { learningError = "Zeus couldn't reconcile deleted reflection evidence." }
@@ -453,22 +432,31 @@ extension ZeusRuntime: LearningRuntimeControlling {
             throw ToolArgumentError("rules must contain 1–3 rule proposals; local learning must be configured.")
         }
         let token = generation, sessionID = sessions.first { $0.sessionKey == sessionKey }?.id
-        var query = JournalQuery(); query.limit = 100_000
+        let permittedLevels = journalAccessPolicy().enabledLevels
+        guard !permittedLevels.isEmpty else { throw ToolArgumentError("No learning levels are enabled for reflection evidence.") }
+        var query = JournalQuery(); query.limit = 100_000; query.levels = permittedLevels
         let evidenceItems = try journal.items(matching: query)
-        let existingEvidence = Set(evidenceItems.map(\.id))
+        let local = ReflectionLocalTime(calendar: learningCalendar)
+        let journalDates = Dictionary(evidenceItems.map { ($0.id, $0.time) }, uniquingKeysWith: { first, _ in first })
         guard let reflection = (ledger?.records ?? []).last(where: { $0.delivery.kind == .reflection && $0.delivery.sessionKey == sessionKey && $0.discardedAt == nil && clock.now.timeIntervalSince($0.delivery.createdAt) < 86400 }) else {
             throw ToolArgumentError("Propose rules only in response to a recent reflection delivered to this session.")
         }
-        let reflectedEvidence = Set(reflection.delivery.meta["evidence", default: ""].split(separator: ",").map(String.init))
+        let feedbackSnapshot = (try? JSONDecoder().decode([String: Double].self, from: Data(reflection.delivery.meta["feedback_evidence", default: "{}"].utf8))) ?? [:]
+        let currentFeedback = reflectionFeedbackDates()
+        let validFeedback = currentFeedback.filter { feedbackSnapshot[$0.key] == $0.value.timeIntervalSince1970 }
+        let evidenceDates = journalDates.merging(validFeedback, uniquingKeysWith: { first, _ in first })
+        let existingEvidence = Set(evidenceDates.keys)
+        let reflectedEvidence = Set(reflection.delivery.meta["evidence", default: ""].split(separator: ",").map(String.init)).union(feedbackSnapshot.keys)
         var proposals: [RuleProposal] = []
         for value in array {
             let normalized = try normalizedRule(value)
             var proposal = try JSONDecoder().decode(RuleProposal.self, from: JSONEncoder().encode(normalized))
-            guard proposal.evidence.allSatisfy({ existingEvidence.contains($0) && reflectedEvidence.contains($0) }) else { throw ToolArgumentError("Rule evidence must reference retained journal item IDs.") }
+            guard proposal.evidence.allSatisfy({ existingEvidence.contains($0) && reflectedEvidence.contains($0) }) else { throw ToolArgumentError("Rule evidence must reference retained IDs included in this reflection. Invalid IDs: " + proposal.evidence.filter { !existingEvidence.contains($0) || !reflectedEvidence.contains($0) }.joined(separator: ", ")) }
             guard !proposal.sentence.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, proposal.sentence.count <= 500 else { throw ToolArgumentError("Rule sentence must contain 1–500 characters.") }
             if proposal.trigger.isEvaluable || proposal.trigger.kind == "spend" {
-                let days = Set(evidenceItems.filter { proposal.evidence.contains($0.id) }.map { learningCalendar.startOfDay(for: $0.time) })
-                guard proposal.evidence.count >= 2, days.count >= 2 else { throw ToolArgumentError("An evaluable rule needs two evidence IDs from two different days of the reflection.") }
+                let days = Set(proposal.evidence.compactMap { evidenceDates[$0].map(local.dayKey) })
+                let dates = proposal.evidence.map { id in "\(id) (\(evidenceDates[id].map { local.label($0) + ", " + local.dayKey($0) } ?? "unknown local day"))" }.joined(separator: ", ")
+                guard proposal.evidence.count >= 2, days.count >= 2 else { throw ToolArgumentError("Evidence \(dates.isEmpty ? "is missing" : dates). An evaluable rule needs IDs from two different local days of this reflection.") }
             }
             if proposal.trigger.kind == "spend" { proposal.kind = .acts }
             proposal.confidence = min(0.7, max(0.4, proposal.confidence))
@@ -478,8 +466,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
             proposals.append(proposal)
         }
         // Revalidate evidence after async redaction: Delete Everything must not be undone by a late proposal.
-        let retained = Set(try journal.items(matching: query).map(\.id))
-        guard proposals.allSatisfy({ $0.evidence.allSatisfy(retained.contains) }) else { throw ToolArgumentError("Rule evidence was deleted while processing the proposal.") }
+        let retained = Set(try journal.items(matching: query).map(\.id)).union(reflectionFeedbackDates().filter { feedbackSnapshot[$0.key] == $0.value.timeIntervalSince1970 }.keys)
+        guard journalAccessPolicy().enabledLevels == permittedLevels, proposals.allSatisfy({ $0.evidence.allSatisfy(retained.contains) }) else { throw ToolArgumentError("Rule evidence was deleted while processing the proposal.") }
         let added = try rules.propose(proposals, at: clock.now)
         learningContextDidChange()
         return result(["rules": .array(rules.rules.filter { rule in added.contains { $0.id == rule.id } }.map(ruleForAgent))])
