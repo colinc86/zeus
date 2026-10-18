@@ -42,12 +42,13 @@ struct LocalRedactorTests {
         let oversized = await LocalRedactor(useOnDeviceModel: false).redact(String(repeating: "x", count: 129_000))
         #expect(oversized.value == "‹secret›")
     }
-    @Test func payloadKeysAndValuesAreRedactedWithoutRawReport() async throws {
+    @Test func payloadSchemaKeysStayStableWhileContentValuesRedact() async throws {
         let result = await LocalRedactor(useOnDeviceModel: false).redact(JournalPayload(description: "mail a@example.test",
-            text: "pwd: synthetic-only", details: ["b@example.test": "c@example.test"]))
+            text: "pwd: synthetic-only", details: ["contact": "c@example.test"]))
         let encoded = String(decoding: try JSONEncoder().encode(result), as: UTF8.self)
         #expect(!encoded.contains("@example.test")); #expect(!encoded.contains("synthetic-only"))
-        #expect(result.report.total >= 4)
+        #expect(result.report.total >= 3)
+        #expect(result.value.details["contact"] == "‹email›")
         #expect(LocalRedactor.luhn("4111 1111 1111 1111"))
         #expect(!LocalRedactor.luhn("4111 1111 1111 1112"))
         let iban = LocalRedactor.replace("GB82 WEST 1234 5698 7654 32 FOR TRANSFER", spans: LocalRedactor.patternSpans("GB82 WEST 1234 5698 7654 32 FOR TRANSFER"))

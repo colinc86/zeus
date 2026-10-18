@@ -74,9 +74,7 @@ struct ReflectionPatternDigest {
         rows.first { !["sleep", "wake", "lock", "idle", "quit", "launch", "displays", "private"].contains($0.payload.value.details["kind"] ?? "") }
     }
     private func app(_ item: JournalItem) -> String {
-        if let name = item.payload.value.details["name"] ?? item.payload.value.details["appName"], !name.isEmpty { return Self.clean(name, limit: 60) }
-        guard let identifier = item.app, let last = identifier.split(separator: ".").last else { return "Unknown app" }
-        return Self.clean(last.prefix(1).uppercased() + last.dropFirst(), limit: 60)
+        Self.clean(JournalAppName.displayName(item), limit: 60)
     }
     private func commonApp(_ rows: [JournalItem]) -> String {
         let counts = Dictionary(grouping: rows, by: app).mapValues(\.count)

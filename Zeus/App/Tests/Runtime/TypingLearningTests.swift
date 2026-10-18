@@ -12,6 +12,13 @@ private struct TypingFixtureProse: ProseRedacting {
                 .init(text: "4200 euros", kind: .finance), .init(text: "purple kite", kind: .secret)]
     }
 }
+private actor ExcludedTypingProcessor: TypingRunRedacting {
+    var calls = 0
+    func redact(words: Redacted<String>, app: String) async -> RedactedTypingRun? {
+        calls += 1
+        return nil
+    }
+}
 private struct TypingFixtureModel: TypingTopicGenerating {
     func generate(app: String, words: String) async -> TypingTopic? {
         .init(app: app, intent: .coding, subject: "Reviewing a synthetic change", recipients: ["colleague"])
@@ -127,6 +134,16 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
         f.observer.start(); f.source.send(.text("must never keep this")); f.finish()
         #expect(try f.rows().isEmpty); #expect(f.source.requests == 0)
     }
+    @Test func excludedWarpNeverReachesSystemFieldRedactionPath() async throws {
+        let processor = ExcludedTypingProcessor(), f = TypingFixture(processor: processor)
+        defer { f.close() }
+        f.context.appName = "Warp"; f.policy.privateApps = [f.context.bundleID]
+        f.observer.start(); f.source.send(.text("Synthetic work in Warp")); f.finish()
+        for _ in 0..<20 { await Task.yield() }
+        #expect(await processor.calls == 0)
+        #expect(try f.rows().isEmpty)
+    }
+
     @Test func secureInputDiscardsUsernameRunAndNeverCreatesNotice() async throws {
         let f = TypingFixture(); defer { f.close() }; f.observer.start()
         f.source.send(.text("synthetic username before password")); f.secure = true; f.observer.tick()

@@ -179,7 +179,7 @@ final class ActivityStore {
     static func activityEvent(_ item: JournalItem) -> ActivityEvent? {
         let details = item.payload.value.details
         guard let kind = details["kind"].flatMap(ActivityEvent.Kind.init(rawValue:)) else { return nil }
-        return .init(t: item.time, kind: kind, app: item.app, name: details["name"],
+        return .init(t: item.time, kind: kind, app: item.app, name: item.app == nil ? details["name"] : JournalAppName.displayName(item),
                      seconds: details["seconds"].flatMap(Double.init), displays: details["displays"].flatMap(Int.init))
     }
     var hasLegacyActivity: Bool { !rawFiles().isEmpty }
