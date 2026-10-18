@@ -4,7 +4,7 @@ import CryptoKit
 import ZeusProtocol
 
 /// Atomic encrypted rule state; user consent and confidence survive a restart.
-@MainActor @Observable final class PersistentRulesStore: RulesStore, LearningRuleTracking, LearningRuleOutcomeSource, RuleLifecycleStoring, LearningStorageRecovering {
+@MainActor @Observable final class PersistentRulesStore: RulesStore, LearningRuleTracking, LearningRuleOutcomeSource, RuleLifecycleStoring, LearningStorageRecovering, PartialRulesProposing {
     struct State: Codable {
         var rules: [LearnedRule] = []
         var autonomy = 0.5
@@ -100,7 +100,28 @@ import ZeusProtocol
         guard let result = try create([own], author: .user, at: now).first else { throw LearningStorageError.invalidRule }
         return result
     }
+    func proposePartially(_ proposals: [RuleProposal], at now: Date) throws -> [Result<LearnedRule, any Error>] {
+        var next = state
+        var results: [Result<LearnedRule, any Error>] = []
+        var accepted: [String] = []
+        for proposal in proposals {
+            do {
+                let (updated, created) = try adding([proposal], author: .agent, to: next, at: now)
+                next = updated
+                if let rule = created.first { accepted.append(rule.id); results.append(.success(rule)) }
+            } catch { results.append(.failure(error)) }
+        }
+        if !accepted.isEmpty {
+            next.batches = state.batches + [accepted]
+            try commit(next)
+        }
+        return results
+    }
     private func create(_ proposals: [RuleProposal], author: RuleAuthor, at now: Date) throws -> [LearnedRule] {
+        let (next, created) = try adding(proposals, author: author, to: state, at: now)
+        try commit(next); return created
+    }
+    private func adding(_ proposals: [RuleProposal], author: RuleAuthor, to state: State, at now: Date) throws -> (State, [LearnedRule]) {
         guard !proposals.isEmpty, proposals.count <= 20, state.rules.count + proposals.count <= 500 else { throw LearningStorageError.invalidRule }
         for proposal in proposals {
             try Self.validate(proposal)
@@ -121,7 +142,7 @@ import ZeusProtocol
         }
         var next = state; next.rules += created; next.batches.append(created.map(\.id))
         if author == .agent { next.proposals = next.proposals.filter { now.timeIntervalSince($0) < 31 * 86400 } + created.map(\.created) }
-        try commit(next); return created
+        return (next, created)
     }
     /// A UI toggle/approval is a single durable outcome, never a second recordOutcome call.
     func setStatus(_ status: LearnedRuleStatus, id: String, at now: Date) throws {
@@ -196,19 +217,20 @@ import ZeusProtocol
         var next = state; next.shownShadowIDs.insert(id); try commit(next); return true
     }
     static func validate(_ proposal: RuleProposal) throws {
-        guard proposal.trigger.kind == nil || proposal.trigger.kind == "spend" else { throw LearningStorageError.invalidRule }
+        guard proposal.trigger.kind == nil || proposal.trigger.kind == "spend" else { throw ToolArgumentError("trigger.kind must be spend or omitted.") }
         let text = proposal.sentence.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, text.count <= 500, proposal.confidence.isFinite, (0...1).contains(proposal.confidence),
-              proposal.evidence.count <= 100, Set(proposal.evidence).count == proposal.evidence.count,
-              proposal.evidence.allSatisfy({ !$0.isEmpty && $0.count <= 200 }),
-              proposal.trigger.apps.count <= 100, proposal.trigger.apps.allSatisfy(EncryptedJournalStore.isBundleID),
-              proposal.trigger.state.map({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && $0.count <= 200 }) ?? true
-        else { throw LearningStorageError.invalidRule }
+        guard !text.isEmpty, text.count <= 500 else { throw ToolArgumentError("sentence must contain 1–500 characters.") }
+        guard proposal.confidence.isFinite, (0...1).contains(proposal.confidence) else { throw ToolArgumentError("confidence must be a finite number between 0 and 1.") }
+        guard proposal.evidence.count <= 100, proposal.evidence.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && $0.count <= 200 }) else { throw ToolArgumentError("evidence must contain at most 100 nonempty IDs, each at most 200 characters.") }
+        guard Set(proposal.evidence).count == proposal.evidence.count else { throw ToolArgumentError("evidence contains duplicate IDs; use distinct IDs from the reflection.") }
+        guard proposal.trigger.apps.count <= 100, proposal.trigger.apps.allSatisfy(EncryptedJournalStore.isBundleID) else { throw ToolArgumentError("trigger.apps must resolve to at most 100 bundle IDs; use app names shown in the reflection or bundle IDs.") }
+        guard proposal.trigger.state.map({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && $0.count <= 200 }) ?? true else { throw ToolArgumentError("trigger.state must contain 1–200 characters or be omitted.") }
         if let time = proposal.trigger.time {
-            guard (0..<1440).contains(time.startMinute), (0..<1440).contains(time.endMinute),
-                  time.weekdays.allSatisfy({ (1...7).contains($0) }) else { throw LearningStorageError.invalidRule }
+            guard (0..<1440).contains(time.startMinute), (0..<1440).contains(time.endMinute) else { throw ToolArgumentError("trigger.time startMinute and endMinute must be local minutes after midnight from 0 to 1439 (07:45 = 465).") }
+            guard time.weekdays.allSatisfy({ (1...7).contains($0) }) else { throw ToolArgumentError("trigger.time.weekdays must contain integers 1–7 (1 = Sunday).") }
         }
     }
+
     func commit(_ next: State) throws {
         // Never replace unknown encrypted state with an empty launch snapshot.
         guard !awaitingInitialRead else { throw LearningStorageError.keyUnavailable }
@@ -226,4 +248,9 @@ import ZeusProtocol
         state = next; rules = next.rules; revision &+= 1; lastError = nil; storageWaitingForUnlock = false
         for event in events { onRuleOutcome?(event.outcome, [event.ruleID], event.id, event.at) }
     }
+}
+
+/// Accept valid entries in input order, with one atomic write and one review group.
+@MainActor protocol PartialRulesProposing {
+    func proposePartially(_ proposals: [RuleProposal], at now: Date) throws -> [Result<LearnedRule, any Error>]
 }

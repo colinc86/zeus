@@ -462,31 +462,79 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let evidenceDates = journalDates.merging(validFeedback, uniquingKeysWith: { first, _ in first })
         let existingEvidence = Set(evidenceDates.keys)
         let reflectedEvidence = Set(reflection.delivery.meta["evidence", default: ""].split(separator: ",").map(String.init)).union(feedbackSnapshot.keys)
-        var proposals: [RuleProposal] = []
-        for value in array {
-            let normalized = try normalizedRule(value)
-            var proposal = try JSONDecoder().decode(RuleProposal.self, from: JSONEncoder().encode(normalized))
-            guard proposal.evidence.allSatisfy({ existingEvidence.contains($0) && reflectedEvidence.contains($0) }) else { throw ToolArgumentError("Rule evidence must reference retained IDs included in this reflection. Invalid IDs: " + proposal.evidence.filter { !existingEvidence.contains($0) || !reflectedEvidence.contains($0) }.joined(separator: ", ")) }
-            guard !proposal.sentence.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, proposal.sentence.count <= 500 else { throw ToolArgumentError("Rule sentence must contain 1–500 characters.") }
-            if proposal.trigger.isEvaluable || proposal.trigger.kind == "spend" {
-                let days = Set(proposal.evidence.compactMap { evidenceDates[$0].map(local.dayKey) })
-                let dates = proposal.evidence.map { id in "\(id) (\(evidenceDates[id].map { local.label($0) + ", " + local.dayKey($0) } ?? "unknown local day"))" }.joined(separator: ", ")
-                guard proposal.evidence.count >= 2, days.count >= 2 else { throw ToolArgumentError("Evidence \(dates.isEmpty ? "is missing" : dates). An evaluable rule needs IDs from two different local days of this reflection.") }
-            }
-            if proposal.trigger.kind == "spend" { proposal.kind = .acts }
-            proposal.confidence = min(0.7, max(0.4, proposal.confidence))
-            proposal.sentence = await redactor.redact(proposal.sentence).value
-            guard running, generation == token, sessions.first(where: { $0.sessionKey == sessionKey })?.id == sessionID,
-                  sessionID != nil, isAdmitted(sessionKey), reflectionEnabled() else { throw CancellationError() }
-            proposals.append(proposal)
+        var proposals: [(Int, RuleProposal)] = []
+        var results: [Int: JSONValue] = [:]
+        func rejected(_ index: Int, _ error: any Error) -> JSONValue {
+            ["index": .number(Double(index + 1)), "result": "rejected", "reason": .string("rule \(index + 1): " + error.localizedDescription)]
         }
-        // Revalidate evidence after async redaction: Delete Everything must not be undone by a late proposal.
+        for (index, value) in array.enumerated() {
+            do {
+                let normalized = try normalizedRule(value)
+                var proposal: RuleProposal
+                do { proposal = try JSONDecoder().decode(RuleProposal.self, from: JSONEncoder().encode(normalized)) }
+                catch let error as DecodingError {
+                    let path: String
+                    switch error {
+                    case .typeMismatch(_, let context), .valueNotFound(_, let context), .dataCorrupted(let context): path = context.codingPath.map(\.stringValue).joined(separator: ".")
+                    case .keyNotFound(let key, let context): path = (context.codingPath.map(\.stringValue) + [key.stringValue]).joined(separator: ".")
+                    @unknown default: path = "proposal"
+                    }
+                    throw ToolArgumentError("\(path.isEmpty ? "proposal" : path) has a missing or invalid value; use the type and allowed values in the tool schema.")
+                }
+                proposal.trigger.apps = try RuleAppResolver.resolve(proposal.trigger.apps, observed: evidenceItems)
+                try PersistentRulesStore.validate(proposal)
+                guard (0.4...0.7).contains(proposal.confidence) else { throw ToolArgumentError("confidence must be between 0.4 and 0.7; use a cautious estimate supported by the evidence.") }
+                guard proposal.evidence.allSatisfy({ existingEvidence.contains($0) && reflectedEvidence.contains($0) }) else { throw ToolArgumentError("evidence must reference retained IDs included in this reflection. Invalid IDs: " + proposal.evidence.filter { !existingEvidence.contains($0) || !reflectedEvidence.contains($0) }.joined(separator: ", ")) }
+                if proposal.trigger.isEvaluable || proposal.trigger.kind == "spend" {
+                    let days = Set(proposal.evidence.compactMap { evidenceDates[$0].map(local.dayKey) })
+                    let dates = proposal.evidence.map { id in "\(id) (\(evidenceDates[id].map { local.label($0) + ", " + local.dayKey($0) } ?? "unknown local day"))" }.joined(separator: ", ")
+                    guard proposal.evidence.count >= 2, days.count >= 2 else { throw ToolArgumentError("evidence \(dates.isEmpty ? "is missing" : dates). An evaluable rule needs IDs from two different local days of this reflection.") }
+                }
+                if proposal.trigger.kind == "spend" { proposal.kind = .acts }
+                proposal.sentence = await redactor.redact(proposal.sentence).value
+                guard running, generation == token, sessions.first(where: { $0.sessionKey == sessionKey })?.id == sessionID,
+                      sessionID != nil, isAdmitted(sessionKey), reflectionEnabled() else { throw CancellationError() }
+                proposals.append((index, proposal))
+            } catch is CancellationError { throw CancellationError() }
+            catch { results[index] = rejected(index, error) }
+        }
+        // Revalidate after every asynchronous redaction before committing any accepted proposal.
+        guard journalAccessPolicy().enabledLevels == permittedLevels else { throw ToolArgumentError("Rule evidence permissions changed while processing the proposals; request a new reflection.") }
         let retained = Set(try journal.items(matching: query).map(\.id)).union(reflectionFeedbackDates().filter { feedbackSnapshot[$0.key] == $0.value.timeIntervalSince1970 }.keys)
-        guard journalAccessPolicy().enabledLevels == permittedLevels, proposals.allSatisfy({ $0.evidence.allSatisfy(retained.contains) }) else { throw ToolArgumentError("Rule evidence was deleted while processing the proposal.") }
-        let added = try rules.propose(proposals, at: clock.now)
+        proposals = proposals.filter { index, proposal in
+            guard proposal.evidence.allSatisfy(retained.contains), ledger?.record(id: reflection.delivery.id)?.discardedAt == nil else {
+                results[index] = rejected(index, ToolArgumentError("evidence was deleted while processing this proposal; request a new reflection.")); return false
+            }
+            return true
+        }
+        var added: [LearnedRule] = []
+        if !proposals.isEmpty {
+            do {
+                let outcomes: [Result<LearnedRule, any Error>]
+                if let partial = rules as? any PartialRulesProposing {
+                    outcomes = try partial.proposePartially(proposals.map(\.1), at: clock.now)
+                } else {
+                    outcomes = proposals.map { _, proposal in Result {
+                        guard let rule = try rules.propose([proposal], at: clock.now).first else { throw ToolArgumentError("No rule was stored; try this proposal again.") }
+                        return rule
+                    } }
+                }
+                for ((index, _), outcome) in zip(proposals, outcomes) {
+                    switch outcome {
+                    case .success(let rule):
+                        added.append(rule)
+                        results[index] = ["index": .number(Double(index + 1)), "result": "accepted", "id": .string(rule.id), "status": .string(rule.status.rawValue)]
+                    case .failure(let error): results[index] = rejected(index, error)
+                    }
+                }
+            } catch { for (index, _) in proposals { results[index] = rejected(index, error) } }
+        }
         learningContextDidChange()
-        return result(["rules": .array(rules.rules.filter { rule in added.contains { $0.id == rule.id } }.map(ruleForAgent))])
+        var response = result(["rules": .array(added.map(ruleForAgent)), "results": .array(array.indices.compactMap { results[$0] })])
+        response.isError = added.isEmpty
+        return response
     }
+
     private func ruleForAgent(_ rule: LearnedRule) -> JSONValue {
         guard case .object(var fields) = try? JSONValue.from(rule) else { return .null }
         fields["confidence"] = .string(rule.confidence >= 0.75 ? "Sure" : (rule.confidence >= 0.45 ? "Fairly sure" : "Unsure"))
@@ -494,18 +542,18 @@ extension ZeusRuntime: LearningRuntimeControlling {
         return .object(fields)
     }
     private func normalizedRule(_ value: JSONValue) throws -> JSONValue {
-        guard case .object(var fields) = value, Set(fields.keys).isSubset(of: ["sentence", "trigger", "kind", "confidence", "evidence"]), fields["sentence"] != nil else { throw ToolArgumentError("Invalid rule proposal fields.") }
+        guard case .object(var fields) = value, Set(fields.keys).isSubset(of: ["sentence", "trigger", "kind", "confidence", "evidence"]), fields["sentence"] != nil else { throw ToolArgumentError("proposal fields must be sentence, trigger, kind, confidence and evidence; sentence is required.") }
         if fields["kind"] == nil { fields["kind"] = "passive" }
         if fields["confidence"] == nil { fields["confidence"] = .number(0.6) }
         if fields["evidence"] == nil { fields["evidence"] = [] }
         var trigger: [String: JSONValue] = [:]
         if let raw = fields["trigger"] {
-            guard case .object(let object) = raw, Set(object.keys).isSubset(of: ["time", "apps", "state", "kind"]) else { throw ToolArgumentError("Invalid rule trigger.") }
+            guard case .object(let object) = raw, Set(object.keys).isSubset(of: ["time", "apps", "state", "kind"]) else { throw ToolArgumentError("trigger must be an object with only time, apps, state and kind.") }
             trigger = object
         }
         if trigger["apps"] == nil { trigger["apps"] = [] }
         if let raw = trigger["time"] {
-            guard case .object(var time) = raw, Set(time.keys).isSubset(of: ["startMinute", "endMinute", "weekdays"]) else { throw ToolArgumentError("Invalid time trigger.") }
+            guard case .object(var time) = raw, Set(time.keys).isSubset(of: ["startMinute", "endMinute", "weekdays"]) else { throw ToolArgumentError("trigger.time must contain startMinute, endMinute and optional weekdays.") }
             if time["weekdays"] == nil { time["weekdays"] = [] }; trigger["time"] = .object(time)
         }
         fields["trigger"] = .object(trigger); return .object(fields)

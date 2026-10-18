@@ -69,7 +69,7 @@ import Synchronization
         let rules = try store.propose([.init(sentence: "Stay quiet during tests", trigger: .init(state: "tests failing")),
                                       .init(sentence: "Send a summary", kind: .acts)], at: now)
         #expect(rules.map(\.status) == [.active, .shadow]); #expect(store.autonomy == 0.5)
-        #expect(throws: LearningStorageError.self) { try store.propose([.init(sentence: "valid"), .init(sentence: " ")], at: now) }
+        #expect(throws: ToolArgumentError.self) { try store.propose([.init(sentence: "valid"), .init(sentence: " ")], at: now) }
         #expect(store.rules.count == 2)
         try store.recordOutcome(.skipped, ruleIDs: [rules[0].id], eventID: "skip1", at: now)
         try store.recordOutcome(.skipped, ruleIDs: [rules[0].id], eventID: "skip1", at: now)

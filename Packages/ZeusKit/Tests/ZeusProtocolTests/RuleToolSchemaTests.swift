@@ -16,6 +16,14 @@ struct RuleToolSchemaTests {
         }
     }
 
+    @Test func proposalsAdvertiseAppNamesLocalTimeAndPartialResults() throws {
+        let tool = try #require(ZeusMCP.tools.first { $0.name == "zeus_propose_rules" })
+        let trigger = try #require(tool.inputSchema["properties"]?["rules"]?["items"]?["properties"]?["trigger"]?["properties"])
+        #expect(trigger["apps"]?["description"] == .string("App names as shown in the reflection, or bundle IDs. Ambiguous names need a bundle ID."))
+        #expect(trigger["time"]?["properties"]?["startMinute"]?["description"] == .string("Local minutes after midnight: 07:45 = 465; 18:00 = 1080."))
+        #expect(tool.description.contains("indexed results") && tool.description.contains("retry only rejected entries"))
+    }
+
     @Test func everyAdvertisedIntegerSchemaHasIntegralBounds() {
         for tool in ZeusMCP.tools { inspect(tool.inputSchema, path: tool.name) }
     }

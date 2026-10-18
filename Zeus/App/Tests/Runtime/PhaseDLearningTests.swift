@@ -122,7 +122,7 @@ import ZeusProtocol
     }
     @Test func proposalsRequireReflectionTwoDayEvidenceAndRespectSuppression() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
-        let args: JSONValue = ["rules": [["sentence": "Hold quiet updates", "trigger": ["state": "tests failing"], "evidence": ["day1", "day2"], "confidence": 0.99]]]
+        let args: JSONValue = ["rules": [["sentence": "Hold quiet updates", "trigger": ["state": "tests failing"], "evidence": ["day1", "day2"], "confidence": 0.7]]]
         #expect(await f.runtime.callTool("zeus_propose_rules", arguments: args, sessionKey: session).isError)
         try f.allowProposals()
         let proposed = await f.runtime.callTool("zeus_propose_rules", arguments: args, sessionKey: session)
