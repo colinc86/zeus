@@ -17,6 +17,10 @@ struct Round4HistoryTests {
         cards.setConversationOpen(true)
         for index in 0..<510 {
             _ = await runtime.callTool("zeus_say", arguments: ["text": .string("Message \(index)")], sessionKey: "claude:/fixture")
+            if let card = cards.cards.last, card.muteDecision?.source == .dailyBudget {
+                try runtime.showBudgetHeldCard(id: card.id)
+                cards.markSeen(ids: [card.id])
+            }
         }
         #expect(cards.cards.count == 500)
         #expect(CardStore(fileURL: file).cards.count == 500)
