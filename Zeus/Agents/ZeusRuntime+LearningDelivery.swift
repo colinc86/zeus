@@ -45,9 +45,13 @@ extension ZeusRuntime: LearningDeliveryPresenting {
     }
 
     func journalEvidenceDeleted(_ ids: Set<String>?) {
-        if ids == nil { clearMessageRatings() }
+        if ids == nil {
+            clearMessageRatings()
+            do { try managedController.discardRestartNotices() }
+            catch { learningError = "Zeus couldn't save the cleared restart notices." }
+        }
         reflectionTask?.cancel(); reflectionTask = nil
-        let records = (ledger?.records ?? []).filter { [.learning, .reflection, .brief, .ruleTrigger].contains($0.delivery.kind) }
+        let records = (ledger?.records ?? []).filter { [.learning, .reflection, .brief, .ruleTrigger, .restart].contains($0.delivery.kind) }
         let erased = Set(records.filter { record in
             guard let ids else { return true }
             let evidence = Set(record.delivery.meta["evidence", default: ""].split(separator: ",").map(String.init))

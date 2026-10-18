@@ -460,6 +460,11 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         record?.restartNotices?.removeAll { $0.id == id }
         do { try save() } catch { record?.restartNotices = old; throw error }
     }
+    func discardRestartNotices() throws {
+        record?.pendingRestartNotice = nil
+        record?.restartNotices = nil
+        try save()
+    }
     private func adopt(_ pane: ManagedPane) throws {
         guard record?.conversation != nil else { throw ManagedSessionError.invalidState }
         if let old = record?.pane, !old.dead, !pane.dead, old.startTime > 0,

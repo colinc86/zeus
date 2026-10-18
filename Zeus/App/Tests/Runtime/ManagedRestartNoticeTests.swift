@@ -39,6 +39,19 @@ import ZeusProtocol
         #expect(ZeusRuntime.sentLearningSummary(kind: "restart", text: "") == "Sent the restart notice")
     }
 
+    @Test func erasingJournalNeverReplaysARestartReceipt() throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        let delivery = Delivery(id: "restart-erased", kind: .restart, sessionKey: "claude:/fixture#123.1", content: "Synthetic restart notice", createdAt: f.clock.now)
+        try f.runtime.ledger?.insert(.init(delivery: delivery))
+        _ = try f.runtime.acknowledge(ids: [delivery.id], sessionKey: delivery.sessionKey)
+        #expect(try f.journal.items(matching: .init()).count == 1)
+        try f.journal.delete(.all)
+        f.runtime.stop(); try f.runtime.start()
+        f.runtime.recordReflectionReceipt(id: delivery.id)
+        #expect(try f.journal.items(matching: .init()).isEmpty)
+        #expect(f.runtime.ledger?.record(id: delivery.id)?.discardedAt != nil)
+    }
+
     @Test func crashRecoveryNamesTheCauseAndKeepsTheConversation() async throws {
         let f = try ManagedFixture(); defer { f.cleanup() }
         f.controller.activate(); try await f.settle()
