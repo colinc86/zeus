@@ -10,6 +10,7 @@ struct TurnEndedLaunchTests {
         let f = try ManagedFixture(agent: agent); defer { f.cleanup() }
         if agent == .opencode { await f.finder.setID("ses_hook") }
         f.controller.activate(); try await f.settle()
+        try await f.prepareIdleRestart()
         f.controller.restartManagedSession(); try await f.settle()
         let commands = await f.host.commands
         #expect(commands.count == 2)

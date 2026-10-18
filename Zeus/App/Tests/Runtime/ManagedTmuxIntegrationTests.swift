@@ -142,6 +142,14 @@ struct ManagedTmuxIntegrationTests {
         #expect(adopted.record?.pane?.name == alive.name)
         let restartedPane = try #require(adopted.record?.pane)
         #expect(adopted.managedAttachCommand?.hasSuffix("attach -t " + ManagedSessionController.shellQuote(restartedPane.id)) == true)
+        clock.advance(11, wake: false)
+        adopted.refresh()
+        do {
+            try await Self.wait("idle before restart", controller: adopted, home: home) { adopted.canAcceptInput && !adopted.isBusy }
+        } catch {
+            let sample = try await host.capture(restartedPane, owner: owner)
+            throw ManagedSessionError.command("\(error); screen: \(sample.screen.debugDescription); metadata: \(sample.inputMetadata); classification: \(ManagedPaneClassifier.classify(sample, agent: agent))")
+        }
         runner.beginRestart()
         adopted.restartManagedSession()
         do {
@@ -303,6 +311,7 @@ ready = home / ('ready-' + str(os.getpid()) + '.tmp')
 ready.write_text(json.dumps({'pid': os.getpid(), 'nativeID': native}))
 ready.replace(home / 'ready.json')
 print('M2a fixture ready', flush=True)
+print('───\n❯\u00a0\n───\x1b[1A\r\x1b[2C', end='', flush=True)
 for line in sys.stdin:
     if line.strip() == '/exit':
         break

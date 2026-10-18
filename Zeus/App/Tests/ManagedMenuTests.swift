@@ -43,17 +43,18 @@ import ZeusDesign
         controller.managedStatus = .failed(reason: "Crash")
         #expect(model.menuActions.contains(.start) && model.disabledActions.contains(.start))
         controller.installed = true; model.refreshAvailability()
-        for action in [ZeusManagedPresentation.Action.start, .tryAgain, .restart, .restartNow] {
+        for action in [ZeusManagedPresentation.Action.start, .tryAgain, .restart] {
             #expect(!model.disabledActions.contains(action))
         }
+        #expect(model.disabledActions.contains(.restartNow))
         model.perform(.tryAgain); model.perform(.restartNow)
-        #expect(controller.starts == 1 && controller.restarts == 1)
+        #expect(controller.starts == 1 && controller.restarts == 0)
         controller.managedStatus = .running(.idle)
         model.chooseManaged(false); model.confirm()
         #expect(model.switching)
         #expect(model.disabledActions.contains(.tryAgain) && model.disabledActions.contains(.restartNow))
         model.perform(.tryAgain); model.perform(.restartNow)
-        #expect(controller.starts == 1 && controller.restarts == 1)
+        #expect(controller.starts == 1 && controller.restarts == 0)
     }
 
     @Test func managedAlertsKeepTheirStatusAlongsideUnreadAndOrdinaryUnreadHasOneLine() throws {

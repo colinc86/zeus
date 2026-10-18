@@ -152,7 +152,12 @@ struct LiveClaudeDeliveryTests {
         let initialPane = try #require(controller.record?.pane)
         let initialNativeID = try #require(controller.record?.conversation?.nativeID)
         for fresh in [false, true] {
-            if fresh { controller.startNewManagedConversation() } else { controller.restartManagedSession() }
+            if fresh { controller.startNewManagedConversation() }
+            else {
+                clock.advance(121, wake: false)
+                let recovery = try #require(controller.managedRestartNowToken)
+                controller.restartManagedSessionNow(token: recovery)
+            }
             let restartDeadline = ContinuousClock.now + .seconds(30)
             while controller.isBusy || controller.record?.pane?.pid == initialPane.pid || controller.managedStatus == .stopped {
                 guard ContinuousClock.now < restartDeadline else { throw ManagedSessionError.command("Real restart: \(controller.managedStatus)") }

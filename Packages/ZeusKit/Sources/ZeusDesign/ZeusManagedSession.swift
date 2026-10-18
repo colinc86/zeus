@@ -293,6 +293,8 @@ public struct ZeusManagedStatusPanel: View {
     public var presentation: ZeusManagedPresentation
     public var attachCommand: String?
     public var note: String?
+    /// Optional link displayed inline after the note.
+    public var noteAction: (title: String, action: () -> Void)?
     /// Buttons shown but disabled, e.g. Start before a folder is chosen. Keep them in place: say why in `note`.
     public var disabledActions: Set<ZeusManagedPresentation.Action>
     public var onAction: (ZeusManagedPresentation.Action) -> Void
@@ -302,13 +304,16 @@ public struct ZeusManagedStatusPanel: View {
     /// - Parameters:
     ///   - attachCommand: the runtime's exact attach command (socket and pane); `nil` hides the row (off, or not created yet).
     ///   - note: an extra line such as `ZeusManagedCopy.restartToApply`, or why a button is disabled.
+    ///   - noteAction: an optional labelled link after the note.
     ///   - disabledActions: buttons to show disabled in place (never hide the primary button).
     public init(_ presentation: ZeusManagedPresentation, attachCommand: String?, note: String? = nil,
+                noteAction: (title: String, action: () -> Void)? = nil,
                 disabledActions: Set<ZeusManagedPresentation.Action> = [],
                 onAction: @escaping (ZeusManagedPresentation.Action) -> Void, onCopy: @escaping (String) -> Bool) {
         self.presentation = presentation
         self.attachCommand = attachCommand
         self.note = note
+        self.noteAction = noteAction
         self.disabledActions = disabledActions
         self.onAction = onAction
         self.onCopy = onCopy
@@ -331,7 +336,15 @@ public struct ZeusManagedStatusPanel: View {
                 ZeusCommandRow(ZeusManagedCopy.attachCaption, command: attachCommand, onCopy: onCopy)
             }
             if let note {
-                Text(note).zeusFont(.caption).foregroundStyle(palette.text)
+                HStack(spacing: ZeusTheme.Spacing.s) {
+                    Text(note).foregroundStyle(palette.text)
+                    if let noteAction {
+                        Text("·").foregroundStyle(palette.secondaryText).accessibilityHidden(true)
+                        ViewerLink(accessibility: noteAction.title, action: noteAction.action) {
+                            Text(noteAction.title).foregroundStyle(palette.title)
+                        }
+                    }
+                }.zeusFont(.caption)
             }
             HStack(spacing: ZeusTheme.Spacing.s) {
                 ForEach(Array(presentation.actions.enumerated()), id: \.element) { index, action in

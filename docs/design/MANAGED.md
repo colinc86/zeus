@@ -116,6 +116,20 @@ From `ZeusManagedPresentation.make`. Buttons are listed primary first.
 - **Unavailable buttons stay visible, disabled, in place** (M4-QA, answering appdev). Pass them in `ZeusManagedStatusPanel(disabledActions:)`, e.g. `[.start]` before a folder is chosen or while tmux is missing, and put the reason in `note`. Never hide the primary button or draw a substitute outside the panel. A stable layout shows what the next step is, and VoiceOver still reaches the button as dimmed.
 - **Restart goes first for a pending settings change only in running and starting.** In blocked and failed, Open in Terminal and Try Again stay primary: the prompt or the failure needs the user first.
 - Restart Now maps to `restartManagedSession()` and Try Again to `startManagedSession()`.
+- **Restart while the assistant is busy (FX17).** Restart never interrupts work by itself. Pressing Restart (panel or
+  menu) while the assistant is working waits for it to go idle, with the UP1 line in the panel and the thread:
+  "Restarting when <Agent> is idle… · Cancel"; Cancel is the panel note's inline action (`ZeusManagedStatusPanel`
+  `noteAction`: a secondaryText "·" then the title in link style, after the note; Restart stays dimmed in the button
+  row) and withdraws the pending restart, so nothing happens. A **Restart Now** button appears only when the process
+  has exited but its pane and conversation can be resumed (a recovery token exists: it then *replaces* Start / Try
+  Again, never sits beside them, and the detail reads "<Agent> exited.") or when the same blocked prompt has been
+  waiting for 2 minutes or more. It always asks first, in the Settings confirmation style (action first, Cancel focused,
+  Esc cancels):
+  - process gone: "Restart <Agent> now? Any unsent text in Terminal is lost. The conversation is kept."
+  - long blocked: "Restart <Agent> now? It's in the middle of something: restarting interrupts it and loses any unsent
+    text in Terminal. The conversation is kept."
+  Buttons "Restart Now" / "Cancel". A confirmation produced from the menu opens Settings › Assistant at the
+  confirmation, as the update and setup restarts do; the menu never confirms on its own.
 - Refresh the countdown once a second while Settings is visible (`TimelineView(.periodic(…, by: 1))` around the panel).
 - The indicator's dots hold still under Reduce Motion and when `zeusAnimationsActive` is false.
 - VoiceOver reads the panel's status as one element: `presentation.accessibilityLabel`.

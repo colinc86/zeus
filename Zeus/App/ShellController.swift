@@ -1108,10 +1108,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     /// Menu recovery must bring its confirmation into view instead of silently arming Settings.
     func performManagedAction(_ action: ZeusManagedPresentation.Action, onConfirmation: (() -> Void)? = nil) {
         managed.perform(action)
-        switch managed.confirmation {
-        case .newConversation?, .restartForUpdate?: break
-        default: return
-        }
+        guard managed.confirmation != nil else { return }
         if let onConfirmation { onConfirmation() } else { showSettings(tab: .agent) }
     }
 
@@ -1210,6 +1207,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         }
         if let jumpLine, !managed.prioritizesMenuStatus { top.append(jumpLine) } else { top.append(.line(menuStatus)) }
         if managed.enabled {
+            if managed.canCancelRestart { top.append(.action("cancel-restart", "Cancel Restart", .cancelManagedRestart)) }
             for action in managed.menuActions {
                 top.append(.action("managed:\(action)", action.menuTitle, .managed(action), isEnabled: !managed.disabledActions.contains(action)))
             }
@@ -1306,6 +1304,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         switch action {
         case .openStatusTarget: showAvatarConversation()
         case .managed(let action): performManagedAction(action)
+        case .cancelManagedRestart: managed.cancelRestart()
         case .selectAssistantSession(let key): settings.assistantSessionKey = key
         case .talk: showTalkPanel()
         case .askAboutThis: askAboutThis()

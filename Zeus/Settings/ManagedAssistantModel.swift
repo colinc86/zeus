@@ -31,6 +31,7 @@ final class ManagedAssistantModel {
         case switchToOwn
         case unrestricted(ManagedPermissionMode)
         case newConversation
+        case restartNow
         case switchConversation
         case restartForUpdate(ManagedPermissionMode)
         case restartForSetup(ManagedPermissionMode)
@@ -51,6 +52,8 @@ final class ManagedAssistantModel {
     private(set) var retainedSession: RetainedManagedSession?
     @ObservationIgnored private let instructionDebouncer: ManagedInstructionsDebouncer
     @ObservationIgnored private var observedConfiguration: ManagedSessionConfig?
+    @ObservationIgnored private var recoveryConfirmationToken: String?
+    @ObservationIgnored private var recoveryConfirmationProvider: ObjectIdentifier?
     @ObservationIgnored private var updateConfirmationConversation: String?
     @ObservationIgnored private var confirmedSwitchTarget: ManagedSessionConfig?
     private(set) var modes: [AgentKind: [ManagedPermissionMode]] = [:]
@@ -80,6 +83,17 @@ final class ManagedAssistantModel {
     var agentUpdateCanRestart: Bool {
         agentUpdatePending && hasActiveSession && settingsApplier?.managedCanResumeSettings == true
             && settingsApplier?.managedSettingsApplication == nil && !switching && !hasPendingQuestion()
+    }
+    private var restartRecovery: (any ManagedRestartRecovering)? { controller as? any ManagedRestartRecovering }
+    var canRestartNow: Bool { enabled && !switching && restartRecovery?.managedRestartNowToken != nil }
+    var ordinaryRestartPending: Bool { settingsApplier?.managedSettingsApplication?.kind == .restart }
+    var canCancelRestart: Bool { ordinaryRestartPending && settingsApplier?.managedSettingsApplication?.phase == .waiting }
+    func cancelRestart() { if canCancelRestart { settingsApplier?.cancelManagedSettingsApplication() } }
+    var restartNowConfirmation: String {
+        if case .blocked = status {
+            return "Restart \(agentName) now? It's in the middle of something: restarting interrupts it and loses any unsent text in Terminal. The conversation is kept."
+        }
+        return "Restart \(agentName) now? Any unsent text in Terminal is lost. The conversation is kept."
     }
     var agentUpdateWaitingText: String { "Restarting when \(agentName) is idle…" }
     /// This action resumes the launched conversation, never a deferred agent/folder selection.
@@ -173,6 +187,8 @@ final class ManagedAssistantModel {
             if agentUpdateCanRestart { actions.remove(.restart) }
             else { actions.insert(.restart) }
         }
+        if !canRestartNow { actions.insert(.restartNow) }
+        if ordinaryRestartPending { actions.insert(.restart) }
         if attachCommand == nil { actions.insert(.openInTerminal) }
         return actions
     }
@@ -240,7 +256,7 @@ final class ManagedAssistantModel {
             case .failed, .stopped, .off: return "Your changes are saved. Start the assistant to apply them."
             default: break
             }
-            if pending.kind == .agentUpdate { return agentUpdateWaitingText }
+            if pending.kind == .agentUpdate || pending.kind == .restart { return agentUpdateWaitingText }
             if pending.kind == .newConversation { return "Switching to \(Self.name(pending.configuration.agent)) in \((pending.configuration.folder as NSString).abbreviatingWithTildeInPath) when \(agentName) is ready." }
             if pending.phase == .applying && settingsApplier?.managedCanResumeSettings == true {
                 return "Applying your changes. \(agentName) restarts and keeps the same conversation."
@@ -280,7 +296,12 @@ final class ManagedAssistantModel {
         switch status {
         case .off, .stopped: actions.append(.start)
         case .failed: actions.append(.start)
-        case .starting, .running, .blocked, .restarting: actions += [.restart, .stop]
+        case .starting, .running, .blocked: actions += [.restart, .stop]
+        case .restarting: actions.append(.stop)
+        }
+        if canRestartNow {
+            actions.removeAll { $0 == .start || $0 == .tryAgain }
+            actions.append(.restartNow)
         }
         return actions
     }
@@ -311,10 +332,19 @@ final class ManagedAssistantModel {
             default: break
             }
         }
+        if !canRestartNow { result.actions.removeAll { $0 == .restartNow } }
+        else {
+            if result.actions.contains(.start) || result.actions.contains(.tryAgain) {
+                result.actions.removeAll { $0 == .start || $0 == .tryAgain || $0 == .restartNow }
+                result.actions.insert(.restartNow, at: 0)
+                result.detail = "\(recoveryAgentName) exited."
+            } else if !result.actions.contains(.restartNow) { result.actions.append(.restartNow) }
+        }
         return result
     }
     func menuStatus(usual: String, unread: Int) -> String {
         guard enabled else { return usual }
+        if ordinaryRestartPending { return agentUpdateWaitingText }
         let current = presentation()
         return current.menuStatus ?? current.detail
     }
@@ -457,6 +487,12 @@ final class ManagedAssistantModel {
             instructionDebouncer.cancel(); instructionsAreDebouncing = false
             if let settingsApplier { confirmedSwitchTarget = config; settingsApplier.switchManagedSettings(config) }
             else { launchedConfig = config; controller?.startNewManagedConversation() }
+        case .restartNow:
+            guard let recovery = restartRecovery, canRestartNow,
+                  recoveryConfirmationProvider == ObjectIdentifier(recovery),
+                  let token = recoveryConfirmationToken, recovery.managedRestartNowToken == token else { return }
+            recoveryConfirmationToken = nil; recoveryConfirmationProvider = nil
+            recovery.restartManagedSessionNow(token: token)
         case .newConversation:
             refreshAvailability()
             guard canStart else { return }
@@ -474,7 +510,12 @@ final class ManagedAssistantModel {
             if needsNewConversation { confirmation = .switchConversation; return }
             if requiresFreshConversation { confirmation = .newConversation; return }
             launchedConfig = config; controller.startManagedSession()
-        case .restart, .restartNow:
+        case .restartNow:
+            guard canRestartNow, let recovery = restartRecovery else { return }
+            recoveryConfirmationToken = recovery.managedRestartNowToken
+            recoveryConfirmationProvider = ObjectIdentifier(recovery)
+            confirmation = .restartNow
+        case .restart:
             if setupNeedsRestart { requestSetupRestart(); return }
             if agentUpdatePending || agentUpdateRestartPending { requestAgentUpdateRestart(); return }
             refreshAvailability()

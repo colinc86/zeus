@@ -106,6 +106,12 @@ struct ManagedFixture {
         guard let pane = controller.record?.pane, let conversation = controller.record?.conversation else { throw ManagedSessionError.invalidState }
         controller.considerSessions([.init(id: UUID(), sessionKey: "\(conversation.agent.rawValue):\(conversation.folder)#\(pane.pid).\(pane.startTime)", agent: conversation.agent, cwd: conversation.folder, clientName: "Owned", supportsChannel: false, tmuxPane: pane.id, connectedAt: clock.now, tmuxSocketPath: pane.socket)])
     }
+    func prepareIdleRestart() async throws {
+        clock.advance(11, wake: false)
+        await host.setSnapshot(try N1Messages.frame(config.value?.agent ?? .claude, "before"))
+        controller.refresh(); try await settle()
+        #expect(controller.canAcceptInput)
+    }
     func cleanup() { controller.shutdown(); try? FileManager.default.removeItem(at: folder) }
 }
 
@@ -151,13 +157,13 @@ struct ManagedSessionTests {
         #expect(first.arguments.contains(initial))
         let context = f.controller.record?.conversation?.nativeID
         f.config.value?.launchPrompt = "Changed only for next conversation"
+        try await f.prepareIdleRestart()
         f.controller.restartManagedSession(); try await f.settle()
         #expect(f.controller.record?.conversation?.nativeID == context)
         let second = try #require(await f.host.commands.last)
         #expect(!second.arguments.contains(initial))
         #expect(second.arguments.contains(context ?? "missing"))
-        #expect(f.controller.record?.conversation?.launchPrompt == (f.controller.supportsInstructionChangesOnResume(for: agent)
-            ? "Changed only for next conversation" : "Original instructions '$()'\nSecond line"))
+        #expect(f.controller.record?.conversation?.launchPrompt == "Original instructions '$()'\nSecond line")
         #expect(!FileManager.default.fileExists(atPath: f.folder.appendingPathComponent(".mcp.json").path))
         if agent == .codex {
             #expect(second.arguments.contains("--no-daemon"))

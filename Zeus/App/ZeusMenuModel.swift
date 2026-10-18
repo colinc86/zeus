@@ -11,6 +11,7 @@ struct ZeusMenuModel: Equatable {
         /// Opens the panel at the waiting question or first unread message (the status strip's jump).
         case openStatusTarget
         case managed(ZeusManagedPresentation.Action)
+        case cancelManagedRestart
         /// nil is Auto.
         case selectAssistantSession(String?)
         case talk, askAboutThis, toggleVisibility, hideForHour, hideUntilTomorrow, deliveryProblem

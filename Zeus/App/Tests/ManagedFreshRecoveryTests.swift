@@ -25,7 +25,7 @@ import ZeusProtocol
         #expect(!model.disabledActions.contains(.newConversation))
         model.perform(.start) // A stale menu's Start goes to the same confirmation.
         #expect(model.confirmation == .newConversation && controller.starts == 0 && controller.fresh == 0)
-        model.cancelConfirmation(); model.perform(.restartNow)
+        model.cancelConfirmation(); model.perform(.restart)
         #expect(model.confirmation == .newConversation && controller.starts == 0)
         model.cancelConfirmation(); model.perform(.newConversation); model.confirm()
         #expect(controller.fresh == 1 && controller.starts == 0)

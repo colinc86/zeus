@@ -22,6 +22,7 @@ import ZeusProtocol
         #expect(runtime.ledger?.records.isEmpty == true)
         let budget = runtime.remainingUnpromptedBudget
         for expected in 1...2 {
+            try await f.prepareIdleRestart()
             f.controller.restartManagedSession(); try await f.settle(); try checkIn()
             runtime.enqueueManagedRestartNotices(); try checkIn()
             let notices = runtime.ledger?.records.filter { $0.delivery.kind == .restart } ?? []
@@ -69,7 +70,9 @@ import ZeusProtocol
         let f = try ManagedFixture(); defer { f.cleanup() }
         f.controller.activate(); try await f.settle()
         #expect(f.controller.record?.restartNotices?.isEmpty != false)
+        try await f.prepareIdleRestart()
         f.controller.restartManagedSession(); try await f.settle()
+        try await f.prepareIdleRestart()
         f.controller.restartManagedSession(); try await f.settle()
         let restored = try ManagedSessionStore(url: f.folder.appendingPathComponent("state.json")).load()
         #expect(restored.restartNotices?.count == 2)

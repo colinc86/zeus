@@ -8,7 +8,9 @@ import ZeusDesign
 /// Visible samples gate delivery. Consent choices are sent only after an explicit user click.
 @MainActor
 @Observable
-final class ManagedSessionController: ManagedSessionControlling, ManagedSettingsApplying, ManagedPromptAnswering, ManagedAgentUpdating {
+final class ManagedSessionController: ManagedSessionControlling, ManagedSettingsApplying, ManagedPromptAnswering, ManagedAgentUpdating, ManagedRestartRecovering {
+    private var blockedSince: Date?
+    private var recoveryCheckAt: Date = .distantPast
     private(set) var managedStatus: ManagedSessionStatus = .off
     private(set) var record: ManagedSessionRecord?
     @ObservationIgnored var onChange: (() -> Void)?
@@ -141,7 +143,8 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     }
     /// Persisted launch evidence distinguishes a never-started assistant from an exit.
     var hasLaunched: Bool { record?.conversation?.didLaunch == true }
-    enum Action: Equatable { case activate, start, stop, restart, fresh, poll, recover, terminal, applySettings }
+    enum Action: Equatable { case activate, start, stop, fresh, poll, recover, terminal, applySettings
+        case restartNow(String) }
 
     /// Injection points keep every test off the human's default server and authentication stores.
     init(configuration: @escaping () -> ManagedSessionConfig?, stateURL: URL, bridge: URL,
@@ -210,7 +213,12 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
                 fingerprint: fingerprint, optionID: optionID, stillAllowed: { [weak self] in
                     guard let self, self.attached, self.enabled, self.promptScope == scope,
                           self.managedPrompt?.fingerprint == fingerprint, case .blocked = self.managedStatus else { return false }
-                    return !self.actions.contains(where: { [.stop, .restart, .fresh, .applySettings].contains($0) })
+                    return !self.actions.contains(where: { action in
+                        switch action {
+                        case .stop, .restartNow, .fresh, .applySettings: true
+                        default: false
+                        }
+                    })
                 })
             if case .answered = result {
                 clearBlock()
@@ -266,9 +274,28 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         }
         throw ManagedSessionError.command("Couldn't find an unused assistant folder name.")
     }
-    func startManagedSession() { enqueue(.start) }
+    func startManagedSession() {
+        if managedSettingsApplication?.kind == .restart { cancelManagedSettingsApplication() }
+        enqueue(.start)
+    }
     func stopManagedSession() { cancelManagedSettingsApplication(); enqueue(.stop) }
-    func restartManagedSession() { cancelManagedSettingsApplication(); enqueue(.restart) }
+    func restartManagedSession() {
+        guard let applied = managedAppliedConfiguration else { return }
+        requestSettings(applied, kind: .restart)
+    }
+    var managedRestartNowToken: String? {
+        _ = recoveryCheckAt
+        guard attached, enabled, managedCanResumeSettings, let pane = record?.pane else { return nil }
+        let eligible: Bool
+        if pane.dead { eligible = true }
+        else if case .blocked = managedStatus, let blockedSince { eligible = clock.now.timeIntervalSince(blockedSince) >= 120 }
+        else { eligible = false }
+        return eligible ? promptScope + "|" + (blockedCandidate ?? "dead") : nil
+    }
+    func restartManagedSessionNow(token: String) {
+        guard managedRestartNowToken == token else { return }
+        enqueue(.restartNow(token))
+    }
     func startNewManagedConversation() { cancelManagedSettingsApplication(); enqueue(.fresh) }
     func openManagedSessionInTerminal() { enqueue(.terminal) }
 
@@ -370,10 +397,23 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
             guard enabled else { setStatus(.off); return }
             attached = true; try load(); record?.restarts = []; try save(); try await start()
         case .stop: try load(); try await stop(); setStatus(enabled ? .stopped : .off)
-        case .restart:
-            if let config = configuration() { try ManagedProbeIsolation.validate(folder: config.folder, environment: environment, isolatedSocket: isolatedSocket) }
-            attached = true; try load(); try await stop()
-            record?.restarts = []; try save(); try await start()
+        case .restartNow(let requestToken):
+            guard managedRestartNowToken == requestToken, let applied = managedAppliedConfiguration,
+                  let pane = try await existingPane(), managedRestartNowToken == requestToken else { return }
+            if !pane.dead {
+                guard let hosting else { return }
+                let sample = try await hosting.capture(pane, owner: record?.owner ?? "")
+                guard case .blocked(let reason, let dialog) = ManagedPaneClassifier.classify(sample, agent: applied.agent) else { return }
+                let prompt = ManagedPromptParser.parse(sample, agent: applied.agent, scope: promptScope)
+                guard (prompt?.fingerprint ?? reason + "\n" + dialog) == blockedCandidate,
+                      managedRestartNowToken == requestToken else { return }
+            }
+            guard let current = try await existingPane(), current == pane, managedRestartNowToken == requestToken else { return }
+            cancelManagedSettingsApplication()
+            let token = activation
+            try await stop()
+            guard attached, enabled, activation == token else { return }
+            record?.restarts = []; try save(); try await start(using: applied, reason: "Restart Assistant")
         case .fresh:
             if let config = configuration() { try ManagedProbeIsolation.validate(folder: config.folder, environment: environment, isolatedSocket: isolatedSocket) }
             attached = true; try load()
@@ -388,7 +428,9 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         case .recover:
             guard attached, enabled, case .restarting = managedStatus else { return }
             try await discoverConversation()
+            let pendingRestart = managedSettingsApplication?.kind == .restart ? managedSettingsApplication?.id : nil
             record?.restarts.append(clock.now); try save(); try await start(using: record?.appliedConfiguration, reason: "crash recovery")
+            if let pendingRestart, managedSettingsApplication?.id == pendingRestart { cancelManagedSettingsApplication() }
         case .applySettings:
             let failedRequestID = managedSettingsApplication?.id
             do { try await applySettingsWhenSafe() }
@@ -417,7 +459,12 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     }
     private func save() throws { if let record { try store.save(record); onChange?() } }
     private func setStatus(_ value: ManagedSessionStatus) {
-        if managedStatus != value { managedStatus = value; onChange?() }
+        if managedStatus != value {
+            if case .blocked = value {
+                if case .blocked = managedStatus {} else { blockedSince = clock.now }
+            } else { blockedSince = nil }
+            managedStatus = value; onChange?()
+        }
     }
     private func existingPane() async throws -> ManagedPane? {
         guard let hosting, let record else { return nil }
@@ -622,6 +669,8 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
             case .blocked(let reason, let dialog):
                 let prompt = ManagedPromptParser.parse(snapshot, agent: record?.conversation?.agent ?? .other, scope: promptScope)
                 let signature = prompt?.fingerprint ?? reason + "\n" + dialog
+                if blockedCandidate != signature { blockedSince = clock.now }
+                recoveryCheckAt = clock.now
                 matchingSamples = blockedCandidate == signature ? matchingSamples + 1 : 1
                 blockedCandidate = signature
                 unknownSince = nil
@@ -679,7 +728,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         if !startsNew {
             guard managedCanResumeSettings else { deferRequest(); return }
             if !supportsInstructionChangesOnResume(for: config.agent) { config.launchPrompt = conversation.launchPrompt }
-            if request.kind != .agentUpdate, let applied = managedAppliedConfiguration, applied.permissionModeID == config.permissionModeID && applied.launchPrompt == config.launchPrompt {
+            if request.kind != .agentUpdate && request.kind != .restart, let applied = managedAppliedConfiguration, applied.permissionModeID == config.permissionModeID && applied.launchPrompt == config.launchPrompt {
                 cancelManagedSettingsApplication(); return
             }
         }
@@ -701,7 +750,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
                 record?.restartNotices = nil; record?.pendingRestartNotice = nil; record?.conversation = nil; record?.confirmedSessionKey = nil; record?.nativeEnvironment = [:]
                 record?.launchPending = false; record?.pendingWasFresh = false
             }
-            record?.restarts = []; try save(); try await start(using: config, reason: request.kind == .agentUpdate ? "update" : "settings change")
+            record?.restarts = []; try save(); try await start(using: config, reason: request.kind == .restart ? "Restart Assistant" : request.kind == .agentUpdate ? "update" : "settings change")
             if request.kind == .agentUpdate, attached, enabled, activation == token { managedAgentUpdateLastRestartID = request.id }
             if managedSettingsApplication?.id == request.id { managedSettingsApplication = nil }
             onChange?()

@@ -3,7 +3,7 @@ import ZeusProtocol
 
 /// One exact, replaceable request. Desired editor preferences are not launch evidence.
 struct ManagedSettingsApplication: Equatable, Sendable {
-    enum Kind: Equatable, Sendable { case resume, newConversation, agentUpdate }
+    enum Kind: Equatable, Sendable { case resume, newConversation, agentUpdate, restart }
     enum Phase: Equatable, Sendable { case waiting, applying }
     let id: UUID
     let configuration: ManagedSessionConfig
@@ -48,4 +48,15 @@ extension ZeusRuntime: ManagedAgentUpdating {
     var managedAgentUpdateConversationID: String? { managedController.managedAgentUpdateConversationID }
     var managedAgentUpdateLastRestartID: UUID? { managedController.managedAgentUpdateLastRestartID }
     func restartManagedAgentForUpdate() { managedController.restartManagedAgentForUpdate() }
+}
+
+/// Explicit recovery is available only for the same dead process or long-lived block.
+@MainActor protocol ManagedRestartRecovering: AnyObject {
+    var managedRestartNowToken: String? { get }
+    func restartManagedSessionNow(token: String)
+}
+
+extension ZeusRuntime: ManagedRestartRecovering {
+    var managedRestartNowToken: String? { managedController.managedRestartNowToken }
+    func restartManagedSessionNow(token: String) { managedController.restartManagedSessionNow(token: token) }
 }
