@@ -353,16 +353,16 @@ extension ZeusRuntime: LearningRuntimeControlling {
                     payload: .init(payload, report: text.report)))
             }
             if kind != "rating" {
-                (cards as? any LearningNoticeRecording)?.recordLearningNotice(.init(id: "n_" + id, kind: .reflection, createdAt: existing?.time ?? receivedAt ?? clock.now, summary: summary, actionTitle: "View", detail: text.value, ruleID: nil), action: nil)
+                (cards as? any LearningNoticeRecording)?.recordLearningNotice(.init(id: "n_" + id, kind: .reflection, createdAt: ledger?.record(id: id)?.delivery.createdAt ?? existing?.time ?? receivedAt ?? clock.now, summary: summary, actionTitle: "View", detail: text.value, ruleID: nil, deliveryKindName: LearningDeliveryVocabulary.title(kind: kind)), action: nil)
             }
         } catch { learningError = "Zeus couldn't record this learning receipt." }
     }
     static func sentLearningSummary(kind: String, text: String) -> String {
-        if kind == "rating" { return "Sent your message preference" }
+        if kind == "rating" { return "Sent the message preference" }
         if kind == "brief" { return "Sent the morning brief request" }
         if kind == "ruleTrigger" { return "Sent a rule trigger" }
-        if kind == "reflection" { return "Sent a daily reflection" }
-        if kind == "digest" { return "Sent your daily summary" }
+        if kind == "reflection" { return "Sent the evening reflection" }
+        if kind == "digest" { return "Sent the morning summary" }
         let moments = [("First activity today", "first activity today"), ("Back at the Mac", "back from a break"),
             ("Later start than usual", "a later start"), ("Day winding down", "day winding down")]
         return moments.first { text.hasPrefix($0.0) }.map { "Sent a note: " + $0.1 } ?? "Sent a note"

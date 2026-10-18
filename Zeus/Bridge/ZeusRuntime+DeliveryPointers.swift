@@ -47,15 +47,7 @@ extension ZeusRuntime {
             storageProblem = "Couldn't save the outdated requests."
             return
         }
-        // Only the transition emits a notice. Historical expiry tombstones never
-        // recreate a dismissed notice, including after relaunch.
-        for record in summaries where discards[record.delivery.id] == "expired" && record.transportDeliveredAt == nil {
-            let summary = record.delivery.kind == .brief
-                ? "Not sent: the morning passed before your assistant could read this brief."
-                : "Not sent: the day passed before your assistant could read this reflection."
-            (cards as? any LearningNoticeRecording)?.recordLearningNotice(.init(id: "n_" + record.delivery.id,
-                kind: .reflection, createdAt: clock.now, summary: summary, actionTitle: "View",
-                detail: record.delivery.content, ruleID: nil), action: nil)
-        }
+        // The app reconciles existing lines from durable state; no headless notice is replayed.
+        publishPendingLearnings(ledger.records)
     }
 }

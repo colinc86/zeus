@@ -111,6 +111,34 @@ import ZeusProtocol
 }
 
 @MainActor @Suite(.serialized) struct DocumentReturnTests {
+    @Test func longLearningViewUsesSnapshotAndReturnsToMessages() async throws {
+        let enhanced = NSSelectorFromString("accessibilitySetValue:forAttribute:")
+        let previous = NSApp.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? false
+        NSApp.perform(enhanced, with: NSNumber(value: true), with: "AXEnhancedUserInterface")
+        defer { NSApp.perform(enhanced, with: previous, with: "AXEnhancedUserInterface") }
+        let f = try DV2Fixture(index: 7, count: 8); defer { f.cleanup() }
+        let text = (1...50).map { "Stored reflection line \($0)." }.joined(separator: "\n")
+        f.cards.recordNotice(.init(id: "n_reflection", kind: .learning, createdAt: Date(),
+            summary: "Sent the evening reflection", actionTitle: "View", detail: text, deliveryKindName: "Evening reflection"))
+        f.mount(); try await f.settle()
+        let driver = ConversationScrollDriver(); driver.scrollView = f.scroll
+        driver.scroll(to: f.viewport.contentHeight); try await f.settle()
+        let savedOffset = f.viewport.offset
+        try f.press("View: Sent the evening reflection"); try await f.settle()
+        #expect(f.panel.document.current?.isSnapshot == true)
+        #expect(f.panel.document.current?.content?.text == text)
+        let labels = jumpAXNodes(try #require(f.host)).compactMap { ($0 as AnyObject).accessibilityLabel?() }
+        #expect(!labels.contains("Open") && !labels.contains("Show in Finder"))
+        #expect(labels.contains("Back to Messages") && labels.contains("Expand"))
+        f.panel.document.handle(.find, conversation: f.model); try await f.settle()
+        #expect(f.panel.document.findVisible)
+        f.panel.document.handle(.back, conversation: f.model); try await f.settle()
+        #expect(!f.panel.document.findVisible && f.panel.document.isOpen)
+        try f.press("Back to Messages"); try await f.settle()
+        #expect(!f.panel.document.isOpen && f.model.draft == "Keep this draft" && f.model.draftAttachments.isEmpty)
+        #expect(abs(f.viewport.offset - savedOffset) < 2)
+    }
+
     @Test func accessibilityQueriesAfterReopeningViewer() async throws {
         let enhanced = NSSelectorFromString("accessibilitySetValue:forAttribute:")
         let previous = NSApp.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? false

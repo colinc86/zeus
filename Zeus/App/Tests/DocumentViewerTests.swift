@@ -22,6 +22,30 @@ import ZeusProtocol
         while viewer.revision <= revision && Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
         #expect(viewer.revision > revision)
     }
+    @Test func inMemoryTextIsExactAndNeverBecomesAFileAttachment() throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let conversation = ConversationModel(cards: CardStore(fileURL: root.appendingPathComponent("cards.json")), messaging: DocumentMessages())
+        let viewer = DocumentViewerModel()
+        let text = "Exact private text\n\twith spacing"
+        viewer.openText(text, title: "Evening reflection · Fri 17 Oct")
+        let page = try #require(viewer.current)
+        #expect(page.isSnapshot && page.content?.text == text && page.content?.renderer == .text)
+        #expect(!viewer.loading && viewer.supportsFind && viewer.attachmentPosition == nil)
+        var opened = false
+        viewer.openExternally = { _ in opened = true }; viewer.revealExternally = { _ in opened = true }
+        viewer.handle(.open, conversation: conversation); viewer.handle(.reveal, conversation: conversation)
+        #expect(!opened && !viewer.navigate(root) && !viewer.step(1))
+        viewer.ask(in: conversation)
+        conversation.draft = "Question"; viewer.typed(in: conversation)
+        viewer.selectedText = "Exact private text"; viewer.quote(in: conversation)
+        #expect(conversation.draftAttachments.isEmpty)
+        #expect(conversation.draft.contains("> Exact private text"))
+        viewer.handle(.find, conversation: conversation)
+        #expect(viewer.findVisible)
+        let revision = viewer.revision; viewer.refresh()
+        #expect(viewer.revision == revision && viewer.current?.content?.text == text)
+        #expect(viewer.back() && !viewer.isOpen)
+    }
     @Test func openBackStepFolderAndLocalLinks() async throws {
         let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let first = try file("first.md", in: root), second = try file("second.txt", in: root)

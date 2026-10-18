@@ -20,6 +20,7 @@ extension ZeusRuntime: LearningDeliveryPresenting {
     func eraseLearningDeliveries(ids: Set<String>) {
         guard !ids.isEmpty else { return }
         erasedLearningDeliveryIDs.formUnion(ids)
+        hiddenLearningDiscardIDs.formUnion(ids)
         for id in ids {
             sendTokens.removeValue(forKey: id)
             sends.removeValue(forKey: id)?.cancel()
@@ -108,9 +109,25 @@ extension ZeusRuntime: LearningDeliveryPresenting {
             let name = ["claude": "Claude", "codex": "Codex", "opencode": "OpenCode"][agent] ?? "Your assistant"
             return PendingLearningDelivery(id: record.delivery.id, kind: record.delivery.kind, text: record.delivery.content,
                 preparedAt: record.delivery.createdAt, sessionLabel: name + (managedController.sessionKey == key ? " · Zeus" : ""),
-                learningKind: record.delivery.meta["learning_kind"].flatMap(Learning.Kind.init(rawValue:)))
+                learningKind: record.delivery.meta["learning_kind"].flatMap(Learning.Kind.init(rawValue:)),
+                deliveryKindName: LearningDeliveryVocabulary.title(kind: record.delivery.kind, learningKind: record.delivery.meta["learning_kind"]),
+                isMessagePreference: record.delivery.meta["learning_kind"] == "rating")
         }
         if pendingLearningDeliveries != next { pendingLearningDeliveries = next }
+        let discarded = records.compactMap { record -> DiscardedLearningDelivery? in
+            guard !hiddenLearningDiscardIDs.contains(record.delivery.id), [.brief, .reflection].contains(record.delivery.kind), let date = record.discardedAt,
+                  date > clock.now.addingTimeInterval(-7 * 86400), record.transportDeliveredAt == nil,
+                  record.delivery.ackedAt == nil, !record.delivery.content.isEmpty,
+                  let raw = record.delivery.meta["discard_reason"], let reason = DiscardedLearningDelivery.Reason(rawValue: raw) else { return nil }
+            let legacyReasons = ["Replaced by a newer brief.", "Replaced by a newer reflection.", "Not sent: this request is out of date."]
+            let caption = record.queueReason.flatMap { legacyReasons.contains($0) ? nil : $0 }
+                ?? DiscardedLearningDelivery.caption(kind: record.delivery.kind, reason: reason)
+            return .init(id: record.delivery.id, kind: record.delivery.kind, text: record.delivery.content,
+                preparedAt: record.delivery.createdAt, discardedAt: date, reason: reason,
+                queueReason: caption,
+                deliveryKindName: LearningDeliveryVocabulary.title(kind: record.delivery.kind))
+        }
+        if discardedLearningDeliveries != discarded { discardedLearningDeliveries = discarded }
     }
 
     func refreshLearningDeliveryPresentation() {

@@ -10,7 +10,7 @@ final class JournalViewerModel {
     var emptyCaption: String {
         if !search.isEmpty || (!sentOnly && (level != 0 || !app.isEmpty)) { return "Nothing matches." }
         if !sentOnly { return "Nothing kept on this day." }
-        if hasReceivedItems || deliveries?.pending.isEmpty == false { return "Nothing received on this day." }
+        if hasReceivedItems || deliveries?.pending.isEmpty == false || deliveries?.discarded.isEmpty == false { return "Nothing received on this day." }
         return learningEnabled() ? "Nothing yet. Zeus sends a summary each morning and notes during the day."
             : "Nothing yet. Learn from me is off, so Zeus has nothing to send."
     }
@@ -21,6 +21,12 @@ final class JournalViewerModel {
         guard sentOnly else { return [] }
         return (deliveries?.pending ?? []).filter { search.isEmpty || $0.text.localizedCaseInsensitiveContains(search) }
             .sorted { $0.preparedAt == $1.preparedAt ? $0.id < $1.id : $0.preparedAt > $1.preparedAt }
+    }
+    var notSent: [DiscardedLearningDelivery] {
+        guard sentOnly else { return [] }
+        return (deliveries?.discarded ?? []).filter {
+            search.isEmpty || $0.text.localizedCaseInsensitiveContains(search) || $0.queueReason.localizedCaseInsensitiveContains(search)
+        }.sorted { $0.discardedAt == $1.discardedAt ? $0.id < $1.id : $0.discardedAt > $1.discardedAt }
     }
     let pictures: JournalPictureModel
     private(set) var timeline: [JournalTimelineRow] = []

@@ -1,8 +1,9 @@
+import AppKit
 import SwiftUI
 import ZeusDesign
 
 /// A quiet thread line (`ThreadNotice`): one caption on the agent side, no bubble, with one plain action.
-/// "View" opens the exact text inline; an in-memory action (AC2's Undo) runs once and shows its done title.
+/// "View" opens exact text inline or in the read-only viewer; an in-memory action (AC2's Undo) runs once and shows its done title.
 /// Never badges, peeks, types out or plays a sound.
 struct ConversationNoticeLine: View {
     let notice: ThreadNotice
@@ -17,6 +18,9 @@ struct ConversationNoticeLine: View {
     @State private var showsDetail = false
     @FocusState private var actionFocused: Bool
     @FocusState private var secondaryFocused: Bool
+    @Environment(\.openLearningDocument) private var openLearningDocument
+    @Environment(\.zeusFontChoice) private var font
+    @Environment(\.zeusFontScale) private var scale
     @Environment(\.zeusPalette) private var palette
 
     var body: some View {
@@ -41,7 +45,7 @@ struct ConversationNoticeLine: View {
                         act(); return .handled
                     }
                     .accessibilityLabel("\(title): \(notice.summary)")
-                    .accessibilityValue(notice.detail == nil ? "" : showsDetail ? "Expanded" : "Collapsed")
+                    .accessibilityValue(notice.detail == nil || opensDocument ? "" : showsDetail ? "Expanded" : "Collapsed")
                 case .done(let title):
                     Text("·").foregroundStyle(palette.secondaryText).accessibilityHidden(true)
                     Text(title).foregroundStyle(palette.secondaryText)
@@ -96,7 +100,20 @@ struct ConversationNoticeLine: View {
         if hasAction, let title = notice.actionTitle { return .button(title) }
         return notice.resolvedTitle.map(Trailing.done)
     }
+    private var opensDocument: Bool {
+        guard openLearningDocument != nil, notice.kind == .learning, let detail = notice.detail else { return false }
+        return Self.needsDocument(detail, width: maxWidth, choice: font, scale: scale)
+    }
+    /// Count wrapped caption lines as well as explicit newlines, matching the inline reading width.
+    static func needsDocument(_ text: String, width: CGFloat, choice: ZeusFontChoice, scale: ZeusFontScale) -> Bool {
+        let font = ZeusFonts.ctFont(.caption, choice: choice, scale: scale) as NSFont
+        let bounds = (text as NSString).boundingRect(with: NSSize(width: max(1, width - 2 * ZeusTheme.Spacing.s), height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: [.font: font])
+        let lineHeight = NSLayoutManager().defaultLineHeight(for: font)
+        return bounds.height > lineHeight * 12 + 1
+    }
     private func act() {
-        if notice.detail != nil { showsDetail.toggle() } else { perform() }
+        if opensDocument { openLearningDocument?(notice) }
+        else if notice.detail != nil { showsDetail.toggle() } else { perform() }
     }
 }

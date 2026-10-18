@@ -100,6 +100,47 @@ import ZeusProtocol
         #expect(f.cards.learningNotices.isEmpty)
     }
 
+    @Test func failedErasureWriteCannotExposeDiscardedTextAgain() throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        let old = Delivery(id: "erased", kind: .brief, sessionKey: key, content: "Exact private request", createdAt: f.clock.now.addingTimeInterval(-3 * 86400))
+        try f.runtime.ledger?.insert(.init(delivery: old))
+        f.runtime.expireStaleLearningDeliveries()
+        #expect(f.runtime.discardedLearningDeliveries.count == 1)
+        let file = f.root.appendingPathComponent("deliveries.json")
+        try FileManager.default.removeItem(at: file)
+        try FileManager.default.createDirectory(at: file, withIntermediateDirectories: false)
+        f.runtime.eraseLearningDeliveries(ids: [old.id])
+        #expect(f.runtime.ledger?.record(id: old.id)?.delivery.content == old.content)
+        #expect(f.runtime.learningError != nil)
+        f.runtime.publishPendingLearnings(f.runtime.ledger?.records ?? [])
+        #expect(f.runtime.discardedLearningDeliveries.isEmpty)
+    }
+
+    @Test(arguments: [Delivery.Kind.reflection, .brief])
+    func appAttachedRewritesExistingLineAndRetainsSevenDayEvidence(kind: Delivery.Kind) throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        let cards = CardStore(fileURL: f.root.appendingPathComponent("app-cards.json"))
+        let model = LearningDeliveryModel(cards: cards, source: { f.runtime }, clock: { f.clock.now })
+        let old = Delivery(id: "old", kind: kind, sessionKey: key, content: "Exact old text\nSecond line", createdAt: f.clock.now.addingTimeInterval(-86400))
+        try f.runtime.ledger?.insert(.init(delivery: old))
+        f.runtime.publishPendingLearnings(f.runtime.ledger?.records ?? []); model.reconcile()
+        #expect(cards.notices.first?.summary.hasSuffix("ready for your assistant") == true)
+        var fresh = old; fresh.id = "fresh"; fresh.createdAt = f.clock.now
+        try f.runtime.ledger?.insert(.init(delivery: fresh))
+        f.runtime.expireStaleLearningDeliveries(); model.reconcile()
+        let line = try #require(cards.notices.first { $0.id == "n_old" })
+        #expect(line.summary == DiscardedLearningDelivery.caption(kind: kind, reason: .superseded))
+        #expect(line.detail == old.content && line.createdAt == old.createdAt)
+        #expect(model.discarded.map(\.id) == ["old"])
+        #expect(model.discarded.first?.queueReason == f.runtime.ledger?.record(id: "old")?.queueReason)
+        #expect(cards.removeNotice(id: "n_old"))
+        model.reconcile()
+        #expect(!cards.notices.contains { $0.id == "n_old" })
+        f.clock.now = f.clock.now.addingTimeInterval(7 * 86400)
+        f.runtime.publishPendingLearnings(f.runtime.ledger?.records ?? []); model.reconcile()
+        #expect(model.discarded.isEmpty)
+    }
+
     @Test(arguments: [Delivery.Kind.reflection, .brief])
     func newestExpiresOnceAndSupersededNeverNotifies(kind: Delivery.Kind) throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
@@ -110,7 +151,8 @@ import ZeusProtocol
         f.runtime.expireStaleLearningDeliveries()
         #expect(f.runtime.ledger?.record(id: "older")?.delivery.meta["discard_reason"] == "superseded")
         #expect(f.runtime.ledger?.record(id: "newer")?.delivery.meta["discard_reason"] == "expired")
-        #expect(f.cards.learningNotices.map(\.id) == ["n_newer"])
+        #expect(f.cards.learningNotices.isEmpty) // App presentation owns both transitions.
+        #expect(f.runtime.discardedLearningDeliveries.count == 2)
         f.cards.learningNotices.removeAll() // The user dismisses the notice.
         f.runtime.expireStaleLearningDeliveries()
         f.runtime.stop(); try f.runtime.start()

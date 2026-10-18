@@ -39,10 +39,37 @@ Top to bottom:
    - Apple Intelligence on: "Private details are removed on this Mac before anything is kept."
    - Apple Intelligence off: "Private details are removed on this Mac before anything is kept. Apple Intelligence is off, so Zeus catches names, emails, phone numbers, addresses, passwords, keys, card and account numbers and ID numbers, and may miss private details written in other ways."
 1b. **Storage problem** (`settingsError`, under the status line, only while the journal or rules store can't be opened): "Zeus can't open its journal and rules right now. New records are kept only in memory until it can; quitting Zeus before then loses them." It clears by itself.
-2. **Level 1 · "Apps and timing"**: the existing L1 section (switch "Let Zeus learn when and in what I work", private list, notes, retention). Its title changes from "Learn from me" to "Apps and timing", and the pane's first title is now "Learn from me" above all levels.
+2. **Level 1 · "Apps and timing"**: the existing L1 section (switch "Let Zeus learn when and in what I work", private list, retention, "What Zeus has recorded"). Its title changes from "Learn from me" to "Apps and timing", and the pane's first title is now "Learn from me" above all levels. While the switch is off, everything under it is disabled, including "Keep activity for" (UX5).
 3. **Level 2 · "Windows and pages"**: §2.1.
-4. **What Zeus kept**: §4.
-5. **Pause for Today / Delete Everything…**: unchanged. "Delete Everything…" now covers the whole journal.
+4. **What Zeus sends your assistant** (UX5): §2.5. The former "Notes to your assistant" block, moved out of Level 1 and widened to every kind.
+5. **What Zeus kept**: §4.
+6. **Pause for Today / Delete Everything…**: unchanged. "Delete Everything…" now covers the whole journal.
+
+### 2.5 What Zeus sends your assistant (UX5)
+
+One place that lists everything Zeus sends, in the ledger's words (§4.2), each with its timing and its switch or a
+pointer to it. Title `settingsTitle` "What Zeus sends your assistant", caption "Each one goes to your assistant like a
+message, with private details removed first. The exact text is in What Zeus kept." Then six rows, each a
+`settingsBody` title and a `settingsCaption` line, in this order:
+
+| Row | Caption | Switch or pointer |
+|---|---|---|
+| Morning summary | "Each morning, a short summary of the day before." | "Sent while Apps and timing is on." (the row is disabled when it's off) |
+| Notes | "Up to four a day, when something changes:" | the four checkboxes, disabled while Apps and timing is off |
+| Evening reflection | "Each evening, a summary of the last 28 days: your rhythm, focus and recurring tasks, with private details removed." | "Sent while any level is on." |
+| Morning brief request | "At the start of your day, Zeus asks your assistant for one short brief of what matters today. It goes even when Learn from me is off." | "On." or "Off." then an "Assistant Settings" button (opens Settings › Assistant at Morning brief) |
+| Rule trigger | "When one of your rules fires: the rule, what matched and the window." | a "Rules" button (opens Settings › Rules) |
+| Message preference | "When you rate a message: what you'd rather have, and nothing else." | "Sent as you rate." |
+
+- The four note checkboxes keep their labels and defaults (all on).
+- VoiceOver reads each row as "<Row>. <caption> <switch sentence>"; the buttons by their labels.
+- **First-run sheet** ("Learn from me", §8): its first sentence becomes "Zeus records how you use this Mac so your
+  assistant can pick better moments to help. Each morning it sends your assistant a short summary of the day before,
+  and each evening a summary of the last 28 days: your rhythm, focus and recurring tasks." The two lists are unchanged.
+- **Folder row** (§12.2): in Connect-your-own mode, while "Choose…" is disabled because Zeus has no journal to write
+  from, a caption under the buttons says why: "Zeus can't open its journal right now, so there's nothing to keep in a
+  folder yet."
+- **Morning brief schedule** (AGENT_LEARNING.md §8.4): both choices carry a detail line.
 
 Levels 3 ("Screen", §9) and 4 ("Typing", §10) follow Level 2 in the same style, each with its own switch; the pane shows the four levels, then What Zeus kept and the global actions.
 
@@ -169,10 +196,14 @@ Same frame as the L1 sheet.
 
 ### 4.2 Sent to your assistant (the ledger)
 
-- **Rows** (newest first), in four kinds:
+- **Rows** (newest first), one title per kind. This is the vocabulary for everything Zeus sends, used the same way in the
+  ledger, the thread (§6.1) and Settings › Privacy (§2, "What Zeus sends your assistant") (UX4/UX5):
   - "Morning summary"
-  - "Day reflection"
+  - "Evening reflection"
+  - "Morning brief request"
   - "Note"
+  - "Rule trigger: “<rule sentence>”"
+  - "Message preference"
   - "Answer to “<question>”" (Phase D)
 - **Each row shows:** time · kind · session label ("■ Claude · Zeus") · size ("212 words").
   - Click to expand the exact text that was sent, read-only and selectable.
@@ -196,9 +227,26 @@ Same frame as the L1 sheet.
   - When the hold clears and the delivery is acked, the row moves into its day with the usual session label. The group disappears when nothing is waiting.
   - "Export…" on this segment writes received rows only, never waiting ones; its caption reads "Exports the received items shown, as stored."
   - VoiceOver: "Morning summary, 212 words, waiting since 00:12, your assistant isn't connected", then the action's own label.
-- **Empty states (LM4-A):**
-  - Nothing was ever prepared: "Nothing yet. Zeus sends a summary each morning and notes during the day."
-  - With every level off: "Nothing yet. Learn from me is off, so Zeus has nothing to send."
+- **Not sent group (UX4).** A request Zeus discarded without a receipt (a newer one replaced it, or its day passed) is not
+  silently gone: it sits under its own heading, "Not sent", between Waiting and Received, for 7 days from the discard,
+  newest first. A row reads: kind · size · reason. No session label and no action; View expands the exact text that
+  was prepared, as for the other rows.
+
+    | Why | Reason text |
+    |---|---|
+    | A newer brief request was prepared | "Replaced by today's brief request" |
+    | A newer reflection was prepared | "Replaced by a newer reflection" |
+    | The brief's morning passed | "Not sent: the morning passed before your assistant could read this brief." |
+    | The reflection's day passed | "Not sent: the day passed before your assistant could read this reflection." |
+
+  - The same sentences rewrite the item's thread line in place (§6.1), so the thread and the ledger never disagree.
+  - "Export…" writes received rows only; Waiting and Not sent rows are never exported.
+  - VoiceOver: "Morning brief request, 93 words, replaced by today's brief request", then "View exact text".
+- **Empty states (LM4-A, UX4, UX5).** The empty caption never shows while a Waiting or Not sent row exists.
+  - Nothing was ever prepared: "Nothing yet. Zeus sends a morning summary, notes during the day and an evening reflection."
+  - Every level off, morning brief off: "Nothing yet. Learn from me is off, so Zeus has nothing to send."
+  - Every level off, morning brief on: "Nothing yet. Learn from me is off. Zeus still asks for a morning brief; see Settings › Assistant."
+  - Something was received on another day: "Nothing received on this day."
 
 ## 5. Settings › Rules (new tab)
 
@@ -290,11 +338,35 @@ A line says "Sent" only once the assistant has acked the delivery. Until then th
 
 | Moment | While waiting | Once received |
 |---|---|---|
-| A morning digest | "Daily summary ready for your assistant · View" | "Sent your daily summary · View" |
+| A morning summary | "Morning summary ready for your assistant · View" | "Sent the morning summary · View" |
 | A note (moment) | "Note ready: back from a break · View" | "Sent a note: back from a break · View" |
-| A reflection | "Daily reflection ready · View" | "Sent a daily reflection · View" |
+| An evening reflection | "Evening reflection ready for your assistant · View" | "Sent the evening reflection · View" |
+| A morning brief request | "Morning brief request ready for your assistant · View" | "Sent the morning brief request · View" |
+| A rule trigger | "Rule trigger ready for your assistant · View" | "Sent a rule trigger: “<rule sentence>” · View" |
+| A message preference | no line (§11) | no line |
 
-VoiceOver follows the A12 pattern: "View: Daily summary ready for your assistant", "Hide: …", with Collapsed/Expanded.
+The kinds are the ledger's (§4.2): one word for one thing, in the thread, the ledger and Settings (UX4).
+
+VoiceOver follows the A12 pattern: "View: Morning summary ready for your assistant", "Hide: …", with Collapsed/Expanded.
+
+**Replaced or expired (UX4).** When a prepared item is discarded without a receipt, its line is rewritten in place
+(same id, same spot; a line the user dismissed stays dismissed) and never gets a second line:
+
+| Why | Line |
+|---|---|
+| A newer brief request was prepared | "Replaced by today's brief request · View" |
+| A newer reflection was prepared | "Replaced by a newer reflection · View" |
+| The brief's morning passed | "Not sent: the morning passed before your assistant could read this brief. · View" |
+| The reflection's day passed | "Not sent: the day passed before your assistant could read this reflection. · View" |
+
+View keeps showing the text that was prepared. The ledger's Not sent group (§4.2) uses the same sentences.
+
+**Long View (UX4).** When the text behind View is longer than about 12 lines (every reflection and brief request; a
+note never is), View opens it in the document viewer (CONVERSATION.md §21) instead of expanding inline: a read-only
+page built in memory (no file is written), titled "<Kind> · <Day date>", for example "Evening reflection · Fri 17 Oct"
+or "Morning brief request · Sat 18 Oct". The header has Back, the title and Expand but no Open (there is no file);
+find and selection work; the ⋯ menu offers Copy Text and Find only. Back returns to the line. Shorter text keeps the
+inline expansion with "Hide". The line's VoiceOver label is unchanged ("View: …").
 
 **A hold older than 10 minutes** adds one quiet line per hold, which updates in place and clears itself when the delivery goes through. Under 10 minutes nothing is said; the draft card (CONTRACT §12, P2) already covers a user message stuck behind a draft, so this line is for learnings and reflections and never doubles that card.
 

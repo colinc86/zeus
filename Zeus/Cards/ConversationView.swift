@@ -152,7 +152,7 @@ struct ConversationView: View {
                     onButton: stripButton)
                 VStack(spacing: 8) {
                     attachmentDraft
-                    ZeusComposer(text: $model.draft, placeholder: panel.document.current.map { "Ask about \($0.attachment.label)…" } ?? Self.composerPlaceholder(managed: currentManagedConfiguration,
+                    ZeusComposer(text: $model.draft, placeholder: panel.document.current.flatMap { $0.isSnapshot ? nil : "Ask about \($0.attachment.label)…" } ?? Self.composerPlaceholder(managed: currentManagedConfiguration,
                         status: managedController?.managedStatus,
                         assistantLabel: Self.composerAssistantName(assistant)),
                                  replyingTo: replyTitle, isSending: model.isSending, hasAttachments: !model.draftAttachments.isEmpty, focus: $composerFocused,
@@ -196,6 +196,20 @@ struct ConversationView: View {
                 panel.document.threadOffset = offset; panel.document.threadPageCount = pageCount; panel.document.fromPeek = false
                 setPinned(false); scrollDriver.stopFollowing(); composerFocused = false; focusedControl = nil
                 return true
+            })
+            .environment(\.openLearningDocument, { notice in
+                guard let text = notice.detail else { return }
+                let offset = scrollDriver.viewport?.offset ?? viewport.offset
+                let entryID = "notice:" + notice.id
+                let bookmark = frames[entryID].map {
+                    DocumentViewerModel.ThreadBookmark(entryID: entryID, relativeTop: $0.minY - offset,
+                        firstEntryID: entries.first?.id, width: panel.width, viewportWidth: scrollDriver.scrollView?.bounds.width)
+                }
+                panel.document.openText(text, title: notice.learningDocumentTitle, context: notice.summary)
+                scrollDriver.stopRestoring()
+                panel.document.threadBookmark = bookmark
+                panel.document.threadOffset = offset; panel.document.threadPageCount = pageCount
+                setPinned(false); scrollDriver.stopFollowing(); composerFocused = false; focusedControl = nil
             })
             .environment(\.zeusFontChoice, settings.fontChoice)
             .environment(\.zeusFontScale, settings.fontScale)
@@ -363,6 +377,7 @@ struct ConversationView: View {
         scrollDriver.restore(to: frame.minY - bookmark.relativeTop)
     }
     private func returnFromDocument(_ proxy: ScrollViewProxy) {
+        if panel.document.current?.isSnapshot == true { backFromDocument(proxy); return }
         let id = panel.document.current?.sourceCardID
         let target = panel.document.fromPeek ? nil : panel.document.returnTarget
         panel.document.close()

@@ -7,8 +7,8 @@ extension DocumentViewerModel {
         switch command {
         case .back:
             if findVisible { findVisible = false } else { backRequest += 1 }
-        case .open: if let current { openExternally(current) }
-        case .reveal: if let current { revealExternally(current) }
+        case .open: if let current, !current.isSnapshot { openExternally(current) }
+        case .reveal: if let current, !current.isSnapshot { revealExternally(current) }
         case .expand: expanded.toggle()
         case .find:
             guard supportsFind else { return false }

@@ -50,6 +50,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     var learningInterruptionHold = false
     var learningError: String?
     var pendingLearningDeliveries: [PendingLearningDelivery] = []
+    var discardedLearningDeliveries: [DiscardedLearningDelivery] = []
     var deliveryHolds: [DeliveryHold] = []
     @ObservationIgnored var deliveryHoldEpisodes: [String: DeliveryHold] = [:]
     @ObservationIgnored var journalAccessPolicy: () -> JournalAccessPolicy = { .init() }
@@ -70,6 +71,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored var learningCatchUpPending = true
     @ObservationIgnored var learningObservationToken = UUID()
     @ObservationIgnored var erasedLearningDeliveryIDs = Set<String>()
+    @ObservationIgnored var hiddenLearningDiscardIDs = Set<String>()
     @ObservationIgnored var checkedUpdateVersions: [String: Set<String>] = [:]
     @ObservationIgnored var pendingUpdateErrors: [String: String] = [:]
     @ObservationIgnored var installingSessions: Set<String> = []

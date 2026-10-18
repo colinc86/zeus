@@ -95,6 +95,8 @@ import ZeusProtocol
 
     @Test func startupRetriesOnlySizeHoldsAndExpiresOldRequestsHonestly() throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
+        let appCards = CardStore(fileURL: f.root.appendingPathComponent("app-cards.json"))
+        let presentation = LearningDeliveryModel(cards: appCards, source: { f.runtime }, clock: { f.clock.now })
         let key = "claude:/fixture#123.1"
         for (id, kind, age, reason) in [("size", Delivery.Kind.userMessage, 0.0, ConnectorError.inputTooLong.localizedDescription),
                                       ("other", .userMessage, 0, "Other failure"),
@@ -104,15 +106,18 @@ import ZeusProtocol
             delivery.attempts = 5; delivery.failedAt = f.clock.now
             try f.runtime.ledger?.insert(.init(delivery: delivery, queueReason: reason))
         }
+        f.runtime.publishPendingLearnings(f.runtime.ledger?.records ?? []); presentation.reconcile()
         f.runtime.stop(); try f.runtime.start()
+        presentation.reconcile()
         #expect(f.runtime.ledger?.record(id: "size")?.delivery.failedAt == nil)
         #expect(f.runtime.ledger?.record(id: "size")?.delivery.attempts == 0)
         #expect(f.runtime.ledger?.record(id: "other")?.delivery.attempts == 5)
         for id in ["old_reflection", "old_brief"] {
             let record = try #require(f.runtime.ledger?.record(id: id))
             #expect(record.discardedAt != nil && record.delivery.ackedAt == nil && record.transportDeliveredAt == nil)
-            #expect(record.queueReason == "Not sent: this request is out of date.")
-            #expect(f.cards.learningNotices.contains { $0.id == "n_" + id && $0.summary.hasPrefix("Not sent:") })
+            let expected = DiscardedLearningDelivery.caption(kind: record.delivery.kind, reason: .expired)
+            #expect(record.queueReason == expected)
+            #expect(appCards.notices.contains { $0.id == "n_" + id && $0.summary == expected && $0.detail == record.delivery.content })
             #expect(try f.runtime.acknowledge(ids: [id], sessionKey: key).isEmpty)
         }
         #expect(try !f.journal.items(matching: .init()).contains { $0.kind == .sentToAssistant })

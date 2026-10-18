@@ -242,6 +242,7 @@ struct LearningNotice: Equatable, Identifiable, Sendable {
     let actionTitle: String?
     let detail: String?
     let ruleID: String?
+    var deliveryKindName: String? = nil
 }
 /// App-owned adapter to CardStore.recordNotice; these lines NEVER peek, badge or play a sound.
 @MainActor protocol LearningNoticeRecording: AnyObject {

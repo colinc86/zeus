@@ -69,6 +69,8 @@ public struct ZeusViewerHeaderModel: Equatable, Sendable {
     public var backTitle: String
     /// "Open in Keynote", "Open" (no default app) or "Open in Finder" (a folder).
     public var openTitle: String
+    /// Whether this document can be opened outside Zeus; false for in-memory text.
+    public var canOpen: Bool
     /// Whether Show in Finder applies (not for a missing root).
     public var canReveal: Bool
     /// Whether the panel is at reading size; flips the icon and its tooltip.
@@ -77,11 +79,12 @@ public struct ZeusViewerHeaderModel: Equatable, Sendable {
     public var step: Step?
 
     public init(title: String, location: String? = nil, backTitle: String = messagesBackTitle, openTitle: String,
-                canReveal: Bool = true, expanded: Bool = false, step: Step? = nil) {
+                canOpen: Bool = true, canReveal: Bool = true, expanded: Bool = false, step: Step? = nil) {
         self.title = title
         self.location = location
         self.backTitle = backTitle
         self.openTitle = openTitle
+        self.canOpen = canOpen
         self.canReveal = canReveal
         self.expanded = expanded
         self.step = step
@@ -179,9 +182,11 @@ public struct ZeusViewerHeader: View {
             }
             .help("\(model.backTitle) (⌘[)")
             Spacer(minLength: ZeusTheme.Spacing.s)
-            ViewThatFits(in: .horizontal) {
-                openButton(words: true)
-                openButton(words: false)
+            if model.canOpen {
+                ViewThatFits(in: .horizontal) {
+                    openButton(words: true)
+                    openButton(words: false)
+                }
             }
             if model.canReveal {
                 ViewerIconButton(label: ZeusViewerHeaderModel.revealTitle, action: onReveal) { active in

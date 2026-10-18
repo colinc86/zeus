@@ -121,9 +121,9 @@ final class DeliveryLedger {
                 guard records[index].isPending, let reason = reasons[records[index].delivery.id] else { continue }
                 records[index].discardedAt = date
                 records[index].stateUpdatedAt = date
-                records[index].queueReason = reason == "superseded"
-                    ? "Replaced by a newer " + (records[index].delivery.kind == .brief ? "brief." : "reflection.")
-                    : "Not sent: this request is out of date."
+                if let typed = DiscardedLearningDelivery.Reason(rawValue: reason) {
+                    records[index].queueReason = DiscardedLearningDelivery.caption(kind: records[index].delivery.kind, reason: typed)
+                }
                 records[index].delivery.meta["discard_reason"] = reason
                 records[index].delivery.meta.removeValue(forKey: "tmux_paste_destination")
             }

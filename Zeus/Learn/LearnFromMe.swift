@@ -268,9 +268,9 @@ final class LearnFromMe {
 }
 
 extension LearnFromMe {
-    /// The thread line for a learning: "Sent your daily summary", or "Sent a note: back from a break".
+    /// The thread line for a learning: "Sent the morning summary", or "Sent a note: back from a break".
     nonisolated static func noticeSummary(_ learning: Learning) -> String {
-        guard learning.kind == .moment else { return "Sent your daily summary" }
+        guard learning.kind == .moment else { return "Sent the morning summary" }
         let kind = MomentKind.allCases.first { learning.text.hasPrefix(momentPrefix($0)) }
         return kind.map { "Sent a note: \($0.noticeName)" } ?? "Sent a note"
     }
@@ -288,6 +288,7 @@ extension ThreadNotice {
     /// The thread line for a learning, with "View" showing the exact text the assistant receives.
     static func learning(_ learning: Learning) -> ThreadNotice {
         ThreadNotice(id: "n_" + learning.id, kind: .learning, createdAt: learning.createdAt,
-                     summary: LearnFromMe.noticeSummary(learning), actionTitle: "View", detail: learning.text)
+                     summary: LearnFromMe.noticeSummary(learning), actionTitle: "View", detail: learning.text,
+                     deliveryKindName: LearningDeliveryVocabulary.title(kind: learning.kind.rawValue))
     }
 }
