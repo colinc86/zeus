@@ -9,7 +9,7 @@ enum TmuxPasteRecoveryError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .absent: "Zeus's saved paste is no longer in Terminal. It was not pasted again."
-        case .hidden: "OpenCode hid Zeus's saved paste. Open Terminal to review and submit it, or clear it. Zeus won't submit hidden text automatically."
+        case .hidden: "OpenCode is holding text Zeus pasted before the relaunch, and Zeus can't read it back. Open Terminal to send it or clear it. Zeus never submits text it can't see."
         }
     }
 }
@@ -430,7 +430,13 @@ struct TmuxInputSnapshot: Equatable, Sendable {
             if row < y {
                 let endSpaces = remaining.prefix { $0 == " " }.count
                 if remaining.dropFirst(endSpaces).first == "\n" { remaining = remaining.dropFirst(endSpaces + 1) }
-                else { remaining = remaining.drop(while: { $0 == " " }) }
+                else {
+                    let gap = width - 8 - Self.cellWidth(body)
+                    let next = remaining.dropFirst(endSpaces).prefix { !$0.isWhitespace }
+                    guard gap >= 0,
+                          endSpaces > 0 ? endSpaces + Self.cellWidth(String(next)) >= gap : (gap == 0 || (gap == 1 && remaining.first.map { Self.cellWidth(String($0)) == 2 } == true)) else { return false }
+                    remaining = remaining.dropFirst(endSpaces)
+                }
             }
             else if x != 5 + Self.cellWidth(body) { return false }
         }

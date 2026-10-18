@@ -523,7 +523,7 @@ extension ZeusRuntime {
                                           since: problems.map { $0.delivery.failedAt ?? $0.delivery.createdAt.addingTimeInterval(120) }.min() ?? clock.now)
         }
         if problems.contains(where: { $0.delivery.meta["tmux_hidden_paste"] == "true" }) {
-            deliveryIssue = DeliveryIssue(title: "Review the saved paste in Terminal",
+            deliveryIssue = DeliveryIssue(title: "Zeus's saved text is waiting in Terminal",
                 detail: TmuxPasteRecoveryError.hidden.localizedDescription,
                 pendingCount: pending.count, since: deliveryIssue?.since ?? clock.now)
         } else if problems.contains(where: { $0.delivery.meta["tmux_paste_destination"] != nil }) {

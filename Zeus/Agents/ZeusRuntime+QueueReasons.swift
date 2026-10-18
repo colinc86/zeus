@@ -69,7 +69,7 @@ extension ZeusRuntime {
                     let managed = managedQueueReason(record)
                     let owned = record.delivery.meta["tmux_paste_destination"] != nil || pendingPasteAhead(of: record) != nil
                     let hidden = record.delivery.meta["tmux_hidden_paste"] == "true"
-                    var reason = hidden ? TmuxPasteRecoveryError.hidden.localizedDescription : owned ? "Finishing Zeus's saved message in Terminal." : native ?? managed
+                    var reason: String? = hidden ? TmuxPasteRecoveryError.hidden.localizedDescription : owned ? "Finishing Zeus's saved message in Terminal." : native ?? managed
                     if owned { records[index].queueReasonSource = .managedGate }
                     else if native != nil { records[index].queueReasonSource = .nativeRoute }
                     else if managed != nil { records[index].queueReasonSource = .managedGate }
