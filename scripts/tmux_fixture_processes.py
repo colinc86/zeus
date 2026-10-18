@@ -55,12 +55,14 @@ def server_root(process, socket_paths=()):
     if not executable.startswith('/') or Path(executable).name != 'tmux':
         return None
     # Inspect only actual namespace/config arguments, never an incidental path in a shell command.
-    match = re.search(r'(?:^| )-S (/.+?(?:\.sock|/default))(?= |$)', process.command)
+    command = re.search(r' (?:new-session|new|start-server|attach-session|attach|list-sessions|ls|has-session|kill-server|split-window|respawn-pane)(?: |$)', process.command)
+    options = process.command[:command.start()] if command else process.command
+    match = re.search(r'(?:^| )-S (/.+?(?:\.sock|/(?:default|sock)))(?= |$)', options)
     if match:
         return fixture_root(match[1])
-    if ' -S ' in process.command:
+    if ' -S ' in options:
         return None
-    match = re.search(r'(?:^| )TMUX_TMPDIR=(/[^ ]+)', process.command)
+    match = re.search(r'(?:^| )TMUX_TMPDIR=(/[^ ]+)', options)
     if match:
         return fixture_root(match[1])
     # Managed GUI fixtures use TMUX_TMPDIR internally; ps preserves their launch argv,

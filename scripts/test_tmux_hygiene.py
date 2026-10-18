@@ -58,6 +58,15 @@ class TmuxHygieneTests(unittest.TestCase):
         default = fixture.dataclasses.replace(process, command=process.command.replace('-u new-session', '-S /private/tmp/tmux-501/default new-session'))
         self.assertIsNone(fixture.server_root(default, ['/private/tmp/zcomposer_test/tmux/tmux-501/default']))
 
+    def test_sock_filename_is_owned_but_pane_text_is_not_a_server_option(self):
+        process = fixture.ProcessIdentity(os.getuid(), 123, 1, 'same start',
+            '/opt/homebrew/bin/tmux -S /private/tmp/ztmux_example/sock -f /dev/null new-session -d /bin/sleep 60')
+        self.assertEqual(fixture.server_root(process), Path('/private/tmp/ztmux_example'))
+        for prefix in ('', '-S /private/tmp/human-socket '):
+            user = fixture.dataclasses.replace(process, command='/opt/homebrew/bin/tmux ' + prefix +
+                'new-session /bin/echo -S /private/tmp/zmanaged_example/tmux.sock')
+            self.assertIsNone(fixture.server_root(user))
+
     def test_build_namespace_with_spaces_and_pid_reuse_are_safe(self):
         root = fixture.REPO / 'build/tmp/fx10'
         process = fixture.ProcessIdentity(os.getuid(), 123, 1, 'old', f'/opt/homebrew/bin/tmux -S {root}/private.sock -f /dev/null new-session')
