@@ -116,6 +116,17 @@ import ZeusProtocol
         #expect(!text.contains("Restricted"))
         await f.writer.flush(); #expect(try f.summaryFile() == text + "\n\n")
     }
+    @Test func legacyL1OnlyIntegrationAlsoUsesAnOpaqueFingerprint() throws {
+        let f = try DigestPolicyFixture(); defer { f.stop() }
+        f.learn.outboundPolicy = { nil }
+        f.learn.settings.excludedApps = [.init(name: "Private custom app", bundleIDs: ["com.example.PrivateCustom"])]
+        f.learn.sendDigestIfDue(now: f.clock.now)
+        let digest = try #require(f.learn.learnings?.unreadLearnings().first)
+        let key = try #require(f.learn.learnings?.digestMetadata(id: digest.id)["privacy_policy"])
+        #expect(key.count == 64)
+        #expect(key.allSatisfy { $0.isHexDigit })
+        #expect(!key.contains("Private"))
+    }
     @Test func policyChecksNameOnlyPrivateEntriesAgainstSystemAppName() {
         let policy = LearningOutboundPolicy(scopes: [.init(level: .typed, chosenApps: nil)], privateApps: [.init(name: "Private Editor", bundleIDs: [])])
         let item = JournalItem(time: Date(), level: .typed, app: "com.example.Editor", kind: .typedText,

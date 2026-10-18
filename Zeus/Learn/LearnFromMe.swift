@@ -189,8 +189,8 @@ final class LearnFromMe {
 
     private var digestPolicyKey: String {
         if let policy = outboundPolicy() { return policy.fingerprint }
-        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
-        return "activity:" + String(decoding: (try? encoder.encode(settings.excludedApps)) ?? Data(), as: UTF8.self)
+        return LearningOutboundPolicy(scopes: [.init(level: .activity, chosenApps: nil)],
+            privateApps: settings.excludedApps.map { .init(name: $0.name, bundleIDs: $0.bundleIDs) }).fingerprint
     }
     private func digestText(day: Date, createdAt: Date) -> String? {
         guard let files else { return nil }
