@@ -563,7 +563,8 @@ unconstrained guidance never fires. Each record carries the rule ID, snapshot
 status/text, matched conditions, stable window key and open/closed state. A timed
 window is consumed once even if its app condition toggles; a context-only window
 rearms after a nonmatch. Restarting during an open window does not duplicate it.
-Closing the window cancels pending delivery. Rule-action tools still require the
+Closing the window cancels pending delivery. Changing approval/status cancels an
+obsolete queued snapshot without firing again within that same window. Rule-action tools still require the
 current trigger and authority checks: shadow is never permission, and purchases
 still need their exact one-use approval. Delivery text includes the remaining
 unprompted budget and existing `Files:` paths only.

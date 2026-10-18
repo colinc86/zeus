@@ -85,6 +85,33 @@ import ZeusProtocol
         f.clock.advance(86400); f.runtime.learningContextDidChange()
         #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .ruleTrigger }.count == 2)
     }
+    @Test func approvalCancelsQueuedShadowWithoutActingAgainInTheSameWindow() throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        let rule = try #require(f.rules.propose([.init(sentence: "Prepare the test recap", trigger: .init(state: "ready"), kind: .acts)], at: f.clock.now).first)
+        f.box.context.states = ["ready"]; f.runtime.learningContextDidChange()
+        let queued = try #require(f.runtime.ledger?.records.first { $0.delivery.kind == .ruleTrigger })
+        _ = try f.rules.markShadowShown(id: rule.id)
+        try f.rules.setStatus(.active, id: rule.id, at: f.clock.now)
+        f.runtime.learningContextDidChange()
+        #expect(f.runtime.ledger?.record(id: queued.delivery.id)?.discardedAt != nil)
+        #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .ruleTrigger }.count == 1)
+        f.box.context.states = []; f.runtime.learningContextDidChange()
+        f.box.context.states = ["ready"]; f.runtime.learningContextDidChange()
+        #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .ruleTrigger }.count == 2)
+        #expect(f.runtime.ledger?.records.last?.delivery.meta["rule_status"] == "active")
+    }
+    @Test func actedToolAcceptsOpenWindowAndRefusesAfterItCloses() async throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        let rule = try #require(f.rules.propose([.init(sentence: "Prepare the test recap", trigger: .init(state: "ready"), kind: .acts)], at: f.clock.now).first)
+        _ = try f.rules.markShadowShown(id: rule.id)
+        try f.rules.setStatus(.active, id: rule.id, at: f.clock.now)
+        f.box.context.states = ["ready"]; f.runtime.learningContextDidChange()
+        let args: JSONValue = ["ruleID": .string(rule.id), "did": "Prepared a synthetic recap", "undo": "Discard the recap"]
+        #expect(!(await f.runtime.callTool("zeus_rule_acted", arguments: args, sessionKey: "claude:/fixture#123.1")).isError)
+        f.box.context.states = []; f.runtime.learningContextDidChange()
+        #expect((await f.runtime.callTool("zeus_rule_acted", arguments: args, sessionKey: "claude:/fixture#123.1")).isError)
+        #expect(f.rules.ruleActions.filter { $0.kind == .acted }.count == 1)
+    }
     @Test func seventhUnpromptedCardIsHeldBeforeArrivalButUrgencyAndRepliesAreExempt() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
         for index in 0..<6 {

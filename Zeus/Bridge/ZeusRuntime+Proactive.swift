@@ -129,6 +129,10 @@ extension ZeusRuntime: ProactiveAssistantControlling {
         do {
             let staleBriefs = Set(ledger.records.filter { $0.delivery.kind == .brief && $0.isPending && !proactiveDeliveryAllowed($0.delivery) }.map { $0.delivery.id })
             eraseLearningDeliveries(ids: staleBriefs)
+            let staleTriggers = Set(ledger.records.filter {
+                $0.delivery.kind == .ruleTrigger && $0.isPending && !proactiveDeliveryAllowed($0.delivery)
+            }.map { $0.delivery.id })
+            eraseLearningDeliveries(ids: staleTriggers)
             let closed = ledger.records.filter {
                 $0.delivery.kind == .ruleTrigger && $0.delivery.meta["window_open"] == "true"
                     && keys[$0.delivery.meta["rule_id", default: ""]] != $0.delivery.meta["window_key"]
