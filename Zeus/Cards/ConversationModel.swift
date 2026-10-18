@@ -21,6 +21,8 @@ struct ConversationEntry: Identifiable, Equatable, Sendable {
         /// A quiet app-owned line, e.g. "Sent your daily summary · View" (L1).
         case notice(ThreadNotice)
         case appChange(ThreadNotice)
+        /// A finished day's delivery lines folded into one (FX19): "Zeus sent your assistant 3 things · Show".
+        case deliveryGroup(ConversationDeliveryGroup)
     }
     let id: String
     let timestamp: Date
@@ -28,9 +30,10 @@ struct ConversationEntry: Identifiable, Equatable, Sendable {
     var outcome: ConversationOutcome?
 
     var isUser: Bool {
-        switch content { case .agentCard, .notice, .appChange: false; case .userMessage, .userAnswer: true }
+        switch content { case .agentCard, .notice, .appChange, .deliveryGroup: false; case .userMessage, .userAnswer: true }
     }
-    var isNotice: Bool { switch content { case .notice, .appChange: true; default: false } }
+    var isNotice: Bool { switch content { case .notice, .appChange, .deliveryGroup: true; default: false } }
+    var deliveryGroup: ConversationDeliveryGroup? { if case .deliveryGroup(let group) = content { return group }; return nil }
     var threadNotice: ThreadNotice? { switch content { case .notice(let notice), .appChange(let notice): notice; default: nil } }
     var isRatingHeld: Bool { if case .agentCard(let card) = content { return card.isRatingHeld }; return false }
     var isMuted: Bool {
@@ -42,6 +45,7 @@ struct ConversationEntry: Identifiable, Equatable, Sendable {
         case .agentCard(let card), .userMessage(let card): card.id
         case .userAnswer(let id, _): id
         case .notice(let notice), .appChange(let notice): notice.id
+        case .deliveryGroup(let group): group.id
         }
     }
     var body: String {
@@ -49,7 +53,38 @@ struct ConversationEntry: Identifiable, Equatable, Sendable {
         case .agentCard(let card), .userMessage(let card): card.body
         case .userAnswer(_, let response): response.summary
         case .notice(let notice), .appChange(let notice): notice.summary
+        case .deliveryGroup(let group): group.summary
         }
+    }
+}
+
+/// One finished local day's "Sent …" lines, shown as one line until the user asks (PRIVACY.md §6.1, FX19).
+struct ConversationDeliveryGroup: Equatable, Sendable {
+    let id: String
+    let day: Date
+    /// The folded lines, oldest first; each keeps its own View.
+    let lines: [ThreadNotice]
+    var summary: String { Self.summary(count: lines.count) }
+    static func summary(count: Int) -> String { "Zeus sent your assistant \(count) things" }
+    /// A delivery line that is finished: received by the assistant. Ready, held, hold, replaced and not-sent lines stay live.
+    static func isFinishedDeliveryLine(_ notice: ThreadNotice) -> Bool {
+        notice.kind == .learning && notice.summary.hasPrefix("Sent ") && notice.resolvedTitle == nil && notice.secondaryTitle == nil
+    }
+    /// Folds finished lines from days before `now`'s day, two or more per day; today's lines stay separate.
+    static func fold(_ notices: [ThreadNotice], now: Date, calendar: Calendar) -> (groups: [ConversationDeliveryGroup], foldedIDs: Set<String>) {
+        let today = calendar.startOfDay(for: now)
+        var byDay: [Date: [ThreadNotice]] = [:]
+        for notice in notices where isFinishedDeliveryLine(notice) && notice.createdAt < today {
+            byDay[calendar.startOfDay(for: notice.createdAt), default: []].append(notice)
+        }
+        var groups: [ConversationDeliveryGroup] = []
+        for (day, lines) in byDay where lines.count >= 2 {
+            let ordered = lines.sorted { $0.createdAt < $1.createdAt }
+            let key = String(format: "%04d-%02d-%02d", calendar.component(.year, from: day), calendar.component(.month, from: day), calendar.component(.day, from: day))
+            groups.append(.init(id: "delivery-group:" + key, day: day, lines: ordered))
+        }
+        groups.sort { $0.day < $1.day }
+        return (groups, Set(groups.flatMap { $0.lines.map(\.id) }))
     }
 }
 
@@ -89,15 +124,18 @@ final class ConversationModel {
     /// All cards stay in the conversation, including answered, dismissed and expired agent cards.
     /// At equal timestamps source cards precede answer echoes, with stable arrival order within each.
     @ObservationIgnored private var cachedThread: [ConversationEntry] = []
+    @ObservationIgnored private var cachedDay: Date?
     @ObservationIgnored private var cachedRevision: UInt64?
     @ObservationIgnored private var cachedSending: Set<String> = []
     @ObservationIgnored private(set) var threadBuildCount = 0
 
     var thread: [ConversationEntry] {
         let revision = cards.threadRevision
-        guard cachedRevision != revision || cachedSending != sendingIDs else { return cachedThread }
+        let today = Calendar.current.startOfDay(for: clock())
+        guard cachedRevision != revision || cachedSending != sendingIDs || cachedDay != today else { return cachedThread }
         cachedRevision = revision
         cachedSending = sendingIDs
+        cachedDay = today
         threadBuildCount += 1
         var entries: [(entry: ConversationEntry, sourceIndex: Int, isAnswer: Bool)] = []
         for (index, card) in cards.cards.enumerated() {
@@ -111,12 +149,20 @@ final class ConversationModel {
                                                    outcome: .recordedReply), index, true))
             }
         }
+        // A finished day's "Sent …" lines fold into one line (FX19); live lines stay on their own.
+        let folded = ConversationDeliveryGroup.fold(cards.notices, now: clock(), calendar: .current)
         for (index, notice) in cards.notices.enumerated() {
             // Update housekeeping never competes with an open question.
             if notice.kind == .agentUpdate && cards.hasOpenQuestion { continue }
+            if folded.foldedIDs.contains(notice.id) { continue }
             entries.append((ConversationEntry(id: "notice:\(notice.id)", timestamp: notice.createdAt,
                                              content: notice.kind == .appChange ? .appChange(notice) : .notice(notice)),
                             cards.cards.count + index, false))
+        }
+        for group in folded.groups {
+            let first = cards.notices.firstIndex { $0.id == group.lines[0].id } ?? 0
+            entries.append((ConversationEntry(id: "notice:" + group.id, timestamp: group.lines[0].createdAt, content: .deliveryGroup(group)),
+                            cards.cards.count + first, false))
         }
         cachedThread = entries.sorted {
             if $0.entry.timestamp != $1.entry.timestamp { return $0.entry.timestamp < $1.entry.timestamp }

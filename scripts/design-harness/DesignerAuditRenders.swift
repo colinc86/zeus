@@ -2704,3 +2704,43 @@ extension DesignerAuditRenders {
         try Snap.dump("fx16-log", Snap.log.joined(separator: "\n"))
     }
 }
+
+extension DesignerAuditRenders {
+    /// FX19: the week-of-lines panel with finished days folded into one line each.
+    @Test func fx19() async throws {
+        let previousOut = Snap.out
+        Snap.out = Snap.repo.appendingPathComponent(ProcessInfo.processInfo.environment["UX_RENDER_DIR"] ?? "build/tmp/fx19")
+        defer { Snap.out = previousOut }
+        let s = AuditMessaging.claude.sessionKey
+        // Two weeks: one ending today (today's lines stay separate) and one ending yesterday (every day folded).
+        for (suffix, endsToday) in [("", true), ("-all-finished", false)] {
+        for look in Snap.Look.basic {
+            let f = Fixture(font: look.font); defer { f.cleanup() }
+            f.messaging.sessions = [AuditMessaging.claude]
+            let day0 = Calendar.current.startOfDay(for: Date()).addingTimeInterval((endsToday ? -6 : -7) * 86_400)
+            for day in 0..<7 {
+                func at(_ hour: Double) -> Date { day0.addingTimeInterval(Double(day) * 86_400 + hour * 3_600) }
+                let d = "d\(day)"
+                f.store.recordLearningNotice(.init(id: "n_digest_\(d)", kind: .reflection, createdAt: at(9.0), summary: "Sent the morning summary", actionTitle: "View", detail: "Mostly Xcode and Mail.", ruleID: nil), action: nil)
+                f.store.recordLearningNotice(.init(id: "n_brief_\(d)", kind: .reflection, createdAt: at(9.05), summary: "Sent the morning brief request", actionTitle: "View", detail: UX3Text.brief, ruleID: nil), action: nil)
+                if day % 3 != 1 {
+                    f.store.add(Card(id: "c_brief_\(d)", kind: .content, title: "Today", body: "Design review at 15:00. The release notes draft is ready for a look.", sessionKey: s, createdAt: at(9.2), updatedAt: at(9.2), about: "Morning brief", origin: .unprompted))
+                }
+                f.store.recordLearningNotice(.init(id: "n_note_\(d)", kind: .reflection, createdAt: at(9.5), summary: "Sent a note: first activity today", actionTitle: "View", detail: "First activity today at 09:30.", ruleID: nil), action: nil)
+                if day == 2 {
+                    f.store.add(Card(id: "u_\(d)", kind: .userMessage, body: "Can you move the review to Thursday?", createdAt: at(10), updatedAt: at(10)))
+                    f.store.add(Card(id: "c_reply_\(d)", kind: .message, body: "Done: Thursday 15:00, invite updated.", sessionKey: s, createdAt: at(10.1), updatedAt: at(10.1), origin: .reply))
+                }
+                if day == 5 {
+                    f.store.add(Card(id: "u_\(d)", kind: .userMessage, body: "Thanks, looks good.", createdAt: at(14), updatedAt: at(14)))
+                }
+                f.store.recordLearningNotice(.init(id: "n_note2_\(d)", kind: .reflection, createdAt: at(17.6), summary: "Sent a note: day winding down", actionTitle: "View", detail: "Day winding down.", ruleID: nil), action: nil)
+                f.store.recordLearningNotice(.init(id: "n_refl_\(d)", kind: .reflection, createdAt: at(18.7), summary: "Sent the evening reflection", actionTitle: "View", detail: UX3Text.reflection, ruleID: nil), action: nil)
+            }
+            f.store.markAllSeen()
+            try await Snap.render("fx19-week-of-lines" + suffix, look: look, padding: 0, settle: 0.8) { f.conversation() }
+        }
+        }
+        try Snap.dump("fx19-log", Snap.log.joined(separator: "\n"))
+    }
+}

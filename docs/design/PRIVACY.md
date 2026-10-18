@@ -370,6 +370,18 @@ or "Morning brief request · Sat 18 Oct". The header has Back, the title and Exp
 find and selection work; the ⋯ menu offers Copy Text and Find only. Back returns to the line. Shorter text keeps the
 inline expansion with "Hide". The line's VoiceOver label is unchanged ("View: …").
 
+**One line per finished day (FX19).** Each delivery adds a line, and a quiet week of summaries, brief requests, notes
+and reflections adds up to more of Zeus's own housekeeping than conversation. So once a local day is over, that day's
+received lines (every "Sent …" line above, two or more of them) fold into one quiet line at the time of the day's first
+delivery: "Zeus sent your assistant 3 things · Show". **Show** lays the day's lines out in place under it, oldest
+first, each with its own View exactly as before (inline text, or the reader for long text); the action reads
+"Hide" while they show, and Hide folds them again. Showing is presentation only: nothing is marked, sent or
+persisted, and a line the user dismissed stays gone from the group. Today's lines never fold (the day is still being
+read), nor do live lines: "ready", "Held", hold, stale-setup, "Replaced by …" and "Not sent: …" lines stay on their
+own in their original places, so anything that still needs the user stays visible. A day with one received line keeps
+that line as it is. VoiceOver: "Show: Zeus sent your assistant 3 things" / "Hide: …", with Collapsed/Expanded, and the
+expanded lines as a group "3 lines from this day".
+
 **A hold older than 10 minutes** adds one quiet line per hold, which updates in place and clears itself when the delivery goes through. Under 10 minutes nothing is said; the draft card (CONTRACT §12, P2) already covers a user message stuck behind a draft, so this line is for learnings and reflections and never doubles that card.
 
 | Reason | Line | Actions |

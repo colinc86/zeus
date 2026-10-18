@@ -678,7 +678,14 @@ struct ConversationView: View {
             if labeledEntries.contains(entry.id), let key = sources[entry.sourceCardID]?.sessionKey {
                 ZeusSessionLabel(settings.sessionLabels.label(key), colorIndex: ZeusSessionLabel.colorIndex(for: key))
             }
-            if let notice = entry.threadNotice {
+            if let group = entry.deliveryGroup {
+                ConversationDeliveryGroupLine(group: group, maxWidth: ConversationWidth.bubble(panelWidth: threadWidth, user: false))
+                    .background(GeometryReader { geometry in
+                        let frame = geometry.frame(in: .named("threadContent"))
+                        Color.clear.preference(key: ThreadFrames.self,
+                            value: entry.id == latestID ? [entry.id: frame, "latestMessage": frame] : [entry.id: frame])
+                    })
+            } else if let notice = entry.threadNotice {
                 ConversationNoticeLine(notice: notice, maxWidth: ConversationWidth.bubble(panelWidth: threadWidth, user: false),
                                        hasAction: store.hasNoticeAction(id: notice.id), perform: { store.performNoticeAction(id: notice.id) },
                                        hasSecondaryAction: store.hasSecondaryNoticeAction(id: notice.id),
