@@ -450,6 +450,7 @@ Zeus can launch and keep alive **one** assistant session of its own. Connecting 
    - `status`: off, starting, running(idle/working/unknown), blocked(reason), stopped, restarting(at), failed(reason);
    - the actual tmux session name and attach command;
    - start, stop, restart, start-new-conversation, open-in-terminal, and `permissionModes(for:)`;
+     **Restart policy (FX17, 2026-10-18):** an ordinary Restart (menu or Settings) never interrupts work. It uses the safe restart-with-resume path (item 7): it waits for a freshly validated idle pane with an empty composer, no open prompt and no delivery in flight, shows "Restarting when your assistant finishes · Cancel", and keeps the native conversation ID. An immediate **Restart Now** is offered only when the process is dead or has been blocked for about 2 minutes. Its confirmation says it interrupts work and drops unsent terminal text, and it revalidates that state before acting. A menu action that needs a confirmation (switch conversation, setup restart and the like) opens Settings at that confirmation.
    - optionally `ManagedPromptAnswering`: `managedPrompt` and `answerManagedPrompt(fingerprint:optionID:)` (item 5).
    - optionally `ManagedSettingsApplying` (user decision 2026-10-13: Settings changes apply to the running session):
      `managedAppliedConfiguration`, `managedSettingsApplication` (phase waiting/applying), `managedCanResumeSettings`,
