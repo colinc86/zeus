@@ -104,7 +104,7 @@ Choosing a destination backfills retained history for enabled levels. Changing d
 | `Zeus/days/YYYY-MM-DD/typing.md` | Topics and redacted words while retained. |
 | `Zeus/days/YYYY-MM-DD/summary.md`, `moments.md` | Summaries and notes, including items still waiting for delivery. |
 | `Zeus/days/YYYY-MM-DD/sent.md`, `outcomes.md` | Stored delivery receipts and rule outcomes when present. |
-| `Zeus/reflections/YYYY-MM-DD.md` | Reflection text. |
+| `Zeus/reflections/YYYY-MM-DD.md` | The same four-week pattern summary and instructions sent to the assistant. |
 | `Zeus/rules.md` | Current rules, status, confidence and author. |
 | `Zeus/preferences.md` | Current kind ratings under Up, Need-to-know and Stop, with redacted examples; excludes single-message ratings. |
 | `Notes/about-you.md`, `Notes/patterns.md`, `Notes/preferences.md` | Dated conclusions and communication preferences the assistant may write itself; Zeus does not write or read these files. |
@@ -115,7 +115,7 @@ Zeus updates the files it wrote, so edits to those files can be overwritten. Oth
 
 A file you remove in Finder stays removed from this export; that does not delete the underlying journal records or preferences. Delete observations through **What Zeus Kept**; manage kind ratings under **Settings › Rules › What you hear about**.
 
-The version 6 template tells the assistant to read relevant records when useful, learn repeated tasks and preferences across days, revise its own notes, and propose rules supported by evidence. It must not repeat private observations unprompted or put them into material you did not ask it to send. Reading the folder does not itself authorize an action, and purchases still ask every time.
+The version 7 template tells the assistant to read relevant records when useful, learn repeated tasks and preferences across days, revise its own notes, and propose rules supported by evidence. It must not repeat private observations unprompted or put them into material you did not ask it to send. Reading the folder does not itself authorize an action, and purchases still ask every time.
 
 ## Morning brief
 
@@ -127,7 +127,7 @@ The brief works with any learning level, or all levels off. With learning off, t
 
 Rate the **Morning brief** kind with **More like this**, **Neutral** or **Stop these**, just like other unprompted messages. The [daily message limit](CONVERSATION.md#daily-limit-on-unprompted-messages) also applies. **Stop these** holds matching messages; turning off **Ask my assistant for a morning brief** stops the requests themselves.
 
-A prepared request appears as **Morning brief request ready for your assistant**. After acknowledgment, **Sent the morning brief request · View** shows exactly what was delivered. In **What Zeus Kept › Sent to your assistant**, **Waiting** can contain a **Morning brief request** while the assistant is disconnected, busy or has an unsent Terminal draft. These are request receipts, not confirmation that the assistant has produced a brief.
+A prepared request appears as **Morning brief request ready for your assistant**. After acknowledgment or successful submission of a [short delivery pointer](ASSISTANT.md#long-deliveries), **Sent the morning brief request · View** shows the full prepared text. In **What Zeus Kept › Sent to your assistant**, **Waiting** can contain a **Morning brief request** while the assistant is disconnected, busy or has an unsent Terminal draft. These are request receipts, not confirmation that the assistant has produced a brief.
 
 ## What your assistant receives
 
@@ -138,17 +138,33 @@ A morning summary describes the previous day. With Apps and timing enabled, it i
 - **A later start than usual**
 - **Day winding down (no input for 20 min after 17:00)**
 
-These produce up to four notes a day. Template v6 asks the assistant to decide whether a summary or note calls for useful preparation or something to flag now, then send one short labeled message if needed; otherwise it acknowledges quietly. It must respect ratings, the daily message limit and action approvals.
+These produce up to four notes a day. Template v7 asks the assistant to decide whether a summary or note calls for useful preparation or something to flag now, then send one short labeled message if needed; otherwise it acknowledges quietly. It must respect ratings, the daily message limit and action approvals.
 
 Summaries can include context from other enabled levels. The deliveries carry descriptions and topics, not picture bytes or retained typing words. Those retained details are available separately in the folder.
 
-At most once a day, Zeus prepares a reflection for the assistant: normally after ten minutes of idle time after 18:00, with a catch-up path for an earlier day. It includes redacted context, rule outcomes, current message preferences and evidence IDs. The assistant can use it to propose rules. A reflection is context, not a request to take an external action.
+The [evening reflection](#evening-reflection) connects patterns across the last four weeks and asks the assistant to update its notes, consider supported rules, then prepare for tomorrow or stay quiet.
 
-Summaries, notes and reflections end with a `Files:` line naming relevant available paths when an assistant-folder copy exists. The exact sent text, including those paths, appears in the Sent ledger. They use durable delivery and acknowledgment. A conversation line such as **Daily summary ready for your assistant** becomes **Sent your daily summary** after acknowledgment or tool-result consumption. **View** shows the exact text. Prepared but unreceived items appear under **Waiting** in the Sent view, with reasons such as a disconnected assistant, busy session or unsent Terminal draft. A hold lasting ten minutes gets an explanatory notice.
+Summaries, notes and reflections end with a `Files:` line naming relevant available paths when an assistant-folder copy exists. The exact sent text, including those paths, appears in the Sent ledger. They use durable delivery and acknowledgment. A conversation line such as **Daily summary ready for your assistant** becomes **Sent your daily summary** after acknowledgment or tool-result consumption, or when a [short delivery pointer](ASSISTANT.md#long-deliveries) is successfully submitted. **View** shows the exact text. Pending deliveries appear under **Waiting** in the Sent view, with reasons such as a disconnected assistant, busy session or unsent Terminal draft. A hold lasting ten minutes gets an explanatory notice.
 
 When you ask about your day, the assistant can query enabled journal levels using `zeus_get_journal`. It receives app activity descriptions, window titles, screen descriptions and typing topics. A request covers at most seven days and 50 records, with a limit of 20 calls an hour. With `raw: true`, it can also receive retained pictures or words from enabled levels. Pictures reflect the covering setting used when captured; words are already redacted. “Raw” means the stored form, not a copy from before safeguards.
 
 Each successful journal answer is recorded in **Sent to your assistant**, with a **Looked at your journal** notice in the conversation. This records the result delivered to the assistant, not proof of what its model understood. Your assistant's model provider can receive that context like any other message.
+
+## Evening reflection
+
+The evening reflection helps the assistant learn patterns that last. Zeus builds it on your Mac from the last **28 local days** of retained records, using whatever history exists. It can prepare one reflection per day, normally after ten minutes idle after 18:00, with a catch-up path for an earlier day. At least one learning level must be enabled; unlike the morning brief, it does not run with all learning off.
+
+The summary groups **Rhythm**, **Focus**, **Sequences**, **Topics**, **Engagement** and **Today vs usual** when there is evidence: typical starts and breaks, apps you return to, repeated app sequences, recurring topics, responses to assistant messages, and what changed today. Pattern lines cite evidence from different local days; dates and times use the Mac's local calendar. Time estimates are approximate, not a complete record of working hours. A short appendix keeps at most 20 records from the selected day.
+
+Only already-redacted observations from currently enabled levels contribute. Typing contributes topics, never retained words; pictures are not included. Building the summary captures nothing new. It also includes message preferences, rule outcomes and **Don't propose again** guidance for rules you turned off, deleted or retired. The folder copy under `Zeus/reflections/` contains the same text.
+
+Template v7 asks the assistant to do three things in order:
+
+1. **Update your notes.** Revise `Notes/about-you.md` and `Notes/patterns.md`, dating each change and explaining what changed its mind. Keep conclusions, not copies of the reflection.
+2. **Propose rules, if any.** Read the current rules, then propose at most three useful rules only for a pattern that held on two or more days, citing evidence from different local days in that reflection. No proposal is needed when the evidence does not support one.
+3. **Get ahead of tomorrow.** If something needs preparing or flagging, do the preparation and send one short labeled message within the daily limit; otherwise acknowledge quietly.
+
+The reflection is not a new request from you or permission for an external action. Acting rules still start in shadow, and every purchase asks. The assistant must not narrate your habits or repeat private details unprompted. **Sent a daily reflection · View** lets you inspect the exact text; [long deliveries](ASSISTANT.md#long-deliveries) explain why a Sent receipt can precede the assistant fetching or acting on it.
 
 ## Message preferences
 
@@ -156,9 +172,9 @@ Each successful journal answer is recorded in **Sent to your assistant**, with a
 
 Each rating, edit, removal, Undo or **Not this kind** correction is saved and queued for the assistant, even with capture off. It includes the kind and scope, plus a redacted example for a rating. A `Files: Zeus/preferences.md` line is added when that exported file exists. **Just this one** feedback is delivered but does not enter the file's kind list or create a hold.
 
-The assistant template v6 tells the assistant to read `Zeus/preferences.md` at session start and after rating deliveries, generalize preferences across wording, and keep dated conclusions in its own `Notes/preferences.md`. Zeus writes the first file and does not read or update the second. Current preferences also enter reflections when those are produced.
+The assistant template v7 tells the assistant to read `Zeus/preferences.md` at session start and after rating deliveries, generalize preferences across wording, and keep dated conclusions in its own `Notes/preferences.md`. Zeus writes the first file and does not read or update the second. Current preferences also enter reflections when those are produced.
 
-The saved rating confirmation does not mean the assistant has received it. **What Zeus Kept › Sent to your assistant** shows an acknowledged or successfully polled receipt as **Sent your message preference**; expand it for the exact text. Pending deliveries appear under **Waiting**. There is no additional conversation receipt notice for ratings.
+The saved rating confirmation does not mean the assistant has received it. **What Zeus Kept › Sent to your assistant** shows a receipt as **Sent your message preference** after acknowledgment, successful polling, or submission of a short delivery pointer; expand it for the exact text. Pending deliveries appear under **Waiting**. There is no additional conversation receipt notice for ratings.
 
 ## Ask About This
 
@@ -181,11 +197,11 @@ Press **Open What Zeus Kept…** in Privacy.
 
 **Kept on this Mac** shows records as stored, including placeholders. Choose a day, filter by level or app, and search. Picture rows open the stored frame with its description and retention date. **Show in Finder** opens its exported file when available. **Delete Picture** keeps the description; **Delete Both…** asks before removing both. Typing is grouped by app and hour, with topics above any retained words.
 
-**Sent to your assistant** shows exact outgoing summaries, notes, reflections, morning brief requests, rule triggers, message preferences, journal answers and context attachments. Expand a row to inspect it. **Waiting** items are separate from received records; they do not count as sent. This ledger covers learning/context delivery, not all ordinary chat or anything the assistant independently reads.
+**Sent to your assistant** shows exact outgoing summaries, notes, reflections, morning brief requests, rule triggers, message preferences, journal answers and context attachments. Expand a row to inspect it. **Waiting** items track pending delivery or acknowledgment. A successfully submitted short pointer records the full text as Sent before acknowledgment; that receipt does not prove the assistant fetched or understood it. This ledger covers learning/context delivery, not all ordinary chat or anything the assistant independently reads.
 
 **Show Day in Finder** opens the selected day’s export when it exists. Record rows also offer **Show in Finder** in their context menu or hover actions; a missing item file falls back to its day folder when available.
 
-**Export…** saves the displayed stored records as JSON. On the Sent tab it exports received records, not waiting items. Exporting is your own file copy.
+**Export…** saves the displayed stored records as JSON. On the Sent tab it exports saved Sent receipts, not the pending queue. Exporting is your own file copy.
 
 ## Pause, retention and deletion
 
@@ -227,4 +243,4 @@ Use a rule's **… › Why?** to see its retained evidence and dated outcomes. A
 
 **Add Rule…** creates a passive rule. You can edit its sentence, days, time window, apps and state; **Save** applies it. For an acting rule, ask the assistant to propose one. **Turn Back On** restores a retired rule; acting rules return through shadow approval.
 
-Implementation references: [learning settings](../Zeus/Learn/LearnSettings.swift), [level policies](../Zeus/Settings/ObservationSettings.swift), [learning presentation](../Zeus/Settings/LearningPresentation.swift), [journal queries](../Zeus/Bridge/ZeusRuntime+Journal.swift), [rules](../Zeus/Learn/PersistentRulesStore.swift), [rule actions](../Zeus/Bridge/ZeusRuntime+RuleActions.swift), [briefs, triggers and daily limit](../Zeus/Bridge/ZeusRuntime+Proactive.swift), [folder writer](../Zeus/Learn/LearningFolderWriter.swift) and [folder routing](../Zeus/Bridge/ZeusRuntime+LearningFolder.swift).
+Implementation references: [learning settings](../Zeus/Learn/LearnSettings.swift), [level policies](../Zeus/Settings/ObservationSettings.swift), [learning presentation](../Zeus/Settings/LearningPresentation.swift), [journal queries](../Zeus/Bridge/ZeusRuntime+Journal.swift), [rules](../Zeus/Learn/PersistentRulesStore.swift), [rule actions](../Zeus/Bridge/ZeusRuntime+RuleActions.swift), [briefs, triggers and daily limit](../Zeus/Bridge/ZeusRuntime+Proactive.swift), [reflection patterns](../Zeus/Bridge/ReflectionPatternDigest.swift), [reflection instructions](../Zeus/Bridge/ZeusRuntime+ReflectionPatterns.swift), [folder writer](../Zeus/Learn/LearningFolderWriter.swift) and [folder routing](../Zeus/Bridge/ZeusRuntime+LearningFolder.swift).

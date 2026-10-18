@@ -120,7 +120,7 @@ Returns `{ok:true}`. `auto` clears the explicit override and current activity. Z
 
 ### `zeus_get_responses`
 
-No arguments. Returns a bounded batch:
+With no arguments, returns a bounded batch:
 
 ```json
 {
@@ -136,7 +136,9 @@ Rating changes, removals, Undo and match corrections arrive as `kind: "learning"
 
 For a `brief`, the instructions call for one `zeus_present` with `about: "Morning brief"`, title "Today" and at most six lines, or a quiet acknowledgment when nothing matters.
 
-A `ruleTrigger` identifies the rule, matched conditions and shadow/active status; shadow requires `zeus_rule_shadow` without acting, while an active rule permits action within its authority followed promptly by `zeus_rule_acted` while the trigger remains valid. Both use normal delivery and acknowledgment, include the remaining daily message allowance, and leave resulting cards classified as unprompted. They arrive here or through the active push route, not through `zeus_get_learnings`.
+A `ruleTrigger` identifies the rule, matched conditions and shadow/active status; shadow requires `zeus_rule_shadow` without acting, while an active rule permits action within its authority followed promptly by `zeus_rule_acted` while the trigger remains valid. Both use normal delivery and acknowledgment, include the remaining daily message allowance, and leave resulting cards classified as unprompted. They arrive here or through the active push route. An exact-ID fetch through `zeus_get_learnings` is also available; its no-argument digest/moment list does not include them.
+
+Optional `id` (string) fetches exactly one saved user-message or reply delivery for this session, with the full original body in `text`. Use the ID from a short Terminal pointer; learning, reflection, brief and rule-trigger IDs use `zeus_get_learnings` instead. Erased, discarded or unavailable IDs are rejected.
 
 Returned items count as acknowledged once the result is successfully written/consumed. Process every returned item and poll until `items` is empty. It is valid to poll with any delivery mode.
 
@@ -220,9 +222,13 @@ Returns `{ok:true, version}` on success. There is no Undo. A failure is reported
 
 ### `zeus_get_learnings`
 
-No arguments. Returns `{learnings:[…]}` containing unread digests and moments, oldest first, in a bounded batch. Each learning includes its `id`, `kind`, `createdAt` and `text`. Disabled learning returns an empty array. Rating deliveries use `zeus_get_responses` or the active push route instead and remain available with learning off.
+With no arguments, returns `{learnings:[…]}` containing unread digests and moments, oldest first, in a bounded batch. Each learning includes its `id`, `kind`, `createdAt` and `text`. Disabled learning returns an empty array. Rating deliveries use `zeus_get_responses` or the active push route instead and remain available with learning off.
 
 When a folder copy is available, learning text includes a final `Files:` line with the relevant paths. Successful result consumption marks returned learnings read and creates their sent receipts. A notification alone does not. Use them to decide whether useful preparation or a short labeled update is needed now, within the user's permissions, ratings and daily message limit. Otherwise acknowledge quietly. They are not user requests, and private observations should not be quoted unprompted.
+
+Optional `id` (string) fetches an exact saved learning, reflection, brief or rule-trigger delivery as `{delivery: Delivery}`, with the full original text in `delivery.content`. This is separate from the no-argument unread list. It requires the original recipient session and rejects discarded, erased or policy-disabled deliveries. Process it, then call `zeus_ack`; this exact fetch does not acknowledge it automatically. A brief can be fetched with observation off while its own setting remains enabled.
+
+When Terminal cannot fit a verifiable full envelope, Zeus submits a short pointer naming the fetch tool and ID. Successful pointer submission records the full body as Sent without fabricating an acknowledgment. See [long deliveries](ASSISTANT.md#long-deliveries).
 
 ### `zeus_get_journal`
 
@@ -260,7 +266,7 @@ Requires **`rules`**, an array of 1–3 proposals. At most three new agent rules
 
 Triggers accept `time:{startMinute,endMinute,weekdays?}`, `apps:[bundleID,…]`, `state` (string), and `kind:"spend"`. Time endpoints are required together and runtime validation accepts integers 0–1439. Weekdays use 1=Sunday through 7=Saturday; an empty list means every day. A window crossing midnight wraps. Trigger dimensions combine with AND. Unknown states do not match; an empty trigger never holds notifications.
 
-Evaluable and spending rules need at least two evidence IDs from two different days represented in the reflection. Rejected/off/deleted fingerprints suppress re-proposal for 30 days. The sentence is redacted before storing. Returns `{rules:[…]}` with the new rules in the same agent-facing form as `zeus_get_rules`. Acting rules begin in shadow; proposal is not permission to act.
+Evaluable and spending rules need at least two retained evidence IDs from two different local calendar days represented in the reflection. Evidence can include the journal and cited card/rating/outcome feedback. Validation errors identify invalid IDs or their local days. Rejected/off/deleted fingerprints suppress re-proposal for 30 days. The sentence is redacted before storing. Returns `{rules:[…]}` with the new rules in the same agent-facing form as `zeus_get_rules`. Acting rules begin in shadow; proposal is not permission to act.
 
 ### `zeus_rule_shadow`
 

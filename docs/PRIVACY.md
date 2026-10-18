@@ -20,7 +20,7 @@ Zeus keeps matching decisions with their reason, engine, similarity score, thres
 
 For unprompted labeled messages that are not held, Zeus records display, read and dismissal times. Only unrated kinds can prompt suggestions. Signals older than seven days are pruned when suggestions refresh. Five qualifying messages can produce a one-time rating suggestion; ignoring or dismissing messages never creates a Stop preference automatically. Ratings and corrections are not governed by observation-level retention settings.
 
-Each rating change, removal, Undo and match correction is queued for the assistant with durable delivery. Rating text includes its scope and redacted example; edits/corrections describe the change. A successful acknowledgment or polling-result consumption creates a **Sent your message preference** receipt in **Sent to your assistant**. **Waiting** entries have not been received. Undo sends a new correction rather than retracting an earlier delivery.
+Each rating change, removal, Undo and match correction is queued for the assistant with durable delivery. Rating text includes its scope and redacted example; edits/corrections describe the change. A successful acknowledgment or polling-result consumption creates a **Sent your message preference** receipt in **Sent to your assistant**. For a long Terminal delivery, successful submission of a short pointer also records the full text as Sent before acknowledgment. **Waiting** tracks pending delivery or acknowledgment. Undo sends a new correction rather than retracting an earlier delivery.
 
 The current kind list is also written to readable `Zeus/preferences.md` when an assistant folder is configured, even with observation off. It contains redacted examples grouped under Up, Need-to-know and Stop; single-message feedback is delivered but omitted from that list. The assistant may keep its own conclusions in `Notes/preferences.md`. Its configured provider can receive ratings and file contents like other conversation context.
 
@@ -69,7 +69,7 @@ By default, summaries and reflections carry redacted descriptions and topics. Th
 
 The assistant can also read the retained record in its folder without making a journal-tool call. This includes pictures and retained words. It may keep its own dated conclusions in `Notes/`, which Zeus does not read or update.
 
-**Sent to your assistant** records consumed learning/context and rating deliveries and exact journal answers. A queued attempt appears separately under **Waiting**. It is a record of delivery, not an audit of the assistant's model-provider traffic or its independent file reads.
+**Sent to your assistant** records learning/context and rating deliveries and exact journal answers. For a [long Terminal delivery](ASSISTANT.md#long-deliveries), successful submission of a short pointer records the full saved text as Sent; it does not prove that the assistant fetched or processed it, and acknowledgment is still required. An attempted or unsubmitted paste creates no receipt. **Waiting** tracks pending delivery or acknowledgment. The ledger is not an audit of the assistant's model-provider traffic or its independent file reads.
 
 Your assistant can send received material to its configured model provider like any other message. The template instructs it to use learning for relevant help, not to reconstruct placeholders or repeat private details unprompted. These instructions do not change the agent's own provider or permissions.
 
