@@ -295,7 +295,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
             sessionLabel: name + (managedController.sessionKey == sessionKey ? " · Zeus" : " · Assistant"), sessionID: identity))
     }
     func recordReflectionReceipt(id: String) {
-        guard !learningWasErased(id), let record = ledger?.record(id: id), record.delivery.ackedAt != nil,
+        guard !learningWasErased(id), let record = ledger?.record(id: id),
+              record.delivery.ackedAt != nil || (record.delivery.meta["tmux_pointer"] == "true" && record.transportDeliveredAt != nil),
               [.reflection, .learning, .brief, .ruleTrigger].contains(record.delivery.kind), !record.delivery.content.isEmpty else { return }
         if record.delivery.kind == .brief || record.delivery.kind == .ruleTrigger {
             recordSentLearning(id: id, kind: record.delivery.kind.rawValue, text: .init(record.delivery.content), sessionKey: record.delivery.sessionKey, receivedAt: record.delivery.ackedAt)
@@ -317,7 +318,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         }
         recordSentLearning(id: id, kind: "reflection", text: .init(record.delivery.content), sessionKey: record.delivery.sessionKey, receivedAt: record.delivery.ackedAt)
     }
-    /// Only an acknowledgment or successful tool-result consumption uses this receipt path.
+    /// Acknowledgment, successful consumption, or a submitted durable pointer records the full body.
     func recordSentLearning(id: String, kind: String, text: Redacted<String>, sessionKey: String, receivedAt: Date? = nil) {
         guard !learningWasErased(id), let journal = learningJournal else { return }
         let identity = SHA256.hash(data: Data(sessionKey.utf8)).map { String(format: "%02x", $0) }.joined()

@@ -166,6 +166,25 @@ Lost receipts may replay stable delivery IDs. Restart older helpers for stdout d
 
 Tool results are returned as `text` (compact JSON) plus `structuredContent`.
 
+**Long Terminal deliveries (FX7).** If the full envelope cannot be verified in the current pane,
+Zeus pastes a bounded pointer with the same delivery ID instead. The immutable full body stays in
+the delivery ledger. `zeus_get_learnings {id}` returns `{delivery: Delivery}` for learning,
+reflection, brief and rule-trigger kinds; unlike the no-argument unread summary API, this fetch
+requires an explicit `zeus_ack` after processing. `zeus_get_responses {id}` returns one item with
+its exact original delivery body in `text` (rather than the short reply summary); its existing
+result-consumption acknowledgment applies. Both exact fetches require the original recipient
+session and reject discarded, erased or policy-disabled deliveries. No-argument behavior stays
+unchanged. Pointer representation is journaled before paste, so restart recovery submits only
+Zeus's exact saved pointer, without repasting or mistaking it for a human draft.
+
+A successfully submitted pointer records the **full body** in the Sent receipt; it does not
+fabricate an acknowledgment. An attempt or unsubmitted paste records nothing. Late acknowledgments
+remain idempotent. Old size-only queue holds retry automatically after upgrade. Pending reflections
+more than two local calendar days old and briefs from before today are discarded, with a durable
+Not sent notice and reason (never a Sent receipt or fabricated ack). Already-pasted text is left
+alone; a later acknowledgment of a discarded ID has no effect.
+
+
 File/folder attachments require a `summary` with at least 20 non-whitespace characters and at most 400 total characters. Missing/short summaries reject the whole call before thread publication: "Each file or folder attachment needs a summary: 1–3 sentences saying what's in it and why it matters, so the user doesn't have to open it. Put the takeaway in the message text too." URL summaries are optional, still capped at 400. Existing stored attachments remain readable without one. Assistant template v5 tells agents that attached documents are read inside Zeus: prefer Markdown for user-facing reports/plans/drafts, preserve the attached path when revising a document (unless a separate copy is requested), and describe the changes in the message. The card retains its attachment reference; file changes do not require attachment edits through MCP. `zeus_update_card` does not edit attachments; attempts to pass that field remain rejected, and text/progress edits preserve existing summaries.
 
 | Tool | Arguments (`*` = required) | Result |
@@ -176,7 +195,7 @@ File/folder attachments require a `summary` with at least 20 non-whitespace char
 | `zeus_update_card` | `card_id*`, `title`, `text`, `append_text`, `progress` (0…1 or null) | `{ok}` |
 | `zeus_dismiss` | `card_id*` | `{ok}` |
 | `zeus_set_status` | `state*` (an AvatarState or `"auto"`), `detail`, `progress`, `ttl_seconds` (default 600) | `{ok}` |
-| `zeus_get_responses` | — | `{items:[{delivery_id, kind, card_id?, option_id?, option_label?, text, created_at}], delivery_mode:"channel"|"tmux"|"opencode"|"polling", push_active:Bool}`. Metadata describes the calling session's current route/availability, not proof the model received input. Every returned item counts as **acked** at the result-consumption boundary (§3.4). |
+| `zeus_get_responses` | `id` (optional exact delivery) | `{items:[{delivery_id, kind, card_id?, option_id?, option_label?, text, created_at}], delivery_mode:"channel"|"tmux"|"opencode"|"polling", push_active:Bool}`. Metadata describes the calling session's current route/availability, not proof the model received input. Every returned item counts as **acked** at the result-consumption boundary (§3.4). |
 | `zeus_ack` | `delivery_ids*: [string]` | `{acked:[…]}` |
 | `zeus_list_characters` | — | `{current, characters:[{id,name,description}]}` |
 | `zeus_set_character` | `id*` | `{ok}` |
@@ -501,8 +520,10 @@ ack. Proven-dead targets retarget to the replacement assistant as user messages 
 reflections do. MCP learning notifications remain hints only: writing one does not
 create a Sent ledger receipt or consume the item. An ack or successful
 `zeus_get_learnings` tool-result consumption creates the exact-text receipt and marks
-the learning read; reflection Sent receipts likewise require ack/consumption, not paste
-completion. Out-of-order acks never consume unseen earlier learnings.
+the learning read; reflection Sent receipts likewise require ack/consumption for full-envelope
+delivery. FX7 short pointers are the explicit exception: confirmed submission records the full
+body as Sent (§4), while the delivery remains unacknowledged until processing/consumption.
+Out-of-order acks never consume unseen earlier learnings.
 
 Optional `LearningDeliveryPresenting` publishes observable pending learning/reflection
 snapshots and `DeliveryHold { deliveryID, kind, since, reason }` after ten continuous

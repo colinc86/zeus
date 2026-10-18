@@ -64,7 +64,7 @@ private struct LM4Runner: ProcessRunning {
     func markLearningsRead(through id: String) { if let i = values.firstIndex(where: { $0.id == id }) { values.removeFirst(i + 1) } }
     func digest() { let value = Learning(id: "lm4-digest", kind: .digest, createdAt: Date(), text: "Synthetic morning summary: working on a fixture project."); values.append(value); onNewLearning?(value) }
 }
-@MainActor private final class PA1Context { var value = LearningContext() }
+@MainActor private final class PA1Context { var value = LearningContext(); var levels: Set<JournalLevel> = [] }
 @main struct LM4Host {
     @MainActor static func main() async throws {
         let root = URL(fileURLWithPath: CommandLine.arguments[1]), tmux = URL(fileURLWithPath: CommandLine.arguments[2])
@@ -93,7 +93,7 @@ private struct LM4Runner: ProcessRunning {
             clock: proactive ? proactiveClock : SystemRuntimeClock(), socketPath: root.appendingPathComponent("bridge.sock").path, ledgerURL: root.appendingPathComponent("deliveries.json"),
             connectors: [TmuxConnector(executable: tmux, runner: LM4Runner(socket: socket))], managedController: controller,
             learnings: learnings, rules: rules, journal: journal, redactor: LocalRedactor(useOnDeviceModel: false), learningFolder: folder, messageRatings: ratings, learningContext: { context.value },
-            morningBriefSettings: proactive ? briefSettings : nil)
+            morningBriefSettings: proactive ? briefSettings : nil, morningBriefLevels: { context.levels })
         try live.start(); defer { live.stop() }
         try write(["ready": true])
         await Task.detached {
@@ -109,8 +109,16 @@ private struct LM4Runner: ProcessRunning {
                                 }
                             }
                         }
-                        if command["command"] == "brief" { live.noteProactiveActivity(at: proactiveClock.now) }
-                        if command["command"] == "nextBrief" { proactiveClock.now = proactiveClock.now.addingTimeInterval(86400); live.noteProactiveActivity(at: proactiveClock.now) }
+                        if command["command"] == "brief" {
+                            context.levels = [.focus]
+                            let retained = Set(try journal.items(matching: .init()).map(\.id))
+                            for index in 0..<6 where !retained.contains("brief-evidence-\(index)") {
+                                try journal.append(.init(id: "brief-evidence-\(index)", time: proactiveClock.now.addingTimeInterval(-86400 + Double(index)), level: .focus, kind: .focus,
+                                    payload: .init(.init(description: String(repeating: "資料確認準備", count: 50)))))
+                            }
+                            live.noteProactiveActivity(at: proactiveClock.now)
+                        }
+                        if command["command"] == "nextBrief" { context.levels = []; proactiveClock.now = proactiveClock.now.addingTimeInterval(86400); live.noteProactiveActivity(at: proactiveClock.now) }
                         if command["command"] == "triggers", let rules {
                             let active = try rules.propose([.init(sentence: "Prepare the synthetic project recap", trigger: .init(state: "fixture ready"), kind: .acts)], at: proactiveClock.now)[0]
                             _ = try rules.markShadowShown(id: active.id)

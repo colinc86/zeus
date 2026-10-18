@@ -54,6 +54,8 @@ final class DeliveryRoutingContext: AgentRoutingSettings, OpenCodeSessionRouting
     var didMutateTmuxInput = false
     /// Durably records/clears an unsubmitted paste before mutating Terminal input.
     var confirmTmuxPaste: ((String?) throws -> Void)?
+    /// Persisted with paste ownership so recovery uses the same representation.
+    var usesTmuxPointer = false
     /// Recovery may submit only the exact journaled input, never load/paste text.
     var onlySubmitRecordedTmuxPaste = false
     /// Set after Enter succeeds so clearing the journal can commit its receipt.

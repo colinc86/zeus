@@ -112,7 +112,7 @@ private struct LM2Runner: ProcessRunning {
                             "notices": .array(cards.notices.map { .string($0.summary) }),
                             "receipts": .array(try journal.items(matching: .init()).filter { $0.kind == .sentToAssistant }.map(JSONValue.from)),
                             "reflectionTexts": .array((live.ledger?.records ?? []).filter { $0.delivery.kind == .reflection }.map { .string($0.delivery.content) }),
-                            "deliveries": .array((live.ledger?.records ?? []).map { ["id": .string($0.delivery.id), "kind": .string($0.delivery.kind.rawValue), "acked": .bool($0.delivery.ackedAt != nil), "attempts": .number(Double($0.delivery.attempts))] }),
+                            "deliveries": .array((live.ledger?.records ?? []).map { ["id": .string($0.delivery.id), "kind": .string($0.delivery.kind.rawValue), "acked": .bool($0.delivery.ackedAt != nil), "attempts": .number(Double($0.delivery.attempts)), "pointer": .bool($0.delivery.meta["tmux_pointer"] == "true")] }),
                             "error": live.learningError.map(JSONValue.string) ?? .null])
                     } catch { try? write(["ok": false, "error": .string(String(describing: error))]) }
                 }

@@ -7,24 +7,20 @@ import LM2LiveProbe
 from LiveSupport import REPO, Pane, Model, HostControl, eventually, output_dir, scrub_paths, stop_host
 OUT = output_dir('rf1-live')
 
-class ReflectionPane(Pane):
-    def tm(self, *args, **kwargs):
-        if args and args[0] == 'new-session':
-            args = list(args)
-            args[args.index('-x') + 1] = '220'; args[args.index('-y') + 1] = '120'
-        return super().tm(*args, **kwargs)
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--quick', action='store_true'); parser.add_argument('--record', action='store_true')
     args = parser.parse_args()
     LM2LiveProbe.OUT = OUT
-    host = LM2LiveProbe.build_host(); pane = ReflectionPane('claude', prefix='zlv1_', output=OUT)
-    process = None; steps = []; cited = []
+    host = LM2LiveProbe.build_host(); pane = Pane('claude', prefix='zlv1_', output=OUT)
+    process = None; steps = []; cited = []; fetched = []
     def action(body):
         rendered = json.dumps(body.get('messages', []))
         delivery = re.search(r'd_reflection_[0-9]{8}', rendered)
         if not delivery: return None, {}
+        if delivery.group(0) not in fetched:
+            fetched.append(delivery.group(0))
+            return "zeus_get_learnings", {"id": delivery.group(0)}
         if not cited:
             # Take evidence from the production digest, never from the fixture seed directly.
             evidence = re.search(r'\[(j_\d+_\w+) [^\]]+, (j_\d+_\w+) [^\]]+\]', rendered)
@@ -56,10 +52,11 @@ def main():
             control.call('reflect')
             state = eventually(lambda: s if (s := control.call('state'))['rules'] and s['deliveries'] and s['deliveries'][0]['acked'] else None,
                                'native notes writes, valid cross-day rule and ack', timeout=75)
+            assert pane.tm('display-message', '-p', '-t', 'pc1', '#{pane_width}x#{pane_height}').strip() == '120x40'
             text = state['reflectionTexts'][0]
             assert len(text.encode()) <= 10240 and 'Sequences' in text and 'Notes/patterns.md' in text, text
             assert len(state['rules']) == 1 and state['rules'][0]['status'] == 'active', state
-            assert state['deliveries'][0]['attempts'] == 1, state
+            assert state['deliveries'][0]['attempts'] == 1 and state['deliveries'][0]['pointer'] is True, state
             assert state['receipts'][0]['payload']['value']['text'] == text, state
             notes = {name: (pane.project/'Notes'/name).read_text() for name in ['about-you.md', 'patterns.md']}
             assert all('14 October:' in value for value in notes.values()), notes
@@ -68,7 +65,7 @@ def main():
             assert not any(block.get('is_error') for block in results), results
             proof = scrub_paths({'agent': pane.version, 'tools': steps, 'evidence': cited, 'notes': notes, 'state': state,
                 'isolation': 'private tmux, disposable HOME/config, localhost scripted model, injected test key',
-                'pane': '220x120 for full-envelope paste verification',
+                'pane': '120x40; short pointer fetched by id', 'fetched': fetched,
                 'scope': 'Real CLI/tool integration; scripted local model, not evidence of model reasoning quality'}, {str(pane.root): '/FIXTURE', str(REPO): '<worktree>'})
             (OUT/'proof.json').write_text(json.dumps(proof, indent=2)+'\n')
             (OUT/'digest.txt').write_text(text+'\n')
