@@ -233,8 +233,8 @@ import UniformTypeIdentifiers
         if learnings is any LearningHistoryProviding { safeLearnings = safeLearnings.filter { retained.contains($0.key) } }
         if levels.contains(.activity) {
             for learning in history where safeLearnings[learning.id] == nil {
-                let safe = await redactor.redact(learning.text); try Task.checkCancellation()
-                safeLearnings[learning.id] = .init(id: learning.id, kind: learning.kind, createdAt: learning.createdAt, text: safe.value)
+                // Learnings are generated from safe inputs; preserve the same facts the assistant receives.
+                safeLearnings[learning.id] = learning
             }
             for learning in safeLearnings.values.sorted(by: { $0.createdAt == $1.createdAt ? $0.id < $1.id : $0.createdAt < $1.createdAt }) {
                 try append(learningPath(learning), id: learning.id, text: learning.text)

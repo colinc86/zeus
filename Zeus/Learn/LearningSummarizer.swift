@@ -40,6 +40,7 @@ struct DayStats: Equatable, Sendable {
     var appSeconds: [String: Double] = [:]
     var firstApp: (name: String, at: Date)?
     var privateSeconds: Double = 0
+    var otherDeviceSeconds: Double = 0
     /// The span from first to last activity, less the time away.
     var activeSeconds: Double {
         guard let first = firstActivity, let last = lastActivity, last > first else { return 0 }
@@ -50,7 +51,7 @@ struct DayStats: Equatable, Sendable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.firstActivity == rhs.firstActivity && lhs.lastActivity == rhs.lastActivity && lhs.away == rhs.away
             && lhs.appSeconds == rhs.appSeconds && lhs.firstApp?.name == rhs.firstApp?.name && lhs.firstApp?.at == rhs.firstApp?.at
-            && lhs.privateSeconds == rhs.privateSeconds
+            && lhs.privateSeconds == rhs.privateSeconds && lhs.otherDeviceSeconds == rhs.otherDeviceSeconds
     }
 }
 
@@ -67,7 +68,7 @@ enum LearningSummarizer {
 
     static func stats(_ events: [ActivityEvent], excluded: [ExcludedApp]) -> DayStats {
         var stats = DayStats()
-        var current: (name: String, isPrivate: Bool)?
+        var current: (name: String, isPrivate: Bool, pseudo: PseudoApp?)?
         var segmentStart: Date?
         var awayStart: Date?
 
@@ -78,7 +79,8 @@ enum LearningSummarizer {
         func close(_ t: Date) {
             if let start = segmentStart, let app = current, t > start {
                 if app.isPrivate { stats.privateSeconds += t.timeIntervalSince(start) }
-                else { stats.appSeconds[app.name, default: 0] += t.timeIntervalSince(start) }
+                else if app.pseudo == .otherDevice { stats.otherDeviceSeconds += t.timeIntervalSince(start) }
+                else if app.pseudo == nil { stats.appSeconds[app.name, default: 0] += t.timeIntervalSince(start) }
             }
             segmentStart = nil
         }
@@ -93,10 +95,11 @@ enum LearningSummarizer {
                 close(event.t)
                 back(event.t)
                 let isPrivate = isExcluded(event, excluded)
-                current = (event.appName, isPrivate)
+                let pseudo = pseudoApp(event)
+                current = (event.appName, isPrivate, pseudo)
                 segmentStart = event.t
                 present(event.t)
-                if stats.firstApp == nil && !isPrivate { stats.firstApp = (event.appName, event.t) }
+                if stats.firstApp == nil && !isPrivate && pseudo == nil { stats.firstApp = (event.appName, event.t) }
             case .private:
                 close(event.t)
                 back(event.t)
@@ -164,6 +167,7 @@ enum LearningSummarizer {
         }
         let top = names.sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }.prefix(5)
         if !top.isEmpty { lines.append("- Top apps: " + top.map { "\($0.key) \(duration($0.value))" }.joined(separator: ", ") + ".") }
+        if stats.otherDeviceSeconds >= 60 { lines.append("- On another device: \(duration(stats.otherDeviceSeconds))") }
         if stats.privateSeconds >= 60 { lines.append("- Private time: \(duration(stats.privateSeconds)) in apps you keep private.") }
         if let median = medianStart(previousStarts, calendar: calendar) {
             let difference = minuteOfDay(first, calendar) - median
@@ -242,6 +246,20 @@ enum LearningSummarizer {
         formatter.timeZone = calendar.timeZone
         formatter.dateFormat = "EEEE, MMMM d"
         return formatter.string(from: day)
+    }
+
+    private enum PseudoApp { case otherDevice, system }
+    private static func pseudoApp(_ event: ActivityEvent) -> PseudoApp? {
+        switch event.app?.lowercased() {
+        case "com.apple.universalcontrol": return .otherDevice
+        case "com.apple.loginwindow", "com.apple.screensaver.engine", "com.apple.screensaverengine": return .system
+        default: break
+        }
+        switch event.appName.lowercased() {
+        case "universal control": return .otherDevice
+        case "loginwindow", "screensaverengine": return .system
+        default: return nil
+        }
     }
 
     static func isExcluded(_ event: ActivityEvent, _ excluded: [ExcludedApp]) -> Bool {

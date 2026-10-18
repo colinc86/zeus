@@ -227,10 +227,19 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let evidence = digest.references.filter(\.journal).map(\.id)
         let initialFeedbackDates = Dictionary(digest.references.filter { !$0.journal }.map { ($0.id, $0.at.timeIntervalSince1970) }, uniquingKeysWith: { first, _ in first })
         let lastReflection = (ledger?.records ?? []).filter { $0.delivery.kind == .reflection }.map { $0.delivery.createdAt }.max() ?? .distantPast
-        let feedback = reflectionOutcomeText(since: lastReflection, now: now)
+        var feedbackSentences: [(String, String)] = []
+        let feedback = reflectionOutcomeText(since: lastReflection, now: now) { sentence in
+            let marker = "‹rule-sentence-\(feedbackSentences.count)›"
+            feedbackSentences.append((marker, sentence)); return marker
+        }
         let token = generation, observationToken = learningObservationToken, revision = journal.revision
         reflectionTask = Task { [weak self] in
-            let safe = await redactor.redact(feedback)
+            // Redact user-authored sentences before adding generated dates, outcomes and evidence IDs.
+            var safeFeedback = feedback
+            for (marker, sentence) in feedbackSentences {
+                let safe = await redactor.redact(sentence)
+                safeFeedback = safeFeedback.replacingOccurrences(of: marker, with: safe.value)
+            }
             guard let self, self.generation == token, self.learningObservationToken == observationToken else { return }
             defer {
                 self.reflectionTask = nil; self.scheduleLearningBoundary()
@@ -244,8 +253,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
             }
             let request = Self.reflectionRequest(date: local.label(day, "EEEE d MMMM"), budget: self.proactiveBudgetLine)
             var content = request + "\n\n" + digest.text
-            if !safe.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                content += "\n\n" + Self.boundedReflectionText(safe.value, bytes: 1_600)
+            if !safeFeedback.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                content += "\n\n" + Self.boundedReflectionText(safeFeedback, bytes: 1_600)
             }
             let preferences = MessageRatingStore.preferences(self.ratings)
             if !self.ratings.isEmpty { content += "\n\nMessage preferences:\n" + Self.boundedReflectionText(preferences, bytes: 600) }
@@ -357,7 +366,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         if let saved = ledger?.record(id: learning.id), !saved.delivery.content.isEmpty {
             return .init(id: learning.id, kind: learning.kind, createdAt: learning.createdAt, text: saved.delivery.content)
         }
-        let text = await learningRedactor?.redact(learning.text).value ?? learning.text
+        let text = learning.text
         let safe = Learning(id: learning.id, kind: learning.kind, createdAt: learning.createdAt, text: text)
         guard !learningWasErased(learning.id) else { return safe }
         let files = await learningFolder?.recordLearning(safe) ?? []
