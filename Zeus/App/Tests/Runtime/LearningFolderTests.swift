@@ -32,6 +32,22 @@ import ZeusProtocol
 }
 
 @Suite @MainActor struct LearningFolderTests {
+    @Test func writerReportsCollisionAndRecoversAfterUserMovesFile() async throws {
+        let f = try FolderFixture(); defer { f.stop() }
+        // Cancel the initial refresh before creating an unowned README in its destination.
+        f.writer.stop()
+        let zone = f.first.appendingPathComponent("Zeus")
+        try FileManager.default.createDirectory(at: zone, withIntermediateDirectories: true)
+        let userFile = zone.appendingPathComponent("README.md")
+        try Data("User project README".utf8).write(to: userFile)
+        f.writer.start(learnings: EmptyLearnings()); await f.writer.flush()
+        #expect(f.writer.lastWriteError == "Zeus didn't replace Zeus/README.md because it isn't a file Zeus wrote. Move or rename it to let Zeus write there.")
+        #expect(try String(contentsOf: userFile, encoding: .utf8) == "User project README")
+        try FileManager.default.moveItem(at: userFile, to: zone.appendingPathComponent("README-mine.md"))
+        await f.writer.flush()
+        #expect(f.writer.lastWriteError == nil)
+        #expect(try String(contentsOf: userFile, encoding: .utf8).contains("What Zeus keeps"))
+    }
     @Test func layoutPermissionsAndFolderSwitchKeepObserving() async throws {
         let f = try FolderFixture(); defer { f.stop() }
         let first = f.item("one"); try f.journal.append(first); await f.writer.flush()
@@ -76,7 +92,7 @@ import ZeusProtocol
         try Data("assistant".utf8).write(to: note); try Data("template".utf8).write(to: template)
         try f.journal.append(f.item("one")); await f.writer.flush()
         try f.journal.delete(.all); await f.writer.flush()
-        #expect(try FileManager.default.contentsOfDirectory(atPath: f.first.appendingPathComponent("Zeus").path).isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: f.first.appendingPathComponent("Zeus").path))
         #expect(FileManager.default.fileExists(atPath: note.path))
         try f.writer.deleteFolderContents(includeAssistantNotes: true)
         #expect(!FileManager.default.fileExists(atPath: note.path))

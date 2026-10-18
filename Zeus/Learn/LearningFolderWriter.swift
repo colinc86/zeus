@@ -80,7 +80,7 @@ import UniformTypeIdentifiers
     func dayFolderURL(for date: Date) -> URL? {
         _ = exportRevision
         guard let root = folderURL else { return nil }
-        return disk?.existing(root, path: "Zeus/days/" + day(date))
+        return disk?.existingDirectory(root, path: "Zeus/days/" + day(date))
     }
     func fileURL(forJournalItem item: JournalItem) -> URL? {
         _ = exportRevision
@@ -125,11 +125,17 @@ import UniformTypeIdentifiers
                 }
                 let keep = kept
                 try await Task.detached(priority: .utility) { try disk.prune(root: root, keeping: keep, token: token) }.value
-                self.lastWriteError = nil; self.exportRevision &+= 1
+                self.lastWriteError = Self.collisionMessage(disk.collisionPaths); self.exportRevision &+= 1
             } catch is CancellationError { }
             catch LearningFolderError.stale { }
             catch { self.lastWriteError = "Zeus couldn't update its learnings folder. The retained journal is unchanged." }
         }
+    }
+    static func collisionMessage(_ paths: [String]) -> String? {
+        guard let first = paths.sorted().first else { return nil }
+        if paths.count == 1 { return "Zeus didn't replace \(first) because it isn't a file Zeus wrote. Move or rename it to let Zeus write there." }
+        let others = paths.count - 1
+        return "Zeus didn't replace \(first) and \(others) other \(others == 1 ? "file" : "files") because Zeus didn't write them. Move or rename them to let Zeus write there."
     }
     /// Also used by isolated tests; waits for the latest bounded snapshot, not an arbitrary delay.
     func flush() async {
@@ -271,7 +277,8 @@ import UniformTypeIdentifiers
     # What Zeus keeps
 
     This is your assistant's record of what Zeus learns, after your levels and privacy safeguards.
-    Zeus writes here; edits are overwritten. Files you delete in Finder are not re-created.
+    Zeus writes here; edits to its files are overwritten. Files you delete in Finder are not re-created.
+    Zeus only replaces or deletes files it wrote itself; anything else in this folder is left alone.
     Retention and deletion in Zeus apply to these files too. The assistant owns Notes/ beside Zeus/.
 
     - days/YYYY-MM-DD/activity.md: activity timeline, with private apps unnamed

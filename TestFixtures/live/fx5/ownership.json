@@ -1,0 +1,13 @@
+{
+  "agent": "2.1.302 (Claude Code)",
+  "preexisting_project_survives_erasure": true,
+  "owned_summary_erased": true,
+  "assistant_read_digest_file": true,
+  "erasure_late_ack_suppressed": true,
+  "tools": [
+    "Read",
+    "zeus_ack",
+    "zeus_say"
+  ],
+  "isolation": "private tmux, disposable HOME/config, localhost synthetic model, fixture encryption key"
+}
