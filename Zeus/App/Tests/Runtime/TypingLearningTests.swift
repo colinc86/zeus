@@ -234,10 +234,10 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
     @Test func topicSchemaPostcheckAndOldPayloadCompatibility() throws {
         let good = TypingTopic(app: "Fixture", intent: .drafting, subject: "Drafting a synthetic project update", recipients: ["manager"])
         #expect(try JSONDecoder().decode(TypingTopic.self, from: JSONEncoder().encode(good)) == good)
-        for bad in [TypingTopic(app: "Other", intent: .replying, subject: "Call 555-123-4567", recipients: ["doctor"]),
-                    .init(app: "Other", intent: .replying, subject: "Project update", recipients: ["priya"])] {
-            let safe = TopicSummarizer.checked(bad, app: "Fixture"); #expect(safe.subject == "Replying in Fixture"); #expect(safe.recipients.isEmpty)
-        }
+        let unsafe = TopicSummarizer.checked(.init(app: "Other", intent: .replying, subject: "Call 555-123-4567", recipients: ["doctor"]), app: "Fixture")
+        #expect(unsafe.subject == "Replying in Fixture"); #expect(unsafe.recipients == ["doctor"])
+        let unknown = TopicSummarizer.checked(.init(app: "Other", intent: .replying, subject: "Project update", recipients: ["priya"]), app: "Fixture")
+        #expect(unknown.subject == "Project update"); #expect(unknown.recipients.isEmpty)
         let old = try JSONDecoder().decode(JournalPayload.self, from: Data(#"{"description":"Old item","details":{}}"#.utf8))
         #expect(old.topic == nil && old.text == nil)
     }
