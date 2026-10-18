@@ -12,6 +12,7 @@ final class DocumentViewerModel {
         var url: URL { URL(fileURLWithPath: attachment.target) }
         var content: DocumentContent?
         var source = false
+        var isSnapshot = false
     }
     private(set) var pages: [Page] = []
     private(set) var loading = false
@@ -84,7 +85,17 @@ final class DocumentViewerModel {
         activate()
         return true
     }
+    /// Presents exact stored text without creating a file or watching a filesystem path.
+    func openText(_ text: String, title: String, context: String? = nil) {
+        attachments = []; attachmentIndex = 0; returnTarget = nil
+        offsets.removeAll()
+        threadBookmark = nil; threadOffset = nil; threadPageCount = ConversationLayout.pageSize; fromPeek = false
+        pages = [.init(attachment: .init(kind: .file, label: title, target: ""), sourceCardID: nil,
+                       context: context, content: .init(renderer: .text, text: text), isSnapshot: true)]
+        activate()
+    }
     @discardableResult func navigate(_ url: URL) -> Bool {
+        guard current?.isSnapshot != true else { return false }
         let kind: Attachment.Kind = DocumentLoader.renderer(for: url) == .folder ? .folder : .file
         let value = Attachment(kind: kind, label: url.lastPathComponent, target: url.path)
         guard url.isFileURL, case .open(let safe)? = AttachmentTarget.action(for: value), safe.isFileURL else { return false }
@@ -125,7 +136,7 @@ final class DocumentViewerModel {
     }
     func toggleSource() { guard !pages.isEmpty else { return }; pages[pages.count - 1].source.toggle() }
     func ask(in conversation: ConversationModel) {
-        guard let page = current else { return }
+        guard let page = current, !page.isSnapshot else { return }
         autoAttachedPage = page.id
         // Ask About This promotes an existing chip for this path too, even when
         // navigation created a new attachment ID for the same document.
@@ -151,7 +162,7 @@ final class DocumentViewerModel {
         attachAutomatically(in: conversation)
     }
     private func attachAutomatically(in conversation: ConversationModel) {
-        guard let page = current else { return }
+        guard let page = current, !page.isSnapshot else { return }
         autoAttachedPage = page.id
         if !conversation.draftAttachments.contains(where: { $0.target == page.attachment.target }) {
             automaticAttachments.insert(page.attachment.id)
@@ -169,9 +180,10 @@ final class DocumentViewerModel {
         conversation.draftAttachments.removeAll { automaticAttachments.contains($0.id) }
         automaticAttachments.removeAll()
     }
-    func refresh() { load(updated: true) }
+    func refresh() { guard current?.isSnapshot != true else { return }; load(updated: true) }
     private func activate() {
         stop(); anchorRequest = nil; selectedText = ""; updatedAt = nil; findVisible = false; findText = ""; findCount = 0; pdfPage = nil; autoAttachedPage = nil
+        guard current?.isSnapshot != true else { revision += 1; return }
         guard let url = current?.url else { return }
         fingerprint = Self.fingerprint(url)
         installWatch(url)

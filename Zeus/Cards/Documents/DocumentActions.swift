@@ -6,7 +6,14 @@ import ZeusProtocol
 struct DocumentOpeningKey: EnvironmentKey {
     static let defaultValue: (@MainActor (Attachment, String?) -> Bool)? = nil
 }
+struct LearningDocumentOpeningKey: EnvironmentKey {
+    static let defaultValue: (@MainActor (ThreadNotice) -> Void)? = nil
+}
 extension EnvironmentValues {
+    var openLearningDocument: (@MainActor (ThreadNotice) -> Void)? {
+        get { self[LearningDocumentOpeningKey.self] }
+        set { self[LearningDocumentOpeningKey.self] = newValue }
+    }
     var openDocument: (@MainActor (Attachment, String?) -> Bool)? {
         get { self[DocumentOpeningKey.self] }
         set { self[DocumentOpeningKey.self] = newValue }
@@ -19,7 +26,7 @@ extension EnvironmentValues {
         application(for: url).map { FileManager.default.displayName(atPath: $0.path).replacingOccurrences(of: ".app", with: "") }
     }
     static func open(_ page: DocumentViewerModel.Page, application: URL? = nil) {
-        guard let action = AttachmentTarget.action(for: page.attachment) else { return }
+        guard !page.isSnapshot, let action = AttachmentTarget.action(for: page.attachment) else { return }
         switch action {
         case .reveal(let url): NSWorkspace.shared.activateFileViewerSelecting([url])
         case .open(let url):
@@ -30,9 +37,10 @@ extension EnvironmentValues {
         }
     }
     static func reveal(_ page: DocumentViewerModel.Page) {
+        guard !page.isSnapshot else { return }
         _ = AttachmentChip.perform(page.attachment, .reveal)
     }
     static func copy(_ page: DocumentViewerModel.Page) {
-        NSPasteboard.general.clearContents(); NSPasteboard.general.setString(page.url.path, forType: .string)
+        NSPasteboard.general.clearContents(); NSPasteboard.general.setString(page.isSnapshot ? page.content?.text ?? "" : page.url.path, forType: .string)
     }
 }

@@ -41,7 +41,7 @@ import ZeusDesign
         var opened = 0
         let (host, window) = try await mount(WaitingLearningRow(item: item, hold: hold, now: f.now, openTerminal: { opened += 1 }).padding(24))
         defer { window.contentView = nil; window.close() }
-        let row = try #require(lm4Nodes(host).first { lm4Label($0).hasPrefix("Day reflection,") })
+        let row = try #require(lm4Nodes(host).first { lm4Label($0).hasPrefix("Evening reflection,") })
         #expect(lm4Label(row).contains("unsent text in its Terminal"))
         #expect(!lm4Label(row).contains("Unreceived target"))
         #expect((row as AnyObject).accessibilityPerformPress?() == true)

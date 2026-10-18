@@ -54,7 +54,7 @@ struct JournalViewerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(model.sentOnly ? "Everything Zeus sent your assistant about you. Your assistant's model provider received these like any message." : "Exactly as stored on this Mac, with redactions visible.").settingsCaption()
-            if model.items.isEmpty && model.waiting.isEmpty {
+            if model.items.isEmpty && model.waiting.isEmpty && model.notSent.isEmpty {
                 Text(model.emptyCaption).settingsCaption()
             }
             ScrollViewReader { proxy in
@@ -68,7 +68,16 @@ struct JournalViewerView: View {
                         openTerminal: deliveries.openTerminal, restart: deliveries.restartAssistant, canStart: deliveries.canStart(), start: deliveries.startAssistant)
                     SettingsDivider()
                 }
-                if !model.items.isEmpty { Text("Received").settingsHeading().accessibilityAddTraits(.isHeader) }
+            }
+            if !model.notSent.isEmpty {
+                Text("Not sent").settingsHeading().accessibilityAddTraits(.isHeader)
+                ForEach(model.notSent) { item in
+                    DiscardedLearningRow(item: item)
+                    SettingsDivider()
+                }
+            }
+            if !model.items.isEmpty && (!model.waiting.isEmpty || !model.notSent.isEmpty) {
+                Text("Received").settingsHeading().accessibilityAddTraits(.isHeader)
             }
             ForEach(model.timeline) { row in
                 if case .picture(let picture) = row {
@@ -197,14 +206,15 @@ struct JournalItemView: View {
         return (FileManager.default.displayName(atPath: url.path) as NSString).deletingPathExtension
     }
     static func ledgerTitle(_ item: JournalItem) -> String {
-        switch item.payload.value.details["kind"] {
-        case "reflection": "Day reflection"
-        case "digest": "Morning summary"
-        case "moment": "Note"
-        case "journal_answer": "Journal answer"
-        default: item.payload.value.description
+        if item.payload.value.details["kind"] == "journal_answer" { return "Journal answer" }
+        let kind = item.payload.value.details["kind"] ?? ""
+        let title = LearningDeliveryVocabulary.title(kind: kind) ?? item.payload.value.description
+        if kind == "ruleTrigger", item.payload.value.description.hasPrefix("Sent a rule trigger: ") {
+            return title + item.payload.value.description.dropFirst("Sent a rule trigger".count)
         }
+        return title
     }
+
     static func detailLines(_ item: JournalItem) -> [String] {
         guard item.level == .focus else { return [] }
         return item.payload.value.details.keys.sorted().compactMap { key in

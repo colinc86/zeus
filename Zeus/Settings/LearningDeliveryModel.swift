@@ -25,6 +25,7 @@ import ZeusProtocol
     @ObservationIgnored private var observing = false
     @ObservationIgnored private var observationGeneration = 0
     @ObservationIgnored private var setupDates: [String: Date] = [:]
+    private(set) var discarded: [DiscardedLearningDelivery] = []
     private(set) var pending: [PendingLearningDelivery] = []
     private(set) var holds: [DeliveryHold] = []
     private(set) var stale = ManagedSetupStaleness()
@@ -53,6 +54,9 @@ import ZeusProtocol
         now = clock()
         let received = receivedDeliveryIDs()
         pending = (source()?.pendingLearningDeliveries ?? []).filter { received?.contains($0.id) != true }
+        discarded = (source()?.discardedLearningDeliveries ?? []).filter {
+            received?.contains($0.id) != true && $0.discardedAt.addingTimeInterval(7 * 86400) > now
+        }
         holds = (source()?.deliveryHolds ?? []).filter { received?.contains($0.id) != true }
             .sorted { $0.since == $1.since ? $0.id < $1.id : $0.since < $1.since }
         stale = source()?.managedSetupStale ?? .init()
@@ -68,23 +72,29 @@ import ZeusProtocol
             }
         }
         if !stale.tools && !stale.template { restartError = nil }
-        for item in pending {
+        for item in pending where !item.isMessagePreference {
             // An unreadable journal cannot prove that an older Sent notice was false.
             if received == nil && cards.notices.contains(where: { $0.id == "n_" + item.id }) { continue }
             let notice: ThreadNotice
-            if item.kind == .brief || item.kind == .ruleTrigger {
-                let summary = item.kind == .brief ? "Morning brief request ready for your assistant" : "Rule trigger ready for your assistant"
-                notice = .init(id: "n_" + item.id, kind: .learning, createdAt: item.preparedAt, summary: summary, actionTitle: "View", detail: item.text)
-            } else if item.kind == .reflection {
-                notice = .init(id: "n_" + item.id, kind: .learning, createdAt: item.preparedAt, summary: "Daily reflection ready", actionTitle: "View", detail: item.text)
+            let title = item.deliveryKindName ?? LearningDeliveryVocabulary.title(kind: item.kind, learningKind: item.learningKind?.rawValue)
+            if item.learningKind == .moment {
+                notice = Self.preparedNotice(.init(id: item.id, kind: .moment, createdAt: item.preparedAt, text: item.text))
             } else {
-                notice = Self.preparedNotice(.init(id: item.id, kind: item.learningKind ?? .digest, createdAt: item.preparedAt, text: item.text))
+                notice = .init(id: "n_" + item.id, kind: .learning, createdAt: item.preparedAt,
+                    summary: title + " ready for your assistant", actionTitle: "View", detail: item.text)
             }
-            _ = cards.recordLearningNotice(.init(id: notice.id, kind: .reflection, createdAt: notice.createdAt, summary: notice.summary, actionTitle: notice.actionTitle, detail: notice.detail, ruleID: nil), action: nil)
+            _ = cards.recordLearningNotice(.init(id: notice.id, kind: .reflection, createdAt: notice.createdAt, summary: notice.summary,
+                actionTitle: notice.actionTitle, detail: notice.detail, ruleID: nil, deliveryKindName: title), action: nil)
+        }
+        for item in discarded {
+            // Do not resurrect a removed line. The ledger still keeps the non-delivery evidence.
+            guard received != nil, cards.notices.contains(where: { $0.id == "n_" + item.id }) else { continue }
+            _ = cards.recordLearningNotice(.init(id: "n_" + item.id, kind: .reflection, createdAt: item.preparedAt,
+                summary: item.queueReason, actionTitle: "View", detail: item.text, ruleID: nil, deliveryKindName: item.deliveryKindName), action: nil)
         }
         reconcileNotices()
         boundary?.cancel(); boundary = nil
-        let early = holds.map { $0.since.addingTimeInterval(600) }.filter { $0 > now }.min()
+        let early = (holds.map { $0.since.addingTimeInterval(600) } + discarded.map { $0.discardedAt.addingTimeInterval(7 * 86400) }).filter { $0 > now }.min()
         let next = holds.contains(where: { $0.reason == .busy }) ? min(early ?? .distantFuture, now.addingTimeInterval(60)) : early
         if let next {
             boundary = Task { @MainActor [weak self] in
@@ -156,7 +166,7 @@ import ZeusProtocol
     }
     static func preparedNotice(_ learning: Learning) -> ThreadNotice {
         var notice = ThreadNotice.learning(learning)
-        if learning.kind == .digest { notice.summary = "Daily summary ready for your assistant" }
+        if learning.kind == .digest { notice.summary = "Morning summary ready for your assistant" }
         else {
             let prefix = "Sent a note: "
             notice.summary = notice.summary.hasPrefix(prefix) ? "Note ready: " + notice.summary.dropFirst(prefix.count) : "Note ready for your assistant"
@@ -168,7 +178,7 @@ import ZeusProtocol
         let generation = observationGeneration
         withObservationTracking {
             _ = cards.hasOpenQuestion; _ = receivedDeliveryIDs(); _ = conversationID(); _ = setupProgress(); _ = setupError(); _ = canStart()
-            _ = source()?.pendingLearningDeliveries; _ = source()?.deliveryHolds; _ = source()?.managedSetupStale
+            _ = source()?.pendingLearningDeliveries; _ = source()?.discardedLearningDeliveries; _ = source()?.deliveryHolds; _ = source()?.managedSetupStale
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in guard let self, self.observing, self.observationGeneration == generation else { return }; self.reconcile(); self.observe() }
         }

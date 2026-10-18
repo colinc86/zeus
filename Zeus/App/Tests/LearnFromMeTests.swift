@@ -213,7 +213,7 @@ private var fixtures: URL {
         #expect(unread.first?.text.hasPrefix("Zeus's summary of Monday, October 12") == true)
         #expect(unread.last?.text == "First activity today at 08:30.")
         #expect(f.recorded == unread && f.notified == unread)
-        #expect(ThreadNotice.learning(unread[0]).summary == "Sent your daily summary")
+        #expect(ThreadNotice.learning(unread[0]).summary == "Sent the morning summary")
         #expect(ThreadNotice.learning(unread[1]).summary == "Sent a note: first activity today")
         #expect(ThreadNotice.learning(unread[0]).detail == unread[0].text)
 

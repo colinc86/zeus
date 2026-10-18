@@ -7,6 +7,7 @@ import ZeusProtocol
 
 @MainActor @Observable final class LM4Controller: LearningDeliveryPresenting, ManagedSessionControlling, ManagedSettingsApplying, ManagedAgentUpdating {
     var pendingLearningDeliveries: [PendingLearningDelivery] = []
+    var discardedLearningDeliveries: [DiscardedLearningDelivery] = []
     var deliveryHolds: [DeliveryHold] = []
     var managedSetupStale = ManagedSetupStaleness()
     var managedTemplateReplacement: ManagedTemplateReplacement?
@@ -122,7 +123,7 @@ import ZeusProtocol
         let f = try LM4Fixture(); defer { f.cleanup() }
         let old = ThreadNotice(id: "n_delivery", kind: .learning, createdAt: f.now.addingTimeInterval(-500), summary: "Sent a daily reflection", actionTitle: "View", detail: "Exact prepared text\nSecond line.")
         #expect(f.cards.recordNotice(old)); f.pending()
-        #expect(f.cards.notices.first?.summary == "Daily reflection ready" && f.cards.notices.first?.createdAt == old.createdAt)
+        #expect(f.cards.notices.first?.summary == "Evening reflection ready for your assistant" && f.cards.notices.first?.createdAt == old.createdAt)
         #expect(f.cards.updateNotice(id: old.id) { $0.summary = "Sent a daily reflection" })
         f.deliveries.receivedDeliveryIDs = { ["delivery"] }; f.deliveries.reconcile()
         #expect(f.deliveries.pending.isEmpty && f.cards.notices.first?.summary == "Sent a daily reflection")

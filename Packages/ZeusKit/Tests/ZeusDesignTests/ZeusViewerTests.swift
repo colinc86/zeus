@@ -23,6 +23,17 @@ struct ZeusViewerTests {
         }
     }
 
+    @Test func readOnlySnapshotHeaderKeepsNavigationWithoutOpen() throws {
+        let model = ZeusViewerHeaderModel(title: "Evening reflection · Fri 17 Oct", openTitle: "Open",
+                                          canOpen: false, canReveal: false)
+        #expect(!model.canOpen && !model.canReveal)
+        #expect(model.backTitle == "Messages" && model.expandTitle == "Expand")
+        #expect(ZeusViewerHeaderModel(title: "File", openTitle: "Open").canOpen)
+        let header = ZeusViewerHeader(model, menu: [.init("Copy Text"), .init("Find…")],
+                                      onBack: {}, onOpen: {}, onReveal: {}, onExpand: {}).frame(width: 348)
+        #expect(ImageRenderer(content: header).cgImage != nil)
+    }
+
     @Test func statusCopyAndFindCount() {
         #expect(ZeusViewerStatus.Copy.detail(kind: "Keynote", size: "1.2 MB", modified: "Today 8:02") == "Keynote · 1.2 MB · Modified Today 8:02")
         #expect(ZeusViewerStatus.Copy.detail(kind: nil, size: nil, modified: nil) == nil)

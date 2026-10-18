@@ -23,8 +23,10 @@ struct DocumentViewerView: View {
                 ZeusViewerHeader(header(page), appIcon: appIcon(page), menu: menu(page), onBack: back,
                     onOpen: { model.openExternally(page) }, onReveal: { model.revealExternally(page) },
                     onExpand: { model.expanded.toggle() }, onStep: { _ = model.step($0 == .previous ? -1 : 1) })
-                ZeusViewerContextLine(origin(page), trailing: model.pdfPage,
-                    updateToken: model.updatedAt == nil ? 0 : model.revision, action: context)
+                if !page.isSnapshot {
+                    ZeusViewerContextLine(origin(page), trailing: model.pdfPage,
+                        updateToken: model.updatedAt == nil ? 0 : model.revision, action: context)
+                }
                 if model.findVisible {
                     ZeusFindBar(text: $model.findText, current: model.findCount > 0 ? ((model.findIndex % model.findCount) + model.findCount) % model.findCount + 1 : 0,
                         total: model.findText.isEmpty ? nil : model.findCount, focusRequest: model.findRequest,
@@ -63,16 +65,18 @@ struct DocumentViewerView: View {
     private func header(_ page: DocumentViewerModel.Page) -> ZeusViewerHeaderModel {
         let previous = model.pages.dropLast().last
         let step = model.attachmentPosition?.split(separator: "/").compactMap { Int($0) }
-        return .init(title: page.attachment.label, location: AttachmentTarget.locationCaption(for: page.attachment),
+        return .init(title: page.attachment.label, location: page.isSnapshot ? nil : AttachmentTarget.locationCaption(for: page.attachment),
             backTitle: previous.map { $0.content?.renderer == .folder ? $0.attachment.label : "Back" } ?? "Messages",
-            openTitle: openTitle(page), expanded: model.expanded,
+            openTitle: openTitle(page), canOpen: !page.isSnapshot, canReveal: !page.isSnapshot, expanded: model.expanded,
             step: step.flatMap { $0.count == 2 ? .init(index: $0[0], count: $0[1]) : nil })
     }
     private func openTitle(_ page: DocumentViewerModel.Page) -> String {
-        page.content?.renderer == .folder ? ZeusViewerHeaderModel.folderOpenTitle : ZeusViewerHeaderModel.openTitle(app: DocumentActions.applicationName(for: page.url))
+        if page.isSnapshot { return "Open" }
+        return page.content?.renderer == .folder ? ZeusViewerHeaderModel.folderOpenTitle : ZeusViewerHeaderModel.openTitle(app: DocumentActions.applicationName(for: page.url))
     }
     private func appIcon(_ page: DocumentViewerModel.Page) -> Image? {
-        DocumentActions.application(for: page.url).map { Image(nsImage: NSWorkspace.shared.icon(forFile: $0.path)) }
+        guard !page.isSnapshot else { return nil }
+        return DocumentActions.application(for: page.url).map { Image(nsImage: NSWorkspace.shared.icon(forFile: $0.path)) }
     }
     private func origin(_ page: DocumentViewerModel.Page) -> ZeusViewerContextLine.Origin {
         if let previous = model.pages.dropLast().last {
@@ -81,6 +85,10 @@ struct DocumentViewerView: View {
         return .message(page.context ?? page.attachment.summary ?? page.attachment.label)
     }
     private func menu(_ page: DocumentViewerModel.Page) -> [ZeusViewerMenuItem] {
+        if page.isSnapshot {
+            return [.init("Copy Text", action: { DocumentActions.copy(page) }),
+                    .init("Find…", action: { model.handle(.find, conversation: conversation) })]
+        }
         var items: [ZeusViewerMenuItem] = [
             .init("Copy Path", action: { DocumentActions.copy(page) }),
             .init("Open With", children: NSWorkspace.shared.urlsForApplications(toOpen: page.url).map { app in
