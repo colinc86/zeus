@@ -61,8 +61,9 @@ extension ZeusRuntime: LearningRuntimeControlling {
             try reconnectRuleNotices(matching: matching)
             try recordIgnoredQuestions()
         } catch { learningError = "Zeus couldn't save a learning outcome. It will try again." }
-        reconcileProactiveDeliveries(matching: matching)
         considerMorningBrief()
+        expireStaleLearningDeliveries()
+        reconcileProactiveDeliveries(matching: matching)
         considerReflection()
         scheduleLearningBoundary()
     }
@@ -201,7 +202,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let today = calendar.startOfDay(for: now)
         let evening = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: today) ?? today
         // A catch-up and this evening cannot both send on the same local day.
-        guard !(ledger?.records ?? []).contains(where: { $0.delivery.kind == .reflection && calendar.isDate($0.delivery.createdAt, inSameDayAs: now) }) else { return }
+        guard !(ledger?.records ?? []).contains(where: { $0.delivery.kind == .reflection && $0.delivery.meta["discard_reason"] != "superseded" && calendar.isDate($0.delivery.createdAt, inSameDayAs: now) }) else { return }
         let permittedLevels = journalAccessPolicy().enabledLevels
         guard !permittedLevels.isEmpty else { return }
         var query = JournalQuery(); query.levels = permittedLevels
@@ -219,14 +220,17 @@ extension ZeusRuntime: LearningRuntimeControlling {
             guard let previous = available.last(where: { $0.time < today && $0.time >= oldestCatchUp }) else { return }
             day = calendar.startOfDay(for: previous.time)
         } else { return }
-        let dayKey = reflectionDayKey(day), id = "d_reflection_" + dayKey
+        let dayKey = reflectionDayKey(day), baseID = "d_reflection_" + dayKey
+        // Never reuse a legacy tombstone: its late ack belongs only to that old body.
+        let id = ledger?.record(id: baseID)?.delivery.meta["discard_reason"] == "superseded"
+            ? baseID + "_patterns" : baseID
         guard ledger?.record(id: id) == nil else { learningCatchUpPending = false; return }
         let local = ReflectionLocalTime(calendar: calendar)
         let digest = ReflectionPatternDigest(time: local, day: day, levels: permittedLevels, items: available, feedback: reflectionFeedback()).build(byteLimit: 6_200)
         guard !digest.references.isEmpty else { return }
         let evidence = digest.references.filter(\.journal).map(\.id)
         let initialFeedbackDates = Dictionary(digest.references.filter { !$0.journal }.map { ($0.id, $0.at.timeIntervalSince1970) }, uniquingKeysWith: { first, _ in first })
-        let lastReflection = (ledger?.records ?? []).filter { $0.delivery.kind == .reflection }.map { $0.delivery.createdAt }.max() ?? .distantPast
+        let lastReflection = (ledger?.records ?? []).filter { $0.delivery.kind == .reflection && $0.discardedAt == nil }.map { $0.delivery.createdAt }.max() ?? .distantPast
         var feedbackSentences: [(String, String)] = []
         let feedback = reflectionOutcomeText(since: lastReflection, now: now) { sentence in
             let marker = "‹rule-sentence-\(feedbackSentences.count)›"
@@ -279,6 +283,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
                              "levels": permittedLevels.map { String($0.rawValue) }.sorted().joined(separator: ",")]
             do {
                 try self.ledger?.insert(.init(delivery: delivery))
+                self.expireStaleLearningDeliveries()
                 if self.learningFolder != nil {
                     _ = await self.learningFolder?.recordReflection(id: id, text: .init(content), at: delivery.createdAt)
                     guard self.running, self.generation == token, !Task.isCancelled,

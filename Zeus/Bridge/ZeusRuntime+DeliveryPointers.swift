@@ -2,46 +2,59 @@ import Foundation
 import ZeusProtocol
 
 extension ZeusRuntime {
-    /// Old requests are no longer useful. A discard receipt never claims delivery
-    /// or acknowledgment, and a paste already in Terminal is left untouched.
+    /// Recognize the shipped raw-event request, not arbitrary reflection text.
+    static func isLegacyReflection(_ delivery: Delivery) -> Bool {
+        delivery.kind == .reflection && delivery.meta["source_hash"] == nil
+            && delivery.content.contains("This is a redacted local summary, not a new user request.")
+    }
+
+    /// Reconcile before selecting any transport. Tombstones retain the old IDs so
+    /// a late acknowledgment cannot consume a replacement request.
     func expireStaleLearningDeliveries() {
         guard let ledger else { return }
         let today = learningCalendar.startOfDay(for: clock.now)
         let cutoff = learningCalendar.date(byAdding: .day, value: -2, to: today) ?? today
         let local = ReflectionLocalTime(calendar: learningCalendar)
-        let expired = ledger.records.filter { record in
-            guard record.isPending else { return false }
-            if record.delivery.kind == .brief {
-                return record.delivery.meta["brief_day"].map { $0 < proactiveDay(today) }
-                    ?? (record.delivery.createdAt < today)
-            }
-            if record.delivery.kind == .reflection {
-                return record.delivery.meta["reflection_day"].map { $0.replacingOccurrences(of: "-", with: "") < local.dayKey(cutoff).replacingOccurrences(of: "-", with: "") }
-                    ?? (record.delivery.createdAt < cutoff)
-            }
-            return false
+        func day(_ delivery: Delivery) -> String {
+            (delivery.meta[delivery.kind == .brief ? "brief_day" : "reflection_day"]
+                ?? local.dayKey(delivery.createdAt)).replacingOccurrences(of: "-", with: "")
         }
-        for record in expired {
-            let id = record.delivery.id
+        let summaries = ledger.records.filter { [.brief, .reflection].contains($0.delivery.kind) }
+        var discards: [String: String] = [:]
+        for record in summaries where record.isPending {
+            let delivery = record.delivery
+            let successor = summaries.contains {
+                let other = $0.delivery
+                return other.kind == delivery.kind && other.id != delivery.id && !Self.isLegacyReflection(other)
+                    && (day(other) > day(delivery)
+                        || (day(other) == day(delivery) && other.createdAt > delivery.createdAt))
+            }
+            if Self.isLegacyReflection(delivery) || successor {
+                discards[delivery.id] = "superseded"
+            } else if day(delivery) < local.dayKey(delivery.kind == .brief ? today : cutoff).replacingOccurrences(of: "-", with: "") {
+                discards[delivery.id] = "expired"
+            }
+        }
+        guard !discards.isEmpty else { return }
+        for id in discards.keys {
             erasedLearningDeliveryIDs.insert(id)
             sendTokens.removeValue(forKey: id); sends.removeValue(forKey: id)?.cancel()
             deferredSends.removeValue(forKey: id)
-            do {
-                try ledger.updateRecord(id: id) {
-                    $0.discardedAt = clock.now; $0.stateUpdatedAt = clock.now
-                    $0.queueReason = "Not sent: this request is out of date."
-                    $0.delivery.meta["discard_reason"] = "expired"
-                    $0.delivery.meta.removeValue(forKey: "tmux_paste_destination")
-                }
-            } catch { storageProblem = "Couldn't save the expired request." }
         }
-        for record in ledger.records where record.delivery.meta["discard_reason"] == "expired" && record.transportDeliveredAt == nil {
+        do {
+            try ledger.discardLearningRequests(discards, at: clock.now)
+        } catch {
+            storageProblem = "Couldn't save the outdated requests."
+            return
+        }
+        // Only the transition emits a notice. Historical expiry tombstones never
+        // recreate a dismissed notice, including after relaunch.
+        for record in summaries where discards[record.delivery.id] == "expired" && record.transportDeliveredAt == nil {
             let summary = record.delivery.kind == .brief
                 ? "Not sent: the morning passed before your assistant could read this brief."
                 : "Not sent: the day passed before your assistant could read this reflection."
             (cards as? any LearningNoticeRecording)?.recordLearningNotice(.init(id: "n_" + record.delivery.id,
-                kind: .reflection, createdAt: record.discardedAt ?? clock.now,
-                summary: summary, actionTitle: "View",
+                kind: .reflection, createdAt: clock.now, summary: summary, actionTitle: "View",
                 detail: record.delivery.content, ruleID: nil), action: nil)
         }
     }

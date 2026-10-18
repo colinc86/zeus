@@ -179,9 +179,14 @@ Zeus's exact saved pointer, without repasting or mistaking it for a human draft.
 
 A successfully submitted pointer records the **full body** in the Sent receipt; it does not
 fabricate an acknowledgment. An attempt or unsubmitted paste records nothing. Late acknowledgments
-remain idempotent. Old size-only queue holds retry automatically after upgrade. Pending reflections
-more than two local calendar days old and briefs from before today are discarded, with a durable
-Not sent notice and reason (never a Sent receipt or fabricated ack). Already-pasted text is left
+remain idempotent. Old size-only queue holds retry automatically after upgrade. A newer reflection or brief quietly supersedes older pending requests of the same kind, at
+creation and launch, with durable `discard_reason = "superseded"`. Pending pre-pattern raw-event
+reflections (no `source_hash` and the legacy request header) are also superseded on upgrade;
+catch-up can create one current-format request for the latest finished journal day. A replacement
+uses a distinct ID when the old day ID is tombstoned, so late acks cannot consume the new body.
+Only the newest request without a successor expires: reflections more than two local calendar
+days old and briefs from before today. That transition emits at most one Not sent notice, never
+replayed from historical tombstones (and never a Sent receipt or fabricated ack). Already-pasted text is left
 alone; a later acknowledgment of a discarded ID has no effect.
 
 
