@@ -3,6 +3,9 @@
 # ZEUS_TEST_TMUX=1 also runs the isolated, real tmux route. Never touches user history.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+if [[ "${ZEUS_TMUX_HYGIENE_ACTIVE:-0}" != "1" ]]; then
+  exec python3 -B scripts/tmux_hygiene.py bash "scripts/e2e.sh" "$@"
+fi
 ZEUS_E2E_ROOT="$PWD"
 ZEUS_E2E_START=$SECONDS
 mkdir -p build
