@@ -27,7 +27,7 @@ struct LearningFolderView: View {
                     }
                 }
             }
-            if model.writeFailed { Text("Zeus can't write to this folder.").settingsError() }
+            if let message = model.provider?.lastWriteError { Text(message).settingsError() }
             Text("Where this folder lives is up to you. If it syncs, what Zeus keeps syncs with it.").settingsCaption()
         }
     }
