@@ -121,6 +121,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
                                    assistantActivity: { [weak messaging] in messaging?.assistantActivity })
         super.init()
         learning.deliveries = learningDeliveries
+        learning.briefEnabled = { [weak self] in self.map { $0.morningBrief.effectiveEnabled(managed: $0.settings.managedSession?.enabled == true) } ?? false }
         ratings.openCard = { [weak self] id in
             guard let self else { return }
             self.openConversation(at: id)

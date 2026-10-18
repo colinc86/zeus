@@ -53,7 +53,8 @@ import ZeusSprites
 @MainActor private enum Snap {
     static let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
         .deletingLastPathComponent().deletingLastPathComponent()
-    static let out = repo.appendingPathComponent("build/q2-renders")
+    /// A one-off audit may point this under build/tmp/<task>/ for its own run (TEAM.md, build output hygiene).
+    static var out = repo.appendingPathComponent("build/q2-renders")
     static var log: [String] = []
 
     struct Look: CustomStringConvertible {
@@ -2150,12 +2151,13 @@ private struct ReviewRedactor: Redactor {
         try rules.setStatus(.retired, id: rules.rules[3].id, at: created)
         _ = try rules.addOwn(RuleProposal(sentence: "Don't interrupt while tests are failing in Xcode", trigger: .init(apps: ["com.apple.dt.Xcode"], state: "tests failing"), confidence: 0.75), at: created)
     }
-    func settings(_ tab: SettingsTab) -> some View {
+    func settings(_ tab: SettingsTab, morningBrief: MorningBriefSettings? = nil) -> some View {
         nav.tab = tab
         let hub = AgentMessagingHub()
         return SettingsView(settings: f.settings, managed: ManagedAssistantModel(settings: f.settings, controller: { nil }), cards: f.store, status: f.status, messaging: hub, preview: hub,
                             testMessage: ComposeModel(cards: f.store, messaging: hub), injectDemo: { _ in }, resetPosition: {},
-                            navigation: nav, login: LoginItemModel(), hotKey: GlobalHotKey(), activity: f.activity, learn: learn, learning: learning)
+                            navigation: nav, login: LoginItemModel(), hotKey: GlobalHotKey(), activity: f.activity, learn: learn, learning: learning,
+                            morningBrief: morningBrief)
             .background(Color(nsColor: .windowBackgroundColor))
     }
     func cleanup() { learning.stop(); f.cleanup() }
@@ -2389,5 +2391,236 @@ extension DesignerAuditRenders {
                                framed(r.kept(), height: 520))
         try await Readme.still("rules-\(look.name)", appearance: look.appearance, size: CGSize(width: 792, height: 530), settle: 0.8,
                                framed(r.rulesPane().padding(24).buttonStyle(ZeusButtonStyle(.secondary, size: .small)).toggleStyle(ZeusCheckboxStyle()), height: 510))
+    }
+}
+
+// MARK: - UX3: the surfaces a user meets on the first day of 0.3.0 (fixture data only; renders under build/tmp/ux3)
+
+@MainActor private final class UX3DeliverySource: LearningDeliveryPresenting {
+    var pendingLearningDeliveries: [PendingLearningDelivery] = []
+    var deliveryHolds: [DeliveryHold] = []
+    var managedSetupStale = ManagedSetupStaleness()
+    var managedTemplateReplacement: ManagedTemplateReplacement? { nil }
+    func requestLearningDeliveryCancellation(deliveryID: String) {}
+    func restartManagedAssistantForSetup() {}
+    func replaceEditedManagedTemplates(_ snapshot: ManagedTemplateReplacement) throws {}
+}
+
+private enum UX3Text {
+    static let brief = """
+    Start of my day: Saturday 18 October.
+    Using yesterday's summary, your Notes/, my rules, and your own tools (calendar, mail, tasks) if you have them, send me one short brief of what matters today: what's coming up, what's at risk, what you've prepared. One zeus_present with about "Morning brief": a short title, then at most 6 lines, the most important first. If nothing matters today, zeus_ack and stay quiet.
+    Yesterday (from Zeus's journal, private details removed):
+    - Mail
+    - Calendar
+    - Notes
+    Unprompted messages left today: 6 (high priority doesn't count).
+    Files: Zeus/rules.md
+    """
+    static let reflection = """
+    Zeus reflection for Friday 17 October. A redacted summary of how I've used my Mac over the last 28 days, built on this Mac. It isn't a new request from me; it's your evening to learn and get ahead.
+
+    Do these, in this order:
+    1. Update your notes. Revise Notes/about-you.md (what you've concluded about me) and Notes/patterns.md (my routines and recurring tasks) from the patterns below. Date each change and say what changed your mind. Conclusions, not copies: don't paste these lines in.
+    2. Propose rules, if any. Call zeus_get_rules, then zeus_propose_rules with at most three, only for a pattern that held on two or more days, each with two evidence IDs from different days taken from the lines below. Don't propose anything listed under "Don't propose again", even reworded. Acting rules start in shadow; every purchase asks.
+    3. Get ahead of tomorrow. If one thing needs preparing or flagging (something due, a meeting, a reply I owe, a task I keep putting off), do the prep and send me one short message with an about label. Otherwise zeus_ack and stay quiet. Unprompted messages left today: 4 (high priority doesn't count).
+    Never repeat my habits, numbers or private details back to me. A placeholder like ‹name› is something Zeus removed: don't guess it, don't ask me for it.
+
+    Rhythm
+    First activity about 09:00 every day seen (13 days). [j_a1 Mon 6 Oct, j_b2 Wed 8 Oct, j_c3 Tue 14 Oct]
+    Last activity about 18:20 on weekdays, later on Fridays (19:10). Last activity is a wind-down clue, not proof you stopped. [j_d4 Fri 10 Oct, j_e5 Fri 17 Oct]
+    A break of about 45 min starting near 12:30 on most days (9 days seen). [j_f6 Tue 7 Oct, j_g7 Thu 16 Oct]
+
+    Focus
+    Mornings: Mail, about 20 min (every day seen). Durations are estimates from adjacent events, capped at 15 min between them. [j_h8 Mon 6 Oct, j_i9 Mon 13 Oct]
+    Afternoons: Xcode, about 2 h 30 min on weekdays. [j_j1 Tue 7 Oct, j_k2 Wed 15 Oct]
+    Mondays: Calendar, about 5 min (every Monday seen). [j_l3 Mon 6 Oct, j_m4 Mon 13 Oct]
+
+    Sequences
+    Mail then Calendar within the first window, 4 of 4 Mondays. Switches within 15 minutes of each other. [j_n5 Mon 29 Sep, j_o6 Mon 13 Oct]
+    Xcode then Terminal most afternoons (11 days seen). [j_p7 Thu 2 Oct, j_q8 Thu 16 Oct]
+
+    Topics
+    Release notes (6 days seen). [j_r9 Thu 9 Oct, j_s1 Thu 16 Oct]
+    Design review (3 days seen, new this week). [j_t2 Tue 14 Oct, j_u3 Fri 17 Oct]
+
+    Engagement
+    Opened 4 of 5 morning briefs; rated one "Not now". [c_v4 Tue 14 Oct, c_w5 Thu 16 Oct]
+    Ignored both notes about a later start. [c_x6 Wed 8 Oct, c_y7 Wed 15 Oct]
+
+    Today vs usual
+    Today started 40 min later than usual (09:40 against about 09:00).
+    More time in Calendar than usual (25 min against about 5 min).
+
+    Today, last records (at most 20)
+    17:52 Xcode
+    18:05 Terminal
+    18:14 Mail
+    18:31 Notes
+
+    Rule outcomes since the last reflection
+    None.
+
+    Don't propose again
+    Hold routine messages after 18:00 on weekdays (retired 12 Oct).
+
+    Message preferences
+    Fewer notes about a later start.
+    Files: Zeus/rules.md, Zeus/reflections/2026-10-17.md
+    """
+}
+
+extension DesignerAuditRenders {
+    /// UX3: fresh-eyes audit renders. Nothing here reads the user's Mac; stores and capture are the LM2 fakes.
+    @Test func ux3() async throws {
+        let previousOut = Snap.out
+        Snap.out = Snap.repo.appendingPathComponent(ProcessInfo.processInfo.environment["UX_RENDER_DIR"] ?? "build/tmp/ux3")
+        defer { Snap.out = previousOut }
+        let now = Date()
+        func at(_ minutes: Double) -> Date { now.addingTimeInterval(minutes * 60) }
+        for look in Snap.Look.basic {
+            // 1. The conversation on the morning of day two: yesterday's brief request was superseded by today's, but its line still says "ready".
+            do {
+                let f = Fixture(font: look.font); defer { f.cleanup() }
+                f.messaging.sessions = [AuditMessaging.claude]
+                f.store.recordLearningNotice(.init(id: "n_brief_yesterday", kind: .reflection, createdAt: at(-1440 - 12),
+                    summary: "Morning brief request ready for your assistant", actionTitle: "View", detail: UX3Text.brief, ruleID: nil), action: nil)
+                f.store.recordLearningNotice(.init(id: "n_d_reflection_yesterday", kind: .reflection, createdAt: at(-870),
+                    summary: "Daily reflection ready", actionTitle: "View", detail: UX3Text.reflection, ruleID: nil), action: nil)
+                f.store.recordLearningNotice(.init(id: "n_brief_today", kind: .reflection, createdAt: at(-14),
+                    summary: "Morning brief request ready for your assistant", actionTitle: "View", detail: UX3Text.brief, ruleID: nil), action: nil)
+                f.store.recordLearningNotice(.init(id: "learning-delivery-hold:brief_today", kind: .reflection, createdAt: at(-14),
+                    summary: "Zeus is waiting to deliver to your assistant: it isn't connected", actionTitle: "Start Assistant", detail: nil, ruleID: nil), action: {})
+                try await Snap.render("ux3-thread-day2", look: look, padding: 0, settle: 0.8) { f.conversation() }
+            }
+            // 2. The reflection's "View" in the thread: the whole request inline, in caption type, with no bound.
+            do {
+                let notice = ThreadNotice(id: "n_r", kind: .learning, createdAt: at(-5), summary: "Sent a daily reflection", actionTitle: "View", detail: UX3Text.reflection)
+                let host = try await Snap.render("ux3-reflection-collapsed", look: look, padding: 12, settle: 0.5) {
+                    ConversationNoticeLine(notice: notice, maxWidth: 340, hasAction: false, perform: {}).frame(width: 356)
+                        .environment(\.zeusFontChoice, look.font)
+                }
+                func axFind(_ element: Any, label: String, depth: Int = 0) -> AnyObject? {
+                    guard depth < 60 else { return nil }
+                    let object = element as AnyObject
+                    if let found = object.accessibilityLabel?() ?? nil, found == label { return object }
+                    for child in (object.accessibilityChildren?() ?? nil) ?? [] {
+                        if let hit = axFind(child, label: label, depth: depth + 1) { return hit }
+                    }
+                    return nil
+                }
+                if let view = axFind(host, label: "View: Sent a daily reflection"), view.accessibilityPerformPress?() == true {
+                    try await Task.sleep(for: .seconds(0.6))
+                    host.setFrameSize(host.fittingSize); host.layoutSubtreeIfNeeded()
+                    try await Task.sleep(for: .seconds(0.3))
+                    try Snap.write(host, name: "ux3-reflection-expanded__\(look)")
+                } else {
+                    // Stand-in when the hosted button isn't reachable through accessibility: the detail block exactly as
+                    // ConversationNoticeLine lays it out (caption type, field background), to show the expanded height.
+                    Snap.log.append("ux3-reflection-expanded: View button not found through accessibility; rendering the detail block as a stand-in")
+                    try await Snap.render("ux3-reflection-expanded-standin", look: look, padding: 12, settle: 0.5) {
+                        VStack(alignment: .leading, spacing: ZeusTheme.Spacing.s) {
+                            ConversationNoticeLine(notice: .init(id: "n_r2", kind: .learning, createdAt: at(-5), summary: "Sent a daily reflection", actionTitle: "Hide", detail: nil), maxWidth: 340, hasAction: true, perform: {})
+                            Text(UX3Text.reflection).zeusFont(.caption).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                                .padding(ZeusTheme.Spacing.s).background(Color(nsColor: .textBackgroundColor))
+                                .overlay(Rectangle().strokeBorder(Color.secondary.opacity(0.4), lineWidth: ZeusTheme.pixel))
+                        }.frame(width: 356, alignment: .leading).environment(\.zeusFontChoice, look.font)
+                    }
+                }
+            }
+            // 3. The Sent ledger: Waiting rows for today's brief and yesterday's reflection, and Received rows that mix nouns with sentences.
+            let r = LM2ReviewFixture(theme: "classic", font: look.font); defer { r.cleanup() }
+            let viewer = try #require(r.learning.viewer)
+            func sent(_ id: String, _ minutes: Double, _ kind: String, _ summary: String, _ text: String) -> JournalItem {
+                JournalItem(id: id, time: at(minutes), level: .activity, app: nil, kind: .sentToAssistant,
+                    payload: Redacted(JournalPayload(description: summary, text: text, details: ["kind": kind, "sessionLabel": "Claude · Zeus", "delivery_id": id])))
+            }
+            r.journal.records = [
+                sent("sent:digest_today", -35, "digest", "Morning summary", "Mostly Xcode (4 h 10 min) and Mail. Away 12:30–13:15."),
+                sent("sent:brief_day0", -33, "brief", "Sent the morning brief request", UX3Text.brief),
+                sent("sent:rating_1", -30, "rating", "Sent your message preference", "Fewer notes about a later start."),
+            ]
+            let src = UX3DeliverySource()
+            let deliveries = LearningDeliveryModel(cards: r.f.store, source: { src })
+            deliveries.canStart = { true }
+            src.pendingLearningDeliveries = [
+                .init(id: "brief_today", kind: .brief, text: UX3Text.brief, preparedAt: at(-14), sessionLabel: "Claude · Zeus"),
+                .init(id: "d_reflection_yesterday", kind: .reflection, text: UX3Text.reflection, preparedAt: at(-870), sessionLabel: "Claude · Zeus"),
+            ]
+            src.deliveryHolds = [
+                .init(deliveryID: "brief_today", kind: .brief, since: at(-14), reason: .disconnected),
+                .init(deliveryID: "d_reflection_yesterday", kind: .reflection, since: at(-870), reason: .disconnected),
+            ]
+            r.learning.deliveries = deliveries
+            deliveries.start(); defer { deliveries.stop() }
+            viewer.sentOnly = true; viewer.reload()
+            try await Snap.render("ux3-ledger-waiting", look: look, padding: 0, size: CGSize(width: 720, height: 600), settle: 0.6) {
+                JournalWindowView(model: viewer, settings: r.f.settings).background(Color(nsColor: .windowBackgroundColor))
+            }
+            // 4. After the supersession and before anything was received today: the ledger says "Nothing yet" while the thread says "ready".
+            src.pendingLearningDeliveries = []; src.deliveryHolds = []; deliveries.reconcile()
+            r.journal.records = []; viewer.reload()
+            try await Snap.render("ux3-ledger-after-supersede", look: look, padding: 0, size: CGSize(width: 720, height: 300), settle: 0.6) {
+                JournalWindowView(model: viewer, settings: r.f.settings).background(Color(nsColor: .windowBackgroundColor))
+            }
+            // 5. Learn from me off, morning brief on: the ledger promises nothing will be sent; the Assistant pane asks for a brief.
+            viewer.learningEnabled = { false }; viewer.reload()
+            try await Snap.render("ux3-ledger-learning-off", look: look, padding: 0, size: CGSize(width: 720, height: 300), settle: 0.6) {
+                JournalWindowView(model: viewer, settings: r.f.settings).background(Color(nsColor: .windowBackgroundColor))
+            }
+            let brief = MorningBriefSettings(defaults: r.f.defaults); brief.enabled = true
+            try await Snap.render("ux3-settings-assistant", look: look, padding: 0, settle: 0.6) { r.settings(.agent, morningBrief: brief) }
+            // 6. Settings › Privacy with Learn from me on, then off: the lower controls look live either way.
+            r.learn.setEnabled(true)
+            try await Snap.render("ux3-settings-privacy-on", look: look, padding: 0, settle: 0.6) { r.settings(.privacy) }
+            r.learn.setEnabled(false)
+            try await Snap.render("ux3-settings-privacy-off", look: look, padding: 0, settle: 0.6) { r.settings(.privacy) }
+            // 7. Delete Everything's confirmation.
+            try await Snap.render("ux3-delete-sheet", look: look, padding: 0, settle: 0.5) {
+                DeleteLearningConfirmation(includeAssistantNotes: .constant(false), cancel: {}, delete: {})
+                    .environment(\.zeusTheme, r.f.settings.currentTheme).environment(\.zeusFontChoice, .system)
+                    .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).background(Color(nsColor: .windowBackgroundColor))
+            }
+        }
+        try Snap.dump("ux3-log", Snap.log.joined(separator: "\n"))
+    }
+}
+
+extension DesignerAuditRenders {
+    /// UX5: Settings say everything Zeus sends. Before/after renders go under build/tmp/ux5/<UX_RENDER_DIR>.
+    @Test func ux5() async throws {
+        let previousOut = Snap.out
+        Snap.out = Snap.repo.appendingPathComponent(ProcessInfo.processInfo.environment["UX_RENDER_DIR"] ?? "build/tmp/ux5/after")
+        defer { Snap.out = previousOut }
+        for look in Snap.Look.basic {
+            let r = LM2ReviewFixture(theme: "classic", font: look.font); defer { r.cleanup() }
+            let brief = MorningBriefSettings(defaults: r.f.defaults); brief.enabled = true
+            r.learn.setEnabled(true)
+            try await Snap.render("ux5-settings-privacy-on", look: look, padding: 0, settle: 0.6) { r.settings(.privacy, morningBrief: brief) }
+            r.learn.setEnabled(false)
+            try await Snap.render("ux5-settings-privacy-off", look: look, padding: 0, settle: 0.6) { r.settings(.privacy, morningBrief: brief) }
+            try await Snap.render("ux5-settings-assistant", look: look, padding: 0, settle: 0.6) { r.settings(.agent, morningBrief: brief) }
+            if let viewer = r.learning.viewer {
+                r.journal.records = []; viewer.sentOnly = true
+                viewer.learningEnabled = { false }; viewer.briefEnabled = { true }; viewer.reload()
+                try await Snap.render("ux5-ledger-learning-off-brief-on", look: look, padding: 0, size: CGSize(width: 720, height: 300), settle: 0.6) {
+                    JournalWindowView(model: viewer, settings: r.f.settings).background(Color(nsColor: .windowBackgroundColor))
+                }
+                viewer.briefEnabled = { false }; viewer.reload()
+                try await Snap.render("ux5-ledger-learning-off", look: look, padding: 0, size: CGSize(width: 720, height: 300), settle: 0.6) {
+                    JournalWindowView(model: viewer, settings: r.f.settings).background(Color(nsColor: .windowBackgroundColor))
+                }
+            }
+            try await Snap.render("ux5-folder-connect-own-no-journal", look: look, padding: 16, settle: 0.5) {
+                LearningFolderView(model: LearningFolderModel(provider: nil), managed: false).frame(width: 600)
+                    .environment(\.zeusTheme, r.f.settings.currentTheme).environment(\.zeusFontChoice, .system)
+                    .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).background(Color(nsColor: .windowBackgroundColor))
+            }
+            try await Snap.render("ux5-intro-sheet", look: look, padding: 0, settle: 0.5) {
+                LearnIntroSheet(turnOn: {}, notNow: {}).environment(\.zeusTheme, r.f.settings.currentTheme)
+                    .background(Color(nsColor: .windowBackgroundColor))
+            }
+        }
+        try Snap.dump("ux5-log", Snap.log.joined(separator: "\n"))
     }
 }

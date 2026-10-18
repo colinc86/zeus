@@ -5,6 +5,8 @@ struct LearningFolderView: View {
     @Bindable var model: LearningFolderModel
     var managed: Bool
     var openAssistant: @MainActor () -> Void = {}
+    /// Connect-your-own with no journal to write from: "Choose…" is disabled, and this says why (PRIVACY.md §2.5).
+    static let noJournalCaption = "Zeus can't open its journal right now, so there's nothing to keep in a folder yet."
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Your assistant's folder").settingsHeading()
@@ -27,6 +29,7 @@ struct LearningFolderView: View {
                     }
                 }
             }
+            if !managed && model.provider == nil { Text(Self.noJournalCaption).settingsCaption() }
             if let message = model.provider?.lastWriteError { Text(message).settingsError() }
             Text("Where this folder lives is up to you. If it syncs, what Zeus keeps syncs with it.").settingsCaption()
         }
