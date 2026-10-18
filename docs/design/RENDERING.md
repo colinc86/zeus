@@ -53,6 +53,19 @@ cache.rasterizedCount             // misses so far (diagnostics and tests)
 
 A `nil` result means draw once and stop. Change of state, options or character is an input change: recompute the interval.
 
+**Resting states run at the art's own rate (PERF2).** In `idle` and `sleeping` the interval is the animation's declared
+rate: the shorter of `1 / fps` and `1 / particleFPS`, with timed accents and the sleeping emote landing on that grid
+instead of forcing the 1/12 s minimum. Particles the animation leaves unspecified keep 12 Hz. Zeus's idle (one frame at
+2 fps, particles at 6 Hz) therefore ticks at 6 Hz, Pumpkin's idle (8 fps) at 8 Hz, and custom art at whatever it
+declares; nothing is special-cased by character. Hover and the ghost fade don't change the rate (hover shows no faster
+art, and the fade is CoreAnimation's own curve); any other state, a peek, talking or a Reduce Motion change switches
+the schedule immediately. The driver aligns its ticks to the wall clock so particle steps land on ticks, and the
+"equal signatures ⇒ identical pixels" test also runs a 6 Hz idle timeline. Measured on the default avatar, visible and
+unlocked, standalone (no managed assistant): interrupt wake-ups fell from about 11 per second (30 s sample) to about
+5.7 per second (60 s sample), CPU from about 1.0% to about 0.7% of a core, and package-idle exits from 0.17 per second
+to none. With a managed assistant idling, the same change plus batched tmux reads took CPU from about 2.0% to about
+1.3% and wake-ups from about 10.9 to about 5.7 per second; that combined figure is not the renderer alone.
+
 **`SpriteFrameCache`:**
 - **Image cache:** keyed by signature, LRU of `imageCapacity`. Cyclic animations (frame-only, or Reduce Motion) reuse their frames, so a second loop costs nothing.
 - **Layer-stack cache:** each frame's composed layers, keyed by character, state, frame, accents and Reduce Motion, LRU of `stackCapacity`. Motion and particles are drawn on top, so stacks are reused across offsets.
