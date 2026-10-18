@@ -120,6 +120,7 @@ import ZeusDesign
             .frame(width: 792, height: 1100, alignment: .topLeading)
             .environment(\.accessibilityEnabled, true).environment(\.zeusFontChoice, .system)
             .environment(\.colorScheme, scheme)
+            .buttonStyle(ZeusButtonStyle(.secondary, size: .small)).toggleStyle(ZeusCheckboxStyle())
             .background(ZeusPalette.for(scheme).panel))
         let window = ShadowApprovalPanel(contentRect: .init(x: -20000, y: -20000, width: 792, height: 1100),
             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
@@ -149,7 +150,8 @@ import ZeusDesign
         #expect(f.store.rules.last?.status == .shadow)
     }
     private static func render(_ host: NSView, name: String) throws {
-        guard let path = ProcessInfo.processInfo.environment["TEST_RUNNER_FX22_RENDER"] else { return }
+        let environment = ProcessInfo.processInfo.environment
+        guard let path = environment["FX22_RENDER"] ?? environment["TEST_RUNNER_FX22_RENDER"] else { return }
         let output = URL(fileURLWithPath: path)
         try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
         let bitmap = try #require(host.bitmapImageRepForCachingDisplay(in: host.bounds))
