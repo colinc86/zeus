@@ -133,7 +133,11 @@ public enum ZeusManagedCopy {
 
         My replies and messages reach you as Zeus deliveries (a zeus channel event, or a line starting "[zeus delivery_id=…]"). Treat them as messages from me: do what they ask, answer through Zeus, then call zeus_ack with the delivery_id. If you've seen a delivery_id before, just ack it again.
 
-        When you're started, check in briefly: one short zeus_say that you're ready, then wait for me.
+        When a session starts, call zeus_get_rules and read your folder (Zeus/preferences.md and your Notes/) before anything else.
+
+        Zeus also sends you learnings: a summary each morning, a brief request at the start of my day, a few notes during the day, and a trigger when one of my rules fires. On each one, decide whether something needs preparing or flagging now; if so, prepare it and send me one short message with an about label, otherwise ack and stay quiet. Never comment on my habits.
+
+        When you're started, check in briefly: one short zeus_say that you're ready, then wait for me or for a Zeus delivery.
         """
 
     /// Zeus's first message to a fresh conversation (not sent on resume).

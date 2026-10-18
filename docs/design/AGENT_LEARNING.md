@@ -218,7 +218,7 @@ Files: Zeus/rules.md
 
 Shadow rule: the first line reads `Rule trigger (shadow, waiting for my OK): "…" · rule r_ab12.` and the third line reads `This rule isn't approved yet: call zeus_rule_shadow {ruleID: "r_ab12", wouldHave} with what you would have done, and don't do it. Then zeus_ack.` The "Matched:" line is the trigger's own words (the time window, or the app named in the rule) plus the clock times, never journal detail beyond what the trigger names.
 
-**Budget line.** `Unprompted messages left today: N (high priority doesn't count).` N is the day's remaining soft budget (default 6). At zero: `Unprompted messages left today: 0. Anything more is held until tomorrow unless it's high priority.` The line also goes on digests and moments so the assistant always knows.
+**Budget line.** `Unprompted messages left today: N (high priority doesn't count).` N is the day's remaining soft budget (default 6). At zero: `Unprompted messages left today: 0. Anything more arrives held unless it's high priority.` A held card is not deferred: it lands in the thread at once, collapsed (§8.5), and midnight resets the count without replaying anything. The line also goes on digests and moments so the assistant always knows.
 
 ### 8.3 Template v6, the MCP instructions and the managed launch prompt
 
@@ -234,13 +234,13 @@ A section **"Morning brief"** on Settings › Assistant, in both modes, directly
 - Caption under it: "At the start of your day, Zeus asks your assistant for one short brief of what matters today: what's coming up, what's at risk, what it has prepared. It uses yesterday's summary when Learn from me is on, its own notes and tools, and nothing else. Rate it like any message."
 - Under the checkbox, a `ZeusChoiceList` labelled **"When"** with two rows, disabled with the checkbox off:
   - **"After my first activity"** (default), detail "When you start using the Mac, within the first hour of the day."
-  - **"At a fixed time"**, detail a time field in field chrome (`DatePicker` hour and minute, default 08:00) on the row's trailing end; the brief goes at that time if the Mac is awake, otherwise at the next activity.
-- Settings keys: `morningBrief.enabled`, `morningBrief.schedule` (`afterFirstActivity` or `fixed(minuteOfDay)`), platform-owned seam.
+  - **"At a fixed time"**, with an hour-and-minute `DatePicker` in `ZeusFieldChrome` beside the row's text (an HStack inside the choice row; `ZeusChoiceList` has no accessory slot and gains none), default 08:00; the brief goes at that time if the Mac is awake, otherwise at the next activity.
+- Seam (platform): `enabled` is a persisted override; until the user toggles it, the effective value is the mode's default (managed on, Connect your own off, explicit opt-in allowed). `schedule` is `firstActivity` or `fixedTime` with hour and minute, default 08:00.
 - VoiceOver: the checkbox by its label; the list as "When, After my first activity, selected" etc.; the time field "Brief time".
 
 ### 8.5 The thread: held over today's limit
 
-When an unprompted card past the day's soft budget arrives (platform counts; `priority: high` is exempt, and ratings or "Stop these" are evaluated first, so a stopped kind is muted, not held), it reuses the muted presentation (CONVERSATION.md §17.5): one collapsed notice line "Held: over today's limit · Show", silent, not unread, expanding to the full bubble with a caption. It keeps its ⋯ and rating row, because unlike a muted card nothing has been rated yet.
+When an unprompted card past the day's soft budget arrives (platform counts; `priority: high` is exempt, and ratings or "Stop these" are evaluated first, so a stopped kind is muted, not held), it reuses the muted presentation (CONVERSATION.md §17.5): it lands at once as one collapsed notice line "Held: over today's limit · Show", silent, not unread, expanding to the full bubble with a caption. Show releases the hold durably (the card stays a budget-held card by provenance; Hide collapses it again, presentation only). It keeps its ⋯ and rating row, because unlike a muted card nothing has been rated yet.
 
 ### 8.6 Renders
 
