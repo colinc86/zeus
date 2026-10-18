@@ -80,7 +80,7 @@ private struct WarpStringRedactor: Redactor {
         #expect(item.payload.value.description == "‹health›")
     }
 
-    @Test func legacySystemAppResolvesThroughLaunchServicesWithoutLaunchingIt() {
+    @Test @MainActor func legacySystemAppResolvesThroughLaunchServicesWithoutLaunchingIt() {
         let item = JournalItem(level: .activity, app: "com.apple.finder", kind: .activity,
             payload: .init(.init(description: "Switched to ‹name›", details: ["name": "‹name›", "kind": "activate"])))
         #expect(JournalAppName.displayName(item) == "Finder")
