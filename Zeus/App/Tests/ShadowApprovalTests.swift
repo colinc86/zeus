@@ -119,7 +119,7 @@ import ZeusDesign
         let host = TestHostingView(rootView: RulesSettingsView(model: f.model).padding(24)
             .frame(width: 792, height: 1100, alignment: .topLeading)
             .environment(\.accessibilityEnabled, true).environment(\.zeusFontChoice, .system)
-            .environment(\.colorScheme, scheme).environment(\.zeusPalette, ZeusPalette.for(scheme))
+            .environment(\.colorScheme, scheme)
             .background(ZeusPalette.for(scheme).panel))
         let window = ShadowApprovalPanel(contentRect: .init(x: -20000, y: -20000, width: 792, height: 1100),
             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
