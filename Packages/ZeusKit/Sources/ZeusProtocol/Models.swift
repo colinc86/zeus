@@ -118,8 +118,11 @@ public struct CardResponse: Codable, Sendable, Equatable {
 /// Shared card state for the Mac and iOS clients.
 /// Runtime-classified source. Agents cannot choose this value.
 public enum CardOrigin: String, Codable, Sendable { case reply, unprompted }
-/// Persisted explanation of a local rating hold. A release never replays a notification.
+/// Persisted explanation of a local rating or daily-budget hold. A release never replays a notification.
 public struct CardMuteDecision: Codable, Equatable, Sendable {
+    public enum Source: String, Codable, Sendable { case rating, dailyBudget }
+    /// Missing on legacy records, which are rating decisions.
+    public var source: Source?
     public var ratingID: String
     public var kindLabel: String
     public var reason: String
@@ -128,7 +131,8 @@ public struct CardMuteDecision: Codable, Equatable, Sendable {
     public var threshold: Double
     public var decidedAt: Date
     public var releasedAt: Date?
-    public init(ratingID: String, kindLabel: String, reason: String, engine: String, score: Double, threshold: Double, decidedAt: Date, releasedAt: Date? = nil) {
+    public init(ratingID: String, kindLabel: String, reason: String, engine: String, score: Double, threshold: Double, decidedAt: Date, releasedAt: Date? = nil, source: Source? = nil) {
+        self.source = source
         self.ratingID = ratingID; self.kindLabel = kindLabel; self.reason = reason; self.engine = engine
         self.score = score; self.threshold = threshold; self.decidedAt = decidedAt; self.releasedAt = releasedAt
     }
