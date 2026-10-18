@@ -31,6 +31,8 @@ private actor RuntimeHostBuilder {
                       root.appendingPathComponent("Zeus/Shared/AppSeams.swift"),
                       root.appendingPathComponent("Zeus/Learn/Seams.swift"),
                       root.appendingPathComponent("Zeus/Learn/MessageRatingSeams.swift"),
+                      root.appendingPathComponent("Zeus/Learn/ProactiveAssistantSeams.swift"),
+                      root.appendingPathComponent("Zeus/Learn/ProactiveState.swift"),
                       root.appendingPathComponent("Zeus/Learn/MessageRatingStore.swift"),
                       root.appendingPathComponent("Zeus/Learn/MessageSimilarity.swift"),
                       root.appendingPathComponent("Zeus/Learn/Redactor/LocalRedactor.swift"),
