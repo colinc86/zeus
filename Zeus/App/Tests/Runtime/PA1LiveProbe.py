@@ -21,6 +21,7 @@ def main():
     process = None
     steps = {}
     tools = []
+    fetched = set()
     def action(body):
         text = json.dumps(body.get('messages', []), ensure_ascii=False)
         envelopes = list(re.finditer(r'\[zeus delivery_id=([^\s\]]+)', text))
@@ -30,6 +31,9 @@ def main():
         envelope = envelopes[-1]
         delivery_id = envelope.group(1)
         content = text[envelope.start():]
+        if "Read zeus_get_learnings with this id" in content and delivery_id not in fetched:
+            fetched.add(delivery_id); tools.append("zeus_get_learnings")
+            return "zeus_get_learnings", {"id": delivery_id}
         index = steps.get(delivery_id, 0)
         if delivery_id.startswith('brief_'):
             quiet = delivery_id != 'brief_2026-10-14'
@@ -82,21 +86,25 @@ def main():
                 return state if len(state['deliveries']) == expected and all(d['acked'] for d in state['deliveries']) else None
             state = eventually(complete, 'proactive delivery -> real MCP tool -> acknowledgment', timeout=90)
             assert len(state['receipts']) == expected, state
+            assert pane.tm('display-message', '-p', '-t', state['pane'], '#{pane_width}x#{pane_height}').strip() == '120x40'
             if args.scenario == 'pa1-brief':
                 assert len(state['cards']) == 1 and state['cards'][0]['kind'] == 'content' and state['cards'][0]['about'] == 'Morning brief', state
                 assert state['cards'][0]['origin'] == 'unprompted', state
-                assert "yesterday's summary" not in state['deliveries'][0]['content'], state
+                assert "Yesterday (from Zeus" in state['deliveries'][0]['content'], state
+                assert state['deliveries'][0]['meta'].get('tmux_pointer') == 'true' and fetched, state
                 control.call('brief')
                 assert len(control.call('state')['deliveries']) == 1
                 control.call('nextBrief'); expected = 2
                 state = eventually(complete, 'nothing matters -> quiet ack, no extra card', timeout=90)
                 assert len(state['cards']) == 1 and tools.count('zeus_present') == 1, state
+                assert "yesterday's summary" not in state['deliveries'][-1]['content'], state
             else:
                 assert sorted(a['kind'] for a in state['ruleActions']) == ['acted', 'shadow'], state
                 assert not state['cards'], state
                 assert tools.count('zeus_rule_acted') == 1 and tools.count('zeus_rule_shadow') == 1
             assert all(d['attempts'] == 1 for d in state['deliveries']), state
             proof = scrub_paths({'agent': version, 'scenario': args.scenario, 'tools': tools, 'state': state,
+                'pane': '120x40', 'fetched': sorted(fetched),
                 'isolation': 'private tmux, disposable HOME/config, localhost model, fixture encryption key; no external action'},
                 {str(pane.root): '/FIXTURE', str(REPO): '<worktree>'})
             (out/'proof.json').write_text(json.dumps(proof, indent=2)+'\n')
