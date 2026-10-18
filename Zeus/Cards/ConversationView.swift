@@ -390,7 +390,7 @@ struct ConversationView: View {
         }
     }
     private func documentPills(edge: ZeusJumpPillCluster.Edge, proxy: ScrollViewProxy) -> some View {
-        let unseen = model.thread.filter { !$0.isUser && !$0.isNotice && !$0.isRatingHeld && !store.seenIDs.contains($0.sourceCardID) }
+        let unseen = model.thread.filter { !$0.isUser && !$0.isNotice && !$0.isRatingHeld && !$0.isMuted && !store.seenIDs.contains($0.sourceCardID) }
         let questions = StatusStripState.questions(stripCards).map(\.id)
         let next = ConversationJumpState.nextQuestion(questions: questions, visible: visibility.navigationIDs, after: lastQuestionJump)
         let nextIndex = next.flatMap { id in model.thread.firstIndex { $0.sourceCardID == id } } ?? 0

@@ -48,7 +48,7 @@ final class PeekModel {
         return [isTyping ? typingEndsAt : nil, receiptDeadline ?? deadline].compactMap { $0 }.min()
     }
 
-    static func eligible(_ card: Card) -> Bool { [.message, .question, .content].contains(card.kind) && !card.isRatingHeld }
+    static func eligible(_ card: Card) -> Bool { [.message, .question, .content].contains(card.kind) && !card.isRatingHeld && !card.isWithdrawn }
     private var unseenEligibleIDs: Set<String> {
         let seen = store.seenIDs
         return Set(store.cards.lazy.filter { Self.eligible($0) && !seen.contains($0.id) }.map(\.id))

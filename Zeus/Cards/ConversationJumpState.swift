@@ -19,7 +19,7 @@ struct ConversationJumpState: Equatable {
         // No positional guesses while the lazy thread is opening or changing pages.
         guard let first = entries.firstIndex(where: { visible.contains($0.id) }),
               let last = entries.lastIndex(where: { visible.contains($0.id) }) else { return result }
-        for (index, entry) in entries.enumerated() where !entry.isUser && !entry.isNotice && !entry.isRatingHeld && !seen.contains(entry.sourceCardID) {
+        for (index, entry) in entries.enumerated() where !entry.isUser && !entry.isNotice && !entry.isRatingHeld && !entry.isMuted && !seen.contains(entry.sourceCardID) {
             if index < first { result.unreadAbove.append(entry.sourceCardID) }
             if index > last { result.newBelow += 1 }
         }

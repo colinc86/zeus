@@ -29,9 +29,8 @@ enum StatusStripState {
             switch self { case .question(let id), .unread(let id), .prompt(let id), .failed(let id): id; case .latest, .terminal: nil }
         }
     }
-    static func isOpenQuestion(_ card: Card) -> Bool {
-        card.status == .open && card.kind != .userMessage && (card.kind == .question || card.input != nil || !card.options.isEmpty)
-    }
+    /// The strip's "?" waits on questions and mirrored prompts only; a present card's actions never make Zeus wait (FX16).
+    static func isOpenQuestion(_ card: Card) -> Bool { CardStore.isWaitingQuestion(card) }
     static func isSkippable(_ card: Card) -> Bool {
         CardStore.canSkip(card)
     }
@@ -41,7 +40,7 @@ enum StatusStripState {
         }.map(\.element)
     }
     static func questions(_ cards: Cards) -> [Card] { ordered(cards.values.filter { !$0.isRatingHeld && isOpenQuestion($0) }) }
-    static func unread(_ cards: Cards) -> [Card] { ordered(cards.values.filter { $0.kind != .userMessage && !$0.isRatingHeld && !cards.seen.contains($0.id) }) }
+    static func unread(_ cards: Cards) -> [Card] { ordered(cards.values.filter { $0.kind != .userMessage && !$0.isRatingHeld && !$0.isWithdrawn && !cards.seen.contains($0.id) }) }
     static func mirroredPrompt(_ cards: Cards) -> Card? {
         ordered(cards.values.filter { $0.status == .open && $0.id.hasPrefix(CardStore.managedActionPrefix)
             && $0.options.contains { $0.id != "open-terminal" } }).last

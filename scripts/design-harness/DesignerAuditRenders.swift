@@ -2677,3 +2677,30 @@ extension DesignerAuditRenders {
         try Snap.dump("hunt2-log", Snap.log.joined(separator: "\n"))
     }
 }
+
+extension DesignerAuditRenders {
+    /// FX16: thirty unanswered present cards and the strip says Idle; no "?" anywhere.
+    @Test func fx16() async throws {
+        let previousOut = Snap.out
+        Snap.out = Snap.repo.appendingPathComponent(ProcessInfo.processInfo.environment["UX_RENDER_DIR"] ?? "build/tmp/fx16")
+        defer { Snap.out = previousOut }
+        let s = AuditMessaging.claude.sessionKey
+        for look in Snap.Look.basic {
+            let f = Fixture(font: look.font); defer { f.cleanup() }
+            f.messaging.sessions = [AuditMessaging.claude]
+            for day in 0..<30 {
+                let at = t0.addingTimeInterval(Double(day - 30) * 86_400)
+                f.store.add(Card(id: "c_p\(day)", kind: .content, title: "Prepared for today", body: "Draft \(day + 1) of the status update is in your folder.",
+                                 options: [CardOption(id: "ok", label: "Looks good", style: .primary), CardOption(id: "rev", label: "Revise")],
+                                 sessionKey: s, createdAt: at, updatedAt: at, about: "Prepared work \(day)", origin: .unprompted))
+            }
+            f.store.markAllSeen()
+            try await Snap.render("fx16-thirty-present-cards", look: look, padding: 0, settle: 0.8) { f.conversation() }
+            // After the user replies, every hand-over's actions have closed quietly.
+            f.store.add(Card(id: "u_1", kind: .userMessage, body: "Thanks, all good.", createdAt: t0, updatedAt: t0, status: .answered))
+            f.store.closeOpenHandovers()
+            try await Snap.render("fx16-after-reply", look: look, padding: 0, settle: 0.8) { f.conversation() }
+        }
+        try Snap.dump("fx16-log", Snap.log.joined(separator: "\n"))
+    }
+}

@@ -17,7 +17,8 @@ struct AvatarStatusModelTests {
 
     @Test func managedBlockSurvivesReadPanelAndSpeechWithoutChangingOrdinaryUnreadRules() {
         let (cards, status, clock, url) = fixture(); defer { cleanup(url) }
-        let card = Card(kind: .content, body: "Answer in Terminal", options: [.init(id: "open-terminal", label: "Open in Terminal")], priority: .high)
+        // A mirrored Terminal prompt carries the managed prefix; only those and questions make Zeus wait (FX16).
+        let card = Card(id: CardStore.managedActionPrefix + "native", kind: .content, body: "Answer in Terminal", options: [.init(id: "open-terminal", label: "Open in Terminal")], priority: .high)
         cards.add(card)
         status.setOverride(.working, detail: "Other work", progress: nil, ttl: 300)
         status.setManagedBlock("Waiting for you in Terminal")
@@ -84,12 +85,14 @@ struct AvatarStatusModelTests {
         #expect(status.state == .waiting)
     }
 
-    @Test func actionableContentCountsAsWaiting() {
+    /// FX16: a present card's actions are optional verdicts; Zeus never waits on them.
+    @Test func actionableContentDoesNotCountAsWaiting() {
         let (cards, status, clock, url) = fixture(); defer { cleanup(url) }
         let card = Card(kind: .content, body: "review", options: [CardOption(id: "approve", label: "Approve")])
         cards.add(card); cards.markSeen(id: card.id)
         clock.advance(3); status.tick()
-        #expect(status.state == .waiting)
+        #expect(status.state == .idle)
+        #expect(!cards.hasOpenQuestion)
         cards.respond(id: card.id, response: CardResponse(optionID: "approve", optionLabel: "Approve", device: .mac))
         #expect(status.state == .idle)
         #expect(status.openCount == 0)

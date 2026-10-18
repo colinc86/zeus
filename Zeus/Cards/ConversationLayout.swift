@@ -112,7 +112,7 @@ enum ConversationLayout {
     }
     static func unseenBelow(entries: [ConversationEntry], visible: Set<String>, seen: Set<String>) -> Int {
         guard let lastVisible = entries.lastIndex(where: { visible.contains($0.id) }) else { return 0 }
-        return entries.dropFirst(lastVisible + 1).filter { !$0.isUser && !$0.isNotice && !$0.isRatingHeld && !seen.contains($0.sourceCardID) }.count
+        return entries.dropFirst(lastVisible + 1).filter { !$0.isUser && !$0.isNotice && !$0.isRatingHeld && !$0.isMuted && !seen.contains($0.sourceCardID) }.count
     }
     static func isAtBottom(lastBottom: CGFloat, viewportHeight: CGFloat) -> Bool { lastBottom <= viewportHeight + 24 }
     static func intersects(_ frame: CGRect, viewportHeight: CGFloat) -> Bool { frame.maxY > 0 && frame.minY < viewportHeight }

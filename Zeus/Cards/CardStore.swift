@@ -102,7 +102,8 @@ final class CardStore: CardStoring {
     }
 
     /// Agent messages remain in the thread after dismissal/expiry; outgoing messages never badge.
-    var unseenCount: Int { cards.filter { $0.kind != .userMessage && !$0.isRatingHeld && !seenIDs.contains($0.id) }.count }
+    /// Withdrawn cards (dismissed by the assistant or expired) stay in the thread, muted, but never count as unread (FX16).
+    var unseenCount: Int { cards.filter { $0.kind != .userMessage && !$0.isRatingHeld && !$0.isWithdrawn && !seenIDs.contains($0.id) }.count }
     var hasUnseenCards: Bool { unseenCount > 0 }
 
     func setConversationOpen(_ open: Bool, automaticallyMarkSeen: Bool = true) {
@@ -120,8 +121,15 @@ final class CardStore: CardStoring {
         next.seenIDs.formUnion(ids)
         if commit(next), newlyEligible { retainHistory(keepingNewest: 500, pendingCardIDs: []) }
     }
-    var hasOpenQuestion: Bool {
-        openCards.contains { $0.kind == .question || $0.input != nil || !$0.options.isEmpty }
+    /// What Zeus waits on: a question, or a mirrored Terminal prompt. A present card's actions are optional verdicts; the
+    /// user can still take them (⌘1–9, the buttons, Skip), but they never make Zeus wait, badge or block housekeeping (FX16).
+    var hasOpenQuestion: Bool { openCards.contains(where: Self.isWaitingQuestion) }
+    nonisolated static func isWaitingQuestion(_ card: Card) -> Bool {
+        card.status == .open && card.kind != .userMessage && (card.kind == .question || card.id.hasPrefix(managedActionPrefix))
+    }
+    /// A hand-over (`zeus_present`) still waiting for an optional verdict.
+    nonisolated static func isOpenHandover(_ card: Card) -> Bool {
+        card.status == .open && card.kind == .content && !card.id.hasPrefix(managedActionPrefix) && (!card.options.isEmpty || card.input != nil)
     }
 
     func add(_ card: Card) {
@@ -133,10 +141,28 @@ final class CardStore: CardStoring {
             card.updatedAt = clock()
         }
         var next = snapshot
+        // A newer hand-over about the same thing closes the older one's actions quietly (FX16).
+        if Self.isOpenHandover(card), let about = card.about {
+            for index in next.cards.indices where Self.isOpenHandover(next.cards[index]) && next.cards[index].about == about {
+                next.cards[index].status = .dismissed; next.cards[index].updatedAt = clock()
+            }
+        }
         next.cards.append(card)
         if isConversationOpen && automaticallyMarkSeen && card.kind != .userMessage && !card.isRatingHeld { next.seenIDs.insert(card.id) }
         guard commit(next) else { return }
         if card.status == .open { onAdd?(card) }
+    }
+
+    /// The user replied in the composer: every open hand-over's actions close quietly (muted bubble, options closed).
+    /// Questions and mirrored prompts are untouched; the assistant hears nothing (FX16).
+    @discardableResult func closeOpenHandovers() -> Bool {
+        let ids = cards.filter(Self.isOpenHandover).map(\.id)
+        guard !ids.isEmpty else { return false }
+        var next = snapshot
+        for index in next.cards.indices where ids.contains(next.cards[index].id) {
+            next.cards[index].status = .dismissed; next.cards[index].updatedAt = clock()
+        }
+        return commit(next)
     }
 
     /// Persist the outgoing bubble and its initial state before allowing any agent delivery.
@@ -648,4 +674,6 @@ extension CardStore: AdmissionNoticeRecording {
 extension Card {
     /// UI suppression follows the durable runtime decision, never the agent's priority.
     var isRatingHeld: Bool { origin != .reply && muteDecision != nil && muteDecision?.releasedAt == nil }
+    /// Dismissed by the assistant or expired: still in the thread, muted, never unread (FX16).
+    var isWithdrawn: Bool { status == .dismissed || status == .expired }
 }

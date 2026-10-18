@@ -38,9 +38,11 @@ import ZeusSprites
         }
         #expect(f.store.cards.count == 501 && f.model.arrivals.count == 501)
         #expect(Set(f.model.arrivals) == Set(f.store.cards.map(\.id)))
-        #expect(f.model.moreCount == 501 && f.model.oldestUnseenID == question.id)
+        // Dismissed arrivals stay in history and in arrival order, but never count toward "+N more" (FX16).
+        #expect(f.model.moreCount == 1 && f.model.oldestUnseenID == question.id)
+        #expect(f.model.arrivals.first == question.id && f.model.arrivals.last == "closed-arrival-1099" && f.model.arrivals[1] == "closed-arrival-600")
         f.store.markSeen(id: question.id)
-        #expect(f.model.moreCount == 500 && f.model.oldestUnseenID == "closed-arrival-600")
+        #expect(f.model.moreCount == 0 && f.model.oldestUnseenID == nil)
         #expect(!f.model.receive(question, suppression: .init(), reduceMotion: false, typewriter: true))
         #expect(f.store.clearConversation())
         #expect(f.model.arrivals == [question.id] && f.model.moreCount == 0)

@@ -66,7 +66,8 @@ extension ZeusRuntime {
                 var card = Card(kind: .content, title: try args.requiredString("title"), body: try args.requiredString("body"),
                                 options: actions, input: allowText ? InputSpec() : nil, attachments: try args.attachments(),
                                 priority: try args.enumeration("priority", as: Card.Priority.self) ?? .normal,
-                                mood: try args.enumeration("mood", as: AvatarState.self), sessionKey: sessionKey, createdAt: now, updatedAt: now)
+                                mood: try args.enumeration("mood", as: AvatarState.self), sessionKey: sessionKey, createdAt: now, updatedAt: now,
+                                expiresAt: try args.ttl().map { now.addingTimeInterval($0) })
                 card.origin = ratingOrigin(sessionKey: sessionKey)
                 endAssistantActivity(sessionKey: sessionKey)
                 card = try await prepareRatedCard(card, about: args.string("about"))

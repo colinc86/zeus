@@ -245,6 +245,7 @@ final class ConversationModel {
             if accepted {
                 result = .answered(cardID: target.id)
                 clearMatchingDraft(submittedDraft, attachments: attachments)
+                cards.closeOpenHandovers()
             } else {
                 result = .rejected(reason: cards.persistenceError.map { "Could not save your reply. \($0) Try again." }
                     ?? "This question is no longer open. Review the reply target and try again.")
@@ -258,6 +259,7 @@ final class ConversationModel {
                 return result
             }
             sendingIDs.insert(card.id)
+            cards.closeOpenHandovers()
             let outcome = await messaging.sendUserMessage(text, deliveryID: deliveryID)
             _ = cards.setOutgoingState(.init(outcome), cardID: card.id)
             _ = cards.reconcileOutgoingDeliveries(messaging.userMessageDeliveries)
