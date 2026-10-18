@@ -207,7 +207,7 @@ def main():
     tmux, claude = shutil.which("tmux"), shutil.which("claude")
     assert tmux and claude
     root = create_root("zsa1_")
-    home, project = root / "home", root / "project"
+    home, project = root / "home", root / "home" / "project"
     profile = home / ".claude"
     profile.mkdir(parents=True); project.mkdir()
     (project / "read.txt").write_text("SA1 private read-only fixture.\n")

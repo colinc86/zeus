@@ -4,10 +4,10 @@
 This is read-only: it never connects to a socket or removes an entry.
 """
 import os
-import re
 from pathlib import Path
 import subprocess
 import sys
+from tmux_fixture_processes import servers
 
 
 def snapshot(directory):
@@ -29,25 +29,17 @@ def added(before, after):
     return sorted(name for name, identity in after.items() if before.get(name) != identity)
 
 
-def managed_servers(output=None):
-    # Process inventory catches an orphan even after its socket/root was unlinked.
-    if output is None:
-        output = subprocess.check_output(['ps', '-axo', 'pid=,lstart=,command='], text=True)
-    return {line.strip() for line in output.splitlines()
-            if re.search(r'^\s*\d+\s+.*? /[^ ]*/tmux -S /(?:private/)?tmp/zmanaged_[A-Fa-f0-9]{8}/tmux\.sock ', line)}
-
-
 def main():
     directories = {Path('/private/tmp') / f'tmux-{os.getuid()}'}
     if os.environ.get('TMUX_TMPDIR'):
         directories.add(Path(os.environ['TMUX_TMPDIR']).resolve() / f'tmux-{os.getuid()}')
-    servers_before = managed_servers()
+    servers_before = set(servers())
     before = {path: snapshot(path) for path in directories}
     result = subprocess.call(sys.argv[1:], env={**os.environ, 'ZEUS_TMUX_HYGIENE_ACTIVE': '1'})
     failures = []
     for path in directories:
         failures.extend(str(path / name) for name in added(before[path], snapshot(path)))
-    failures.extend(sorted(managed_servers() - servers_before))
+    failures.extend(f"fixture tmux pid={p.pid} started={p.started}" for p in set(servers()) - servers_before)
     if failures:
         print('FAIL: test command created shared tmux entries: ' + ', '.join(failures), file=sys.stderr)
         return 1

@@ -51,7 +51,7 @@ class Probe:
         self.agent = agent; self.tmux = shutil.which("tmux"); self.cli = shutil.which(agent)
         assert self.tmux and self.cli
         self.root = create_root("zsa2_")
-        home = self.root / "home"; (self.root / "project").mkdir()
+        home = self.root / "home"; (home / "project").mkdir(parents=True)
         self.env = isolated_environment(home)
         self.version = subprocess.check_output([self.cli, "--version"], env=self.env, text=True, timeout=10).strip()
         self.server, self.worker = start_model(Model)

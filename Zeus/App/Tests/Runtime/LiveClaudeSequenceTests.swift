@@ -15,7 +15,7 @@ struct LiveClaudeSequenceTests {
         let tmux = try #require(executables.tmux)
         try #require(executables.agents[.claude] != nil)
         let root = URL(fileURLWithPath: "/tmp/zlive_" + UUID().uuidString.prefix(8))
-        let home = root.appendingPathComponent("home"), folder = root.appendingPathComponent("project")
+        let home = root.appendingPathComponent("home"), folder = root.appendingPathComponent("home/project")
         try FileManager.default.createDirectory(at: home.appendingPathComponent(".claude"), withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let socket = root.appendingPathComponent("tmux.sock").path

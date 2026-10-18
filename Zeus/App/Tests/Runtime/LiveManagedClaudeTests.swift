@@ -59,7 +59,7 @@ struct LiveManagedClaudeTests {
         let snapshot = try liveClaudeIdleSnapshot()
         #expect(snapshot.screen.hasPrefix("\n"))
         #expect(ManagedPaneClassifier.classify(snapshot, agent: .claude) == .idle)
-        let host = ManagedTmux(executable: URL(fileURLWithPath: "/bin/cat"), runner: LiveCaptureRunner(snapshot: snapshot), testSocket: "/tmp/live-fixture.sock")
+        let host = ManagedTmux(executable: URL(fileURLWithPath: "/bin/cat"), runner: LiveCaptureRunner(snapshot: snapshot), environment: ["HOME": "/private/tmp/live-capture-fixture"], testSocket: "/tmp/live-fixture.sock")
         let lease = ManagedPane(name: "zeus", id: "%0", socket: "/tmp/live-fixture.sock", serverPID: 1, sessionNumber: "0", pid: Int(getpid()), startTime: 0, dead: false)
         let pane = try #require(try await host.inspect(name: "zeus", owner: "fixture", pane: lease))
         let captured = try await host.capture(pane, owner: "fixture")

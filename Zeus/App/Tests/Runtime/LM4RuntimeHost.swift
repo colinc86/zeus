@@ -80,7 +80,7 @@ private struct LM4Runner: ProcessRunning {
         let briefSettings = MorningBriefSettings(defaults: defaults)
         if proactive { briefSettings.enabled = true; learnings.learningsEnabled = false }
         let rules = proactive ? try PersistentRulesStore(fileURL: root.appendingPathComponent("rules.zrules"), keyProvider: LM4Key()) : nil
-        routing.managedSession = .init(enabled: true, folder: root.appendingPathComponent("project").path, agent: .claude, permissionModeID: "manual", launchPrompt: "Read Zeus learning deliveries as context and acknowledge their delivery_id.", startWhenZeusOpens: true)
+        routing.managedSession = .init(enabled: true, folder: root.appendingPathComponent("home/project").path, agent: .claude, permissionModeID: "manual", launchPrompt: "Read Zeus learning deliveries as context and acknowledge their delivery_id.", startWhenZeusOpens: true)
         let socket = root.appendingPathComponent("tmux.sock").path
         let hosting = ManagedTmux(executable: tmux, runner: FoundationProcessRunner(), environment: env, testSocket: socket)
         let controller = ManagedSessionController(configuration: { routing.managedSession }, stateURL: root.appendingPathComponent("managed.json"), bridge: bridge, bridgeSocket: root.appendingPathComponent("bridge.sock").path,

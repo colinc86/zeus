@@ -93,7 +93,8 @@ class GateTests(unittest.TestCase):
         alive={11:'pane lifetime',12:'agent lifetime'};calls=[]
         def run(argv,**kwargs):
             calls.append(argv)
-            if argv[0]=='/bin/ps':out=alive.get(int(argv[2]),'')
+            if argv[:2]==['/bin/ps','-axo']:out=''
+            elif argv[0]=='/bin/ps':out=alive.get(int(argv[2]),'')
             elif argv[0]=='/usr/bin/pgrep':out='12' if argv[2]=='11' else ''
             elif 'list-panes' in argv:out='11'
             else:out=''

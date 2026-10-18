@@ -21,6 +21,9 @@ struct ZeusApp: App {
 @MainActor
 final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
     lazy var shell: ShellController = {
+        #if DEBUG
+        if ComposerGrowthProbe.requested { return ComposerGrowthProbe.makeShell() }
+        #endif
         let testing = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil || NSClassFromString("XCTestCase") != nil
         guard !testing else { return ShellController() }
         do { return ShellController(learningServices: try LearningServices.production(), requirePrivateJournal: true) }
@@ -36,19 +39,29 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
               NSClassFromString("XCTestCase") == nil else { return }
         NSApplication.shared.setActivationPolicy(.accessory)
         ZeusFonts.registerBundled()
+        #if DEBUG
+        if ComposerGrowthProbe.requested {
+            guard (try? ComposerGrowthProbe.validatedHome(ProcessInfo.processInfo.environment)) != nil else {
+                NSApplication.shared.terminate(nil); return
+            }
+            shell.start()
+            ComposerGrowthProbe.start(shell: shell)
+            return
+        }
+        #endif
         shell.updater.start()
         shell.start()
         #if DEBUG || ZEUS_PERFORMANCE_PROBE
         PerformanceProbe.start(shell: shell)
-        #endif
-        #if DEBUG
-        ComposerGrowthProbe.start(shell: shell)
         #endif
         shell.messaging.retryStartup = { [weak self] in self?.startAgentLink() }
         startAgentLink()
     }
 
     private func startAgentLink() {
+        #if DEBUG
+        guard !ComposerGrowthProbe.requested else { return }
+        #endif
         guard runtime == nil else { return }
         let settings = shell.settings
         do { messageRatings = try MessageRatingStore(); shell.ratings.startupError = nil }
@@ -107,5 +120,8 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         runtime?.stop()
         shell.stop()
+        #if DEBUG
+        if ComposerGrowthProbe.requested { ComposerGrowthProbe.cleanup() }
+        #endif
     }
 }

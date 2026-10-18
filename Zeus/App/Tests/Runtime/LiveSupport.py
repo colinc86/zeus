@@ -6,6 +6,8 @@ localhost SSE transport, headless-host caching, cleanup and path scrubbing.
 """
 import atexit, fcntl, hashlib, http.server, json, os, pathlib, re, selectors, shutil, signal, subprocess, sys, tempfile, threading, time, uuid
 REPO=pathlib.Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(REPO/"scripts"))
+from tmux_fixture_processes import reap_root
 _ROOTS=[]
 _HOST_LEASE=None
 _HOST_LEASE_GUARD=threading.Lock()
@@ -91,9 +93,11 @@ def scrub_paths(value,replacements):
 def cleanup_root(root,remove=True):
     """Idempotent, bounded cleanup; never infer a socket from ambient TMUX."""
     root=pathlib.Path(root)
-    if not root.exists():return
     if root.is_symlink() or root.resolve().parent != pathlib.Path("/private/tmp") or not root.name.startswith(("zpc1_","zsa1_","zsa2_","zsa3_","zsa4_","zac1_","zlv1_","zcy1_")):
         raise ValueError("Refusing cleanup outside a private live fixture")
+    # The process argv still proves ownership when the socket or entire directory was removed.
+    reap_root(root)
+    if not root.exists():return
     tmux=shutil.which("tmux");socket=root/"tmux.sock"
     owned={}
     def stamp(pid):
@@ -257,7 +261,7 @@ def eventually(check, description, timeout=30):
 class Pane:
     def __init__(self,agent,native_updater=False, prefix="zpc1_", output=None):
         self.agent=agent;self.root=create_root(prefix);self.output=output or output_dir("pc1-live")
-        self.home=self.root/'home';self.project=self.root/'project';self.home.mkdir();self.project.mkdir()
+        self.home=self.root/'home';self.project=self.home/'project';self.home.mkdir();self.project.mkdir()
         for d in ['.claude','.codex','.config','.cache','.local/share','.local/state','tmux']:(self.home/d).mkdir(parents=True)
         self.socket=str(self.root/'tmux.sock');self.tmux=shutil.which('tmux');self.cli=shutil.which(agent)
         assert self.tmux and self.cli

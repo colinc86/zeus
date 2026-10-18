@@ -53,6 +53,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     func replaceEditedManagedTemplates(_ snapshot: ManagedTemplateReplacement) throws {
         guard snapshot.folder == record?.conversation?.folder else { throw ManagedSessionError.invalidFolder }
         guard let resourceDirectory else { throw ManagedSessionError.command("The assistant templates are missing from Zeus.") }
+        try ManagedProbeIsolation.validate(folder: snapshot.folder, environment: environment, isolatedSocket: isolatedSocket)
         try ManagedTemplateSetup.refresh(folder: snapshot.folder, resources: resourceDirectory, confirmed: snapshot)
         onChange?()
     }
@@ -247,6 +248,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     /// The two bundled templates are copied verbatim; a partial creation is removed on failure.
     func createDefaultFolder() throws -> URL {
         let home = URL(fileURLWithPath: environment["HOME"] ?? NSHomeDirectory(), isDirectory: true)
+        try ManagedProbeIsolation.validate(folder: home.path, environment: environment, isolatedSocket: isolatedSocket)
         guard let resourceDirectory else { throw ManagedSessionError.command("The assistant templates are missing from Zeus.") }
         for suffix in 1...1000 {
             let name = suffix == 1 ? "Zeus Assistant" : "Zeus Assistant \(suffix)"
@@ -368,9 +370,11 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
             attached = true; try load(); record?.restarts = []; try save(); try await start()
         case .stop: try load(); try await stop(); setStatus(enabled ? .stopped : .off)
         case .restart:
+            if let config = configuration() { try ManagedProbeIsolation.validate(folder: config.folder, environment: environment, isolatedSocket: isolatedSocket) }
             attached = true; try load(); try await stop()
             record?.restarts = []; try save(); try await start()
         case .fresh:
+            if let config = configuration() { try ManagedProbeIsolation.validate(folder: config.folder, environment: environment, isolatedSocket: isolatedSocket) }
             attached = true; try load()
             do { try await stop() }
             catch ManagedSessionError.ownershipChanged {
@@ -416,6 +420,9 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     }
     private func existingPane() async throws -> ManagedPane? {
         guard let hosting, let record else { return nil }
+        if let folder = record.conversation?.folder {
+            try ManagedProbeIsolation.validate(folder: folder, environment: environment, isolatedSocket: isolatedSocket)
+        }
         if let name = record.name {
             if let pane = try await hosting.inspect(name: name, owner: record.owner, pane: record.pane) {
                 if let lease = record.pane, !record.launchPending {
@@ -459,6 +466,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     }
     private func start(using requested: ManagedSessionConfig? = nil) async throws {
         guard var config = requested ?? configuration(), config.enabled else { setStatus(.off); return }
+        try ManagedProbeIsolation.validate(folder: config.folder, environment: environment, isolatedSocket: isolatedSocket)
         try load()
         if let problem = managedRequirementsProblem(for: config.agent) { throw ManagedSessionError.command(problem) }
         let token = activation
@@ -515,6 +523,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
             try save()
         }
         let launchEnvironment = environment.merging(record?.nativeEnvironment ?? [:]) { _, profile in profile }
+        try ManagedProbeIsolation.validate(folder: folder, environment: launchEnvironment, isolatedSocket: isolatedSocket)
         let command = try ManagedAgentLaunch.command(conversation: conversation, permissionID: config.permissionModeID,
             executable: executable, bridge: bridge, socket: bridgeSocket, pane: pane,
             directory: store.url.deletingLastPathComponent().appendingPathComponent("managed-launch"), environment: launchEnvironment,
@@ -534,6 +543,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
     private func discoverConversation() async throws {
         guard let conversation = record?.conversation, conversation.nativeID == nil, conversation.didLaunch else { return }
         let nativeEnvironment = environment.merging(record?.nativeEnvironment ?? [:]) { _, profile in profile }
+        try ManagedProbeIsolation.validate(folder: conversation.folder, environment: nativeEnvironment, isolatedSocket: isolatedSocket)
         do {
             if let id = try await finder.nativeID(for: conversation, environment: nativeEnvironment) {
                 record?.conversation?.nativeID = id; try save()
@@ -636,6 +646,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         guard stillCurrent(), let conversation = record?.conversation,
               request.kind == .newConversation || managedCanResumeSettings else { deferRequest(); return }
         var config = request.configuration
+        try ManagedProbeIsolation.validate(folder: config.folder, environment: environment, isolatedSocket: isolatedSocket)
         let folder = URL(fileURLWithPath: config.folder).resolvingSymlinksInPath().standardizedFileURL.path
         let changesIdentity = config.agent != conversation.agent || folder != conversation.folder
         guard request.kind == .newConversation || !changesIdentity else {

@@ -15,7 +15,7 @@ import ZeusProtocol
         let tmux = try #require(executables.tmux), cli = try #require(executables.agents[agent])
         let root = URL(fileURLWithPath: "/private/tmp/zs3_" + UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let home = root.appendingPathComponent("home"), folder = root.appendingPathComponent("project")
+        let home = root.appendingPathComponent("home"), folder = root.appendingPathComponent("home/project")
         let socket = root.appendingPathComponent("tmux.sock").path
         var launchedPanes: [ManagedPane] = []
         let model = Process(), logURL = root.appendingPathComponent("model.log")
