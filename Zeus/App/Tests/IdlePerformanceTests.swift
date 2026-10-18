@@ -37,6 +37,24 @@ struct IdlePerformanceTests {
         driver.pause()
     }
 
+    @Test func restingClockImmediatelyReturnsToActiveCadenceAndHonorsMotionChanges() throws {
+        let character = try #require(CharacterLibrary.load(userDirectory: nil).character(id: "zeus"))
+        let driver = SpriteAnimationDriver()
+        defer { driver.pause() }
+        driver.configure(character: character, inputs: .init(character: character, state: .idle, reduceMotion: false, active: true))
+        #expect(driver.scheduledInterval == 1.0 / 6)
+        let idle = driver.image
+        driver.configure(character: character, inputs: .init(character: character, state: .working, reduceMotion: false, active: true))
+        #expect(driver.scheduledInterval == 1.0 / 12)
+        #expect(driver.image !== idle)
+        driver.configure(character: character, inputs: .init(character: character, state: .sleeping, reduceMotion: false, active: true))
+        #expect(driver.scheduledInterval == 1.0 / 6)
+        driver.configure(character: character, inputs: .init(character: character, state: .sleeping, reduceMotion: true, active: true))
+        #expect(driver.scheduledInterval == SpriteRenderer.refreshInterval(character, state: .sleeping, options: .init(reduceMotion: true)))
+        driver.configure(character: character, inputs: .init(character: character, state: .sleeping, reduceMotion: true, active: false))
+        #expect(driver.scheduledInterval == nil)
+    }
+
     @Test func driverReconfiguresStateMotionAndCharacterWhileInactive() throws {
         let library = CharacterLibrary.load(userDirectory: nil)
         let zeus = try #require(library.character(id: "zeus"))

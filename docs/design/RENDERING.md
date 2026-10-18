@@ -59,7 +59,7 @@ instead of forcing the 1/12 s minimum. Particles the animation leaves unspecifie
 2 fps, particles at 6 Hz) therefore ticks at 6 Hz, Pumpkin's idle (8 fps) at 8 Hz, and custom art at whatever it
 declares; nothing is special-cased by character. Hover and the ghost fade don't change the rate (hover shows no faster
 art, and the fade is CoreAnimation's own curve); any other state, a peek, talking or a Reduce Motion change switches
-the schedule immediately. The driver aligns its ticks to the wall clock so particle steps land on ticks, and the
+the schedule immediately. The renderer keeps its phase on the wall clock, and the
 "equal signatures ⇒ identical pixels" test also runs a 6 Hz idle timeline. Measured on the default avatar, visible and
 unlocked, standalone (no managed assistant): interrupt wake-ups fell from about 11 per second (30 s sample) to about
 5.7 per second (60 s sample), CPU from about 1.0% to about 0.7% of a core, and package-idle exits from 0.17 per second

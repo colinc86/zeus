@@ -6,9 +6,16 @@ import Testing
 private actor InspectionBatchRunner: ProcessRunning {
     let output: String
     private(set) var calls: [[String]] = []
-    init(_ output: String) { self.output = output }
+    let failBatch: Bool
+    init(_ output: String, failBatch: Bool = false) { self.output = output; self.failBatch = failBatch }
     func run(executable: URL, arguments: [String], input: Data?) async throws -> ProcessResult {
         calls.append(arguments)
+        if failBatch {
+            if arguments.contains(";") { return .init(status: 1) }
+            let prefix = arguments.contains("list-sessions") ? "S\t" : "P\t"
+            let lines = output.components(separatedBy: "\n").filter { $0.hasPrefix(prefix) }.map { String($0.dropFirst(2)) }
+            return .init(status: 0, stdout: Data(lines.joined(separator: "\n").utf8))
+        }
         return .init(status: 0, stdout: Data(output.utf8))
     }
 }
@@ -35,6 +42,14 @@ struct ManagedInspectionPerformanceTests {
         #expect(calls[0].filter { $0 == ";" }.count == 2)
         #expect(calls[0].contains("list-sessions") && calls[0].contains("list-panes") && calls[0].contains("display-message"))
     }
+    @Test func failedBatchStillReturnsMissingPaneBeforeRequestingItsMetadata() async throws {
+        let runner = InspectionBatchRunner(output(member: "%1"), failBatch: true)
+        #expect(try await host(runner).inspect(name: "zeus", owner: "fixture", pane: pane) == nil)
+        let calls = await runner.calls
+        #expect(calls.count == 3)
+        #expect(!calls.dropFirst().contains { $0.contains("display-message") })
+    }
+
     @Test func batchCannotBypassOwnerExactSessionOrPaneMembership() async throws {
         do {
             _ = try await host(InspectionBatchRunner(output(owner: "someone-else"))).inspect(name: "zeus", owner: "fixture", pane: pane)
