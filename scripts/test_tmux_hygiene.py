@@ -5,7 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from tmux_hygiene import added, snapshot
+from tmux_hygiene import added, snapshot, managed_servers
 
 
 class TmuxHygieneTests(unittest.TestCase):
@@ -35,6 +35,12 @@ class TmuxHygieneTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertIn(b'created shared tmux entries', result.stderr)
             self.assertTrue(entry.exists())
+
+    def test_orphan_inventory_is_specific_and_catches_unlinked_sockets(self):
+        fixture = '123 Sun Oct 18 00:00:00 2026 /opt/homebrew/bin/tmux -S /tmp/zmanaged_AABBCCDD/tmux.sock -f /dev/null new-session'
+        user = '456 Sun Oct 18 00:00:00 2026 /opt/homebrew/bin/tmux -S /tmp/tmux-501/default new-session'
+        unrelated = '789 Sun Oct 18 00:00:00 2026 /bin/echo /tmp/zmanaged_AABBCCDD/tmux.sock'
+        self.assertEqual(managed_servers('\n'.join([fixture, user, unrelated])), {fixture})
 
     def test_wrapper_preserves_command_failure(self):
         result = subprocess.run([sys.executable, '-B', str(Path(__file__).with_name('tmux_hygiene.py')),

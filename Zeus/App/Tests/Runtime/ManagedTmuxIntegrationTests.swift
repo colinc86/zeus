@@ -27,8 +27,11 @@ struct ManagedTmuxIntegrationTests {
         defer {
             let cleanup = Process(); cleanup.executableURL = tmux; cleanup.arguments = ["-S", socket, "kill-server"]
             cleanup.standardOutput = FileHandle.nullDevice; cleanup.standardError = FileHandle.nullDevice
-            try? cleanup.run(); cleanup.waitUntilExit()
-            try? FileManager.default.removeItem(at: root)
+            do {
+                try cleanup.run(); cleanup.waitUntilExit()
+                #expect(cleanup.terminationStatus == 0, "Private tmux teardown failed; retain the fixture path for cleanup")
+                if cleanup.terminationStatus == 0 { try? FileManager.default.removeItem(at: root) }
+            } catch { Issue.record("Private tmux teardown: \(error)") }
         }
         let fixture = root.appendingPathComponent("agent.py")
         try Data(Self.agentFixture.utf8).write(to: fixture)
@@ -37,8 +40,12 @@ struct ManagedTmuxIntegrationTests {
         try Data(script.utf8).write(to: executable)
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
         let env = ["HOME": home.path, "PATH": "/usr/bin:/bin", "TMUX": "/unrelated/server,99,0", "TMUX_PANE": "%99", "CODEX_HOME": home.appendingPathComponent("custom-codex").path, "XDG_DATA_HOME": home.appendingPathComponent("custom-data").path]
+        // The private server must also die if the test host crashes or is killed,
+        // when Swift defer cannot run. This pane belongs exclusively to the fixture.
+        let watchdog = root.appendingPathComponent("watchdog.py")
+        try Data(Self.watchdogScript.utf8).write(to: watchdog)
         // Simulate a user's unrelated zeus session in this private namespace.
-        let occupied = try await runner.run(executable: tmux, arguments: ["-S", socket, "-f", "/dev/null", "new-session", "-d", "-s", "zeus", "/bin/sleep", "86400"], input: nil, environment: env)
+        let occupied = try await runner.run(executable: tmux, arguments: ["-S", socket, "-f", "/dev/null", "new-session", "-d", "-s", "zeus", python, watchdog.path, String(ProcessInfo.processInfo.processIdentifier), tmux.path, socket], input: nil, environment: env)
         #expect(occupied.status == 0)
         var guiEnv = env; guiEnv.removeValue(forKey: "CODEX_HOME"); guiEnv.removeValue(forKey: "XDG_DATA_HOME")
         let config = ManagedConfigBox(); config.value = .init(enabled: true, folder: folder.path, agent: agent, launchPrompt: "Instructions\nwith quotes ' \" and $()", startWhenZeusOpens: true)
@@ -166,6 +173,45 @@ struct ManagedTmuxIntegrationTests {
         let untouched = try await runner.run(executable: tmux, arguments: ["-S", socket, "has-session", "-t", "=zeus"], input: nil)
         #expect(untouched.status == 0)
         #expect(kill(Int32(alive.pid), 0) == -1)
+    }
+
+    private static let watchdogScript = """
+    import os, subprocess, sys, time
+    parent = int(sys.argv[1])
+    while True:
+        try: os.kill(parent, 0)
+        except ProcessLookupError: break
+        time.sleep(0.25)
+    subprocess.run([sys.argv[2], '-S', sys.argv[3], 'kill-server'])
+    """
+
+    @Test func privateServerExitsWhenItsFixtureHostDies() async throws {
+        await NativeProcessTestGate.acquire()
+        defer { NativeProcessTestGate.release() }
+        guard let tmux = TmuxExecutable.resolve(),
+              let python = ["/opt/homebrew/bin/python3", "/usr/bin/python3"].first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else { return }
+        let root = URL(fileURLWithPath: "/tmp/zmanaged_" + UUID().uuidString.prefix(8))
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let socket = root.appendingPathComponent("tmux.sock").path
+        let script = root.appendingPathComponent("watchdog.py")
+        try Data(Self.watchdogScript.utf8).write(to: script)
+        let parent = Process(); parent.executableURL = URL(fileURLWithPath: "/bin/sleep"); parent.arguments = ["86400"]
+        try parent.run()
+        defer {
+            if parent.isRunning { parent.terminate(); parent.waitUntilExit() }
+            let cleanup = Process(); cleanup.executableURL = tmux; cleanup.arguments = ["-S", socket, "kill-server"]
+            cleanup.standardOutput = FileHandle.nullDevice; cleanup.standardError = FileHandle.nullDevice
+            try? cleanup.run(); cleanup.waitUntilExit()
+            try? FileManager.default.removeItem(at: root)
+        }
+        let runner = FoundationProcessRunner()
+        let launched = try await runner.run(executable: tmux, arguments: ["-S", socket, "-f", "/dev/null", "new-session", "-d", "-P", "-F", "#{pid}", "-s", "fixture", python, script.path, String(parent.processIdentifier), tmux.path, socket], input: nil)
+        #expect(launched.status == 0)
+        let server = try #require(Int32(String(decoding: launched.stdout, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)))
+        parent.terminate(); parent.waitUntilExit()
+        let deadline = ContinuousClock.now + .seconds(5)
+        while kill(server, 0) == 0 && ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(50)) }
+        #expect(kill(server, 0) == -1, "A killed test host must not leave a private server behind")
     }
 
     private struct FixtureReady: Decodable {
