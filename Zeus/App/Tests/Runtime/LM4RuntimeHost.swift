@@ -41,7 +41,7 @@ import ZeusSprites
     var openCodeServerPassword: String? { nil }
 }
 @MainActor private final class LM4Clock: RuntimeClock {
-    let now = ISO8601DateFormatter().date(from: "2026-10-14T18:15:00Z") ?? Date()
+    var now = ISO8601DateFormatter().date(from: "2026-10-14T18:15:00Z") ?? Date()
     func sleep(until date: Date) async throws { try await Task.sleep(for: .seconds(max(0, date.timeIntervalSince(now)))) }
 }
 private struct LM4Runner: ProcessRunning {
@@ -60,6 +60,7 @@ private struct LM4Runner: ProcessRunning {
     func markLearningsRead(through id: String) { if let i = values.firstIndex(where: { $0.id == id }) { values.removeFirst(i + 1) } }
     func digest() { let value = Learning(id: "lm4-digest", kind: .digest, createdAt: Date(), text: "Synthetic morning summary: working on a fixture project."); values.append(value); onNewLearning?(value) }
 }
+@MainActor private final class PA1Context { var value = LearningContext() }
 @main struct LM4Host {
     @MainActor static func main() async throws {
         let root = URL(fileURLWithPath: CommandLine.arguments[1]), tmux = URL(fileURLWithPath: CommandLine.arguments[2])
@@ -67,6 +68,14 @@ private struct LM4Runner: ProcessRunning {
         let env = ProcessInfo.processInfo.environment
         guard root.path.hasPrefix("/private/tmp/zlv1_") || root.path.hasPrefix("/tmp/zlv1_"), env["HOME"] == root.appendingPathComponent("home").path else { throw ManagedSessionError.invalidFolder }
         let routing = LM4Routing(), cards = LM4Cards(), learnings = LM4Learnings()
+        let proactive = CommandLine.arguments.count > 5 && CommandLine.arguments[5].hasPrefix("pa1-")
+        let proactiveClock = LM4Clock(), context = PA1Context()
+        let defaultsName = "pa1-live-" + UUID().uuidString
+        guard let defaults = UserDefaults(suiteName: defaultsName) else { throw ManagedSessionError.invalidFolder }
+        defer { defaults.removePersistentDomain(forName: defaultsName) }
+        let briefSettings = MorningBriefSettings(defaults: defaults)
+        if proactive { briefSettings.enabled = true; learnings.learningsEnabled = false }
+        let rules = proactive ? try PersistentRulesStore(fileURL: root.appendingPathComponent("rules.zrules"), keyProvider: LM4Key()) : nil
         routing.managedSession = .init(enabled: true, folder: root.appendingPathComponent("project").path, agent: .claude, permissionModeID: "manual", launchPrompt: "Read Zeus learning deliveries as context and acknowledge their delivery_id.", startWhenZeusOpens: true)
         let socket = root.appendingPathComponent("tmux.sock").path
         let hosting = ManagedTmux(executable: tmux, runner: FoundationProcessRunner(), environment: env, testSocket: socket)
@@ -77,9 +86,10 @@ private struct LM4Runner: ProcessRunning {
         let folder = LearningFolderWriter(journal: journal, rules: nil, stateURL: root.appendingPathComponent("folder.json"),
             enabledLevels: { [.activity] }, redactor: LocalRedactor(useOnDeviceModel: false))
         let live = ZeusRuntime(cards: cards, status: LM4Status(), characters: LM4Characters(), routing: routing,
-            socketPath: root.appendingPathComponent("bridge.sock").path, ledgerURL: root.appendingPathComponent("deliveries.json"),
+            clock: proactive ? proactiveClock : SystemRuntimeClock(), socketPath: root.appendingPathComponent("bridge.sock").path, ledgerURL: root.appendingPathComponent("deliveries.json"),
             connectors: [TmuxConnector(executable: tmux, runner: LM4Runner(socket: socket))], managedController: controller,
-            learnings: learnings, journal: journal, redactor: LocalRedactor(useOnDeviceModel: false), learningFolder: folder, messageRatings: ratings)
+            learnings: learnings, rules: rules, journal: journal, redactor: LocalRedactor(useOnDeviceModel: false), learningFolder: folder, messageRatings: ratings, learningContext: { context.value },
+            morningBriefSettings: proactive ? briefSettings : nil)
         try live.start(); defer { live.stop() }
         try write(["ready": true])
         await Task.detached {
@@ -95,6 +105,14 @@ private struct LM4Runner: ProcessRunning {
                                 }
                             }
                         }
+                        if command["command"] == "brief" { live.noteProactiveActivity(at: proactiveClock.now) }
+                        if command["command"] == "nextBrief" { proactiveClock.now = proactiveClock.now.addingTimeInterval(86400); live.noteProactiveActivity(at: proactiveClock.now) }
+                        if command["command"] == "triggers", let rules {
+                            let active = try rules.propose([.init(sentence: "Prepare the synthetic project recap", trigger: .init(state: "fixture ready"), kind: .acts)], at: proactiveClock.now)[0]
+                            try rules.setStatus(.active, id: active.id, at: proactiveClock.now)
+                            _ = try rules.propose([.init(sentence: "Draft the synthetic project checklist", trigger: .init(state: "fixture ready"), kind: .acts)], at: proactiveClock.now)
+                            context.value.states = ["fixture ready"]; live.learningContextDidChange()
+                        }
                         if command["command"] == "digest" { learnings.digest() }
                         if command["command"] == "eraseThenLateAck" {
                             try journal.delete(.all)
@@ -104,11 +122,12 @@ private struct LM4Runner: ProcessRunning {
                         try write(["ok": true, "status": .string(String(describing: live.managedStatus)), "sessions": .number(Double(live.sessions.count)),
                             "pane": controller.record?.pane.map { .string($0.id) } ?? .null,
                             "cards": .array(try cards.values.map(JSONValue.from)),
+                            "ruleActions": .array(try (rules?.ruleActions ?? []).map(JSONValue.from)),
                             "ratings": .number(Double(live.ratings.count)),
                             "muted": .array(live.mutedToday.map(JSONValue.string)),
                             "unread": .number(Double(learnings.values.count)),
                             "receipts": .array(try journal.items(matching: .init()).filter { $0.kind == .sentToAssistant }.map(JSONValue.from)),
-                            "deliveries": .array((live.ledger?.records ?? []).map { ["id": .string($0.delivery.id), "kind": .string($0.delivery.kind.rawValue), "acked": .bool($0.delivery.ackedAt != nil), "attempts": .number(Double($0.delivery.attempts)), "discarded": .bool($0.discardedAt != nil)] }),
+                            "deliveries": .array((live.ledger?.records ?? []).map { ["id": .string($0.delivery.id), "kind": .string($0.delivery.kind.rawValue), "content": .string($0.delivery.content), "meta": .object($0.delivery.meta.mapValues(JSONValue.string)), "acked": .bool($0.delivery.ackedAt != nil), "attempts": .number(Double($0.delivery.attempts)), "discarded": .bool($0.discardedAt != nil)] }),
                             "error": live.learningError.map(JSONValue.string) ?? .null])
                     } catch { try? write(["ok": false, "error": .string(String(describing: error))]) }
                 }
