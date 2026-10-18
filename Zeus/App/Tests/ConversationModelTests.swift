@@ -111,7 +111,7 @@ struct ConversationModelTests {
         f.cards.dismiss(id: progress.id)
         #expect(f.model.thread.count == 1)
         #expect(f.model.thread[0].isMuted)
-        #expect(f.model.unseenCount == 1)
+        #expect(f.model.unseenCount == 0) // Withdrawn cards are never unread (FX16).
     }
 
     @Test func openingMarksAllAgentMessagesSeenAndIncomingOpenPanelMessagesStaySeen() {
@@ -119,8 +119,8 @@ struct ConversationModelTests {
         let first = f.card(), second = f.card(.question, input: true)
         f.cards.add(first); f.cards.add(second)
         f.cards.dismiss(id: first.id)
-        #expect(f.model.unseenCount == 2)
-        #expect(f.status.badgeCount == 2)
+        #expect(f.model.unseenCount == 1) // The dismissed one no longer badges (FX16).
+        #expect(f.status.badgeCount == 1)
         #expect(f.status.state == .alert)
         f.model.openPanel()
         #expect(f.model.isPanelOpen)

@@ -121,7 +121,7 @@ Every bubble is a `ZeusBubble`. The table shows what goes inside it, mapped from
 | `message` | agent | `ZeusBubbleHeader(title, time)` if `title`, then the body, then one attachment chip per attachment (§18) |
 | `question`, open | agent | header, body, `ZeusOptionButtons(.open(shortcuts:))`. Shortcuts are only on the newest open question that has options (§8). |
 | `question`, answered | agent | header, body, `ZeusOptionButtons(.answered(optionID:))` showing only "✓ <label>", or nothing for a text answer. **Plus** a user bubble with the answer, placed **chronologically at the time of answering** (amended in D12: it used to say "right after the question card"). When the entry just before it isn't its question, add a caption above it: "↩ <question title>" (secondaryText, `.caption`, right-aligned). |
-| `content` | agent | header, body, one attachment chip per attachment (§18), then actions as `ZeusOptionButtons` (same open/answered rules as a question) |
+| `content` | agent | header, body, one attachment chip per attachment (§18), then actions as `ZeusOptionButtons` (same open/answered rules as a question). **A hand-over's actions are optional verdicts, not a question (FX16):** Zeus never waits on them (§15.2), they close quietly when the user replies in the composer or when a newer `content` card with the same `about` arrives (the card becomes dismissed: muted bubble, options `.closed`, nothing sent to the assistant), and `zeus_present` can set `ttl_seconds` to withdraw the card on its own. Until then ⌘1–9, the buttons and Skip still answer it. |
 | `progress` | agent | header (title, or the body's first line), `ZeusProgressRow(value: card.progress)`. Updates in place. |
 | any card with `progress != nil` | agent | as its kind, plus `ZeusProgressRow` before the options |
 | `userMessage` | user | the text |
@@ -192,7 +192,7 @@ All keys work while the panel is key. Only ⌥⌘Z is global.
 | ⇧Return or ⌥Return | composer | New line at the caret (handled by `ZeusComposer`) |
 | Backspace | composer, empty, chip showing | Clear the reply chip (handled by `ZeusComposer`) |
 | ⌘K | panel | Clear the reply chip (handled by `ZeusComposer`) |
-| ⌘1 … ⌘9 | panel | Pick option N on the **newest open question or content card that has options**; only that bubble shows the ⌘N hints. Works even while typing. |
+| ⌘1 … ⌘9 | panel | Pick option N on the **newest open question or content card that has options**; only that bubble shows the ⌘N hints. Works even while typing. (A content card is a ⌘N target and skippable, but never something Zeus waits on; FX16.) |
 | ⌘↓ | panel | Jump to latest, the same jump as the latest pill (§20); the key works whether or not a pill is shown |
 | ⌘R | panel | Rate the focused assistant message, or the newest message the assistant sent on its own: opens its rating row (§17). Esc closes the row only. |
 | Tab / ⇧Tab | panel | Native key-view traversal; Zeus doesn't intercept Tab. Focus moves in reading order through every control in the loaded thread, then the composer, and wraps. See the note below. |
@@ -470,6 +470,8 @@ One line between the thread and the composer, always visible. It says why Zeus s
 ### 15.2 States and copy
 
 The sentence always matches the avatar, so the app picks the row in CONTRACT §7's order: unseen, then activity, then an open question, then quiet hours, then idle. Blocked and delivery problems aren't in §7; the app ranks them (TB1-A).
+
+**What counts (FX16).** *Unseen* is an agent card that isn't the user's, a notice, rating-held, dismissed or expired, and isn't in `seenIDs`; a card the assistant withdrew or that expired stays in the thread, muted, and never badges. *An open question* is an open `question` card or a mirrored Terminal prompt card (`managed-block_…`). A `content` card with actions is answerable (⌘1–9, buttons, Skip) but is never "waiting": no "?", no waiting pose, and it never holds back the update and new-template restart lines (§6.1 of PRIVACY.md).
 
 | Avatar state | Factory | Strip | Jump |
 |---|---|---|---|
@@ -753,9 +755,9 @@ Slack-style floating buttons over the thread: one at the top for what the user h
 
 | Pill | Shown while | Label | Click |
 |---|---|---|---|
-| **Unread** (top) | unseen agent messages sit *above* the viewport. Unseen means not the user's, not a notice, not rating-held and not in `seenIDs`: the `unseenBelow` rule, looking up. | `↑ 3 unread` (`↑ 1 unread`) | scroll to the **oldest** unseen message, anchored at the top (the same jump as the strip's "Show", §15.2). The messages become seen as they show (§7), so the count falls and the pill goes away on its own. |
+| **Unread** (top) | unseen agent messages sit *above* the viewport. Unseen means not the user's, not a notice, not rating-held, not dismissed or expired (FX16), and not in `seenIDs`: the `unseenBelow` rule, looking up. | `↑ 3 unread` (`↑ 1 unread`) | scroll to the **oldest** unseen message, anchored at the top (the same jump as the strip's "Show", §15.2). The messages become seen as they show (§7), so the count falls and the pill goes away on its own. |
 | **Latest** (bottom) | the user is scrolled up by more than about a viewport, or unseen messages sit *below* the viewport. | `↓ 2 new` when something unseen is below, else `↓ Latest` | `latest(proxy)`, the same as ⌘↓. |
-| **Question** (top or bottom) | an open question (`StatusStripState.questions`) is off-screen. | `↑ ? Question` / `↓ ? Question`, or `↑ ? 2 questions` with the count of open questions | the strip's jump (§15.2): the next question in the shared cycle, through the one `lastQuestionJump`, so the pill, the strip and ⌘J never double-step. Focus lands on its first control, as today. |
+| **Question** (top or bottom) | an open question (`StatusStripState.questions`: `question` cards and mirrored prompts, never a content card's actions; FX16) is off-screen. | `↑ ? Question` / `↓ ? Question`, or `↑ ? 2 questions` with the count of open questions | the strip's jump (§15.2): the next question in the shared cycle, through the one `lastQuestionJump`, so the pill, the strip and ⌘J never double-step. Focus lands on its first control, as today. |
 
 - **Direction.** The question pill's arrow points at the *next* question the shared cycle will jump to; the pill sits in the cluster on that side. The unread pill always points up and the latest pill always down.
 - **Counts** are plain integers in the label, never "9+"; the pixel font is monospaced, so the pill just widens.

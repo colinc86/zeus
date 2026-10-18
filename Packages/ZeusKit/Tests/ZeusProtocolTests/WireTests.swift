@@ -65,7 +65,7 @@ import Testing
     let expected: [(String, Set<String>, Set<String>)] = [
         ("zeus_say", ["text", "title", "mood", "attachments", "priority", "ttl_seconds", "about"], ["text"]),
         ("zeus_ask", ["text", "title", "options", "allow_text", "placeholder", "multiline", "priority", "wait_seconds", "about"], ["text"]),
-        ("zeus_present", ["title", "body", "attachments", "actions", "allow_text", "mood", "priority", "about"], ["title", "body"]),
+        ("zeus_present", ["title", "body", "attachments", "actions", "allow_text", "mood", "priority", "about", "ttl_seconds"], ["title", "body"]),
         ("zeus_update_card", ["card_id", "title", "text", "append_text", "progress"], ["card_id"]),
         ("zeus_dismiss", ["card_id"], ["card_id"]),
         ("zeus_set_status", ["state", "detail", "progress", "ttl_seconds"], ["state"]),

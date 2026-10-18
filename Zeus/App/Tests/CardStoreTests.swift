@@ -122,8 +122,9 @@ struct CardStoreTests {
         var calls = 0
         reloaded.responseHandler = { _, _ in calls += 1 }
         #expect(reloaded.openCards.map(\.id) == [open.id])
-        // §10 keeps unseen dismissed messages in the conversation until it is opened.
-        #expect(reloaded.unseenCount == 1)
+        // A dismissed message stays in the conversation, muted, but never counts as unread (FX16).
+        #expect(reloaded.unseenCount == 0)
+        #expect(reloaded.cards.contains { $0.id == dismissed.id && $0.status == .dismissed })
         reloaded.markAllSeen()
         #expect(!reloaded.hasUnseenCards)
         #expect(reloaded.history.count == 2)
