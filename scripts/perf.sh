@@ -4,12 +4,18 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 python3 - "$PWD" "$@" <<'PY'
-import argparse, csv, datetime, json, os, pathlib, plistlib, statistics, subprocess, sys, tempfile, time
+import argparse, csv, datetime, json, os, pathlib, plistlib, shutil, statistics, subprocess, sys, tempfile, time
 
 root = pathlib.Path(sys.argv[1])
 p = argparse.ArgumentParser(description='Measure one-core CPU usage for 30 s; builds are separate. Existing PIDs are never terminated.')
 p.add_argument('--app', type=pathlib.Path, default=root / 'build/DerivedData/Build/Products/Debug/Zeus.app')
 p.add_argument('--pid', type=int, help='read-only measurement of an existing app or bridge')
+p.add_argument('--output', type=pathlib.Path, default=root / 'build/tmp/perf2', help='task-owned result directory')
+p.add_argument('--max-cpu', type=float, help='fail if mean one-core CPU percent exceeds this bound')
+p.add_argument('--max-idle-wakeups', type=float, help='fail if package-idle wakeups/s exceeds this bound')
+p.add_argument('--max-wakeups', type=float, help='fail if interrupt wakeups/s exceeds this bound')
+p.add_argument('--managed', action='store_true', help='production managed polling of a synthetic idle CLI on a private socket')
+p.add_argument('--frames', action='store_true', help='separate animation proof; enables a diagnostic 1 Hz counter')
 p.add_argument('--hidden', action='store_true', help='launch with the avatar hidden')
 p.add_argument('--character', default='zeus')
 p.add_argument('--history', type=int, default=0, help='seed N seen, dismissed synthetic cards in isolated history')
@@ -22,12 +28,13 @@ p.add_argument('--learn', action='store_true', help='turn on Learn from me (reco
 p.add_argument('--ghost', type=float, help='turn on Fade Zeus when idle at this opacity, after the shortest delay (5 s)')
 p.add_argument('--question', action='store_true', help='also seed one open, seen question card')
 a = p.parse_args(sys.argv[2:])
+if a.learn: p.error('--learn is disabled: production recording must not inspect the user workspace in a performance fixture')
 if a.history < 0: p.error('--history must be nonnegative')
 if a.seconds < 5: p.error('--seconds must be at least 5')
-if a.pid and (a.hidden or a.bridge or a.history or a.learn or a.ghost is not None or a.question):
+if a.pid and (a.hidden or a.bridge or a.history or a.learn or a.ghost is not None or a.question or a.managed):
     p.error('--hidden/--bridge/--history/--learn/--ghost/--question require an isolated launch')
 label = ''.join(c if c.isalnum() or c in '-_' else '_' for c in a.label)
-result = root / 'build/perf' / (datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '-' + label)
+result = a.output / (datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '-' + label)
 result.mkdir(parents=True)
 children, handles = [], []
 
@@ -69,6 +76,9 @@ try:
         app = a.app.resolve()
         with (app / 'Contents/Info.plist').open('rb') as f: info = plistlib.load(f)
         executable = app / 'Contents/MacOS' / info['CFBundleExecutable']
+        probe_binaries = [executable, executable.with_name(executable.name + '.debug.dylib')]
+        if not any(path.is_file() and b'ZEUS_PERF_ISOLATED_READY' in path.read_bytes() for path in probe_binaries):
+            raise RuntimeError('Build a Debug app with isolated performance dependencies before profiling')
         prefs = home / 'Library/Preferences'; prefs.mkdir(parents=True)
         settings = {'general.welcomeShown': True, 'avatar.manuallyHidden': a.hidden,
                     'character.id': a.character, 'quiet.enabled': False,
@@ -92,8 +102,16 @@ try:
             (support / 'cards.json').write_text(json.dumps({'version': 1, 'cards': cards, 'seenIDs': [c['id'] for c in cards]}))
         # Never start a managed agent, and keep any tmux use off the user's server and agent configs.
         tmux_dir = home / 'tmux'; tmux_dir.mkdir()
-        env = dict(os.environ, CFFIXED_USER_HOME=str(home), HOME=str(home), TMUX_TMPDIR=str(tmux_dir))
+        env = {k: v for k, v in os.environ.items() if k in ('PATH', 'LANG', 'LC_ALL', 'TMPDIR') or k.startswith('ZEUS_PERF_')}
+        env.update(CFFIXED_USER_HOME=str(home), HOME=str(home), TMUX_TMPDIR=str(tmux_dir), ZEUS_PERF_PROBE='1', ZEUS_PERF_DIAGNOSTICS='1')
+        if a.managed:
+            (home / 'project').mkdir()
+            fixture = home / 'idle-claude'
+            fixture.write_text("#!/usr/bin/python3\nimport os, sys, time\nif '--help' in sys.argv: print('Private fixture --system-prompt-snapshot'); sys.exit(0)\nprint('───\\n❯\u00a0\\n───\\x1b[1A\\r\\x1b[2C', end='', flush=True)\nwhile True:\n try: os.kill(" + str(os.getpid()) + ", 0)\n except ProcessLookupError: break\n time.sleep(1)\n")
+            fixture.chmod(0o700)
+            env['ZEUS_PERF_MANAGED'] = '1'
         env.pop('TMUX', None)
+        if a.frames: env['ZEUS_FRAME_COUNTER'] = '1'
         managed_off = json.dumps({'enabled': False, 'folder': '', 'agent': 'claude',
                                   'launchPrompt': '', 'startWhenZeusOpens': False}).encode()
         # Launch normally; test-host markers would silently suppress runtime/UI startup.
@@ -102,7 +120,7 @@ try:
         child = subprocess.Popen([str(executable), '-general.welcomeShown', 'YES',
             '-avatar.manuallyHidden', 'YES' if a.hidden else 'NO', '-character.id', a.character,
             '-agent.managedSession', '<' + managed_off.hex() + '>'],
-            env=env, stdin=subprocess.DEVNULL, stdout=log, stderr=log)
+            env=env, cwd=home, stdin=subprocess.DEVNULL, stdout=log, stderr=log)
         children.append(child); targets = {'app': child.pid}
         socket = home / 'Library/Application Support/Zeus/bridge.sock'
         deadline = time.monotonic() + 10
@@ -112,7 +130,7 @@ try:
             time.sleep(0.1)
         context = {'mode': 'isolated launch', 'app': str(app), 'character': a.character, 'hidden': a.hidden,
                    'conversation': os.environ.get('ZEUS_PERF_PANEL') or 'closed', 'cards': a.history, 'bridge': a.bridge,
-                   'learn': a.learn, 'ghost_opacity': a.ghost, 'question': a.question,
+                   'learn': a.learn, 'managed_synthetic': a.managed, 'ghost_opacity': a.ghost, 'question': a.question,
                    'activity': os.environ.get('ZEUS_PERF_ACTIVITY'), 'ignore_occlusion': os.environ.get('ZEUS_PERF_IGNORE_OCCLUSION') == '1'}
         if a.bridge:
             output = (result / 'bridge.stdout.ndjson').open('wb'); error = (result / 'bridge.stderr').open('wb')
@@ -125,7 +143,7 @@ try:
                 {'jsonrpc': '2.0', 'method': 'notifications/initialized'}]:
                 bridge.stdin.write((json.dumps(msg) + '\n').encode())
             bridge.stdin.flush()
-    time.sleep(5) # exclude startup, font registration and first render
+    time.sleep(20 if a.managed else 5) # exclude startup, managed readiness grace, font registration and first render
     if not a.pid:
         history = home / 'Library/Application Support/Zeus/cards.json'
         actual = json.loads(history.read_text()) if history.exists() else {'cards': []}
@@ -168,9 +186,23 @@ try:
             'max_one_second_percent': max(per_target[name]), 'rss_kib': previous[pid][1]}
     with (result / 'cpu.csv').open('w') as f:
         writer = csv.writer(f); writer.writerow(['process', 'pid', 'elapsed_s', 'cpu_time_s', 'interval_cpu_percent', 'rss_kib']); writer.writerows(rows)
+    if a.frames and not a.pid:
+        frames = [json.loads(line.removeprefix('ZEUS_FRAMES: ')) for line in (result / 'app.log').read_text().splitlines() if line.startswith('ZEUS_FRAMES: ')]
+        summary['animation_samples'] = frames
+        if not frames: raise RuntimeError('Frame diagnostics missing; do not interpret idle CPU as live animation proof')
+        if not a.hidden:
+            views = [view for frame in frames for view in frame['views'] if view['surface'] == 'Zeus avatar']
+            if len(views) < 2 or views[-1]['pixelChanges'] <= views[0]['pixelChanges'] or not all(view['layerMatchesDriver'] for view in views):
+                raise RuntimeError('Visible avatar did not prove changing native pixels')
     (result / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     print(json.dumps(summary, indent=2), flush=True)
     print('Artifacts:', result, flush=True)
+    violations = []
+    for name, values in summary['processes'].items():
+        for field, bound in [('mean_cpu_percent', a.max_cpu), ('idle_wakeups_per_second', a.max_idle_wakeups), ('wakeups_per_second', a.max_wakeups)]:
+            if bound is not None and (values.get(field) is None or values[field] > bound):
+                violations.append(f'{name}: {field}={values.get(field)} exceeds {bound}')
+    if violations: raise RuntimeError('; '.join(violations))
     if a.trace:
         for name, pid in targets.items():
             subprocess.run(['xcrun', 'xctrace', 'record', '--template', 'Time Profiler', '--attach', str(pid),
@@ -187,6 +219,9 @@ finally:
             child.terminate()
             try: child.wait(timeout=3)
             except subprocess.TimeoutExpired: child.kill(); child.wait(timeout=3)
+    if a.managed and not a.pid and (home / 'tmux.sock').exists():
+        tmux = shutil.which('tmux')
+        if tmux: subprocess.run([tmux, '-S', str(home / 'tmux.sock'), 'kill-server'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
     for handle in handles: handle.close()
     temporary_home.cleanup()
 PY
