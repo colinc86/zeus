@@ -700,9 +700,9 @@ The core records each outcome as a category, a source, a date and a confidence c
 
 ### 12.1 What the folder holds
 
-`<assistant folder>/Zeus/`, written by Zeus from the journal: `README.md`, `days/<yyyy-mm-dd>/` (`activity.md`, `focus.md`, `screen/<HHmmss>-<app>.jpg` + `.md`, `typing.md`, `summary.md`, `moments.md`), `reflections/<yyyy-mm-dd>.md`, `rules.md`, `preferences.md` (§13). Content is exactly what the journal stores, redacted and covered; the per-level "Raw on request" switches (§11.1) are retired, and `zeus_get_journal` follows the levels too. Retention pruning and every delete remove the matching files (Undo restores them). A file the user deleted in Finder is not re-created. Zeus never touches anything else in the folder, including the assistant's own `Notes/`.
+`<assistant folder>/Zeus/`, written by Zeus from the journal: `README.md`, `days/<yyyy-mm-dd>/` (`activity.md`, `focus.md`, `screen/<HHmmss>-<app>.jpg` + `.md`, `typing.md`, `summary.md`, `moments.md`), `reflections/<yyyy-mm-dd>.md`, `rules.md`, `preferences.md` (§13). Content is exactly what the journal stores, redacted and covered; the per-level "Raw on request" switches (§11.1) are retired, and `zeus_get_journal` follows the levels too. Retention pruning and every delete remove the matching files (Undo restores them). A file the user deleted in Finder is not re-created. Zeus never touches anything else in the folder, including the assistant's own `Notes/`. **Zeus only replaces or deletes files it wrote itself (FX5).** Its record of what it wrote is the only authority: Delete Everything removes those files, any temp files Zeus left behind, and then only the empty directories Zeus created, `Zeus/` itself last and only if it's empty. A file already at a path Zeus wants to write, that Zeus didn't write, is adopted when its bytes are what Zeus would write (this recovers a lost record) and otherwise left alone, skipped and reported in the folder row (§12.2) until it's moved.
 
-`Zeus/README.md` opens with: "Zeus writes this folder. It holds what Zeus learned about how you use your Mac, with private details already removed. Zeus overwrites and prunes these files; don't edit them. Delete a file and it stays deleted."
+`Zeus/README.md` opens with: "Zeus writes this folder. It holds what Zeus learned about how you use your Mac, with private details already removed. Zeus overwrites and prunes these files; don't edit them. Delete a file and it stays deleted. Zeus only replaces or deletes files it wrote itself; anything else in this folder is left alone."
 
 ### 12.2 The folder row (Settings › Privacy, top of the pane under the caption)
 
@@ -714,7 +714,7 @@ Label **"Your assistant's folder"**, then one line and actions by state:
 | Zeus runs the assistant, no folder yet | "Not kept in a folder yet. Choose your assistant's folder under Assistant." | "Assistant Settings" (switches to that tab; no ellipsis, it opens no window) |
 | Connect your own, folder chosen | "Kept in ~/Assistant/Zeus" | "Show in Finder", "Choose…", "Stop keeping a folder" |
 | Connect your own, none | "Not kept in a folder. Choose one and Zeus writes what it keeps there for your assistant." | "Choose…" |
-| Write failed (any state) | the line above and its buttons, then a second line "Zeus can't write to this folder." in `settingsError` colour, with no button of its own: the row's buttons already offer the next step | |
+| Write failed (any state) | the line above and its buttons, then a second line in `settingsError` colour with the writer's own message (`lastWriteError`), with no button of its own: the row's buttons already offer the next step. "Zeus can't write to this folder." for a failed write. For a collision with a file Zeus didn't write (§12.1): "Zeus didn't replace Zeus/README.md because it isn't a file Zeus wrote. Move or rename it to let Zeus write there." and for several: "Zeus didn't replace Zeus/README.md and 2 other files because Zeus didn't write them. Move or rename them to let Zeus write there." Paths are relative to the assistant folder. The line goes away on the next export once the file has moved. | |
 
 - Caption under the row: "Where this folder lives is up to you. If it syncs, what Zeus keeps syncs with it."
 - "Stop keeping a folder" asks nothing and leaves the folder's files alone; the line becomes the none state.
@@ -749,8 +749,8 @@ Label **"Your assistant's folder"**, then one line and actions by state:
 
 ### 12.6 Delete Everything
 
-- The confirmation reads: "Delete everything Zeus kept and sent, here and in your assistant's folder? This can't be undone."
-- A checkbox under it, off by default: "Also delete your assistant's notes", caption "Its Notes folder, where it keeps what it has concluded about you." Passed as `includeAssistantNotes`.
+- The confirmation reads (FX5): title "Delete everything Zeus kept and sent?", body "This removes what Zeus kept here and the files Zeus wrote in Zeus/ inside your assistant's folder. Anything else in that folder stays. This can't be undone." It promises only Zeus's own files, because that is all Delete Everything removes (§12.1).
+- A checkbox under it, off by default: "Also delete your assistant's notes", caption "Everything in its Notes folder is deleted, including files you or your assistant put there." Passed as `includeAssistantNotes`. The caption says what the checkbox really does: Notes/ is emptied whole, not by Zeus's record.
 - Buttons unchanged: "Cancel" (default) and "Delete" (destructive).
 
 ## 13. FB1 · Ratings

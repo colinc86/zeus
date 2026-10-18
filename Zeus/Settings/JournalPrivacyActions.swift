@@ -35,11 +35,11 @@ struct DeleteLearningConfirmation: View {
     @FocusState private var cancelFocused: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Delete everything Zeus kept and sent, here and in your assistant's folder?").settingsTitle()
-            Text("This can't be undone.").settingsBody()
+            Text("Delete everything Zeus kept and sent?").settingsTitle()
+            Text("This removes what Zeus kept here and the files Zeus wrote in Zeus/ inside your assistant's folder. Anything else in that folder stays. This can't be undone.").settingsBody()
             Toggle("Also delete your assistant's notes", isOn: $includeAssistantNotes)
                 .toggleStyle(ZeusCheckboxStyle()).accessibilityLabel("Also delete your assistant's notes")
-            Text("Its Notes folder, where it keeps what it has concluded about you.").settingsCaption()
+            Text("Everything in its Notes folder is deleted, including files you or your assistant put there.").settingsCaption()
             HStack {
                 Spacer()
                 KeyboardButton("Cancel", focus: $cancelFocused, action: cancel).keyboardShortcut(.cancelAction).accessibilityLabel("Cancel")
