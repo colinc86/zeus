@@ -44,7 +44,7 @@ import ZeusDesign
         #expect(f.store.outcomeEvents.isEmpty)
         #expect(try Data(contentsOf: file) == bytes)
         f.model.approve(rule)
-        #expect(f.model.error != nil && f.store.rules == original)
+        #expect(f.model.error == nil && f.store.rules == original)
         let reopened = try PersistentRulesStore(fileURL: file, keyProvider: FixtureJournalKey())
         #expect(reopened.rules == original && reopened.outcomeEvents.isEmpty)
     }
@@ -99,6 +99,18 @@ import ZeusDesign
         #expect(f.store.outcomeEvents.last?.outcome == .toggledOn)
     }
 
+    @Test func staleShadowRowQuietlyIgnoresWithdrawnEligibility() throws {
+        let f = try ShadowApprovalFixture(); defer { f.cleanup() }
+        let rule = try f.rule()
+        try f.store.recordAction(f.action(for: rule))
+        #expect(f.model.canApprove(rule))
+        try f.store.declineRule(id: rule.id, at: f.now)
+        let before = f.store.rules, outcomes = f.store.outcomeEvents
+        f.model.approve(rule)
+        #expect(f.model.error == nil)
+        #expect(f.store.rules == before && f.store.outcomeEvents == outcomes)
+    }
+
     @Test(arguments: [false, true]) func nativeSettingsRequiresResultAndSeparatesPurchases(dark: Bool) async throws {
         let f = try ShadowApprovalFixture(); defer { f.cleanup() }
         let rule = try f.rule(), spending = try f.rule(spending: true)
@@ -117,6 +129,7 @@ import ZeusDesign
         for _ in 0..<8 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
         let pending = try #require(Self.nodes(host).first { Self.label($0) == "Approve: " + rule.sentence })
         #expect((pending as AnyObject).isAccessibilityEnabled?() == false)
+        #expect((pending as AnyObject).accessibilityHelp?() == "Available after the first try")
         #expect(!Self.nodes(host).contains { Self.label($0) == "Approve: " + spending.sentence })
         #expect(f.model.shadowCaption(rule) == "Waiting for its first try. Zeus hasn't seen this rule run yet.")
         _ = (pending as AnyObject).accessibilityPerformPress?()

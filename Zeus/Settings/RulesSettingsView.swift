@@ -78,6 +78,7 @@ struct RulesSettingsView: View {
                         KeyboardButton("OK") { model.approve(rule) }.accessibilityLabel("Approve: \(rule.sentence)")
                             .disabled(!model.canApprove(rule))
                             .help(model.canApprove(rule) ? "Approve this rule" : "Available after the first try")
+                            .accessibilityHint(model.canApprove(rule) ? "" : "Available after the first try")
                     }
                     KeyboardButton("Not This") { model.dismiss(rule) }.accessibilityLabel("Not this rule: \(rule.sentence)")
                 case .proposed:

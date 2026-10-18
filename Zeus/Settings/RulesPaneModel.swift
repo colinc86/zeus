@@ -113,7 +113,10 @@ final class RulesPaneModel {
         }
     }
     static func alwaysAsks(_ rule: LearnedRule) -> Bool { rule.trigger.kind == "spend" }
-    func approve(_ rule: LearnedRule) { setEnabled(true, rule: rule) }
+    func approve(_ rule: LearnedRule) {
+        guard rule.status != .shadow || canApprove(rule) else { return }
+        setEnabled(true, rule: rule)
+    }
     func delete(_ rule: LearnedRule) {
         guard mutate({ try store.delete(id: rule.id) }) else { return }
         undoExpiry?.cancel(); deletedRule = rule; undoDeadline = clock().addingTimeInterval(5)
