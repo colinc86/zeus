@@ -5,7 +5,11 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from tmux_hygiene import added, snapshot, managed_servers
+from tmux_hygiene import added, snapshot
+import tmux_fixture_processes as fixture
+from unittest.mock import patch
+import shutil
+import time
 
 
 class TmuxHygieneTests(unittest.TestCase):
@@ -36,11 +40,61 @@ class TmuxHygieneTests(unittest.TestCase):
             self.assertIn(b'created shared tmux entries', result.stderr)
             self.assertTrue(entry.exists())
 
-    def test_orphan_inventory_is_specific_and_catches_unlinked_sockets(self):
-        fixture = '123 Sun Oct 18 00:00:00 2026 /opt/homebrew/bin/tmux -S /tmp/zmanaged_AABBCCDD/tmux.sock -f /dev/null new-session'
-        user = '456 Sun Oct 18 00:00:00 2026 /opt/homebrew/bin/tmux -S /tmp/tmux-501/default new-session'
-        unrelated = '789 Sun Oct 18 00:00:00 2026 /bin/echo /tmp/zmanaged_AABBCCDD/tmux.sock'
-        self.assertEqual(managed_servers('\n'.join([fixture, user, unrelated])), {fixture})
+    def test_process_inventory_requires_fixture_namespace_not_just_tmux(self):
+        uid = os.getuid()
+        lines = [f'{uid} 123 1 Sun Oct 18 00:00:00 2026 /opt/homebrew/bin/tmux -S /tmp/zmanaged_AABBCCDD/tmux.sock -f /dev/null new-session',
+                 f'{uid} 456 1 Sun Oct 18 00:00:00 2026 /opt/homebrew/bin/tmux -S /tmp/tmux-501/default new-session',
+                 f'{uid} 789 1 Sun Oct 18 00:00:00 2026 /bin/echo /tmp/zmanaged_AABBCCDD/tmux.sock']
+        inventory = fixture.servers(fixture.processes('\n'.join(lines)))
+        self.assertEqual([p.pid for p in inventory], [123])
+        self.assertEqual(list(inventory.values()), [Path('/private/tmp/zmanaged_AABBCCDD')])
+
+    def test_gui_namespace_requires_private_open_socket_and_argv_proof(self):
+        process = fixture.ProcessIdentity(os.getuid(), 123, 1, 'same start',
+            '/opt/homebrew/bin/tmux -u new-session -d -s zeus env ZEUS_MANAGED_OWNER=fixture claude --mcp-config /tmp/zcomposer_test/Library/Application Support/Zeus/mcp.json')
+        self.assertIsNone(fixture.server_root(process))
+        self.assertIsNone(fixture.server_root(process, ['/private/tmp/tmux-501/default']))
+        self.assertEqual(fixture.server_root(process, ['/private/tmp/zcomposer_test/tmux/tmux-501/default']), Path('/private/tmp/zcomposer_test'))
+        default = fixture.dataclasses.replace(process, command=process.command.replace('-u new-session', '-S /private/tmp/tmux-501/default new-session'))
+        self.assertIsNone(fixture.server_root(default, ['/private/tmp/zcomposer_test/tmux/tmux-501/default']))
+
+    def test_sock_filename_is_owned_but_pane_text_is_not_a_server_option(self):
+        process = fixture.ProcessIdentity(os.getuid(), 123, 1, 'same start',
+            '/opt/homebrew/bin/tmux -S /private/tmp/ztmux_example/sock -f /dev/null new-session -d /bin/sleep 60')
+        self.assertEqual(fixture.server_root(process), Path('/private/tmp/ztmux_example'))
+        for prefix in ('', '-S /private/tmp/human-socket '):
+            user = fixture.dataclasses.replace(process, command='/opt/homebrew/bin/tmux ' + prefix +
+                'new-session /bin/echo -S /private/tmp/zmanaged_example/tmux.sock')
+            self.assertIsNone(fixture.server_root(user))
+
+    def test_build_namespace_with_spaces_and_pid_reuse_are_safe(self):
+        root = fixture.REPO / 'build/tmp/fx10'
+        process = fixture.ProcessIdentity(os.getuid(), 123, 1, 'old', f'/opt/homebrew/bin/tmux -S {root}/private.sock -f /dev/null new-session')
+        self.assertEqual(fixture.server_root(process), root)
+        reused = fixture.dataclasses.replace(process, started='new', command='/bin/sleep 1')
+        with patch.object(fixture, 'processes', side_effect=[{123: process}] + [{123: reused}] * 10), patch.object(fixture.os, 'kill') as kill:
+            fixture.reap_root(root)
+        kill.assert_not_called()
+
+    def test_deleted_socket_and_root_are_reaped_by_process_lifetime(self):
+        tmux = shutil.which('tmux')
+        if not tmux:
+            self.skipTest('tmux is not installed')
+        root = Path(tempfile.mkdtemp(prefix='zfx10_', dir='/tmp')).resolve()
+        socket = root / 'private.sock'
+        env = {'HOME': str(root), 'PATH': '/usr/bin:/bin', 'LANG': 'en_US.UTF-8'}
+        try:
+            subprocess.run([tmux, '-S', str(socket), '-f', '/dev/null', 'new-session', '-d', '-s', 'fixture', '/bin/sleep', '60'], env=env, check=True)
+            owned = {p.pid for p, namespace in fixture.servers().items() if namespace == root}
+            self.assertTrue(owned)
+            socket.unlink()
+            root.rmdir()
+            self.assertTrue({p.pid for p, namespace in fixture.servers().items() if namespace == root})
+            fixture.reap_root(root)
+            self.assertFalse(owned.intersection(fixture.processes()))
+        finally:
+            fixture.reap_root(root)
+            shutil.rmtree(root, ignore_errors=True)
 
     def test_wrapper_preserves_command_failure(self):
         result = subprocess.run([sys.executable, '-B', str(Path(__file__).with_name('tmux_hygiene.py')),

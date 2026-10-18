@@ -52,7 +52,7 @@ def ac1_main():
     tmux, claude = shutil.which("tmux"), shutil.which("claude")
     assert tmux and claude, "tmux and Claude must be installed"
     root = create_root("zac1_")
-    home, project = root / "home", root / "project"
+    home, project = root / "home", root / "home" / "project"
     profile = home / ".claude"
     profile.mkdir(parents=True); project.mkdir()
     socket = str(root / "tmux.sock")
@@ -159,7 +159,7 @@ def lv1_case(executable, case):
     root = create_root("zlv1_")
     LV1_ROOTS.append(root)
     (out / "proof.json").unlink(missing_ok=True)
-    home, project = root / "home", root / "project"
+    home, project = root / "home", root / "home" / "project"
     profile = home / ".claude"
     profile.mkdir(parents=True); project.mkdir()
     tmux, claude = shutil.which("tmux"), shutil.which("claude")

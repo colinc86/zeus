@@ -30,7 +30,7 @@ private struct SA2Runner: ProcessRunning {
         var args = arguments
         if args.contains("respawn-pane") {
             if args.contains("--no-daemon") {
-                let project = URL(fileURLWithPath: environment["HOME"] ?? "").deletingLastPathComponent().appendingPathComponent("project").path
+                let project = URL(fileURLWithPath: environment["HOME"] ?? "").appendingPathComponent("project").path
                 let overrides = ["check_for_update_on_startup=false", "model=\"sa2\"", "model_provider=\"sa2\"",
                     "model_providers.sa2={name=\"SA2 localhost fixture\",base_url=\"\(base.absoluteString)/v1\",wire_api=\"responses\",requires_openai_auth=false}",
                     "projects.\"\(project)\".trust_level=\"trusted\""]
@@ -62,7 +62,7 @@ private struct SA2Runner: ProcessRunning {
         let socket = root.appendingPathComponent("tmux.sock").path, env = ProcessInfo.processInfo.environment
         guard env["HOME"] == root.appendingPathComponent("home").path else { throw ConnectorError.invalidURL }
         let routing = SA2Routing()
-        routing.managedSession = .init(enabled: true, folder: root.appendingPathComponent("project").path, agent: agent,
+        routing.managedSession = .init(enabled: true, folder: root.appendingPathComponent("home/project").path, agent: agent,
             permissionModeID: agent == .opencode ? "allow" : "workspace-write/on-request", launchPrompt: "SA2 isolated localhost state accuracy fixture.", startWhenZeusOpens: true)
         let runner = SA2Runner(socket: socket, base: base, environment: env)
         let controller = ManagedSessionController(configuration: { routing.managedSession }, stateURL: root.appendingPathComponent("managed.json"),

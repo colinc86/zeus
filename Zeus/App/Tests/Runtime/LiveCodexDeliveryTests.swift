@@ -73,7 +73,7 @@ struct LiveCodexDeliveryTests {
         let codex = try #require(executables.agents[.codex])
         let runner = FoundationProcessRunner()
         let root = URL(fileURLWithPath: "/tmp/zl3_" + UUID().uuidString.prefix(8))
-        let home = root.appendingPathComponent("home"), project = root.appendingPathComponent("project")
+        let home = root.appendingPathComponent("home"), project = root.appendingPathComponent("home/project")
         try FileManager.default.createDirectory(at: home.appendingPathComponent(".codex"), withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
         if warning {

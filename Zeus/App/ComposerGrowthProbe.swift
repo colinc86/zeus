@@ -8,11 +8,49 @@ import ZeusProtocol
 /// Opt-in standalone native-input verification. Refuses ordinary launches and sends only to preview.
 /// Input is dispatched directly to this app's passive panel; no global events or capture are used.
 @MainActor enum ComposerGrowthProbe {
+    private static var defaultsDomain: String?
+    static var requested: Bool { isRequested(ProcessInfo.processInfo.environment) }
+    static func isRequested(_ environment: [String: String]) -> Bool { environment["ZEUS_COMPOSER_GROWTH_PROBE"] != nil }
+    static func cleanup() {
+        if let defaultsDomain { UserDefaults(suiteName: defaultsDomain)?.removePersistentDomain(forName: defaultsDomain) }
+        defaultsDomain = nil
+    }
+
+    static func validatedHome(_ environment: [String: String]) throws -> URL {
+        guard environment["ZEUS_COMPOSER_GROWTH_PROBE"] == "1", let home = environment["HOME"],
+              environment["CFFIXED_USER_HOME"] == home,
+              ManagedProbeIsolation.canonical(home) == home,
+              URL(fileURLWithPath: home).deletingLastPathComponent().path == "/private/tmp",
+              URL(fileURLWithPath: home).lastPathComponent.hasPrefix("zcomposer_"),
+              environment["TMUX_TMPDIR"] == home + "/tmux" else { throw Failure("Invalid disposable composer environment") }
+        _ = try ManagedProbeIsolation.home(environment)
+        return URL(fileURLWithPath: home, isDirectory: true)
+    }
+
+    /// A fresh domain and explicit file URLs avoid cfprefsd and Foundation home fallbacks.
+    static func makeShell() -> ShellController {
+        let name = "test.zeus.composer." + UUID().uuidString
+        guard let defaults = UserDefaults(suiteName: name) else { preconditionFailure("Couldn't create isolated probe defaults") }
+        defaultsDomain = name
+        let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: NoCredentials())
+        settings.managedSession = AppSettings.newManagedSession(enabled: false)
+        settings.hasShownWelcome = true
+        let home = (try? validatedHome(ProcessInfo.processInfo.environment))
+            ?? FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        return ShellController(defaults: defaults, cards: CardStore(fileURL: home.appendingPathComponent("cards.json")), settings: settings)
+    }
+
+    private struct NoCredentials: OpenCodePasswordStoring {
+        func read() throws -> String? { nil }
+        func save(_ password: String?) throws { throw Failure("Composer probes cannot save credentials") }
+    }
+
     static func start(shell: ShellController) {
         let env = ProcessInfo.processInfo.environment
-        guard env["ZEUS_COMPOSER_GROWTH_PROBE"] == "1", let home = env["CFFIXED_USER_HOME"],
-              home.hasPrefix("/private/tmp/zcomposer_"), env["HOME"] == home,
-              env["TMUX_TMPDIR"] == home + "/tmux", shell.settings.managedSession?.enabled == false else { return }
+        guard let root = try? validatedHome(env), shell.settings.managedSession?.enabled == false else {
+            NSApplication.shared.terminate(nil); return
+        }
+        let home = root.path
         shell.messaging.previewEnabled = true
         shell.messaging.previewOutcome = .delivered
         shell.settings.typewriterEnabled = false

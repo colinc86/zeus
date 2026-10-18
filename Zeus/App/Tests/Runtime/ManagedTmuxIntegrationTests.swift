@@ -15,8 +15,8 @@ struct ManagedTmuxIntegrationTests {
         let python = ["/opt/homebrew/bin/python3", "/usr/bin/python3"].first { FileManager.default.isExecutableFile(atPath: $0) }
         guard let python else { Issue.record("Python is required for the isolated fake-agent fixture"); return }
         let root = URL(fileURLWithPath: "/tmp/zmanaged_" + UUID().uuidString.prefix(8))
-        let folder = root.appendingPathComponent("folder with spaces")
         let home = root.appendingPathComponent("home")
+        let folder = home.appendingPathComponent("folder with spaces")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
         // Force the old log-before-native-context gap on every full-suite run.

@@ -6,6 +6,8 @@ localhost SSE transport, headless-host caching, cleanup and path scrubbing.
 """
 import atexit, fcntl, hashlib, http.server, json, os, pathlib, re, selectors, shutil, signal, subprocess, sys, tempfile, threading, time, uuid
 REPO=pathlib.Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(REPO/"scripts"))
+from tmux_fixture_processes import reap_root
 _ROOTS=[]
 _HOST_LEASE=None
 _HOST_LEASE_GUARD=threading.Lock()
@@ -59,7 +61,11 @@ def isolated_environment(home, extra=None):
     # Pass only gate-owned diagnostic paths, never inherited agent credentials/config.
     for key in ["ZEUS_LIVE_OUTPUT","ZEUS_LIVE_REGISTRY"]:
         if key in os.environ:env[key]=os.environ[key]
-    env.update(extra or {})
+    additions=extra or {}
+    protected={"HOME","CFFIXED_USER_HOME","CLAUDE_CONFIG_DIR","CODEX_HOME","XDG_CONFIG_HOME","XDG_DATA_HOME","XDG_CACHE_HOME","XDG_STATE_HOME","TMUX_TMPDIR","TMUX","TMUX_PANE"}
+    if any(key in protected and value != env.get(key) for key,value in additions.items()):
+        raise ValueError("A live fixture cannot override its private profile or tmux namespace")
+    env.update(additions)
     return env
 
 
@@ -91,9 +97,11 @@ def scrub_paths(value,replacements):
 def cleanup_root(root,remove=True):
     """Idempotent, bounded cleanup; never infer a socket from ambient TMUX."""
     root=pathlib.Path(root)
-    if not root.exists():return
     if root.is_symlink() or root.resolve().parent != pathlib.Path("/private/tmp") or not root.name.startswith(("zpc1_","zsa1_","zsa2_","zsa3_","zsa4_","zac1_","zlv1_","zcy1_")):
         raise ValueError("Refusing cleanup outside a private live fixture")
+    # The process argv still proves ownership when the socket or entire directory was removed.
+    reap_root(root)
+    if not root.exists():return
     tmux=shutil.which("tmux");socket=root/"tmux.sock"
     owned={}
     def stamp(pid):
@@ -115,8 +123,7 @@ def cleanup_root(root,remove=True):
     def signal_owned(pid,signum):
         if stamp(pid)!=owned[pid]:return
         try:
-            if os.getpgid(pid)==pid:os.killpg(pid,signum)
-            else:os.kill(pid,signum)
+            os.kill(pid,signum)
         except ProcessLookupError:pass
     def live_owned():return any(stamp(pid)==identity for pid,identity in owned.items())
     # First allow the launcher to observe HUP, reap its child, and journal exit.
@@ -257,7 +264,7 @@ def eventually(check, description, timeout=30):
 class Pane:
     def __init__(self,agent,native_updater=False, prefix="zpc1_", output=None):
         self.agent=agent;self.root=create_root(prefix);self.output=output or output_dir("pc1-live")
-        self.home=self.root/'home';self.project=self.root/'project';self.home.mkdir();self.project.mkdir()
+        self.home=self.root/'home';self.project=self.home/'project';self.home.mkdir();self.project.mkdir()
         for d in ['.claude','.codex','.config','.cache','.local/share','.local/state','tmux']:(self.home/d).mkdir(parents=True)
         self.socket=str(self.root/'tmux.sock');self.tmux=shutil.which('tmux');self.cli=shutil.which(agent)
         assert self.tmux and self.cli
@@ -274,6 +281,11 @@ class Pane:
         if native_updater:
             self.env.pop('DISABLE_AUTOUPDATER');self.env.pop('CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC')
     def tm(self,*args,input=None):
+        if args and args[0] in ('new-session','new-window','respawn-pane','split-window'):
+            if '-c' not in args or args.index('-c') + 1 >= len(args):
+                raise ValueError("Native fixtures require an explicit working directory")
+            if not pathlib.Path(args[args.index('-c') + 1]).resolve().is_relative_to(self.home.resolve()):
+                raise ValueError("Native fixture working directory escaped disposable HOME")
         return subprocess.run([self.tmux,'-u','-S',self.socket,'-f','/dev/null',*args],env=self.env,input=input,capture_output=True,text=True,check=True,timeout=10).stdout
     def snapshot(self):
         return {'screen':self.tm('capture-pane','-p','-e','-t','pc1'), 'inputMetadata':self.tm('display-message','-p','-t','pc1','#{cursor_x}|#{cursor_y}|#{pane_width}|#{pane_dead}|#{cursor_flag}|#{bracket_paste_flag}').strip()}

@@ -72,7 +72,7 @@ import ZeusSprites
         let environment = ProcessInfo.processInfo.environment
         guard environment["HOME"] == root.appendingPathComponent("home").path else { throw CocoaError(.fileReadNoPermission) }
         let routing = SA1Routing(), context = try SA1Context(root: root)
-        routing.managedSession = .init(enabled: true, folder: root.appendingPathComponent("project").path, agent: .claude,
+        routing.managedSession = .init(enabled: true, folder: root.appendingPathComponent("home/project").path, agent: .claude,
             permissionModeID: "manual", launchPrompt: "SA1 private localhost fixture. Follow the supplied tool requests.", startWhenZeusOpens: true)
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json"))
         cards.setConversationOpen(true)

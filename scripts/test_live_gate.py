@@ -78,6 +78,20 @@ class GateTests(unittest.TestCase):
             self.assertEqual(env['CODEX_HOME'],str(root/'home/.codex'))
             self.assertEqual(env['TMUX_TMPDIR'],str(root/'home/tmux'))
         finally:cleanup_root(root)
+    def test_private_environment_rejects_namespace_overrides(self):
+        root=create_root('zsa4_')
+        try:
+            for key in ('HOME','CFFIXED_USER_HOME','CODEX_HOME','TMUX_TMPDIR','TMUX'):
+                with self.assertRaises(ValueError):
+                    isolated_environment(root/'home', {key: '/outside-fixture'})
+        finally:cleanup_root(root)
+    def test_native_pane_rejects_missing_or_escaped_working_directory_before_spawn(self):
+        pane=LiveSupport.Pane.__new__(LiveSupport.Pane)
+        pane.home=pathlib.Path('/private/tmp/zfx10_example/home')
+        with patch.object(LiveSupport.subprocess,'run') as run:
+            for args in [('new-session','-d'),('respawn-pane','-c','/outside'),('new-window','-c',str(pane.home)+'-sibling')]:
+                with self.assertRaises(ValueError):pane.tm(*args)
+            run.assert_not_called()
     def test_scrubbing_handles_both_mac_socket_aliases(self):
         value={'screen':'/private/tmp/zsa4_demo/project /tmp/zsa4_demo/project','nested':['/CLI/bin/claude']}
         self.assertEqual(scrub_paths(value,{'/private/tmp/zsa4_demo':'/FIXTURE','/CLI/bin/claude':'/CLI/claude'}),
@@ -93,14 +107,16 @@ class GateTests(unittest.TestCase):
         alive={11:'pane lifetime',12:'agent lifetime'};calls=[]
         def run(argv,**kwargs):
             calls.append(argv)
-            if argv[0]=='/bin/ps':out=alive.get(int(argv[2]),'')
+            if argv[:2]==['/bin/ps','-axo']:out=''
+            elif argv[0]=='/bin/ps':out=alive.get(int(argv[2]),'')
             elif argv[0]=='/usr/bin/pgrep':out='12' if argv[2]=='11' else ''
             elif 'list-panes' in argv:out='11'
             else:out=''
             return types.SimpleNamespace(stdout=out,returncode=0)
         def kill(pid,sig):alive.pop(pid,None)
-        with patch.object(LiveSupport.shutil,'which',return_value='/fixture/tmux'),patch.object(LiveSupport.subprocess,'run',side_effect=run),patch.object(LiveSupport.os,'getpgid',side_effect=lambda pid:pid),patch.object(LiveSupport.os,'killpg',side_effect=kill):
+        with patch.object(LiveSupport.shutil,'which',return_value='/fixture/tmux'),patch.object(LiveSupport.subprocess,'run',side_effect=run),patch.object(LiveSupport.os,'kill',side_effect=kill),patch.object(LiveSupport.os,'killpg') as kill_group:
             cleanup_root(root)
+        kill_group.assert_not_called()
         self.assertFalse(root.exists());self.assertFalse(alive)
         tmux_calls=[c for c in calls if c[0]=='/fixture/tmux']
         self.assertTrue(tmux_calls);self.assertTrue(all(c[1:3]==['-S',str(root/'tmux.sock')] for c in tmux_calls))

@@ -130,7 +130,7 @@ struct ManagedSessionTests {
         for agent in [AgentKind.claude, .codex, .opencode] {
             #expect(f.controller.permissionModes(for: agent).allSatisfy { !$0.title.contains("--") && !$0.detail.contains("--") })
         }
-        let missing = ManagedSessionController(configuration: { nil }, stateURL: f.folder.appendingPathComponent("missing"), bridge: URL(fileURLWithPath: "/bin/cat"), bridgeSocket: "unused", executables: .init(agents: [:]))
+        let missing = ManagedSessionController(configuration: { nil }, stateURL: f.folder.appendingPathComponent("missing"), bridge: URL(fileURLWithPath: "/bin/cat"), bridgeSocket: "unused", executables: .init(agents: [:]), environment: ["HOME": f.folder.path])
         #expect(missing.permissionModes(for: .claude).isEmpty)
         #expect(missing.managedRequirementsProblem(for: .codex)?.contains("tmux") == true)
         #expect(missing.managedRequirementsProblem(for: .codex)?.contains("Codex") == true)
@@ -219,7 +219,7 @@ struct ManagedSessionTests {
         f.controller.shutdown()
         #expect(await f.host.stops == 0)
         f.config.value?.startWhenZeusOpens = false
-        let adopted = ManagedSessionController(configuration: { f.config.value }, stateURL: f.folder.appendingPathComponent("state.json"), bridge: URL(fileURLWithPath: "/bin/cat"), bridgeSocket: "unused", executables: f.controller.executables, hosting: f.host, finder: f.finder, clock: f.clock)
+        let adopted = ManagedSessionController(configuration: { f.config.value }, stateURL: f.folder.appendingPathComponent("state.json"), bridge: URL(fileURLWithPath: "/bin/cat"), bridgeSocket: "unused", executables: f.controller.executables, hosting: f.host, finder: f.finder, environment: ["HOME": f.folder.path, "PATH": "/usr/bin:/bin"], clock: f.clock)
         defer { adopted.shutdown() }
         adopted.activate(); try await eventually { !adopted.isBusy }
         #expect(adopted.sessionKey == key)
@@ -245,7 +245,7 @@ struct ManagedSessionTests {
         #expect(await f.host.stops == 0)
         guard case .failed = f.controller.managedStatus else { Issue.record("Ownership failure missing"); return }
         let path = f.folder.appendingPathComponent("corrupt.json"); let data = Data("not-json".utf8); try data.write(to: path)
-        let other = ManagedSessionController(configuration: { f.config.value }, stateURL: path, bridge: URL(fileURLWithPath: "/bin/cat"), bridgeSocket: "unused", executables: f.controller.executables, hosting: f.host)
+        let other = ManagedSessionController(configuration: { f.config.value }, stateURL: path, bridge: URL(fileURLWithPath: "/bin/cat"), bridgeSocket: "unused", executables: f.controller.executables, hosting: f.host, environment: ["HOME": f.folder.path])
         defer { other.shutdown() }
         other.activate(); try await eventually { !other.isBusy }
         #expect(try Data(contentsOf: path) == data)
@@ -326,7 +326,7 @@ extension ManagedSessionTests {
         pending.pane?.pid -= 1; pending.pane?.startTime -= 100
         try ManagedSessionStore(url: f.folder.appendingPathComponent("state.json")).save(pending)
         f.controller.shutdown()
-        let adopted = ManagedSessionController(configuration: { f.config.value }, stateURL: f.folder.appendingPathComponent("state.json"), bridge: URL(fileURLWithPath: "/bin/cat"), bridgeSocket: "unused", executables: f.controller.executables, hosting: f.host, clock: f.clock)
+        let adopted = ManagedSessionController(configuration: { f.config.value }, stateURL: f.folder.appendingPathComponent("state.json"), bridge: URL(fileURLWithPath: "/bin/cat"), bridgeSocket: "unused", executables: f.controller.executables, hosting: f.host, environment: ["HOME": f.folder.path, "PATH": "/usr/bin:/bin"], clock: f.clock)
         defer { adopted.shutdown() }
         adopted.activate(); try await eventually { adopted.managedStatus == .starting && !adopted.isBusy }
         #expect(adopted.record?.pane?.pid == live.pid)

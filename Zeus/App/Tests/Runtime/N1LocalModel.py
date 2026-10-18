@@ -5,7 +5,7 @@ p=argparse.ArgumentParser(); p.add_argument('--root',required=True); p.add_argum
 a=p.parse_args(); root=pathlib.Path(a.root)
 assert root.name.startswith('zn1_') and root.parent.resolve()==pathlib.Path('/private/tmp').resolve()
 assert not root.is_symlink() and a.agent in ('claude', 'codex', 'opencode')
-home=root/'home'; project=root/'project'; home.mkdir(parents=True,exist_ok=True); project.mkdir(exist_ok=True)
+home=root/'home'; project=root/'home'/'project'; home.mkdir(parents=True,exist_ok=True); project.mkdir(exist_ok=True)
 for d in ['.claude','.codex','.config','.cache','.local/share','.local/state','tmux']: (home/d).mkdir(parents=True,exist_ok=True)
 socket=str(root/'tmux.sock'); lock=threading.Lock()
 class Model(http.server.BaseHTTPRequestHandler):

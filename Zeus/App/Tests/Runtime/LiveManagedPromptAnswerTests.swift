@@ -29,7 +29,7 @@ struct LiveManagedPromptAnswerTests {
         let base = try #require(ProcessInfo.processInfo.environment["ZEUS_PROMPT_MODEL_URL"].flatMap(URL.init(string:)))
         try #require(base.host == "127.0.0.1")
         let root = URL(fileURLWithPath: "/tmp/zl3_" + UUID().uuidString.prefix(8))
-        let home = root.appendingPathComponent("home"), folder = root.appendingPathComponent("project")
+        let home = root.appendingPathComponent("home"), folder = root.appendingPathComponent("home/project")
         try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let socket = root.appendingPathComponent("tmux.sock").path

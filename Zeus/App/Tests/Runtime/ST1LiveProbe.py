@@ -19,7 +19,7 @@ def build_host():
 
 def main():
     host=build_host(); pane=Pane('claude',prefix='zlv1_',output=OUT); process=None
-    second=pane.root/'project2'; second.mkdir()
+    second=pane.home/'project2'; second.mkdir()
     calls=[]
     def action(body):
         messages=body.get('messages',[])

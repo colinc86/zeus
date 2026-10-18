@@ -54,6 +54,7 @@ struct ManagedTmux: ManagedSessionHosting {
         var env = environment; env.removeValue(forKey: "TMUX"); env.removeValue(forKey: "TMUX_PANE")
         env["LANG"] = "en_US.UTF-8"; env["LC_CTYPE"] = "UTF-8"; env["LC_ALL"] = "en_US.UTF-8"
         let path = socket ?? testSocket
+        try ManagedProbeIsolation.validateSocket(path, environment: environment, isolatedSocket: testSocket)
         return try await runner.run(executable: executable, arguments: ["-u"] + (path.map { ["-S", $0] } ?? []) + args, input: nil, environment: env)
     }
     private func checked(_ args: [String], socket: String? = nil, preserveRows: Bool = false) async throws -> String {
@@ -137,6 +138,7 @@ struct ManagedTmux: ManagedSessionHosting {
                      dead: fields[6] == "1", exitStatus: Int(fields[7]), signal: fields[8].isEmpty ? nil : fields[8])
     }
     func create(name: String, owner: String, folder: String) async throws -> ManagedPane {
+        try ManagedProbeIsolation.validate(folder: folder, environment: environment, isolatedSocket: testSocket)
         let existing = try await sessions().first { $0.name == name }
         if let existing, existing.owner != owner { throw ManagedSessionError.collision }
         let args = existing == nil
@@ -250,6 +252,7 @@ struct ManagedTmux: ManagedSessionHosting {
         _ = try await checked(["set-option", "-p", "-t", pane.id, "@zeus-launched-lifetime", "\(pane.pid).\(pane.startTime)"], socket: pane.socket)
     }
     func launch(_ pane: ManagedPane, owner: String, command: ManagedLaunchCommand, folder: String) async throws -> ManagedPane {
+        try ManagedProbeIsolation.validate(folder: folder, environment: environment, isolatedSocket: testSocket)
         guard let current = try await inspect(name: pane.name, owner: owner, pane: pane), current.id == pane.id else { throw ManagedSessionError.ownershipChanged }
         try validateLifetime(pane, current)
         _ = try await checked(["respawn-pane", "-k", "-t", pane.id, "-c", folder] + command.arguments, socket: pane.socket)
