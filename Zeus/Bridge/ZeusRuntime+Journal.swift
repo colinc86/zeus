@@ -38,7 +38,7 @@ extension ZeusRuntime: LearningJournalAccessControlling {
         let policy = journalAccessPolicy(), levels = wanted.intersection(policy.enabledLevels)
         var request = JournalQuery(); request.from = from; request.to = to; request.levels = levels
         request.kinds = [.activity, .focus, .description, .typedText]; request.limit = 100_000
-        let candidates = levels.isEmpty ? [] : try journal.items(matching: request).sorted { $0.time == $1.time ? $0.id < $1.id : $0.time > $1.time }
+        let candidates = levels.isEmpty ? [] : try journal.items(matching: request).filter { outboundLearningPolicy()?.allows($0) ?? true }.sorted { $0.time == $1.time ? $0.id < $1.id : $0.time > $1.time }
         var items: [JSONValue] = [], bytes = 0
         for item in candidates {
             let payload = item.payload.value

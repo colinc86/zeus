@@ -18,6 +18,7 @@ final class LearnFromMe {
     @ObservationIgnored private let calendar: Calendar
     @ObservationIgnored private let journal: (any JournalStore)?
     @ObservationIgnored private let redactor: (any Redactor)?
+    @ObservationIgnored var outboundPolicy: () -> LearningOutboundPolicy? = { nil }
     @ObservationIgnored private let captureAllowed: (ActivityEvent) -> Bool
     @ObservationIgnored private var captureGeneration = UUID()
     @ObservationIgnored private var captureTask: Task<Void, Never>?
@@ -45,6 +46,11 @@ final class LearnFromMe {
         let files = root.map { ActivityStore(root: $0, calendar: calendar, journal: journal) }
         self.files = files
         learnings = files.map { files in LearningsStore(files: files, isEnabled: { [weak settings] in settings?.enabled ?? false }) }
+        learnings?.currentDigestPolicy = { [weak self] in self?.digestPolicyKey ?? "unavailable" }
+        learnings?.rebuildDigest = { [weak self] day, created in self?.digestText(day: day, createdAt: created) }
+        learnings?.legacyDigestDay = { [weak self] created in
+            self?.files?.recordedDays().last(where: { $0 < (self?.calendar.startOfDay(for: created) ?? created) })
+        }
     }
 
     var isAvailable: Bool { files != nil }
@@ -177,22 +183,45 @@ final class LearnFromMe {
         let pending = files.recordedDays().filter { $0 < todayStart && $0 >= weekAgo && !learnings.isDigested(files.dayKey($0)) }
         guard let day = pending.last else { return }
         learnings.markDigested(pending.map(files.dayKey))
-        guard var text = LearningSummarizer.digest(day: day, events: files.events(on: day), previousStarts: previousStarts(before: day),
-                                                    excluded: settings.excludedApps, calendar: calendar) else { return }
-        if let journal {
+        guard let text = digestText(day: day, createdAt: now) else { return }
+        learnings.addDigest(text: text, at: now, day: day, policy: digestPolicyKey)
+    }
+
+    private var digestPolicyKey: String {
+        if let policy = outboundPolicy() { return policy.fingerprint }
+        return LearningOutboundPolicy(scopes: [.init(level: .activity, chosenApps: nil)],
+            privateApps: settings.excludedApps.map { .init(name: $0.name, bundleIDs: $0.bundleIDs) }).fingerprint
+    }
+    private func digestText(day: Date, createdAt: Date) -> String? {
+        guard let files else { return nil }
+        let policy = outboundPolicy()
+        startCache.removeAll()
+        let events = files.events(on: day)
+        guard var text = LearningSummarizer.digest(day: day, events: events, previousStarts: previousStarts(before: day),
+                                                    excluded: digestExclusions(events), calendar: calendar) else { return nil }
+        if let journal, let policy {
             var query = JournalQuery(); query.from = calendar.startOfDay(for: day)
             query.to = calendar.date(byAdding: .day, value: 1, to: query.from ?? day)
             query.levels = [.screen]; query.kinds = [.description]; query.limit = 100_000
             do {
-                let descriptions = try journal.items(matching: query)
-                let sample = Self.screenSummary(descriptions)
+                let sample = Self.screenSummary(try journal.items(matching: query).filter(policy.allows))
                 if !sample.isEmpty { text += "\n- On screen: " + sample }
                 query.levels = [.typed]; query.kinds = [.typedText]
-                let topics = Self.typingSummary(try journal.items(matching: query))
+                let topics = Self.typingSummary(try journal.items(matching: query).filter(policy.allows))
                 if !topics.isEmpty { text += "\n- Typing: " + topics }
-            } catch { writeError = "Zeus couldn't read the screen descriptions for its summary." }
+            } catch { writeError = "Zeus couldn't read the journal for its summary."; return nil }
         }
-        learnings.add(.digest, text: text, at: now)
+        return text
+    }
+
+    /// Retain transition boundaries: removing an activation would attribute its private interval to the preceding app.
+    private func digestExclusions(_ events: [ActivityEvent]) -> [ExcludedApp] {
+        let policy = outboundPolicy()
+        return settings.excludedApps + events.compactMap { event in
+            guard let app = event.app, settings.isExcluded(bundleID: app, name: event.name)
+                    || policy?.allows(level: .activity, app: app, name: event.name) == false else { return nil }
+            return ExcludedApp(name: event.name ?? app, bundleIDs: [app])
+        }
     }
 
     /// Deterministic, evenly spaced description sampling; no image or OCR text reaches a summary.
@@ -224,7 +253,8 @@ final class LearnFromMe {
         return files.recordedDays().filter { $0 >= from && $0 < start }.compactMap { day in
             let key = files.dayKey(day)
             if let cached = startCache[key] { return cached }
-            let first = LearningSummarizer.stats(files.events(on: day), excluded: settings.excludedApps).firstActivity
+            let events = files.events(on: day)
+            let first = LearningSummarizer.stats(events, excluded: digestExclusions(events)).firstActivity
             startCache[key] = first
             return first
         }

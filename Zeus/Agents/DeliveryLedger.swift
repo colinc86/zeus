@@ -4,6 +4,8 @@ import ZeusProtocol
 /// A persisted delivery plus the answer data needed by polling after card history is pruned.
 struct DeliveryRecord: Codable, Sendable, Equatable {
     var delivery: Delivery
+    /// Local provenance only; private-app choices never enter the agent-facing delivery metadata.
+    var outboundPolicySnapshot: LearningOutboundPolicy?
     var response: CardResponse?
     /// Raw compose input for polling, independent of the human-readable push prefix.
     var userText: String?

@@ -38,6 +38,13 @@ final class LearningPresentation {
                 && policies.policy(1).allows(bundleID: id, name: name, privateApps: learn?.settings.excludedApps ?? ExcludedApp.defaults)
         }
     }
+    var outboundPolicy: LearningOutboundPolicy {
+        let levels = journalAccessPolicy.enabledLevels
+        return .init(scopes: levels.sorted { $0.rawValue < $1.rawValue }.map { level in
+            let policy = policies.policy(level.rawValue)
+            return .init(level: level, chosenApps: policy.scope == .chosenApps ? policy.apps.map { .init(name: $0.name, bundleIDs: $0.bundleIDs) } : nil)
+        }, privateApps: learn.settings.excludedApps.map { .init(name: $0.name, bundleIDs: $0.bundleIDs) })
+    }
     static let storageWaitingMessage = "Zeus can't open its journal and rules right now. New records are kept only in memory until it can; quitting Zeus before then loses them."
     /// Store warnings remain independent of capture permissions and transient runtime errors.
     var storageWarnings: [String] {
@@ -110,6 +117,7 @@ final class LearningPresentation {
     }
     func install(journal: any JournalStore, rules: any RulesStore, redactor: any Redactor,
                  source: any FocusCaptureSource = MacFocusCaptureSource()) {
+        learn.outboundPolicy = { [weak self] in self?.outboundPolicy }
         focus?.stop()
         self.journal = journal; self.source = source
         (source as? MacFocusCaptureSource)?.onContextChange = { [weak self] in self?.captureContextChanged() }
@@ -168,6 +176,7 @@ final class LearningPresentation {
         focus?.invalidate(); ask?.invalidate(); screen?.settingsChanged(); typing?.settingsChanged()
         if policies.policy(2).enabled && policies.policy(2).consented { focus?.start() } else { focus?.stop() }
         pruneExpired()
+        learn.learnings?.prepareDigestsForCurrentPolicy()
         learn.captureCurrentActivity()
         presentationChanged(); contextDidChange()
     }

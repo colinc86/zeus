@@ -57,7 +57,11 @@ extension ZeusRuntime: ProactiveAssistantControlling {
     func considerMorningBrief() {
         guard briefEnabled, let settings = morningBriefSettings, let ledger,
               !learningContext().isLocked else { return }
-        let now = clock.now, day = proactiveDay(now), id = "brief_" + day
+        let now = clock.now, day = proactiveDay(now)
+        let policy = outboundLearningPolicy()
+        let baseID = "brief_" + day + (policy.map { "_" + $0.fingerprint.prefix(12) } ?? "")
+        guard !ledger.records.contains(where: { $0.delivery.kind == .brief && $0.delivery.meta["brief_day"] == day && $0.discardedAt == nil }) else { return }
+        let id = policy != nil && ledger.record(id: baseID) != nil ? baseID + "_" + UUID().uuidString : baseID
         guard ledger.record(id: id) == nil else { return }
         switch settings.schedule {
         case .firstActivity:
@@ -74,7 +78,7 @@ extension ZeusRuntime: ProactiveAssistantControlling {
                 query.from = learningCalendar.date(byAdding: .day, value: -1, to: learningCalendar.startOfDay(for: now))
                 query.to = learningCalendar.startOfDay(for: now); query.levels = levels
                 query.kinds = [.activity, .focus, .description, .typedText]; query.limit = 100_000
-                evidence = try journal.items(matching: query)
+                evidence = try journal.items(matching: query).filter { policy?.allows($0) ?? true }
             }
             let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX")
             formatter.calendar = learningCalendar; formatter.timeZone = learningCalendar.timeZone
@@ -95,11 +99,13 @@ extension ZeusRuntime: ProactiveAssistantControlling {
             var delivery = Delivery(id: id, kind: .brief, sessionKey: assistantTarget ?? "", content: content, createdAt: now)
             delivery.meta = ["kind": "brief", "brief_day": day, "evidence": evidence.map(\.id).joined(separator: ","),
                              "levels": levels.map { String($0.rawValue) }.sorted().joined(separator: ",")]
+            stampLearningPolicy(&delivery, policy: policy)
             try ledger.insert(.init(delivery: delivery, awaitingAssistant: assistantTarget == nil ? true : nil))
             processDueDeliveries()
         } catch { learningError = "Zeus couldn't prepare your morning brief. It will try again." }
     }
     func proactiveDeliveryAllowed(_ delivery: Delivery) -> Bool {
+        guard learningPolicyAllows(delivery) else { return false }
         if delivery.kind == .reflection, let raw = delivery.meta["levels"] {
             let levels = Set(raw.split(separator: ",").compactMap { Int($0).flatMap(JournalLevel.init(rawValue:)) })
             return reflectionEnabled() && !levels.isEmpty && levels.isSubset(of: journalAccessPolicy().enabledLevels)
