@@ -65,10 +65,14 @@ final class RulesPaneModel {
         (store as? any RuleLifecycleStoring)?.outcomeEvents.filter { $0.ruleID == rule.id }
             .sorted { $0.at == $1.at ? $0.id > $1.id : $0.at > $1.at } ?? []
     }
+    func canApprove(_ rule: LearnedRule) -> Bool {
+        (store as? any RuleLifecycleStoring)?.ruleActions.contains { $0.isEligibleShadowResult(for: rule) } == true
+    }
     func shadowCaption(_ rule: LearnedRule) -> String {
+        if Self.alwaysAsks(rule) { return "Every purchase asks you first; there's no standing OK." }
         guard let action = (store as? any RuleLifecycleStoring)?.ruleActions
             .filter({ $0.ruleID == rule.id && $0.kind == .shadow }).max(by: { $0.created < $1.created }) else {
-            return "Seen once. Zeus didn't act."
+            return "Waiting for its first try. Zeus hasn't seen this rule run yet."
         }
         return "Seen once: would have " + ZeusRuntime.shadowActionText(action.text)
     }

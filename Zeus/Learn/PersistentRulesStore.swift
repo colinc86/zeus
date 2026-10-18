@@ -149,13 +149,17 @@ import ZeusProtocol
         guard let rule = state.rules.first(where: { $0.id == id }) else { throw LearningStorageError.missingRule }
         guard rule.status != status else { return }
         if rule.status == .shadow && (status == .proposed || status == .retired) { try declineRule(id: id, at: now); return }
+        var effectiveStatus = status
+        let needsShadow = rule.kind == .acts || rule.trigger.kind == "spend"
+        if status == .active && needsShadow && !state.actions.contains(where: { $0.isEligibleShadowResult(for: rule) }) {
+            effectiveStatus = .shadow
+        }
+        guard effectiveStatus != rule.status else { throw LearningStorageError.invalidRule }
         var next = state
-        let outcome: RuleOutcome = status == .retired || status == .proposed ? .toggledOff : (rule.status == .shadow && status == .active ? .accepted : .toggledOn)
+        let outcome: RuleOutcome = effectiveStatus == .retired || effectiveStatus == .proposed ? .toggledOff : (rule.status == .shadow && effectiveStatus == .active ? .accepted : .toggledOn)
         applySignal(&next, outcome, source: .explicit, ids: [id], eventID: "toggle:" + UUID().uuidString, at: now)
         guard let i = next.rules.firstIndex(where: { $0.id == id }) else { return }
-        let needsShadow = rule.kind == .acts || rule.trigger.kind == "spend"
-        next.rules[i].status = status
-        if status == .active && needsShadow && (!next.shownShadowIDs.contains(id) || rule.status == .retired || rule.trigger.kind == "spend") { next.rules[i].status = .shadow }
+        next.rules[i].status = effectiveStatus
         if rule.status == .retired && (status == .active || status == .shadow) {
             next.rules[i].confidence = 0.5; next.staleThrough[id] = now
             for j in next.actions.indices where next.actions[j].ruleID == id && next.actions[j].kind == .shadow && next.actions[j].amount == nil {
