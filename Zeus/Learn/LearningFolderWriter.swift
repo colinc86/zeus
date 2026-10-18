@@ -223,7 +223,7 @@ import UniformTypeIdentifiers
                 let payload = item.payload.value
                 let systemDetails = JournalAppName.repairedDetails(item)
                 let details = systemDetails.keys.sorted().map { $0 + ": " + (systemDetails[$0] ?? "") }.joined(separator: "\n")
-                let text = (["## " + formatted(item.time, "HH:mm:ss"), payload.description, payload.topic, payload.text, details].compactMap { $0 }.filter { !$0.isEmpty }).joined(separator: "\n\n")
+                let text = (["## " + formatted(item.time, "HH:mm:ss"), payload.description, payload.topic == payload.description ? nil : payload.topic, payload.text, details].compactMap { $0 }.filter { !$0.isEmpty }).joined(separator: "\n\n")
                 try append(path, id: item.id, text: text)
             }
         }
