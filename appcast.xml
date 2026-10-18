@@ -6,6 +6,27 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.3.2</title>
+      <pubDate>Sun, 18 Oct 2026 17:13:34 GMT</pubDate>
+      <sparkle:version>25</sparkle:version>
+      <sparkle:shortVersionString>0.3.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<h2 dir="auto">Your assistant keeps its plans across restarts</h2>
+<h3 dir="auto">Fixes</h3>
+<ul dir="auto">
+<li><strong>Restarts no longer silently cancel your assistant's checks.</strong> Your assistant sets its own timers for things like its next check-in, and those timers end whenever it restarts, for example after a Zeus update or Restart Assistant. Zeus now tells your assistant when it has been restarted and why, so it can set its plans again. Nothing is sent when a new conversation starts.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.3.2/Zeus-0.3.2.zip" type="application/octet-stream" sparkle:edSignature="nYV+5jmI+bUlaf6R+TLlu2+lbwhFpEjYocR3gZizsA2vuMXiEwOIkbgr4n2JXqY0fyVUjhwVT1RTehxBg8ZwCQ==" length="14762771"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.3.1</title>
       <pubDate>Sun, 18 Oct 2026 16:07:18 GMT</pubDate>
       <sparkle:version>24</sparkle:version>
