@@ -6,6 +6,28 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.3.1</title>
+      <pubDate>Sun, 18 Oct 2026 16:07:18 GMT</pubDate>
+      <sparkle:version>24</sparkle:version>
+      <sparkle:shortVersionString>0.3.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<h2 dir="auto">Your assistant's rules work with app names</h2>
+<h3 dir="auto">Fixes</h3>
+<ul dir="auto">
+<li><strong>Rules can name apps.</strong> When your assistant proposes a rule like "hold routine cards while Logic Pro is in front," Zeus now finds the app by its name. Before, Zeus accepted only internal app IDs, so a rule that named an app was rejected.</li>
+<li><strong>Good rules aren't lost.</strong> If your assistant proposes several rules and one has a problem, Zeus keeps the others and tells the assistant exactly which rule and which part to fix. Before, one problem threw out every rule in the request, with an error that didn't say what was wrong.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.3.1/Zeus-0.3.1.zip" type="application/octet-stream" sparkle:edSignature="zTlbkLHdX98T483GQKbvFmbtlXMbQyzWmyyFUe3GT92XAzSQaQx5K4YJpLNq7F1xrn+oVpCfCKkqME7597/CDQ==" length="14740782"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.3.0</title>
       <pubDate>Sun, 18 Oct 2026 14:59:18 GMT</pubDate>
       <sparkle:version>23</sparkle:version>
