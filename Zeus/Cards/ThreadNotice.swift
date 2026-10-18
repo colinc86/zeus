@@ -33,12 +33,33 @@ struct ThreadNotice: Codable, Equatable, Identifiable, Sendable {
     var help: String?
     /// Durable edge bookkeeping, only for agent-update lines; hidden from the conversation copy.
     var isAgentUpdateCurrent: Bool?
+    /// The request kind, independent of its current sent/replaced/expired wording.
+    var deliveryKindName: String?
 
     init(id: String = "n_" + UUID().uuidString.prefix(8).lowercased(), kind: Kind, createdAt: Date, summary: String,
          actionTitle: String? = nil, detail: String? = nil, resolvedTitle: String? = nil, isAgentUpdateCurrent: Bool? = nil,
-         secondaryTitle: String? = nil, help: String? = nil) {
+         secondaryTitle: String? = nil, help: String? = nil, deliveryKindName: String? = nil) {
         self.id = id; self.kind = kind; self.createdAt = createdAt; self.summary = summary
         self.actionTitle = actionTitle; self.detail = detail; self.resolvedTitle = resolvedTitle
+        self.deliveryKindName = deliveryKindName
         self.isAgentUpdateCurrent = isAgentUpdateCurrent; self.secondaryTitle = secondaryTitle; self.help = help
+    }
+}
+
+/// Legacy persisted notices have no kind field; keep their exact text and derive only the viewer heading.
+extension ThreadNotice {
+    var learningDocumentKind: String {
+        if let deliveryKindName { return deliveryKindName }
+        let value = summary.lowercased()
+        if value.contains("brief") { return "Morning brief request" }
+        if value.contains("reflection") { return "Evening reflection" }
+        if value.contains("rule trigger") { return "Rule trigger" }
+        if value.contains("preference") { return "Message preference" }
+        if value.contains("summary") { return "Morning summary" }
+        return "Note"
+    }
+    var learningDocumentTitle: String {
+        let formatter = DateFormatter(); formatter.dateFormat = "EEE d MMM"
+        return learningDocumentKind + " · " + formatter.string(from: createdAt)
     }
 }

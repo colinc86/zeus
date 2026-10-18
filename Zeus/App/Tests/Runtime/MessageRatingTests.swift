@@ -79,6 +79,12 @@ struct FixtureRatingSimilarity: MessageSimilarityComparing {
         _ = try await f.runtime.rate(cardID: first.id, rating: .down, scope: .kind, label: "On-call reminder")
         try await eventually { f.runtime.ratingDeliveryTask == nil && f.runtime.sends.isEmpty }
         let record = try #require(f.runtime.ledger?.records.first { $0.delivery.meta["learning_kind"] == "rating" })
+        let appCards = CardStore(fileURL: f.root.appendingPathComponent("app-cards.json"))
+        let presentation = LearningDeliveryModel(cards: appCards, source: { f.runtime }, clock: { f.clock.now })
+        f.runtime.publishPendingLearnings(f.runtime.ledger?.records ?? []); presentation.reconcile()
+        #expect(presentation.pending.contains { $0.id == record.delivery.id && $0.isMessagePreference })
+        #expect(appCards.notices.isEmpty)
+
         #expect(record.delivery.content.hasPrefix("Rating: Stop these"))
         #expect(record.delivery.content.contains("Files: Zeus/preferences.md"))
         let file = try String(contentsOf: f.root.appendingPathComponent("assistant/Zeus/preferences.md"), encoding: .utf8)
@@ -88,6 +94,9 @@ struct FixtureRatingSimilarity: MessageSimilarityComparing {
         #expect(f.runtime.ledger?.record(id: record.delivery.id)?.delivery.ackedAt != nil)
         let sent = try f.journal.items(matching: .init()).first { $0.payload.value.details["delivery_id"] == record.delivery.id }
         #expect(sent?.payload.value.text == record.delivery.content)
+        presentation.reconcile()
+        #expect(appCards.notices.isEmpty)
+        #expect(sent?.payload.value.details["kind"] == "rating")
         #expect(!f.cards.learningNotices.contains { $0.id == "n_" + record.delivery.id })
         try f.journal.delete(.all)
         #expect(f.runtime.ratings.isEmpty && f.runtime.mutedDecisions.isEmpty)
