@@ -24,6 +24,7 @@ struct DocumentTextHost: NSViewRepresentable {
         view.find(model.findText, index: model.findIndex, request: model.findRequest, palette: context.environment.zeusPalette) { count in
             Task { @MainActor [weak model] in if model?.findCount != count { model?.findCount = count } }
         }
+        if page.content != nil { view.scrollToAnchor(model.anchorRequest) }
         view.onScroll = { [weak model] point in model?.offsets[page.id] = point }
     }
     func makeCoordinator() -> Coordinator { Coordinator(model: model, url: page.url) }
@@ -65,6 +66,7 @@ struct DocumentTextHost: NSViewRepresentable {
     private var source = false
     private var previousText: NSAttributedString?
     private var findKey = ""
+    private var anchorRequestID: UUID?
     override init(frame: NSRect) {
         super.init(frame: frame)
         drawsBackground = false; hasVerticalScroller = true; borderType = .noBorder
@@ -104,6 +106,23 @@ struct DocumentTextHost: NSViewRepresentable {
             textView.layoutManager?.addTemporaryAttribute(.foregroundColor, value: NSColor(palette.onAccent), forCharacterRange: range)
             textView.scrollRangeToVisible(range)
         }
+    }
+    func scrollToAnchor(_ request: DocumentViewerModel.AnchorRequest?) {
+        guard let request, request.pageID == pageID, request.id != anchorRequestID else { return }
+        anchorRequestID = request.id
+        guard let storage = textView.textStorage, let layout = textView.layoutManager,
+              let container = textView.textContainer else { return }
+        var target: NSRange?
+        storage.enumerateAttribute(DocumentTextStyling.anchorKey, in: NSRange(location: 0, length: storage.length)) { value, range, stop in
+            if value as? String == request.fragment { target = range; stop.pointee = true }
+        }
+        guard let target else { return }
+        layout.ensureLayout(for: container)
+        let glyphs = layout.glyphRange(forCharacterRange: target, actualCharacterRange: nil)
+        let rect = layout.boundingRect(forGlyphRange: glyphs, in: container)
+        let y = rect.minY + textView.textContainerOrigin.y
+        contentView.scroll(to: NSPoint(x: 0, y: min(y, max(0, textView.frame.height - contentSize.height))))
+        reflectScrolledClipView(contentView)
     }
     func update(_ value: NSAttributedString, pageID: UUID, revision: Int, source: Bool, saved: CGPoint?) {
         guard self.pageID != pageID || self.revision != revision || self.source != source || previousText?.isEqual(to: value) != true else { return }

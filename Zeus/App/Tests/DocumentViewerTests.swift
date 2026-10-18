@@ -43,6 +43,40 @@ import ZeusProtocol
         #expect(viewer.open(first))
         #expect(viewer.threadBookmark == nil && viewer.threadOffset == nil && !viewer.fromPeek)
     }
+    @Test func fragmentsStayOnTheCurrentPageAndSurviveResolution() async throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let first = try file("first.md", in: root, text: "# Overview\n\nText")
+        let viewer = DocumentViewerModel(); defer { viewer.close() }
+        #expect(viewer.open(first)); try await settled(viewer)
+        let page = try #require(viewer.current)
+        let local = try #require(DocumentLoader.localLink("#overview", document: page.url))
+        #expect(local.fragment == "overview")
+        #expect(viewer.navigate(local))
+        #expect(viewer.pages.count == 1)
+        #expect(viewer.current?.id == page.id)
+        #expect(DocumentLoader.localLink("next.md#part", document: page.url)?.fragment == "part")
+    }
+    @Test func steppingCountsOnlyViewableSiblings() throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let md = try file("plan.md", in: root), script = try file("run.sh", in: root), pdf = try file("plan.pdf", in: root)
+        let missing = ZeusProtocol.Attachment(kind: .file, label: "Missing", target: root.appendingPathComponent("missing.md").path)
+        let invalid = ZeusProtocol.Attachment(kind: .file, label: "Invalid", target: "relative.md")
+        let viewer = DocumentViewerModel(); defer { viewer.close() }
+        #expect(viewer.open(md, siblings: [md, script]))
+        #expect(viewer.attachmentPosition == nil && !viewer.canNext)
+        #expect(viewer.open(md, siblings: [md, script, missing, invalid, pdf]))
+        #expect(viewer.attachmentPosition == "1/2")
+        #expect(viewer.step(1))
+        #expect(viewer.current?.attachment.id == pdf.id && viewer.attachmentPosition == "2/2")
+        #expect(viewer.step(-1) && viewer.current?.attachment.id == md.id)
+        try FileManager.default.removeItem(atPath: pdf.target)
+        #expect(viewer.attachmentPosition == "1/2") // The open session retains its sibling positions.
+        #expect(viewer.open(md, siblings: [md, script, missing, invalid, pdf]))
+        #expect(viewer.attachmentPosition == nil)
+        let folder = ZeusProtocol.Attachment(kind: .folder, label: "Folder", target: root.path)
+        #expect(viewer.open(md, siblings: [md, folder]))
+        #expect(viewer.step(1) && viewer.current?.attachment.id == folder.id)
+    }
     @Test func folderMetadataUsesShortDatesAndReadableKinds() throws {
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = try #require(TimeZone(secondsFromGMT: 0))
         let now = try #require(calendar.date(from: DateComponents(year: 2026, month: 10, day: 16, hour: 8, minute: 2)))
@@ -136,7 +170,7 @@ import ZeusProtocol
         #expect(viewer.open(attachment))
         conversation.draft = "Again"; viewer.typed(in: conversation)
         #expect(viewer.navigate(URL(fileURLWithPath: attachment.target)))
-        viewer.ask(in: conversation) // Same path, a new navigation attachment ID.
+        viewer.ask(in: conversation) // Explicit Ask promotes the same-path automatic chip.
         conversation.draft = ""
         viewer.typed(in: conversation); viewer.back(); viewer.removeEmptyAutomaticAttachments(in: conversation)
         #expect(conversation.draftAttachments.count == 1)

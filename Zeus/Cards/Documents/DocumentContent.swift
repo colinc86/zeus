@@ -92,6 +92,9 @@ enum DocumentLoader {
     }
     static func localLink(_ reference: String, document: URL) -> URL? {
         guard !reference.hasPrefix("//"), let value = URL(string: reference, relativeTo: document), value.isFileURL else { return nil }
-        return value.standardizedFileURL.resolvingSymlinksInPath()
+        let resolved = value.standardizedFileURL.resolvingSymlinksInPath()
+        var components = URLComponents(url: resolved, resolvingAgainstBaseURL: true)
+        components?.fragment = value.fragment?.removingPercentEncoding ?? value.fragment
+        return components?.url
     }
 }
