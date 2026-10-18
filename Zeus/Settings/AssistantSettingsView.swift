@@ -31,6 +31,7 @@ struct AssistantSettingsView: View {
             if managed.confirmation == .switchToOwn {
                 confirmation("Stop the Zeus-run agent?", action: "Stop", cancel: "Keep Running",
                     onCancel: managed.keepRunningAndConnectOwn)
+                    .id("switchToOwnConfirmation")
             }
             if managed.switching { caption("Stopping \(managed.agentName)…") }
             if managed.enabled { managedContent }
@@ -68,6 +69,14 @@ struct AssistantSettingsView: View {
         if case .restarting = managed.status, active {
             TimelineView(.periodic(from: .now, by: 1)) { context in statusPanel(now: context.date) }
         } else { statusPanel(now: Date()) }
+        if managed.canCancelRestart {
+            KeyboardButton("Cancel", action: managed.cancelRestart).accessibilityLabel("Cancel assistant restart")
+                .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
+        }
+        if managed.confirmation == .restartNow {
+            confirmation(managed.restartNowConfirmation, action: "Restart Now")
+                .id("restartNowConfirmation")
+        }
         if case .restartForSetup(let mode) = managed.confirmation {
             confirmation("Restart \(managed.agentName) in \(mode.title) mode? It can run any command and change any file you can, without asking. The conversation is kept.", action: "Restart Assistant", cancel: "Later")
                 .id("setupRestartConfirmation")
@@ -125,6 +134,7 @@ struct AssistantSettingsView: View {
         }, selection: Binding(get: { managed.selectedPermissionID }, set: { if let id = $0 { managed.choosePermission(id) } }))
         if case .unrestricted(let mode) = managed.confirmation {
             confirmation("\(mode.title) lets \(selectedAgentName) run any command and change any file you can, without asking.", action: "Use Unrestricted")
+                .id("unrestrictedConfirmation")
         }
         caption("\(selectedAgentName)'s own modes. When it asks, Zeus shows a card that opens Terminal.")
         caption("Logins and folder-trust prompts always wait for you in Terminal.")

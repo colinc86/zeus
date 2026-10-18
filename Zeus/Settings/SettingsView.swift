@@ -103,7 +103,12 @@ struct SettingsView: View {
         switch confirmation {
         case .newConversation?: "newConversationConfirmation"
         case .switchConversation?: "switchConversationConfirmation"
-        default: nil
+        case .switchToOwn?: "switchToOwnConfirmation"
+        case .unrestricted?: "unrestrictedConfirmation"
+        case .restartForSetup?: "setupRestartConfirmation"
+        case .restartForUpdate?: "agentUpdateConfirmation"
+        case .restartNow?: "restartNowConfirmation"
+        case nil: nil
         }
     }
 

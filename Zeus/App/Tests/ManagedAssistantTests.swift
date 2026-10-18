@@ -86,7 +86,7 @@ private final class ManagedUIController: ManagedSessionControlling, ManagedTermi
         case .starting, .running: #expect(actions.first == .restart)
         case .blocked: #expect(actions == [.openInTerminal, .stop])
         case .failed: #expect(actions == [.start, .openInTerminal])
-        case .restarting: #expect(actions == [.restartNow, .stop])
+        case .restarting: #expect(actions == [.stop])
         default: break
         }
     }
@@ -384,6 +384,7 @@ private final class ManagedUIController: ManagedSessionControlling, ManagedTermi
         switch status {
         case .off, .stopped: #expect(f.model.menuActions == [.start])
         case .failed: #expect(f.model.menuActions == [.start])
+        case .restarting: #expect(f.model.menuActions == [.stop])
         default: #expect(f.model.menuActions == [.restart, .stop])
         }
         #expect(f.model.isMenuAlert == (expected.tone == .attention))

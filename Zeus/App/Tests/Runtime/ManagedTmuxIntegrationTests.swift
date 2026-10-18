@@ -83,6 +83,9 @@ struct ManagedTmuxIntegrationTests {
         let inspectionHost = ManagedTmux(executable: tmux, runner: runner, environment: guiEnv, testSocket: socket)
         let inspectionOwner = try #require(controller.record?.owner)
         let sessionTarget = "$" + first.sessionNumber
+        clock.advance(11, wake: false)
+        adopted.refresh()
+        try await Self.wait("idle before restart", controller: adopted, home: home) { adopted.canAcceptInput && !adopted.isBusy }
         runner.beginRestart()
         #expect(try await inspectionHost.inspect(name: first.name, owner: inspectionOwner, pane: first) != nil)
         #expect(runner.ownerRepairs == 0)
@@ -303,6 +306,7 @@ ready = home / ('ready-' + str(os.getpid()) + '.tmp')
 ready.write_text(json.dumps({'pid': os.getpid(), 'nativeID': native}))
 ready.replace(home / 'ready.json')
 print('M2a fixture ready', flush=True)
+print('❯ \x1b[7m \x1b[0m\x1b[D', end='', flush=True)
 for line in sys.stdin:
     if line.strip() == '/exit':
         break
