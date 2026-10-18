@@ -8,6 +8,7 @@ struct AssistantSettingsView: View {
     @Bindable var managed: ManagedAssistantModel
     let messaging: AgentMessagingHub
     let testMessage: ComposeModel
+    var morningBrief: MorningBriefSettings? = nil
     @Environment(\.zeusPalette) private var palette
     @Environment(\.zeusAnimationsActive) private var active
     @State private var choosingFolder = false
@@ -40,6 +41,10 @@ struct AssistantSettingsView: View {
             SettingsDivider()
             WhoMayTalkSettingsView(settings: settings)
             SettingsDivider()
+            if let morningBrief {
+                MorningBriefSettingsView(settings: morningBrief, managed: managed.enabled)
+                SettingsDivider()
+            }
             QuietHoursSettingsView(settings: settings)
         }
         .sheet(isPresented: Binding(get: { managed.templateReplacement != nil }, set: { if !$0 { managed.templateReplacement = nil } })) {

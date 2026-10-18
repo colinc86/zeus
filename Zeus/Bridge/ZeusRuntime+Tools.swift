@@ -108,7 +108,7 @@ extension ZeusRuntime {
                 return result(["ok": true])
             case "zeus_get_responses":
                 bindWaitingUserMessages()
-                let pending = (ledger?.records ?? []).filter { $0.delivery.sessionKey == sessionKey && $0.isPending && !learningWasErased($0.delivery.id) && ($0.delivery.kind != .learning || $0.delivery.meta["learning_kind"] == "rating" || learnings.learningsEnabled) }
+                let pending = (ledger?.records ?? []).filter { $0.delivery.sessionKey == sessionKey && $0.isPending && !learningWasErased($0.delivery.id) && proactiveDeliveryAllowed($0.delivery) && ($0.delivery.kind != .learning || $0.delivery.meta["learning_kind"] == "rating" || learnings.learningsEnabled) }
                 let batch = try pollingBatch(pending)
                 if !deferResultCommit { _ = try acknowledge(ids: Set(batch.map { $0.delivery.id }), sessionKey: sessionKey) }
                 let transport = transport(for: sessionKey)
@@ -185,7 +185,8 @@ extension ZeusRuntime {
         let handedOff = (ledger?.records ?? []).contains { $0.delivery.cardID == id && $0.delivery.sessionKey == sessionKey }
         guard card.sessionKey == sessionKey || handedOff else { throw ToolArgumentError("Agent tools cannot read or change another session's card.") }
     }
-    private func addCard(_ card: Card) throws {
+    private func addCard(_ original: Card) throws {
+        let card = try applyProactiveBudget(original)
         if !card.options.isEmpty || card.input != nil { try responseJournal?.prepare(card.id) }
         try prepareLearningCard(card)
         cards.add(card)

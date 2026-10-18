@@ -37,6 +37,13 @@ class GateTests(unittest.TestCase):
         self.assertNotIn('--record',gate.command('sa4','claude',out,True,False))
         self.assertIn('--native-updater',gate.command('pc1','claude',out,False,True))
         self.assertNotIn('scripts/build.sh',gate.command('e2e','—',out,False,False))
+    def test_proactive_probes_are_in_quick_gate(self):
+        for probe in ('pa1-brief', 'pa1-trigger'):
+            self.assertEqual(gate.PROBES[probe], ('claude',))
+            command = gate.command(probe, 'claude', pathlib.Path('/tmp/fixture'), True, False)
+            self.assertIn('--quick', command)
+            self.assertEqual(command[command.index('--scenario') + 1], probe)
+
     def test_document_probe_is_in_quick_gate(self):
         self.assertIn(('dv1', 'claude', 'run'), gate.plan(('claude',), tuple(gate.PROBES), {'claude'}))
         argv = gate.command('dv1', 'claude', pathlib.Path('/tmp/private-proof'), True, False)

@@ -38,6 +38,7 @@ struct SettingsView: View {
     var learning: LearningPresentation?
     var openJournal: () -> Void = {}
     var ratings: MessageRatingsModel? = nil
+    var morningBrief: MorningBriefSettings? = nil
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
     /// This root's own colors come from the theme directly: the environment it sets applies to its children.
@@ -114,7 +115,7 @@ struct SettingsView: View {
         case .appearance:
             AppearanceSettingsView(settings: settings)
         case .agent:
-            AssistantSettingsView(settings: settings, managed: managed, messaging: preview, testMessage: testMessage)
+            AssistantSettingsView(settings: settings, managed: managed, messaging: preview, testMessage: testMessage, morningBrief: morningBrief)
         case .character:
             CharacterSettingsView(settings: settings, resetPosition: resetPosition)
         case .privacy:

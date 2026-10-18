@@ -1,0 +1,116 @@
+{
+  "agent": "2.1.302 (Claude Code)",
+  "scenario": "pa1-brief",
+  "tools": [
+    "zeus_present",
+    "zeus_ack",
+    "zeus_ack"
+  ],
+  "state": {
+    "sessions": 1,
+    "receipts": [
+      {
+        "kind": "sentToAssistant",
+        "level": 1,
+        "time": "2026-10-14T18:15:13.814Z",
+        "payload": {
+          "report": {
+            "semanticEngine": "patternsOnly",
+            "counts": []
+          },
+          "value": {
+            "details": {
+              "kind": "brief",
+              "delivery_id": "brief_2026-10-14",
+              "agent": "claude",
+              "sessionID": "20566f30b32d429f15d28ba179425c9fd1db4ab9f511e064f0368e4b2abb5e3f",
+              "sessionLabel": "Claude \u00b7 Zeus"
+            },
+            "description": "Sent the morning brief request",
+            "text": "Start of my day: Wednesday 14 October.\nUsing your Notes/, my rules, and your own tools (calendar, mail, tasks) if you have them, send me one short brief of what matters today: what's coming up, what's at risk, what you've prepared. One zeus_present with about \"Morning brief\": a short title, then at most 6 lines, the most important first. If nothing matters today, zeus_ack and stay quiet.\nUnprompted messages left today: 6 (high priority doesn't count).\n\nFiles: Zeus/rules.md"
+          }
+        },
+        "id": "sent:brief_2026-10-14:20566f30b32d429f15d28ba1"
+      },
+      {
+        "kind": "sentToAssistant",
+        "level": 1,
+        "time": "2026-10-15T18:15:14.094Z",
+        "payload": {
+          "report": {
+            "semanticEngine": "patternsOnly",
+            "counts": []
+          },
+          "value": {
+            "details": {
+              "kind": "brief",
+              "sessionID": "20566f30b32d429f15d28ba179425c9fd1db4ab9f511e064f0368e4b2abb5e3f",
+              "sessionLabel": "Claude \u00b7 Zeus",
+              "delivery_id": "brief_2026-10-15",
+              "agent": "claude"
+            },
+            "description": "Sent the morning brief request",
+            "text": "Start of my day: Thursday 15 October.\nUsing your Notes/, my rules, and your own tools (calendar, mail, tasks) if you have them, send me one short brief of what matters today: what's coming up, what's at risk, what you've prepared. One zeus_present with about \"Morning brief\": a short title, then at most 6 lines, the most important first. If nothing matters today, zeus_ack and stay quiet.\nUnprompted messages left today: 6 (high priority doesn't count).\n\nFiles: Zeus/rules.md"
+          }
+        },
+        "id": "sent:brief_2026-10-15:20566f30b32d429f15d28ba1"
+      }
+    ],
+    "muted": [],
+    "cards": [
+      {
+        "id": "c_d5519f87",
+        "origin": "unprompted",
+        "attachments": [],
+        "title": "Today",
+        "updatedAt": "2026-10-14T18:15:13.714Z",
+        "about": "Morning brief",
+        "priority": "normal",
+        "createdAt": "2026-10-14T18:15:13.714Z",
+        "sessionKey": "claude:/FIXTURE/project#69684.1792293546302230",
+        "body": "Review the synthetic project plan before the fixture meeting.",
+        "kind": "content",
+        "options": [],
+        "status": "open"
+      }
+    ],
+    "unread": 0,
+    "ratings": 0,
+    "pane": "%0",
+    "ok": true,
+    "ruleActions": [],
+    "error": null,
+    "status": "running(Host.ManagedSessionStatus.Activity.idle)",
+    "deliveries": [
+      {
+        "kind": "brief",
+        "attempts": 1,
+        "id": "brief_2026-10-14",
+        "meta": {
+          "brief_day": "2026-10-14",
+          "levels": "",
+          "kind": "brief",
+          "evidence": ""
+        },
+        "acked": true,
+        "discarded": false,
+        "content": "Start of my day: Wednesday 14 October.\nUsing your Notes/, my rules, and your own tools (calendar, mail, tasks) if you have them, send me one short brief of what matters today: what's coming up, what's at risk, what you've prepared. One zeus_present with about \"Morning brief\": a short title, then at most 6 lines, the most important first. If nothing matters today, zeus_ack and stay quiet.\nUnprompted messages left today: 6 (high priority doesn't count).\n\nFiles: Zeus/rules.md"
+      },
+      {
+        "kind": "brief",
+        "attempts": 1,
+        "id": "brief_2026-10-15",
+        "meta": {
+          "brief_day": "2026-10-15",
+          "levels": "",
+          "kind": "brief",
+          "evidence": ""
+        },
+        "acked": true,
+        "discarded": false,
+        "content": "Start of my day: Thursday 15 October.\nUsing your Notes/, my rules, and your own tools (calendar, mail, tasks) if you have them, send me one short brief of what matters today: what's coming up, what's at risk, what you've prepared. One zeus_present with about \"Morning brief\": a short title, then at most 6 lines, the most important first. If nothing matters today, zeus_ack and stay quiet.\nUnprompted messages left today: 6 (high priority doesn't count).\n\nFiles: Zeus/rules.md"
+      }
+    ]
+  },
+  "isolation": "private tmux, disposable HOME/config, localhost model, fixture encryption key; no external action"
+}

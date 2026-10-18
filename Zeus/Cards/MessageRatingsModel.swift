@@ -20,6 +20,7 @@ final class MessageRatingsModel {
     private(set) var busy: Set<String> = []
     private(set) var errors: [String: String] = [:]
     private(set) var expandedMuted: Set<String> = []
+    private(set) var collapsedBudget: Set<String> = []
     var selectedRatingID: String?
     @ObservationIgnored private var observing = false
     @ObservationIgnored private var generation = 0
@@ -40,8 +41,14 @@ final class MessageRatingsModel {
     /// One quiet summary at the end of each local day; a late launch also restores older summaries.
     func reconcile(now: Date = Date(), calendar: Calendar = .current) {
         provider?.onShowMuted = { [weak self] ids in self?.showMuted(ids) }
-        let decisions = provider?.mutedDecisions ?? [:]
-        let groups = Dictionary(grouping: cards.cards.filter { decisions[$0.id]?.releasedAt == nil && decisions[$0.id] != nil }) {
+        var decisions = Dictionary(uniqueKeysWithValues: cards.cards.compactMap { card in
+            card.muteDecision.map { (card.id, $0) }
+        })
+        decisions.merge(provider?.mutedDecisions ?? [:], uniquingKeysWith: { _, current in current })
+        let groups = Dictionary(grouping: cards.cards.filter { card in
+            guard let decision = decisions[card.id] else { return false }
+            return decision.source == .dailyBudget || decision.releasedAt == nil
+        }) {
             calendar.startOfDay(for: decisions[$0.id]?.decidedAt ?? $0.createdAt)
         }
         let summaryIDs = Set(groups.keys.map { "rating-muted-\(Int($0.timeIntervalSince1970))" })
@@ -51,7 +58,8 @@ final class MessageRatingsModel {
         for (day, values) in groups {
             guard let end = calendar.date(bySettingHour: dailyHour(), minute: 0, second: 0, of: day), end <= now else { continue }
             let ids = values.map(\.id), noticeID = "rating-muted-\(Int(day.timeIntervalSince1970))"
-            let summary = "\(ids.count) muted \(ids.count == 1 ? "message" : "messages") today"
+            let held = values.contains { decisions[$0.id]?.source == .dailyBudget }
+            let summary = "\(ids.count) \(held ? "held" : "muted") \(ids.count == 1 ? "message" : "messages") today"
             if let existing = cards.notices.first(where: { $0.id == noticeID }) {
                 if existing.summary != summary { _ = cards.updateNotice(id: noticeID) { $0.summary = summary } }
             } else {
@@ -119,11 +127,15 @@ final class MessageRatingsModel {
     }
     func canRate(_ card: Card) -> Bool { Self.eligible(card) && provider != nil }
     func decision(_ card: Card) -> CardMuteDecision? { provider?.mutedDecisions[card.id] ?? card.muteDecision }
+    func isBudgetHeld(_ card: Card) -> Bool { decision(card)?.source == .dailyBudget }
     func isHeld(_ card: Card) -> Bool {
         guard let decision = decision(card) else { return false }
-        return decision.releasedAt == nil && card.origin != .reply
+        return (decision.releasedAt == nil || decision.source == .dailyBudget) && card.origin != .reply
     }
-    func isCollapsed(_ card: Card) -> Bool { isHeld(card) && !expandedMuted.contains(card.id) }
+    func isCollapsed(_ card: Card) -> Bool {
+        if isBudgetHeld(card) { return decision(card)?.releasedAt == nil || collapsedBudget.contains(card.id) }
+        return isHeld(card) && !expandedMuted.contains(card.id)
+    }
     var newestUnpromptedID: String? { cards.cards.last(where: Self.eligible)?.id }
     func currentRating(_ card: Card) -> MessageRating? {
         ratings.last { $0.exampleCardID == card.id }
@@ -138,6 +150,10 @@ final class MessageRatingsModel {
     func toggle(_ card: Card) { if drafts[card.id] != nil { cancel(card.id) } else { begin(card) } }
     func begin(_ card: Card) {
         guard canRate(card), !busy.contains(card.id) else { return }
+        if isBudgetHeld(card), isCollapsed(card) {
+            show(card.id)
+            guard !isCollapsed(card) else { return }
+        }
         let current = currentRating(card)
         drafts[card.id] = Draft(label: current?.kindLabel ?? Self.defaultLabel(card), scope: current?.scope ?? .kind)
         hasOpenedRow = true; defaults?.set(true, forKey: "ratings.openedRow")
@@ -157,10 +173,25 @@ final class MessageRatingsModel {
         if cancel || draft.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { drafts[id]?.label = draft.originalLabel ?? draft.label }
         drafts[id]?.editingLabel = false; drafts[id]?.originalLabel = nil
     }
-    func hide(_ id: String) { expandedMuted.remove(id); cancel(id) }
-    func show(_ id: String) { expandedMuted.insert(id); provider?.ratingCardOpened(id: id) }
+    func hide(_ id: String) {
+        if let card = cards.card(id: id), isBudgetHeld(card) { collapsedBudget.insert(id) }
+        expandedMuted.remove(id); cancel(id)
+    }
+    func show(_ id: String) {
+        if let card = cards.card(id: id), isBudgetHeld(card) {
+            guard let proactive = provider as? any ProactiveAssistantControlling else { return }
+            do {
+                try proactive.showBudgetHeldCard(id: id)
+                errors[id] = nil
+            } catch {
+                errors[id] = error.localizedDescription
+                return
+            }
+        }
+        collapsedBudget.remove(id); expandedMuted.insert(id); provider?.ratingCardOpened(id: id)
+    }
     func showMuted(_ ids: [String]) {
-        expandedMuted.formUnion(ids)
+        for id in ids { show(id) }
         if let first = cards.cards.first(where: { ids.contains($0.id) }) { openCard(first.id) }
     }
     func changeRating(_ card: Card) {
@@ -168,7 +199,7 @@ final class MessageRatingsModel {
         if let decision = decision(card) { drafts[card.id]?.label = decision.kindLabel }
     }
     func confirmation(for card: Card) -> Confirmation? {
-        if let decision = decision(card), decision.releasedAt != nil {
+        if let decision = decision(card), decision.source != .dailyBudget, decision.releasedAt != nil {
             return .init(text: "Shown. Zeus won't count this as \(decision.kindLabel)", receipt: provider?.ratingUndo(for: card.id))
         }
         guard !isHeld(card), let rating = currentRating(card) else { return nil }

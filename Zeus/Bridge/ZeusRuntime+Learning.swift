@@ -61,6 +61,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
             try reconnectRuleNotices(matching: matching)
             try recordIgnoredQuestions()
         } catch { learningError = "Zeus couldn't save a learning outcome. It will try again." }
+        reconcileProactiveDeliveries(matching: matching)
+        considerMorningBrief()
         considerReflection()
         scheduleLearningBoundary()
     }
@@ -310,7 +312,11 @@ extension ZeusRuntime: LearningRuntimeControlling {
     }
     func recordReflectionReceipt(id: String) {
         guard !learningWasErased(id), let record = ledger?.record(id: id), record.delivery.ackedAt != nil,
-              [.reflection, .learning].contains(record.delivery.kind), !record.delivery.content.isEmpty else { return }
+              [.reflection, .learning, .brief, .ruleTrigger].contains(record.delivery.kind), !record.delivery.content.isEmpty else { return }
+        if record.delivery.kind == .brief || record.delivery.kind == .ruleTrigger {
+            recordSentLearning(id: id, kind: record.delivery.kind.rawValue, text: .init(record.delivery.content), sessionKey: record.delivery.sessionKey, receivedAt: record.delivery.ackedAt)
+            return
+        }
         if record.delivery.kind == .learning {
             recordSentLearning(id: id, kind: record.delivery.meta["learning_kind"] ?? "moment", text: .init(record.delivery.content), sessionKey: record.delivery.meta["learning_consumed_by"] ?? record.delivery.sessionKey, receivedAt: record.delivery.ackedAt)
             if record.delivery.meta["learning_kind"] == "rating" { return }
@@ -339,7 +345,9 @@ extension ZeusRuntime: LearningRuntimeControlling {
             let agent = sessions.first(where: { $0.sessionKey == sessionKey })?.agent.rawValue ?? sessionKey.split(separator: ":").first.map(String.init) ?? "other"
             let agentLabel = ["claude": "Claude", "codex": "Codex", "opencode": "OpenCode"][agent] ?? "Assistant"
             let label = agentLabel + (managedController.sessionKey == sessionKey ? " · Zeus" : " · Assistant")
-            let summary = Self.sentLearningSummary(kind: kind, text: text.value)
+            let summary = kind == "ruleTrigger"
+                ? "Sent a rule trigger: “" + String((ledger?.record(id: id)?.delivery.meta["rule_sentence"] ?? "Rule").prefix(100)) + "”"
+                : Self.sentLearningSummary(kind: kind, text: text.value)
             let payload = JournalPayload(description: summary, text: text.value,
                 details: ["kind": kind, "delivery_id": id, "agent": agent, "sessionLabel": label, "sessionID": identity])
             if existing == nil {
@@ -353,6 +361,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
     }
     static func sentLearningSummary(kind: String, text: String) -> String {
         if kind == "rating" { return "Sent your message preference" }
+        if kind == "brief" { return "Sent the morning brief request" }
+        if kind == "ruleTrigger" { return "Sent a rule trigger" }
         if kind == "reflection" { return "Sent a daily reflection" }
         if kind == "digest" { return "Sent your daily summary" }
         let moments = [("First activity today", "first activity today"), ("Back at the Mac", "back from a break"),
@@ -367,7 +377,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let safe = Learning(id: learning.id, kind: learning.kind, createdAt: learning.createdAt, text: text)
         guard !learningWasErased(learning.id) else { return safe }
         let files = await learningFolder?.recordLearning(safe) ?? []
-        return .init(id: safe.id, kind: safe.kind, createdAt: safe.createdAt, text: Self.withLearningFiles(text, paths: files))
+        return .init(id: safe.id, kind: safe.kind, createdAt: safe.createdAt, text: Self.withLearningFiles(text + "\n" + proactiveBudgetLine, paths: files))
     }
     func recordLearningToolReceipts(_ items: [JSONValue], sessionKey: String) {
         for value in items {
@@ -404,10 +414,10 @@ extension ZeusRuntime: LearningRuntimeControlling {
     }
     private func scheduleLearningBoundary() {
         learningTimer?.cancel(); learningTimer = nil
-        guard learningRules != nil || (learningJournal != nil && reflectionEnabled()) else { return }
+        guard morningBriefSettings != nil || learningRules != nil || (learningJournal != nil && reflectionEnabled()) else { return }
         let now = clock.now
         // Minute boundaries are needed only while a timed rule exists; otherwise schedule exact idle/evening deadlines.
-        var dates: [Date] = []
+        var dates: [Date] = nextBriefBoundary.map { [$0] } ?? []
         if journalAnswerReceipts.values.contains(where: { $0.3 }) { dates.append(now.addingTimeInterval(60)) }
         if let boundary = (learningRules as? any RuleLifecycleStoring)?.nextOutcomeBoundary, boundary > now { dates.append(boundary) }
         if learningRules?.rules.contains(where: { $0.trigger.time != nil && ($0.status == .active || $0.status == .shadow) }) == true {

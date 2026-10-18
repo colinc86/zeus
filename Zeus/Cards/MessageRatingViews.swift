@@ -193,10 +193,13 @@ struct MutedMessageLine: View {
     let model: MessageRatingsModel
     @Environment(\.zeusPalette) private var palette
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text("Muted: \(card.about ?? model.decision(card)?.kindLabel ?? "Message")").lineLimit(1)
-            Text("·").accessibilityHidden(true)
-            KeyboardButton(model.isCollapsed(card) ? "Show" : "Hide") { if model.isCollapsed(card) { model.show(card.id) } else { model.hide(card.id) } }.buttonStyle(.plain).foregroundStyle(palette.title).accessibilityLabel(model.isCollapsed(card) ? "Show muted message" : "Hide muted message").frame(minHeight: 22)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(model.isBudgetHeld(card) ? "Held: over today's limit" : "Muted: \(card.about ?? model.decision(card)?.kindLabel ?? "Message")").lineLimit(1)
+                Text("·").accessibilityHidden(true)
+                KeyboardButton(model.isCollapsed(card) ? "Show" : "Hide") { if model.isCollapsed(card) { model.show(card.id) } else { model.hide(card.id) } }.buttonStyle(.plain).foregroundStyle(palette.title).accessibilityLabel(model.isBudgetHeld(card) ? (model.isCollapsed(card) ? "Show held message" : "Hide held message") : (model.isCollapsed(card) ? "Show muted message" : "Hide muted message")).frame(minHeight: 22)
+            }
+            if model.isBudgetHeld(card), let error = model.errors[card.id] { Text(error).foregroundStyle(palette.destructive) }
         }.zeusFont(.caption).foregroundStyle(palette.secondaryText).accessibilityElement(children: .contain)
     }
 }
@@ -205,7 +208,10 @@ struct MutedMessageReason: View {
     let model: MessageRatingsModel
     @Environment(\.zeusPalette) private var palette
     var body: some View {
-        if let decision = model.decision(card), decision.releasedAt == nil {
+        if model.isBudgetHeld(card) {
+            Text("Your assistant has sent 6 unprompted messages today. Ones marked high priority still come through.")
+                .zeusFont(.caption).foregroundStyle(palette.secondaryText)
+        } else if let decision = model.decision(card), decision.releasedAt == nil {
             ZeusFlowLayout(spacing: 4) {
                 Text(decision.engine == "exact" ? "Stopped kind: \(decision.kindLabel)" : "Looks like \(decision.kindLabel)")
                     .foregroundStyle(palette.secondaryText)

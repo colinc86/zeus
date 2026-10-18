@@ -66,7 +66,9 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
                                   learningFolder: shell.learningServices?.folder as? any LearningFolderRecording,
                                   messageRatings: messageRatings,
                                   learningContext: { [weak learning = shell.learning] in learning?.context ?? .init(isPrivate: true) },
-                                  reflectionEnabled: { [weak learning = shell.learning] in learning?.enabled == true })
+                                  reflectionEnabled: { [weak learning = shell.learning] in learning?.enabled == true },
+                                  morningBriefSettings: shell.morningBrief,
+                                  morningBriefLevels: { [weak learning = shell.learning] in learning?.journalAccessPolicy.enabledLevels ?? [] })
         shell.connectLearningRuntime(runtime)
         runtime.onOpenAssistantSettings = { [weak shell] in shell?.showSettings(tab: .agent) }
         do {

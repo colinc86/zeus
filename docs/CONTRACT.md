@@ -60,7 +60,7 @@ All types are `Codable, Sendable` and public. JSON uses camelCase keys and ISO-8
 - **`InputSpec`**: `{ placeholder?, multiline }`.
 - **`Attachment`**: `{ id, kind: file | folder | url, label, target, summary? }`. For files, `target` is a path and `~` is allowed. `summary` is an assistant-written synopsis; legacy stored attachments decode without it. New tool-created file/folder attachments require at least 20 non-whitespace characters, at most 400 total characters; link summaries are optional (at most 400 characters).
 - **`CardResponse`**: `{ optionID?, optionLabel?, text?, skipped: Bool, respondedAt, device: "mac" | "ios" }`, plus `summary`. `skipped` defaults to false and a missing legacy field decodes as false; a skipped response has no `optionID` (TB1, 2026-10-14).
-- **`Delivery`** (§5): `{ id ("d_"+8), kind: reply | userMessage, cardID?, sessionKey, content, meta: [String:String], createdAt, attempts, lastAttemptAt?, ackedAt?, failedAt? }`.
+- **`Delivery`** (§5): `{ id ("d_"+8), kind: reply | userMessage | reflection | learning | brief | ruleTrigger, cardID?, sessionKey, content, meta: [String:String], createdAt, attempts, lastAttemptAt?, ackedAt?, failedAt? }`.
 - **`ZeusPaths`**:
   - `appSupport` = `~/Library/Application Support/Zeus/`
   - `bridgeSocket` = `appSupport/bridge.sock`
@@ -546,3 +546,49 @@ Every preference mutation uses a transactional encrypted outbox and a durable `l
 Quiet signals never mute automatically. An unsolicited kind with five distinct messages within seven days that remain unread for 24 hours or are dismissed within three seconds of actual display gets one suggestion with a source card ID. Explicit kind ratings suppress suggestions. The app owns the end-of-day summary at quiet-hours start or 21:00, navigation and persistent read/display edges.
 
 Message preference startup distinguishes an unavailable key from corrupt data. An unavailable key keeps the store waiting and retries without replacing persisted state; user replies remain usable, but new unprompted cards wait for preferences to load. Explicit preference edits must persist before succeeding. Corrupt data is a surfaced startup error, never an empty preference fallback. Erasure removes the encrypted state even while the key is unavailable.
+
+
+### PA1 proactive deliveries and noise budget
+
+`Delivery.kind` adds `brief` and `ruleTrigger` (§4). These are assistant-directed
+context, not user requests: their resulting cards remain `unprompted`. They use
+ordinary durable routing, draft/busy holds, polling, acknowledgments and result-
+consumption receipts. A paste/transport attempt is never a Sent receipt. Pending
+learning presentation includes both kinds. Deleted journal evidence cancels them
+and suppresses late receipts, as for reflections; existing native pastes are left alone.
+
+An evaluable acting rule queues one trigger on transition to matching. `acts`
+includes preparation such as drafting a recap. Passive rules stay hold-only;
+unconstrained guidance never fires. Each record carries the rule ID, snapshot
+status/text, matched conditions, stable window key and open/closed state. A timed
+window is consumed once even if its app condition toggles; a context-only window
+rearms after a nonmatch. Restarting during an open window does not duplicate it.
+Closing the window cancels pending delivery. Changing approval/status cancels an
+obsolete queued snapshot without firing again within that same window. Rule-action tools still require the
+current trigger and authority checks: shadow is never permission, and purchases
+still need their exact one-use approval. Delivery text includes the remaining
+unprompted budget and existing `Files:` paths only.
+
+`MorningBriefSettings` is independent of capture consent. The mode default is on
+for managed and off for Connect your own; an explicit choice persists across modes.
+Schedule is first activity (default) or a fixed local hour/minute (08:00 default).
+The app supplies timestamp-only actual user activity through optional
+`ProactiveAssistantControlling`; wake alone is not activity. The runtime queues
+one stable `brief_<local-date>` request per day, including across relaunch. A fixed
+time that passed while Zeus was stopped is reconsidered at launch/unlock. Disabling
+or changing allowed evidence levels prevents an old pending request from sending.
+At levels 1–4 the request includes only already-redacted permitted summary data;
+level 4 supplies topics, never typed words. With capture off it contains no journal
+data. It requests one `zeus_present` with `about: "Morning brief"`, or quiet ack if
+nothing matters. Existing digest/moment deliveries also include the budget line.
+
+The normal-priority unprompted-card soft budget is six per local day. Replies and
+high-priority cards do not spend it. Ratings are evaluated first, and Stop still
+holds high-priority messages. Over-budget cards carry `CardMuteDecision.source =
+dailyBudget` before CardStore publication; legacy/nil source means rating. They
+arrive silently collapsed as “Held: over today's limit · Show”. Count IDs persist
+across relaunch independently of retained card history. Show records `releasedAt`
+without changing a rating or replaying notifications; Hide is app-local presentation
+only. Source/reason remain for the daily summary even after Show. Midnight resets
+the budget and never replays yesterday's held alerts. Normal rating controls remain
+available on an expanded budget-held card; rating-correction controls do not apply.

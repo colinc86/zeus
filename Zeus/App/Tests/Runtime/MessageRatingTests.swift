@@ -152,7 +152,7 @@ struct FixtureRatingSimilarity: MessageSimilarityComparing {
         _ = try await f.runtime.rate(cardID: first.id, rating: .down, scope: .kind, label: "On-call reminder")
         for _ in 0..<6 {
             let card = try await post(f, about: "Build results", text: "Your requested build passed.")
-            #expect(card.muteDecision == nil)
+            #expect(card.muteDecision == nil || card.muteDecision?.source == .dailyBudget)
             f.runtime.ratingCardOpened(id: card.id)
         }
         f.clock.advance(86400); f.runtime.scheduleRatingSuggestions()
