@@ -80,12 +80,25 @@ actor LocalRedactor: Redactor {
         let tagger = NLTagger(tagSchemes: [.nameType]); tagger.string = text
         tagger.enumerateTags(in: text.startIndex..<text.endIndex, unit: .word, scheme: .nameType,
                              options: [.omitWhitespace, .omitPunctuation, .joinNames]) { tag, range in
-            if tag == .personalName { spans.append(.init(range: NSRange(range, in: text), kind: .name)) }
+            if tag == .personalName, !isNonNameFact(String(text[range])) {
+                spans.append(.init(range: NSRange(range, in: text), kind: .name))
+            }
             return true
         }
         let result = replace(text, spans: spans)
         var report = result.report; report.semanticEngine = .naturalLanguage
         return .init(result.value, report: report)
+    }
+    /// Name tagging can mistake clock values, durations and calendar vocabulary for people.
+    nonisolated static func isNonNameFact(_ text: String) -> Bool {
+        let value = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let calendarWords: Set<String> = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+            "mon", "tue", "wed", "thu", "fri", "sat", "sun", "january", "february", "march", "april", "may", "june",
+            "july", "august", "september", "october", "november", "december", "jan", "feb", "mar", "apr", "jun",
+            "jul", "aug", "sep", "sept", "oct", "nov", "dec"]
+        if calendarWords.contains(value) { return true }
+        return value.range(of: #"^(?:[0-9]+|[0-9]{1,2}:[0-9]{2}(?:[–—-][0-9]{1,2}:[0-9]{2})?|(?:[0-9]+\s*(?:h|hr|hours?|min|minutes?|seconds?|sec)\s*)+)$"#,
+                           options: .regularExpression) != nil
     }
     nonisolated static func patternSpans(_ text: String) -> [PrivateSpan] {
         let full = NSRange(text.startIndex..<text.endIndex, in: text)

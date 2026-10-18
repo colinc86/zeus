@@ -53,7 +53,7 @@ extension ZeusRuntime {
         while value.utf8.count > max(0, bytes) { value.removeLast() }
         return value
     }
-    func reflectionOutcomeText(since: Date, now: Date) -> String {
+    func reflectionOutcomeText(since: Date, now: Date, sentenceText: (String) -> String = { $0 }) -> String {
         let local = ReflectionLocalTime(calendar: learningCalendar)
         let lifecycle = learningRules as? any RuleLifecycleStoring
         let events = (lifecycle?.outcomeEvents ?? []).filter { $0.at > since && $0.at <= now }
@@ -62,14 +62,14 @@ extension ZeusRuntime {
         for event in events.sorted(by: { $0.at == $1.at ? $0.id < $1.id : $0.at < $1.at }).suffix(12) {
             let sentence = learningRules?.rules.first { $0.id == event.ruleID }?.sentence ?? "A removed rule"
             let cause = event.source == .explicit ? "explicitly" : "from observed feedback"
-            lines.append("- “\(ReflectionPatternDigest.clean(sentence, limit: 100))”: \(labels[event.outcome] ?? "changed") \(cause). [\(event.id) \(local.label(event.at))]")
+            lines.append("- “\(ReflectionPatternDigest.clean(sentenceText(sentence), limit: 100))”: \(labels[event.outcome] ?? "changed") \(cause). [\(event.id) \(local.label(event.at))]")
         }
         var text = lines.isEmpty ? "" : "Rule outcomes since the last reflection\n" + lines.joined(separator: "\n")
         let blocked = (lifecycle?.suppressedRules ?? []).filter { $0.until > now }.sorted { $0.fingerprint < $1.fingerprint }
         if !blocked.isEmpty {
             text += "\n\nDon't propose again\n" + blocked.prefix(8).map { value in
                 let reason = value.reason == "deleted" ? "you deleted it" : (value.reason == "retired" ? "retired" : "you turned it off")
-                return "- “\(ReflectionPatternDigest.clean(value.sentence, limit: 100))” (\(reason), until \(local.label(value.until, "d MMM")))."
+                return "- “\(ReflectionPatternDigest.clean(sentenceText(value.sentence), limit: 100))” (\(reason), until \(local.label(value.until, "d MMM")))."
             }.joined(separator: "\n")
         }
         return text
