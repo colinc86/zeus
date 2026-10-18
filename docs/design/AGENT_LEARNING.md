@@ -240,7 +240,8 @@ A section **"Morning brief"** on Settings › Assistant, in both modes, directly
 - Caption under it: "At the start of your day, Zeus asks your assistant for one short brief of what matters today: what's coming up, what's at risk, what it has prepared. It uses yesterday's summary when Learn from me is on, its own notes and tools, and nothing else. Rate it like any message."
 - Under the checkbox, a `ZeusChoiceList` labelled **"When"** with two rows, disabled with the checkbox off:
   - **"After my first activity"** (default), detail "When you start using the Mac, within the first hour of the day."
-  - **"At a fixed time"**, with an hour-and-minute `DatePicker` in `ZeusFieldChrome` beside the row's text (an HStack inside the choice row; `ZeusChoiceList` has no accessory slot and gains none), default 08:00; the brief goes at that time if the Mac is awake, otherwise at the next activity.
+  - **"At a fixed time"**, detail "At this time if the Mac is awake, otherwise when you next use it." (UX5: both rows carry a detail line), with an hour-and-minute `DatePicker` in `ZeusFieldChrome` beside the row's text (an HStack inside the choice row; `ZeusChoiceList` has no accessory slot and gains none), default 08:00.
+- Settings › Privacy lists this request among everything Zeus sends, with its on/off state and an "Assistant Settings" button that lands here (PRIVACY.md §2.5, UX5).
 - Seam (platform): `enabled` is a persisted override; until the user toggles it, the effective value is the mode's default (managed on, Connect your own off, explicit opt-in allowed). `schedule` is `firstActivity` or `fixedTime` with hour and minute, default 08:00.
 - VoiceOver: the checkbox by its label; the list as "When, After my first activity, selected" etc.; the time field "Brief time".
 
