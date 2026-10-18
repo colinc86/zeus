@@ -1,5 +1,7 @@
 import Foundation
 import NaturalLanguage
+import AppKit
+import Synchronization
 
 struct PrivateSpan: Sendable {
     let range: NSRange
@@ -49,22 +51,23 @@ actor LocalRedactor: Redactor {
         for (kind, count) in second.report.counts { report.counts[kind, default: 0] += count }
         return .init(second.value, report: report)
     }
-    /// Batch all captured fields into one semantic request; the model never sees raw pattern/name matches.
+    /// Batch user-content values only; system facts and schema keys never enter either redaction pass.
     func redact(_ payload: JournalPayload) async -> Redacted<JournalPayload> {
-        let keys = payload.details.keys.sorted()
+        let keys = payload.details.keys.filter { !JournalPayload.systemDetailKeys.contains($0) }.sorted()
         var strings = [payload.description]
         if let text = payload.text { strings.append(text) }
         if let topic = payload.topic { strings.append(topic) }
-        for key in keys { strings += [key, payload.details[key] ?? ""] }
+        for key in keys { strings.append(payload.details[key] ?? "") }
         var safe = strings.map { value in
             value.utf8.count <= 128_000 ? Self.firstPass(value) : .init("‹secret›", report: .init(counts: [.secret: 1]))
         }
-        if !Task.isCancelled, let prose, let spans = await prose.spans(in: safe.map(\.value).joined(separator: "\n")) {
+        if safe.contains(where: { !$0.value.isEmpty }), !Task.isCancelled, let prose,
+           let spans = await prose.spans(in: safe.map(\.value).joined(separator: "\n")) {
             safe = safe.map { Self.addProse(spans, to: $0) }
         }
         let topicIndex = payload.text == nil ? 1 : 2
-        var offset = topicIndex + (payload.topic == nil ? 0 : 1), details: [String: String] = [:]
-        for _ in keys { details[safe[offset].value] = safe[offset + 1].value; offset += 2 }
+        var offset = topicIndex + (payload.topic == nil ? 0 : 1), details = payload.details
+        for key in keys { details[key] = safe[offset].value; offset += 1 }
         var report = RedactionReport()
         for value in safe {
             for (kind, count) in value.report.counts { report.counts[kind, default: 0] += count }
@@ -191,5 +194,45 @@ actor LocalRedactor: Redactor {
             report.counts[span.kind, default: 0] += 1
         }
         return .init(output as String, report: report)
+    }
+}
+
+/// Repairs only an app identity field, never redacted prose, titles or document paths.
+enum JournalAppName {
+    private static let installed = Mutex<[String: String]>([:])
+
+    static func displayName(_ item: JournalItem, resolve: (String) -> String? = installedName) -> String {
+        let details = item.payload.value.details
+        if let name = [details["name"], details["appName"]].compactMap({ $0 }).first(where: usable) { return name }
+        guard let bundleID = item.app, !bundleID.isEmpty else { return "Unknown app" }
+        if let name = resolve(bundleID), usable(name) { return name }
+        let last = bundleID.split(separator: ".").last.map(String.init) ?? bundleID
+        return last.prefix(1).uppercased() + last.dropFirst()
+    }
+
+    static func repairedDetails(_ item: JournalItem) -> [String: String] {
+        var details = item.payload.value.details
+        guard item.app != nil else { return details }
+        for key in ["name", "appName"] where details[key].map({ !usable($0) }) == true {
+            details[key] = displayName(item)
+        }
+        return details
+    }
+
+    private static func usable(_ value: String) -> Bool {
+        !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !value.contains("‹")
+    }
+
+    private static func installedName(_ identifier: String) -> String? {
+        installed.withLock { cache in
+            if let name = cache[identifier] { return name.isEmpty ? nil : name }
+            // LaunchServices lookup reads app bundle metadata only; it never opens the app or its documents.
+            let url = NSWorkspace.shared.urlsForApplications(withBundleIdentifier: identifier).first
+            let bundle = url.flatMap(Bundle.init(url:))
+            let name = (bundle?.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)
+                ?? (bundle?.object(forInfoDictionaryKey: "CFBundleName") as? String)
+            cache[identifier] = name ?? ""
+            return name
+        }
     }
 }

@@ -225,9 +225,9 @@ import Observation
                 guard valid(item) else { continue }
                 let payload: Redacted<JournalPayload>
                 if item.run.imeCount > 0 {
-                    let app = LocalRedactor.firstPass(item.run.context.appName)
-                    payload = .init(.init(description: "Typed in " + app.value,
-                        details: ["appName": app.value, "inputMethod": "ime", "keyCount": String(item.run.imeCount), "words_not_kept": "inputMethod"]))
+                    let app = item.run.context.appName
+                    payload = .init(.init(description: "Typed in " + app,
+                        details: ["appName": app, "inputMethod": "ime", "keyCount": String(item.run.imeCount), "words_not_kept": "inputMethod"]))
                 } else {
                     guard let safe = await processor.redact(words: item.firstPass, app: item.run.context.appName) else {
                         if valid(item) { lastError = "Some typing wasn't kept because Zeus couldn't safely remove private details." }

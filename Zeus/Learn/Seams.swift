@@ -22,7 +22,7 @@ struct Redacted<Value: Codable & Sendable>: Codable, Sendable {
 }
 extension Redacted: Equatable where Value: Equatable {}
 
-/// On-device only. The same pipeline covers every payload string before JournalStore.append.
+/// On-device only. User-content strings are redacted before JournalStore.append; system metadata stays exact.
 protocol Redactor: Sendable {
     func redact(_ text: String) async -> Redacted<String>
     func redact(_ payload: JournalPayload) async -> Redacted<JournalPayload>
@@ -41,10 +41,11 @@ extension Redactor {
         }
         if let text { merge(text.report) }
         if let topic { merge(topic.report) }
-        // Keys can contain captured text too; redact both halves. Collisions retain no raw value.
+        // Keys are schema constants; only explicitly system-sourced values bypass redaction.
         for key in payload.details.keys.sorted() {
-            let safeKey = await redact(key), safeValue = await redact(payload.details[key] ?? "")
-            details[safeKey.value] = safeValue.value; merge(safeKey.report); merge(safeValue.report)
+            let value = payload.details[key] ?? ""
+            if JournalPayload.systemDetailKeys.contains(key) { details[key] = value }
+            else { let safe = await redact(value); details[key] = safe.value; merge(safe.report) }
         }
         return .init(.init(description: description.value, text: text?.value, topic: topic?.value, details: details), report: report)
     }
@@ -61,6 +62,14 @@ enum JournalKind: String, Codable, CaseIterable, Sendable {
 }
 /// Text metadata only. Image bytes require FrameJournalStoring.appendFrame after image redaction.
 struct JournalPayload: Codable, Equatable, Sendable {
+    /// OS identity and Zeus-generated metadata only. Unknown values remain user content.
+    static let systemDetailKeys: Set<String> = [
+        "appName", "name", "bundleID", "app", "frame_id", "run_id",
+        "descriptionEngine", "topicEngine", "inputMethod", "kind", "level", "intent",
+        "keyCount", "pasteCount", "wordCount", "count", "seconds", "duration", "displays",
+        "words_not_kept", "picture_not_kept", "words_expires", "topic_expires"
+    ]
+
     var description: String
     var text: String?
     /// Level 4 summary, distinct from locally retained words. Older journal rows decode this as nil.

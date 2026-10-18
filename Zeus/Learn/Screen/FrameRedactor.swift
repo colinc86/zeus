@@ -66,7 +66,7 @@ actor FrameRedactor: ScreenFrameRedacting {
             report.counts[.finance, default: 0] += 1
             return "‹finance›"
         }
-        let appName = coveredMetadata(safe.value.details["app"] ?? "App")
+        let appName = safe.value.details["app"] ?? "App"
         let windowTitle = coveredMetadata(safe.value.details["window"] ?? "")
         let width = Double(image.width), height = Double(image.height)
         for (index, line) in lines.enumerated() {
