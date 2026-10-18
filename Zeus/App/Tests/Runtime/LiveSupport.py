@@ -19,7 +19,7 @@ def serialize_live_hosts():
     global _HOST_LEASE
     with _HOST_LEASE_GUARD:
         if _HOST_LEASE is not None:return
-        path=REPO/"build/live-hosts/.fixture.lock"
+        path=REPO/"build/.live-fixture.lock"
         path.parent.mkdir(parents=True,exist_ok=True)
         lease=path.open("a")
         try:fcntl.flock(lease,fcntl.LOCK_EX)
@@ -181,7 +181,7 @@ def finish_host_build(out,package):
 
 def host_package(out,name):
     serialize_live_hosts()
-    package=REPO/"build/live-hosts"/name if "ZEUS_LIVE_OUTPUT" in os.environ else out/"host"
+    package=REPO/"build/tmp/live-gate/hosts"/name
     package.mkdir(parents=True,exist_ok=True)
     # Remove copied sources so a removed production file cannot survive in the cache.
     if (package/"Sources").exists():shutil.rmtree(package/"Sources")

@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 spec=importlib.util.spec_from_file_location('live_gate',pathlib.Path(__file__).with_name('live_gate.py'))
 gate=importlib.util.module_from_spec(spec);spec.loader.exec_module(gate)
+import LiveSupport
 from LiveSupport import create_root, isolated_environment, scrub_paths, cleanup_root, start_model, stream_reply
 
 class GateTests(unittest.TestCase):
@@ -50,6 +51,16 @@ class GateTests(unittest.TestCase):
         self.assertIn('Zeus/App/Tests/Runtime/DV1LiveProbe.py', argv)
         self.assertIn('--quick', argv)
         self.assertNotIn('--record', argv)
+
+    def test_native_host_builds_stay_in_disposable_build_tree(self):
+        with tempfile.TemporaryDirectory() as temp, patch.object(LiveSupport, 'REPO', pathlib.Path(temp)), patch.object(LiveSupport, 'serialize_live_hosts'):
+            out = pathlib.Path(temp) / 'logs'
+            for environment in ({}, {'ZEUS_LIVE_OUTPUT': str(out)}):
+                with patch.dict(os.environ, environment, clear=True):
+                    package = LiveSupport.host_package(out, 'fixture')
+                    self.assertEqual(package, pathlib.Path(temp) / 'build/tmp/live-gate/hosts/fixture')
+                    self.assertTrue(package.is_dir())
+                    self.assertFalse((out / 'host').exists())
 
     def test_private_environment_does_not_copy_credentials_or_tmux(self):
         root=create_root('zsa4_')
