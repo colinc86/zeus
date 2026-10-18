@@ -52,7 +52,9 @@ extension ZeusRuntime: ProactiveAssistantControlling {
         guard briefEnabled, let settings = morningBriefSettings, settings.schedule == .fixedTime else { return nil }
         let now = clock.now
         let today = learningCalendar.date(bySettingHour: settings.hour, minute: settings.minute, second: 0, of: now) ?? now
-        return today > now ? today : learningCalendar.date(byAdding: .day, value: 1, to: today)
+        if today > now { return today }
+        guard let tomorrow = learningCalendar.date(byAdding: .day, value: 1, to: learningCalendar.startOfDay(for: now)) else { return nil }
+        return learningCalendar.date(bySettingHour: settings.hour, minute: settings.minute, second: 0, of: tomorrow)
     }
     func considerMorningBrief() {
         guard briefEnabled, let settings = morningBriefSettings, let ledger,

@@ -78,6 +78,34 @@ import ZeusProtocol
         f.clock.advance(86400); f.runtime.noteProactiveActivity(at: f.clock.now)
         #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .brief }.count == 1)
     }
+    @Test(arguments: [
+        ("2026-03-08T07:00:00Z", 2, 30, "2026-03-08T08:00:00Z"),
+        ("2026-03-08T08:05:00Z", 2, 30, "2026-03-09T07:30:00Z"),
+        ("2026-11-01T05:00:00Z", 1, 30, "2026-11-01T06:30:00Z"),
+        ("2026-11-01T06:45:00Z", 1, 30, "2026-11-02T07:30:00Z"),
+        ("2026-11-01T07:15:00Z", 1, 30, "2026-11-02T07:30:00Z"),
+        ("2026-10-30T14:00:00Z", 8, 0, "2026-10-31T13:00:00Z")
+    ])
+    func fixedBriefMatchesConfiguredWallTimeAcrossDST(now: String, hour: Int, minute: Int, expected: String) throws {
+        let (settings, defaults, name) = try settings()
+        defer { defaults.removePersistentDomain(forName: name) }
+        settings.schedule = .fixedTime; settings.hour = hour; settings.minute = minute
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = try #require(TimeZone(identifier: "America/Chicago"))
+        let f = try LearningRuntimeFixture(morningBriefSettings: settings, calendar: calendar); defer { f.stop() }
+        f.clock.now = try #require(ISO8601DateFormatter().date(from: now))
+        #expect(f.runtime.nextBriefBoundary == ISO8601DateFormatter().date(from: expected))
+    }
+    @Test func repeatedHourDoesNotDeliverTwoBriefsOnTheSameLocalDay() throws {
+        let (settings, defaults, name) = try settings()
+        defer { defaults.removePersistentDomain(forName: name) }
+        settings.schedule = .fixedTime; settings.hour = 1; settings.minute = 30
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = try #require(TimeZone(identifier: "America/Chicago"))
+        let f = try LearningRuntimeFixture(morningBriefSettings: settings, calendar: calendar); defer { f.stop() }
+        f.clock.now = try #require(ISO8601DateFormatter().date(from: "2026-11-01T06:30:00Z"))
+        f.runtime.considerMorningBrief()
+        f.clock.advance(3600); f.runtime.considerMorningBrief()
+        #expect(f.runtime.ledger?.records.filter { $0.delivery.meta["brief_day"] == "2026-11-01" }.count == 1)
+    }
     @Test func actingContextRearmsButPassiveNeverDeliversAndRestartDoesNotDuplicate() throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
         let rule = try #require(f.rules.propose([.init(sentence: "Prepare the test recap", trigger: .init(state: "tests done"), kind: .acts)], at: f.clock.now).first)
