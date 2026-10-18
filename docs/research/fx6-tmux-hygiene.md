@@ -41,4 +41,18 @@ as a routine test cleanup command.
 
 - Python hygiene regressions: 4 passed.
 - Shell syntax and `git diff --check`: passed.
-- Swift/build/full-suite results pending the appdev heavy-slot release.
+- `scripts/build.sh`: passed, no new compiler warnings.
+- `ZEUS_TEST_TMUX=1 TEST_RUNNER_ZEUS_TEST_TMUX=1 scripts/test.sh`: package
+  tests (273 total) and offline gates passed. App run: 1,144 tests / 232 suites,
+  1,113 passed, 30 skipped, one failure after 456.743 seconds. The only failure
+  was the existing `ConversationFirstClickTests.choiceRespondsToOneHeldPress`
+  `panel.focusCameFromPointer` assertion. No UI code or timing was changed.
+- All migrated real-tmux cases passed, including the three long-message arguments,
+  two-server namespace isolation, routing, and the new thrown-fixture cleanup test.
+- Full-run inventory guard: **no new shared-directory entries**. No `ztmux_*`
+  scratch directory remained after the suite.
+- The unchanged `ConversationFirstClickTests` suite then passed alone: four tests,
+  6.913 seconds. This does not turn the full-suite result green; the full gate is
+  reported blocked on that intermittent UI assertion.
+- Logs: `build/fx6-build.log`, `build/fx6-full.log`, `build/fx6-summary.json`,
+  `build/fx6-test-tree.json`, `build/fx6-click-check.log`.
