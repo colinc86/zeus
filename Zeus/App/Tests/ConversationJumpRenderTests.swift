@@ -119,13 +119,21 @@ private struct JumpRenderFixture: View {
     }
 }
 
+/// Walk the accessibility tree, not SwiftUI's private NSView implementation tree.
+/// Ignored backing views can forward labels back into their own SwiftUI attachment.
 @MainActor func jumpAXNodes(_ root: Any) -> [NSObject] {
     var visited: Set<ObjectIdentifier> = []
-    func walk(_ value: Any) -> [NSObject] {
-        guard let node = value as? NSObject, visited.insert(ObjectIdentifier(node)).inserted else { return [] }
-        let selector = NSSelectorFromString("accessibilityChildren")
-        let children = node.responds(to: selector) ? node.perform(selector)?.takeUnretainedValue() as? [Any] ?? [] : []
-        return [node] + (children + ((node as? NSView)?.subviews ?? [])).flatMap(walk)
+    func walk(_ value: Any, depth: Int) -> [NSObject] {
+        guard depth < 64, visited.count < 2048, let node = value as? NSObject,
+              visited.insert(ObjectIdentifier(node)).inserted else { return [] }
+        let children: [Any]
+        if let accessible = node as? NSAccessibilityProtocol {
+            children = accessible.accessibilityChildren() ?? []
+        } else {
+            let selector = NSSelectorFromString("accessibilityChildren")
+            children = node.responds(to: selector) ? node.perform(selector)?.takeUnretainedValue() as? [Any] ?? [] : []
+        }
+        return [node] + children.flatMap { walk($0, depth: depth + 1) }
     }
-    return walk(root)
+    return walk(root, depth: 0)
 }

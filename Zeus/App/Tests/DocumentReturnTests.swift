@@ -111,6 +111,22 @@ import ZeusProtocol
 }
 
 @MainActor @Suite(.serialized) struct DocumentReturnTests {
+    @Test func accessibilityQueriesAfterReopeningViewer() async throws {
+        let enhanced = NSSelectorFromString("accessibilitySetValue:forAttribute:")
+        let previous = NSApp.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? false
+        NSApp.perform(enhanced, with: NSNumber(value: true), with: "AXEnhancedUserInterface")
+        defer { NSApp.perform(enhanced, with: previous, with: "AXEnhancedUserInterface") }
+        let f = try DV2Fixture(index: 400); defer { f.cleanup() }
+        f.mount(); try await f.settle()
+        try f.press(AttachmentChip.accessibilityLabel(f.attachment)); try await f.settle()
+        f.unmount(); f.mount(); try await f.settle()
+        for node in jumpAXNodes(try #require(f.host)) {
+            let sel = NSSelectorFromString("accessibilityLabel")
+            if node.responds(to: sel) { _ = node.perform(sel)?.takeUnretainedValue() }
+        }
+        try f.press("Back to Messages"); try await f.settle()
+    }
+
     @Test(arguments: [400, 429], [false, true])
     func peekDocumentReturnsToItsSourceMessage(index: Int, stepped: Bool) async throws {
         let enhanced = NSSelectorFromString("accessibilitySetValue:forAttribute:")
