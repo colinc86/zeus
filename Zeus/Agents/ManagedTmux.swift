@@ -80,11 +80,26 @@ struct ManagedTmux: ManagedSessionHosting {
     }
     private func inspectPane(name: String, owner: String, pane: ManagedPane?, createdID: String?) async throws -> ManagedPane? {
         let socket = pane?.socket
+        let format = "#{session_name}\t#{pane_id}\t#{socket_path}\t#{pid}\t#{session_id}\t#{pane_pid}\t#{pane_dead}\t#{pane_dead_status}\t#{pane_dead_signal}"
+        // A known pane needs all three checks on every inspection. One tmux client can
+        // collect them without changing ownership, membership or process-lifetime validation.
+        var batch: [String]?
+        if let pane {
+            let result = try await run(["list-sessions", "-F", "S\t#{session_name}\t#{session_id}\t#{@zeus-owner}",
+                ";", "list-panes", "-s", "-t", "=" + name, "-F", "P\t#{pane_id}",
+                ";", "display-message", "-p", "-t", pane.id, "D\t" + format], socket: socket)
+            if result.status == 0 { batch = String(decoding: result.stdout, as: UTF8.self).components(separatedBy: "\n") }
+        }
         // Option commands do not honor the =name exact-target syntax: with -q,
         // show-options silently returns an empty marker for a perfectly owned session.
         // Resolve name, immutable ID and owner together; only genuinely missing markers
         // take the interrupted-launch recovery path. Never use prefix-matched names.
-        let sessions = try await run(["list-sessions", "-F", "#{session_name}\t#{session_id}\t#{@zeus-owner}"], socket: socket)
+        let sessions: ProcessResult
+        if let batch {
+            sessions = .init(status: 0, stdout: Data(batch.filter { $0.hasPrefix("S\t") }.map { String($0.dropFirst(2)) }.joined(separator: "\n").utf8))
+        } else {
+            sessions = try await run(["list-sessions", "-F", "#{session_name}\t#{session_id}\t#{@zeus-owner}"], socket: socket)
+        }
         if sessions.status != 0 {
             let message = String(decoding: sessions.stderr, as: UTF8.self)
             if message.contains("No such file or directory") || message.contains("no server running") || message.contains("no sessions") { return nil }
@@ -122,10 +137,19 @@ struct ManagedTmux: ManagedSessionHosting {
             guard launched.count <= 1 else { throw ManagedSessionError.ownershipChanged }
             return launched.first
         }
-        let present = try await checked(["list-panes", "-s", "-t", "=" + name, "-F", "#{pane_id}"], socket: socket).split(separator: "\n")
-        guard present.contains(Substring(target)) else { return nil }
-        let format = "#{session_name}\t#{pane_id}\t#{socket_path}\t#{pid}\t#{session_id}\t#{pane_pid}\t#{pane_dead}\t#{pane_dead_status}\t#{pane_dead_signal}"
-        let fields = try await checked(["display-message", "-p", "-t", target, format], socket: socket).split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+        let present: [String]
+        let metadata: String
+        if let batch {
+            present = batch.filter { $0.hasPrefix("P\t") }.map { String($0.dropFirst(2)) }
+            let rows = batch.filter { $0.hasPrefix("D\t") }
+            guard rows.count == 1 else { throw ManagedSessionError.ownershipChanged }
+            metadata = String(rows[0].dropFirst(2))
+        } else {
+            present = try await checked(["list-panes", "-s", "-t", "=" + name, "-F", "#{pane_id}"], socket: socket).split(separator: "\n").map(String.init)
+            metadata = try await checked(["display-message", "-p", "-t", target, format], socket: socket)
+        }
+        guard present.contains(target) else { return nil }
+        let fields = metadata.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
         if pane == nil && fields.count == 9 && fields[1].isEmpty { return nil }
         guard fields.count == 9, fields[0] == name, fields[1].hasPrefix("%"), fields[2].hasPrefix("/"),
               let server = Int(fields[3]), let pid = Int(fields[5]) else { throw ManagedSessionError.ownershipChanged }

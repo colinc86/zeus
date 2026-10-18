@@ -21,6 +21,9 @@ private struct LiveCaptureRunner: ProcessRunning {
     func run(executable: URL, arguments: [String], input: Data?) async throws -> ProcessResult {
         let result: String
         if arguments.contains("capture-pane") { result = snapshot.screen }
+        else if arguments.contains(";") {
+            result = "S\tzeus\t$0\tfixture\nP\t%0\nD\tzeus\t%0\t/tmp/live-fixture.sock\t1\t$0\t\(getpid())\t0\t\t\n"
+        }
         else if arguments.contains("list-sessions") { result = "zeus\t$0\tfixture\n" }
         else if arguments.contains("show-options") { result = "fixture\n" }
         else if arguments.contains("list-panes") { result = "%0\n" }
