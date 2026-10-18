@@ -19,6 +19,12 @@ final class DocumentViewerModel {
     private(set) var updatedAt: Date?
     var expanded = false
     private(set) var navigationDirection = 1
+    struct AnchorRequest: Equatable {
+        let id = UUID()
+        let pageID: UUID
+        let fragment: String
+    }
+    private(set) var anchorRequest: AnchorRequest?
     var selectedText = ""
     var findRequest = 0
     var findVisible = false
@@ -65,7 +71,10 @@ final class DocumentViewerModel {
     @discardableResult func open(_ attachment: Attachment, siblings: [Attachment] = [], sourceCardID: String? = nil, context: String? = nil) -> Bool {
         guard case .open(let url)? = AttachmentTarget.action(for: attachment), url.isFileURL else { return false }
         var value = attachment; value.target = url.path
-        attachments = siblings.filter { $0.kind != .url }
+        attachments = siblings.filter {
+            guard $0.kind != .url, case .open(let sibling)? = AttachmentTarget.action(for: $0), sibling.isFileURL else { return false }
+            return FileManager.default.fileExists(atPath: sibling.path)
+        }
         if let index = attachments.firstIndex(where: { $0.id == attachment.id }) { attachmentIndex = index }
         else { attachments = [value]; attachmentIndex = 0 }
         returnTarget = sourceCardID.map { .init(entryID: "card:\($0)", controlID: "open:\(attachment.id)") }
@@ -80,9 +89,19 @@ final class DocumentViewerModel {
         let value = Attachment(kind: kind, label: url.lastPathComponent, target: url.path)
         guard url.isFileURL, case .open(let safe)? = AttachmentTarget.action(for: value), safe.isFileURL else { return false }
         let parent = current
+        if safe.standardizedFileURL == parent?.url.standardizedFileURL {
+            requestAnchor(url.fragment, pageID: parent?.id)
+            return true
+        }
         navigationDirection = 1
         pages.append(.init(attachment: .init(kind: kind, label: safe.lastPathComponent, target: safe.path), sourceCardID: parent?.sourceCardID, context: parent?.context))
-        activate(); return true
+        activate()
+        requestAnchor(url.fragment, pageID: current?.id)
+        return true
+    }
+    private func requestAnchor(_ fragment: String?, pageID: UUID?) {
+        guard let fragment, !fragment.isEmpty, let pageID else { return }
+        anchorRequest = .init(pageID: pageID, fragment: fragment.removingPercentEncoding ?? fragment)
     }
     /// Returns true when Back reaches the conversation rather than another document.
     @discardableResult func back() -> Bool {
@@ -152,7 +171,7 @@ final class DocumentViewerModel {
     }
     func refresh() { load(updated: true) }
     private func activate() {
-        stop(); selectedText = ""; updatedAt = nil; findVisible = false; findText = ""; findCount = 0; pdfPage = nil; autoAttachedPage = nil
+        stop(); anchorRequest = nil; selectedText = ""; updatedAt = nil; findVisible = false; findText = ""; findCount = 0; pdfPage = nil; autoAttachedPage = nil
         guard let url = current?.url else { return }
         fingerprint = Self.fingerprint(url)
         installWatch(url)
