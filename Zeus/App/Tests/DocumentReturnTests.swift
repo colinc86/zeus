@@ -111,6 +111,37 @@ import ZeusProtocol
 }
 
 @MainActor @Suite(.serialized) struct DocumentReturnTests {
+    @Test(arguments: [400, 429], [false, true])
+    func peekDocumentReturnsToItsSourceMessage(index: Int, stepped: Bool) async throws {
+        let enhanced = NSSelectorFromString("accessibilitySetValue:forAttribute:")
+        let previous = NSApp.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? false
+        NSApp.perform(enhanced, with: NSNumber(value: true), with: "AXEnhancedUserInterface")
+        defer { NSApp.perform(enhanced, with: previous, with: "AXEnhancedUserInterface") }
+        let f = try DV2Fixture(index: index); defer { f.cleanup() }
+        // The peek entry point opens the document before mounting the conversation.
+        #expect(f.panel.document.open(f.attachment, siblings: [f.attachment, f.second],
+            sourceCardID: f.sourceID, context: "Latest message"))
+        f.panel.document.fromPeek = true
+        f.panel.scrollTargetCardID = f.sourceID
+        f.panel.scrollRequest += 1
+        f.mount(); try await f.settle()
+        if stepped {
+            #expect(f.panel.document.step(1)); try await f.settle()
+            #expect(f.panel.document.current?.sourceCardID == f.sourceID)
+        }
+        try f.press("Back to Messages"); try await f.settle()
+        #expect(!f.panel.document.isOpen)
+        let returned = f.viewport
+        print("HUNT peek Back offset=\(returned.offset), height=\(returned.height), contentHeight=\(returned.contentHeight)")
+        #expect(returned.offset > 1000)
+        #expect(try f.chipFrame().intersects(f.window.frame), "The source attachment must be visible after Back")
+        if index == 429 {
+            // This source is the last message and fits within the viewport.
+            #expect(returned.offset > returned.contentHeight - returned.height - 300,
+                "Back from a peek document must reveal its source, not the oldest loaded history")
+        }
+    }
+
     enum ReturnPath: String, CaseIterable { case messages, escape, bracket, expanded, collapsed, reopened, stepped, linked, arrival }
     @Test(arguments: [100, 400, 428], ReturnPath.allCases)
     func returnsToSameVisibleContent(index: Int, path: ReturnPath) async throws {
