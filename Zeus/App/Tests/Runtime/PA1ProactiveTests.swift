@@ -46,6 +46,25 @@ import ZeusProtocol
         f.runtime.stop(); try f.runtime.start(); f.runtime.noteProactiveActivity(at: f.clock.now)
         #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .brief }.count == 1)
     }
+    @Test func briefSummaryIsSixBoundedLinesAndDeletionSuppressesLateReceipt() throws {
+        let (settings, defaults, name) = try settings()
+        defer { defaults.removePersistentDomain(forName: name) }
+        let f = try LearningRuntimeFixture(morningBriefSettings: settings, morningBriefLevels: { [.focus] })
+        defer { f.stop() }
+        for index in 0..<9 {
+            try f.journal.append(.init(id: "summary-\(index)", time: f.clock.now.addingTimeInterval(-86400 + Double(index)), level: .focus, kind: .focus,
+                payload: .init(.init(description: "Synthetic work\nwith multiple\nlines " + String(repeating: "x", count: 300)))))
+        }
+        f.runtime.noteProactiveActivity(at: f.clock.now)
+        let brief = try #require(f.runtime.ledger?.records.first { $0.delivery.kind == .brief })
+        let lines = brief.delivery.content.split(separator: "\n").filter { $0.hasPrefix("- ") }
+        #expect(lines.count == 6); #expect(lines.allSatisfy { $0.count <= 242 })
+        try f.journal.delete(.all)
+        _ = try f.runtime.acknowledge(ids: [brief.delivery.id], sessionKey: "claude:/fixture#123.1")
+        f.runtime.recordReflectionReceipt(id: brief.delivery.id)
+        #expect(f.runtime.ledger?.record(id: brief.delivery.id)?.discardedAt != nil)
+        #expect(try f.journal.items(matching: .init()).isEmpty)
+    }
     @Test func fixedTimeHasNoEarlyBriefAndDisabledBriefNeverQueues() throws {
         let (settings, defaults, name) = try settings()
         defer { defaults.removePersistentDomain(forName: name) }
@@ -84,6 +103,33 @@ import ZeusProtocol
         #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .ruleTrigger }.count == 1)
         f.clock.advance(86400); f.runtime.learningContextDidChange()
         #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .ruleTrigger }.count == 2)
+    }
+    @Test func approvalCancelsQueuedShadowWithoutActingAgainInTheSameWindow() throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        let rule = try #require(f.rules.propose([.init(sentence: "Prepare the test recap", trigger: .init(state: "ready"), kind: .acts)], at: f.clock.now).first)
+        f.box.context.states = ["ready"]; f.runtime.learningContextDidChange()
+        let queued = try #require(f.runtime.ledger?.records.first { $0.delivery.kind == .ruleTrigger })
+        _ = try f.rules.markShadowShown(id: rule.id)
+        try f.rules.setStatus(.active, id: rule.id, at: f.clock.now)
+        f.runtime.learningContextDidChange()
+        #expect(f.runtime.ledger?.record(id: queued.delivery.id)?.discardedAt != nil)
+        #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .ruleTrigger }.count == 1)
+        f.box.context.states = []; f.runtime.learningContextDidChange()
+        f.box.context.states = ["ready"]; f.runtime.learningContextDidChange()
+        #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .ruleTrigger }.count == 2)
+        #expect(f.runtime.ledger?.records.last?.delivery.meta["rule_status"] == "active")
+    }
+    @Test func actedToolAcceptsOpenWindowAndRefusesAfterItCloses() async throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        let rule = try #require(f.rules.propose([.init(sentence: "Prepare the test recap", trigger: .init(state: "ready"), kind: .acts)], at: f.clock.now).first)
+        _ = try f.rules.markShadowShown(id: rule.id)
+        try f.rules.setStatus(.active, id: rule.id, at: f.clock.now)
+        f.box.context.states = ["ready"]; f.runtime.learningContextDidChange()
+        let args: JSONValue = ["ruleID": .string(rule.id), "did": "Prepared a synthetic recap", "undo": "Discard the recap"]
+        #expect(!(await f.runtime.callTool("zeus_rule_acted", arguments: args, sessionKey: "claude:/fixture#123.1")).isError)
+        f.box.context.states = []; f.runtime.learningContextDidChange()
+        #expect((await f.runtime.callTool("zeus_rule_acted", arguments: args, sessionKey: "claude:/fixture#123.1")).isError)
+        #expect(f.rules.ruleActions.filter { $0.kind == .acted }.count == 1)
     }
     @Test func seventhUnpromptedCardIsHeldBeforeArrivalButUrgencyAndRepliesAreExempt() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }

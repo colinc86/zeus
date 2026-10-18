@@ -25,7 +25,7 @@ Rename the **Agent** tab to **Assistant**. At the top, a two-button switch (`Zeu
 - **Zeus runs it**: the managed session (this spec). The default on first run.
 - **Connect your own**: today's Agent tab content (backend, delivery, sessions, setup commands, test message), unchanged.
 
-Quiet hours stays at the bottom of the tab in both modes. The switch is `ManagedSessionConfig.enabled`. Switching to **Connect your own** while the session runs asks inline, under the switch: "Stop Claude Code and use your own session instead?" with **Stop and Switch** (destructive) and **Cancel**. Switching back never auto-starts; the user presses Start.
+Quiet hours stays at the bottom of the tab in both modes, with the **Morning brief** section (PA1, AGENT_LEARNING.md §8.4) directly above it in both modes. The switch is `ManagedSessionConfig.enabled`. Switching to **Connect your own** while the session runs asks inline, under the switch: "Stop Claude Code and use your own session instead?" with **Stop and Switch** (destructive) and **Cancel**. Switching back never auto-starts; the user presses Start.
 
 The managed pane, top to bottom (`managed-m3-settings.png`). Section titles use `.zeusFont(.title)` in `palette.title`; captions use `.caption` in `secondaryText`.
 
@@ -167,7 +167,9 @@ From `ZeusManagedCopy.blockedCard(agent:dialog:)`, posted by the managed session
 - to keep messages short, point first;
 - when to reach out;
 - how deliveries and `zeus_ack` work;
-- to check in briefly when started.
+- (PA1) to call `zeus_get_rules` and read its folder (`Zeus/preferences.md`, `Notes/`) when a session starts;
+- (PA1) the proactive stance: on a Zeus learning, brief request or rule trigger, decide whether something needs preparing or flagging now, do it and send one short labelled message, otherwise ack and stay quiet; never comment on habits (AGENT_LEARNING.md §8);
+- to check in briefly when started, then wait for the user or for a Zeus delivery.
 
 It doesn't repeat the user's own AGENTS.md: that still applies (CONTRACT §11.2).
 

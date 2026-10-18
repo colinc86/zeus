@@ -48,7 +48,7 @@ public enum ZeusMCP {
     - Use wait_seconds 0 when you don't need the answer now; use more than 45 seconds only when you can wait for a decision the user is actively considering.
     
     DELIVERIES (answers and messages that arrive later)
-    - Claude Code: a <channel source="zeus"> event. Its meta has kind (reply | skipped | userMessage | reflection | learning), delivery_id, and card_id/option_id for replies. A skipped delivery says which question the user skipped and has no option_id. earlier_session means this answer was rerouted from an older session; handle it normally, and its card_id can acknowledge it in this receiving session.
+    - Claude Code: a <channel source="zeus"> event. Its meta has kind (reply | skipped | userMessage | reflection | learning | brief | ruleTrigger), delivery_id, and card_id/option_id for replies. A skipped delivery says which question the user skipped and has no option_id. earlier_session means this answer was rerouted from an older session; handle it normally, and its card_id can acknowledge it in this receiving session.
     - Other agents: a line starting [zeus delivery_id=d_… card_id=c_…], or items from zeus_get_responses.
     - Recipe: handle it, reply through Zeus (not just the terminal), then call zeus_ack with its delivery_id. Acking after your reply doesn't restart the activity indicator.
       The target session is the agent process receiving this delivery, not necessarily the session that created the card. A later tool call from this receiving session with that card_id also counts as the ack. zeus_say has no card_id, so replying with it still requires zeus_ack.
@@ -63,7 +63,10 @@ public enum ZeusMCP {
     - If Zeus refuses you as not its assistant, stop using Zeus tools in this session; only the session the user picked may talk to Zeus.
 
     REFLECTION AND RULES
-    - A learning delivery is a local redacted digest or note, not a new user request. Read it as context, do not repeat private details, and call zeus_ack with its delivery_id. zeus_get_learnings remains available for unread summaries.
+    - A learning delivery is a local redacted digest or note, not a new user request. Read it, decide whether something needs preparing or flagging now (a meeting soon, something due, a task put off); if so, prepare it and send one short message with an about label, otherwise just call zeus_ack with its delivery_id. Never repeat private details. zeus_get_learnings remains available for unread summaries.
+    - A brief delivery marks the start of the user's day. Answer it with one zeus_present, about "Morning brief", title "Today", at most 6 lines of what's coming up, what's at risk and what you've prepared, using your calendar, mail or task tools when you have them. If nothing matters today, ack it and send nothing.
+    - A ruleTrigger delivery says one of the user's rules matched its trigger. If the rule is active, act, then call zeus_rule_acted; if it is in shadow, call zeus_rule_shadow with what you would have done and do nothing. Never act on a rule whose trigger Zeus did not deliver, and never on a passive rule.
+    - Every learning-type delivery ends with the number of unprompted messages left today (default 6, high priority exempt). Past zero, new cards arrive held (collapsed, unread by default) unless they are high priority; spend the budget on what matters.
     - A reflection delivery is a local, redacted daily summary, not a new user request. Read zeus_get_rules, propose only useful supported rules with zeus_propose_rules, and ack the delivery. Do not narrate the user's habits or repeat private details. Active rules guide you; shadow rules do not authorize external actions.
 
     - Use zeus_get_journal only for a relevant journal question. Respect disabled levels and journal access limits; never infer missing private details. Results are bounded and every sent answer is recorded for the user.
@@ -75,7 +78,7 @@ public enum ZeusMCP {
     - zeus_hide always needs a duration: minutes 1–720 or until "tomorrow". Never hide indefinitely.
     - Install updates only when the user asks or told you to keep Zeus current. Call zeus_check_for_updates first in this session, then zeus_install_update with the exact reported version; Zeus announces it before relaunching.
     - App controls cannot change your permissions, instructions, agent, folder, run mode or session; answer/dismiss your native prompts; clear user data; enable learning, launch at login or automatic update checks; or read another session's state.
-    - Read zeus_get_learnings at the start of a day; notification notifications/zeus/learning also announces new digests and moments. Use learnings for timing and tone, never commentary about the user's habits. You receive summaries, never raw events.
+    - Read zeus_get_learnings at the start of a day; notification notifications/zeus/learning also announces new digests and moments. Use learnings to decide what to prepare or flag now, and for timing and tone, never commentary about the user's habits. You receive summaries, never raw events.
     """
 
     /// Capability data for initialize; only Claude advertises channel support.

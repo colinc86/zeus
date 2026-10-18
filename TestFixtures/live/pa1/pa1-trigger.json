@@ -1,0 +1,127 @@
+{
+  "agent": "2.1.302 (Claude Code)",
+  "scenario": "pa1-trigger",
+  "tools": [
+    "zeus_rule_acted",
+    "zeus_ack",
+    "zeus_rule_shadow",
+    "zeus_ack"
+  ],
+  "state": {
+    "error": null,
+    "receipts": [
+      {
+        "payload": {
+          "report": {
+            "semanticEngine": "patternsOnly",
+            "counts": []
+          },
+          "value": {
+            "text": "Rule trigger (active): \"Prepare the synthetic project recap\" \u00b7 rule rule_6BD68C23-5188-4507-A1E8-8F5A50FC9840.\nMatched: fixture ready; Window until this context stops matching.\nThis rule is active: act on it now, then call zeus_rule_acted {ruleID: \"rule_6BD68C23-5188-4507-A1E8-8F5A50FC9840\", did, undo} right away. If this trigger doesn't call for anything, zeus_ack and stay quiet.\nUnprompted messages left today: 6 (high priority doesn't count).\n\nFiles: Zeus/rules.md",
+            "description": "Sent a rule trigger: \u201cPrepare the synthetic project recap\u201d",
+            "details": {
+              "delivery_id": "trigger_97E6DFC4-D033-4E77-9B5C-6743D931B77B",
+              "sessionID": "2a293bfd3792a78f0a69f87e4810b22a8f50b6c8451c0de5f0756e3362b981c1",
+              "agent": "claude",
+              "kind": "ruleTrigger",
+              "sessionLabel": "Claude \u00b7 Zeus"
+            }
+          }
+        },
+        "level": 1,
+        "kind": "sentToAssistant",
+        "id": "sent:trigger_97E6DFC4-D033-4E77-9B5C-6743D931B77B:2a293bfd3792a78f0a69f87e",
+        "time": "2026-10-14T18:15:14.987Z"
+      },
+      {
+        "payload": {
+          "value": {
+            "description": "Sent a rule trigger: \u201cDraft the synthetic project checklist\u201d",
+            "details": {
+              "delivery_id": "trigger_767E1755-7677-446F-BECE-93F259F40547",
+              "sessionLabel": "Claude \u00b7 Zeus",
+              "sessionID": "2a293bfd3792a78f0a69f87e4810b22a8f50b6c8451c0de5f0756e3362b981c1",
+              "kind": "ruleTrigger",
+              "agent": "claude"
+            },
+            "text": "Rule trigger (shadow, waiting for my OK): \"Draft the synthetic project checklist\" \u00b7 rule rule_D96DB243-A856-4C30-ABBC-66873DA266C1.\nMatched: fixture ready; Window until this context stops matching.\nThis rule isn't approved yet: call zeus_rule_shadow {ruleID: \"rule_D96DB243-A856-4C30-ABBC-66873DA266C1\", wouldHave} with what you would have done, and don't do it. Then zeus_ack.\nUnprompted messages left today: 6 (high priority doesn't count).\n\nFiles: Zeus/rules.md"
+          },
+          "report": {
+            "semanticEngine": "patternsOnly",
+            "counts": []
+          }
+        },
+        "level": 1,
+        "kind": "sentToAssistant",
+        "id": "sent:trigger_767E1755-7677-446F-BECE-93F259F40547:2a293bfd3792a78f0a69f87e",
+        "time": "2026-10-14T18:15:21.071Z"
+      }
+    ],
+    "pane": "%0",
+    "muted": [],
+    "status": "running(Host.ManagedSessionStatus.Activity.idle)",
+    "cards": [],
+    "sessions": 1,
+    "deliveries": [
+      {
+        "attempts": 1,
+        "acked": true,
+        "kind": "ruleTrigger",
+        "discarded": false,
+        "content": "Rule trigger (active): \"Prepare the synthetic project recap\" \u00b7 rule rule_6BD68C23-5188-4507-A1E8-8F5A50FC9840.\nMatched: fixture ready; Window until this context stops matching.\nThis rule is active: act on it now, then call zeus_rule_acted {ruleID: \"rule_6BD68C23-5188-4507-A1E8-8F5A50FC9840\", did, undo} right away. If this trigger doesn't call for anything, zeus_ack and stay quiet.\nUnprompted messages left today: 6 (high priority doesn't count).\n\nFiles: Zeus/rules.md",
+        "id": "trigger_97E6DFC4-D033-4E77-9B5C-6743D931B77B",
+        "meta": {
+          "kind": "ruleTrigger",
+          "evidence": "",
+          "window_open": "true",
+          "rule_id": "rule_6BD68C23-5188-4507-A1E8-8F5A50FC9840",
+          "rule_sentence": "Prepare the synthetic project recap",
+          "window_key": "1109bc2b576b86f67709dd26792e1dd46901ed725ee3af39a8e9655cf6f0a296",
+          "rule_status": "active"
+        }
+      },
+      {
+        "meta": {
+          "kind": "ruleTrigger",
+          "evidence": "",
+          "window_open": "true",
+          "rule_id": "rule_D96DB243-A856-4C30-ABBC-66873DA266C1",
+          "rule_sentence": "Draft the synthetic project checklist",
+          "window_key": "628f1b4934da668489e97ac9c0f2e666a458ff2d912a6a1b93ba055ea373bab1",
+          "rule_status": "shadow"
+        },
+        "discarded": false,
+        "acked": true,
+        "content": "Rule trigger (shadow, waiting for my OK): \"Draft the synthetic project checklist\" \u00b7 rule rule_D96DB243-A856-4C30-ABBC-66873DA266C1.\nMatched: fixture ready; Window until this context stops matching.\nThis rule isn't approved yet: call zeus_rule_shadow {ruleID: \"rule_D96DB243-A856-4C30-ABBC-66873DA266C1\", wouldHave} with what you would have done, and don't do it. Then zeus_ack.\nUnprompted messages left today: 6 (high priority doesn't count).\n\nFiles: Zeus/rules.md",
+        "attempts": 1,
+        "kind": "ruleTrigger",
+        "id": "trigger_767E1755-7677-446F-BECE-93F259F40547"
+      }
+    ],
+    "ratings": 0,
+    "unread": 0,
+    "ok": true,
+    "ruleActions": [
+      {
+        "text": "Prepared a synthetic project recap",
+        "kind": "acted",
+        "sessionKey": "claude:/FIXTURE/project#72590.1792293575309251",
+        "ruleID": "rule_6BD68C23-5188-4507-A1E8-8F5A50FC9840",
+        "id": "rule_action_F564B5EE-A60C-4766-92D9-8E800DD07D81",
+        "created": "2026-10-14T18:15:14.951Z",
+        "state": "pending",
+        "undo": "Discard the synthetic recap"
+      },
+      {
+        "text": "Prepared a synthetic project recap",
+        "sessionKey": "claude:/FIXTURE/project#72590.1792293575309251",
+        "kind": "shadow",
+        "ruleID": "rule_D96DB243-A856-4C30-ABBC-66873DA266C1",
+        "id": "rule_action_3BA3CDF6-EA2B-4FEF-A05B-A0606DF4375B",
+        "created": "2026-10-14T18:15:21.036Z",
+        "state": "pending"
+      }
+    ]
+  },
+  "isolation": "private tmux, disposable HOME/config, localhost model, fixture encryption key; no external action"
+}

@@ -19,13 +19,13 @@ sys.path.insert(0, str(ROOT / 'Zeus/App/Tests/Runtime'))
 from LiveSupport import cleanup_root, scrub_paths
 
 AGENTS = ('claude', 'codex', 'opencode')
-PROBES = {'dv1': ('claude',), 'at1': ('claude',), 'fb1': ('claude',), 'lm4': ('claude',), 'ac1': ('claude',), 'lv1': ('claude',), 'sa1': ('claude',),
+PROBES = {'pa1-brief': ('claude',), 'pa1-trigger': ('claude',), 'dv1': ('claude',), 'at1': ('claude',), 'fb1': ('claude',), 'lm4': ('claude',), 'ac1': ('claude',), 'lv1': ('claude',), 'sa1': ('claude',),
           'sa2': ('codex', 'opencode'), 'sa3': AGENTS, 'sa4': AGENTS, 'pc1': AGENTS, 'cy1': AGENTS, 'e2e': ('—',)}
-SCRIPTS = {'dv1': 'Zeus/App/Tests/Runtime/DV1LiveProbe.py', 'at1': 'Zeus/App/Tests/Runtime/AT1LiveProbe.py', 'fb1': 'Zeus/App/Tests/Runtime/FB1LiveProbe.py', 'lm4': 'Zeus/App/Tests/Runtime/LM4LiveProbe.py', 'ac1': 'Zeus/App/Tests/Runtime/AC1LiveProbe.py', 'lv1': 'Zeus/App/Tests/Runtime/AC1LiveProbe.py',
+SCRIPTS = {'pa1-brief': 'Zeus/App/Tests/Runtime/PA1LiveProbe.py', 'pa1-trigger': 'Zeus/App/Tests/Runtime/PA1LiveProbe.py', 'dv1': 'Zeus/App/Tests/Runtime/DV1LiveProbe.py', 'at1': 'Zeus/App/Tests/Runtime/AT1LiveProbe.py', 'fb1': 'Zeus/App/Tests/Runtime/FB1LiveProbe.py', 'lm4': 'Zeus/App/Tests/Runtime/LM4LiveProbe.py', 'ac1': 'Zeus/App/Tests/Runtime/AC1LiveProbe.py', 'lv1': 'Zeus/App/Tests/Runtime/AC1LiveProbe.py',
            'sa1': 'Zeus/App/Tests/SA1LiveProbe.py',
            **{p: f'Zeus/App/Tests/Runtime/{p.upper()}LiveProbe.py' for p in ('sa2','sa3','sa4')},
            'pc1': 'Zeus/App/Tests/Runtime/PC1LiveScreens.py'}
-TIMEOUTS = {'dv1': 420, 'at1': 420, 'fb1': 420, 'lm4': 420, 'ac1': 360, 'lv1': 600, 'sa1': 600, 'sa2': 420, 'sa3': 420, 'sa4': 360, 'pc1': 480, 'cy1': 360, 'e2e': 420}
+TIMEOUTS = {'pa1-brief': 420, 'pa1-trigger': 420, 'dv1': 420, 'at1': 420, 'fb1': 420, 'lm4': 420, 'ac1': 360, 'lv1': 600, 'sa1': 600, 'sa2': 420, 'sa3': 420, 'sa4': 360, 'pc1': 480, 'cy1': 360, 'e2e': 420}
 
 
 def comma_values(value, allowed):
@@ -52,7 +52,7 @@ def xcode_command(probe, output):
 def command(probe, agent, output, quick, record):
     if probe in ('cy1','e2e'):return xcode_command(probe,output)
     argv = [sys.executable,'-B',SCRIPTS[probe]]
-    if probe in ('ac1','lv1'):argv += ['--scenario',probe]
+    if probe in ('ac1','lv1','pa1-brief','pa1-trigger'):argv += ['--scenario',probe]
     if probe in ('sa2','sa3','sa4','pc1'):argv += ['--agent',agent]
     if quick:argv += ['--quick']
     if record and probe != 'ac1':

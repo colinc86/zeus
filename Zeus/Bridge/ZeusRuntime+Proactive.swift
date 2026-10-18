@@ -87,7 +87,7 @@ extension ZeusRuntime: ProactiveAssistantControlling {
             let samples = evidence.suffix(6).compactMap { item -> String? in
                 let text = item.level == .typed ? item.payload.value.topic : item.payload.value.description
                 guard let text, !text.isEmpty else { return nil }
-                return String(text.prefix(240))
+                return String(text.split(whereSeparator: \.isWhitespace).joined(separator: " ").prefix(240))
             }
             if !samples.isEmpty { content += "\nYesterday (from Zeus's journal, private details removed):\n" + samples.map { "- " + $0 }.joined(separator: "\n") }
             content += "\n" + proactiveBudgetLine
@@ -129,6 +129,10 @@ extension ZeusRuntime: ProactiveAssistantControlling {
         do {
             let staleBriefs = Set(ledger.records.filter { $0.delivery.kind == .brief && $0.isPending && !proactiveDeliveryAllowed($0.delivery) }.map { $0.delivery.id })
             eraseLearningDeliveries(ids: staleBriefs)
+            let staleTriggers = Set(ledger.records.filter {
+                $0.delivery.kind == .ruleTrigger && $0.isPending && !proactiveDeliveryAllowed($0.delivery)
+            }.map { $0.delivery.id })
+            eraseLearningDeliveries(ids: staleTriggers)
             let closed = ledger.records.filter {
                 $0.delivery.kind == .ruleTrigger && $0.delivery.meta["window_open"] == "true"
                     && keys[$0.delivery.meta["rule_id", default: ""]] != $0.delivery.meta["window_key"]
