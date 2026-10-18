@@ -38,7 +38,7 @@ A saved kind rating shows a confirmation such as **Stopped: On-call reminders ·
 
 Press **⌘R** to toggle ratings for the focused eligible message, or the newest eligible message when none is focused. Tab or arrow keys move through the choices and links; Return activates. Escape first cancels a label edit, then closes the rating row without closing the conversation. VoiceOver offers **Rate: more like this**, **Rate: only when I need to know** and **Rate: stop these** actions.
 
-All kind preferences are under [Settings › Rules › What you hear about](SETTINGS.md#what-you-hear-about). Ratings work with all Learn from me levels off.
+All kind preferences are under [Settings › Rules › What you hear about](SETTINGS.md#what-you-hear-about). Ratings work with all Learn from me levels off, including for the **Morning brief** kind. **More like this** and **Neutral** still follow the [daily message limit](#daily-limit-on-unprompted-messages).
 
 ## Muted messages
 
@@ -52,6 +52,14 @@ The explanation reads **Stopped kind: On-call reminders** for a label match, or 
 At the start of quiet hours, or 21:00 local time when quiet hours are off, a quiet line such as **3 muted messages today · Show** opens that day's held messages. **Settings › Rules › What you hear about** also offers **Muted today: 3 · Show**. Muting itself does not delete cards; normal conversation-history rules still apply.
 
 After five messages of an unrated, labeled kind within seven days go unread for 24 hours or are dismissed within three seconds of display, Zeus may show **Getting a lot of On-call reminders · Rate them · Not now**. **Rate them** opens a message's rating row; **Not now** dismisses the suggestion for that kind. These signals never create a rating or mute messages automatically.
+
+## Daily limit on unprompted messages
+
+Zeus counts up to six ordinary-priority unprompted messages per local day, including ones muted by a rating. Further messages arrive silently collapsed as **Held: over today's limit · Show**, with no peek, sound, unread badge or waiting-question indicator. Replies to your messages and answers do not count; high-priority messages neither count nor get held by this limit. **Stop these** still holds a matching high-priority message.
+
+**Show** opens that one held message without changing a rating or replaying an alert. Attachments, answer buttons and normal rating controls remain available; **Hide** collapses it again. Showing it is remembered across relaunch. This is a daily-limit hold, so it has no **Not this kind** correction.
+
+The count survives relaunch and clearing history, and resets at local midnight. Yesterday's held messages remain in history without replaying their alerts. The end-of-day line uses **held**, for example **3 held messages today · Show**, when it includes messages held over the limit. The six-message limit is automatic; there is no setting to raise it.
 
 ## Cards and history
 
@@ -141,4 +149,4 @@ Except the two global shortcuts, these apply in the conversation panel. If your 
 
 Drag the panel's edge to resize it. Width is saved and limited by the screen; **Reset width** is available in the panel and resize-handle context menus. With the handle focused, Left and Right also adjust the width.
 
-Implementation references: [conversation model](../Zeus/Cards/ConversationModel.swift), [conversation view](../Zeus/Cards/ConversationView.swift), [attachment chips](../Zeus/Cards/AttachmentChip.swift), [attachment targets](../Zeus/Cards/AttachmentTarget.swift), [rating controls](../Zeus/Cards/MessageRatingViews.swift), [rating presentation](../Zeus/Cards/MessageRatingsModel.swift), [design and keyboard specification](design/CONVERSATION.md), and [contract §10](CONTRACT.md#10-conversation-model-v2-ux-decided-2026-10-11-replaces-the-card-stack-ux).
+Implementation references: [conversation model](../Zeus/Cards/ConversationModel.swift), [conversation view](../Zeus/Cards/ConversationView.swift), [attachment chips](../Zeus/Cards/AttachmentChip.swift), [attachment targets](../Zeus/Cards/AttachmentTarget.swift), [rating controls](../Zeus/Cards/MessageRatingViews.swift), [rating presentation](../Zeus/Cards/MessageRatingsModel.swift), [daily limit](../Zeus/Bridge/ZeusRuntime+Proactive.swift), [design and keyboard specification](design/CONVERSATION.md), and [contract §10](CONTRACT.md#10-conversation-model-v2-ux-decided-2026-10-11-replaces-the-card-stack-ux).
