@@ -41,7 +41,11 @@ import ZeusSprites
     var openCodeServerPassword: String? { nil }
 }
 @MainActor private final class LM4Clock: RuntimeClock {
-    var now = ISO8601DateFormatter().date(from: "2026-10-14T18:15:00Z") ?? Date()
+    private var offset = (ISO8601DateFormatter().date(from: "2026-10-14T18:15:00Z") ?? Date()).timeIntervalSinceNow
+    var now: Date {
+        get { Date().addingTimeInterval(offset) }
+        set { offset = newValue.timeIntervalSinceNow }
+    }
     func sleep(until date: Date) async throws { try await Task.sleep(for: .seconds(max(0, date.timeIntervalSince(now)))) }
 }
 private struct LM4Runner: ProcessRunning {
@@ -109,6 +113,7 @@ private struct LM4Runner: ProcessRunning {
                         if command["command"] == "nextBrief" { proactiveClock.now = proactiveClock.now.addingTimeInterval(86400); live.noteProactiveActivity(at: proactiveClock.now) }
                         if command["command"] == "triggers", let rules {
                             let active = try rules.propose([.init(sentence: "Prepare the synthetic project recap", trigger: .init(state: "fixture ready"), kind: .acts)], at: proactiveClock.now)[0]
+                            _ = try rules.markShadowShown(id: active.id)
                             try rules.setStatus(.active, id: active.id, at: proactiveClock.now)
                             _ = try rules.propose([.init(sentence: "Draft the synthetic project checklist", trigger: .init(state: "fixture ready"), kind: .acts)], at: proactiveClock.now)
                             context.value.states = ["fixture ready"]; live.learningContextDidChange()

@@ -22,8 +22,9 @@ def main():
     steps = {}
     tools = []
     def action(body):
-        text = json.dumps(body.get('messages', []))
+        text = json.dumps(body.get('messages', []), ensure_ascii=False)
         envelopes = list(re.finditer(r'\[zeus delivery_id=([^\s\]]+)', text))
+        envelopes = [e for e in envelopes if e.group(1).startswith(('brief_', 'trigger_'))]
         if not envelopes:
             return None, {}
         envelope = envelopes[-1]
@@ -77,6 +78,7 @@ def main():
             expected = 1 if args.scenario == 'pa1-brief' else 2
             def complete():
                 state = control.call('state')
+                (out/'state.private.json').write_text(json.dumps(state, indent=2))
                 return state if len(state['deliveries']) == expected and all(d['acked'] for d in state['deliveries']) else None
             state = eventually(complete, 'proactive delivery -> real MCP tool -> acknowledgment', timeout=90)
             assert len(state['receipts']) == expected, state
@@ -103,6 +105,7 @@ def main():
                 (target/(args.scenario+'.json')).write_text(json.dumps(proof, indent=2)+'\n')
             print(json.dumps({'passed': True, 'scenario': args.scenario, 'agent': version, 'tools': tools}))
     finally:
+        (out/'policy.json').write_text(json.dumps({'steps': steps, 'tools': tools, 'requests': len(Model.requests)}, indent=2)+'\n')
         if process:
             stop_host(process)
         pane.close()
