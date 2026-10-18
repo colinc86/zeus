@@ -274,7 +274,7 @@ Then the digest, under plain headings, each line in words a person would say, wi
 
 ```
 Rhythm
-- Weekdays you start about 09:10 (08:50–09:40, 11 of 12 days) and wind down about 18:20. [j_a1 Tue 7 Oct, j_b4 Wed 15 Oct, j_c2 Fri 17 Oct]
+- Weekdays you start about 09:10 (08:50–09:40, 11 of 12 days); your last activity is usually about 18:20. [j_a1 Tue 7 Oct, j_b4 Wed 15 Oct, j_c2 Fri 17 Oct]
 - Lunch break most days 12:30–13:10; Fridays you're away longer, about 1 h 20 min. [j_d3 Fri 3 Oct, j_e7 Fri 10 Oct]
 Focus
 - Mornings are mostly Xcode (about 2 h a day); afternoons split between Safari and Mail. [j_f1 Mon 6 Oct, j_g5 Thu 16 Oct]
@@ -298,9 +298,9 @@ Files: Zeus/reflections/2026-10-17.md, Zeus/rules.md
 ```
 
 Rules for the digest text (platform builds it, deterministic, about 10 KB, stable order):
-- **Plain words, no field syntax.** No `id=`, `app=`, `signal=`, `delta=`, no ISO timestamps, no UTC. "Tue 09:12", "4 of 4 Mondays", "about 2 h a day".
+- **Plain words, no field syntax.** No `id=`, `app=`, `signal=`, `delta=`, no ISO timestamps, no UTC. "Tue 09:12", "4 of 4 Mondays", "about 2 h a day". App durations are estimates from adjacent events (each capped at 15 min), so they always read "about", never to the minute; the last record of a day is "your last activity", never "you stopped working".
 - **Headings** are bare lines: Rhythm, Focus, Sequences, Topics, Engagement, Today vs usual, Today, last records (at most 20), Rule outcomes since the last reflection, Don't propose again, Message preferences. A section with nothing to say is left out entirely rather than printed empty.
-- **Evidence** is `[id Weekday d Month, …]` at the end of the line, 2–4 ids from different local days, the same ids the validator accepts. Today's appendix lines cite one id each. A separate "Evidence IDs" list is not needed; the meta carries the ids.
+- **Evidence** is `[id Weekday d Month, …]` at the end of the line, 2–4 ids from different local days, the same ids the validator accepts. Engagement lines cite retained card and rating ids (`c_…`); the validator accepts those only when the reflection's metadata lists them and they are still retained. Today's appendix lines cite one id each. A separate "Evidence IDs" list is not needed; the meta carries the ids.
 - **Outcomes** read as sentences, not signal names: skipped, accepted, undone, ignored, turned on.
 - **Suppressed rules** say why in words and until when: "(you turned it off, until 14 Nov)", "(you deleted it)", "(retired, kept skipping it)".
 - **Privacy** unchanged: only already-redacted records at the enabled levels, typing as topics only, placeholders kept. The folder copy under `Zeus/reflections/` is the same text.
