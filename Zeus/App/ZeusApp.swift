@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import ZeusDesign
+import ZeusProtocol
 
 @main
 struct ZeusApp: App {
@@ -21,6 +22,9 @@ struct ZeusApp: App {
 @MainActor
 final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
     lazy var shell: ShellController = {
+        #if DEBUG || ZEUS_PERFORMANCE_PROBE
+        if PerformanceProbe.requested { return PerformanceProbe.makeShell() }
+        #endif
         #if DEBUG
         if ComposerGrowthProbe.requested { return ComposerGrowthProbe.makeShell() }
         #endif
@@ -37,6 +41,14 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
         // Unit-test hosts must not register global shortcuts, show onboarding, or start a live bridge.
         guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil,
               NSClassFromString("XCTestCase") == nil else { return }
+        #if DEBUG || ZEUS_PERFORMANCE_PROBE
+        if PerformanceProbe.requested {
+            guard let home = try? PerformanceProbe.validatedHome(ProcessInfo.processInfo.environment),
+                  ManagedProbeIsolation.contains(ZeusPaths.appSupport.path, in: home.path) else {
+                NSApplication.shared.terminate(nil); return
+            }
+        }
+        #endif
         NSApplication.shared.setActivationPolicy(.accessory)
         ZeusFonts.registerBundled()
         #if DEBUG
@@ -64,16 +76,30 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
         #endif
         guard runtime == nil else { return }
         let settings = shell.settings
-        do { messageRatings = try MessageRatingStore(); shell.ratings.startupError = nil }
+        do {
+            #if DEBUG || ZEUS_PERFORMANCE_PROBE
+            messageRatings = try PerformanceProbe.requested ? PerformanceProbe.makeRatings() : MessageRatingStore()
+            #else
+            messageRatings = try MessageRatingStore()
+            #endif
+            shell.ratings.startupError = nil
+        }
         catch {
             let message = "Zeus can't open your message preferences right now. Retry the assistant connection to try again."
             shell.ratings.startupError = message; shell.runtimeError = message
             return
         }
+        let probeController: ManagedSessionController?
+        #if DEBUG || ZEUS_PERFORMANCE_PROBE
+        do { probeController = try PerformanceProbe.requested ? PerformanceProbe.makeManagedController(settings: settings) : nil }
+        catch { shell.runtimeError = "Invalid isolated performance controller."; return }
+        #else
+        probeController = nil
+        #endif
         let runtime = ZeusRuntime(cards: shell.cards, status: shell.status,
                                   characters: settings, routing: settings,
                                   quietHours: { [weak settings] date in settings?.isQuiet(at: date) ?? false },
-                                  appControl: shell.appControl, learnings: shell.learn.learnings,
+                                  managedController: probeController, appControl: shell.appControl, learnings: shell.learn.learnings,
                                   rules: shell.learningServices?.rules, journal: shell.learningServices?.journal,
                                   redactor: shell.learningServices?.redactor,
                                   learningFolder: shell.learningServices?.folder as? any LearningFolderRecording,
@@ -123,6 +149,9 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
         shell.stop()
         #if DEBUG
         if ComposerGrowthProbe.requested { ComposerGrowthProbe.cleanup() }
+        #endif
+        #if DEBUG || ZEUS_PERFORMANCE_PROBE
+        if PerformanceProbe.requested { PerformanceProbe.cleanup() }
         #endif
     }
 }

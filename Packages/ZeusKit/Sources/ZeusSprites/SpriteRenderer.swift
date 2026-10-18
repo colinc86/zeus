@@ -60,26 +60,29 @@ public enum SpriteRenderer {
         plan(character, state: state, time: time, options: options).signature
     }
 
-    /// How often a live view must re-check this state to catch every visual change: the shortest of
-    /// the frame tick (1/fps), timed accents, an animated emote, and, for procedural motion or
-    /// particles, the 12 Hz ceiling. `nil` means the frame can never change (draw it once).
+    /// How often a live view samples this state: frame ticks, timed accents, animated emotes,
+    /// and procedural motion or particles. Active procedural effects use a 12 Hz ceiling.
+    /// `nil` means the frame can never change (draw it once).
     ///
+    /// Resting states use their declared frame and particle rates; timed accents land on that grid.
     /// Re-checking is cheap with `SpriteFrameCache`: the image only changes when the signature does.
     public static func refreshInterval(_ character: SpriteCharacter, state: AvatarState,
                                        options: RenderOptions = .init()) -> TimeInterval? {
         let c = character.model
         guard let anim = c.animations[character.resolvedState(for: state)] else { return nil }
+        let resting = state == .idle || state == .sleeping
+        let motionInterval = resting ? 1 / anim.fps : proceduralInterval
         var interval = Double.infinity
         if anim.frames.count > 1 { interval = min(interval, 1 / anim.fps) }
         if !options.reduceMotion {
-            if anim.motion.map({ $0.kind != .none && $0.amplitude > 0 }) ?? false { interval = min(interval, proceduralInterval) }
-            if !anim.particles.isEmpty { interval = min(interval, anim.particleFPS.map { max(1 / $0, proceduralInterval) } ?? proceduralInterval) }
+            if anim.motion.map({ $0.kind != .none && $0.amplitude > 0 }) ?? false { interval = min(interval, motionInterval) }
+            if !anim.particles.isEmpty { interval = min(interval, anim.particleFPS.map { resting ? 1 / $0 : max(1 / $0, proceduralInterval) } ?? proceduralInterval) }
         }
         for accent in anim.accents where !accent.refs.isEmpty || (!accent.palettes.isEmpty && !options.reduceMotion) {
-            interval = min(interval, max(accent.duration / 2, proceduralInterval), 1 / anim.fps)
+            interval = min(interval, resting ? 1 / anim.fps : min(max(accent.duration / 2, proceduralInterval), 1 / anim.fps))
         }
         if options.showEmote, !options.reduceMotion, let kind = emoteKind(character, state: state) {
-            interval = min(interval, emoteInterval(kind))
+            interval = min(interval, resting ? motionInterval : emoteInterval(kind))
         }
         return interval.isFinite ? interval : nil
     }

@@ -12,13 +12,14 @@ private let library = CharacterLibrary.load(userDirectory: nil)
 private let optionSets = [RenderOptions(), RenderOptions(showEmote: false, reduceMotion: true)]
 /// A 12 Hz timeline (as the app samples it) over 4 s, offset so accents and particle cycles vary.
 private let timeline = (0..<48).map { 1000.0 + Double($0) / 12 }
+private let restingTimeline = (0..<48).map { 1000.0 + Double($0) / 6 }
 
 @Test(arguments: AvatarState.allCases)
 func equalSignaturesRenderIdenticalPixels(state: AvatarState) {
     for character in library.characters {
         for options in optionSets {
             var seen: [SpriteFrameSignature: [UInt8]] = [:]
-            for t in timeline {
+            for t in timeline + ([AvatarState.idle, .sleeping].contains(state) ? restingTimeline : []) {
                 let signature = SpriteRenderer.signature(character, state: state, time: t, options: options)
                 let pixels = bytes(SpriteRenderer.render(character, state: state, time: t, options: options))
                 if let earlier = seen[signature] {
@@ -117,7 +118,11 @@ func equalSignaturesRenderIdenticalPixels(state: AvatarState) {
 
 @Test func refreshIntervalReflectsWhatCanChange() throws {
     let zeus = try #require(library.character(id: "zeus"))
-    #expect(SpriteRenderer.refreshInterval(zeus, state: .idle) == SpriteRenderer.proceduralInterval)
+    #expect(SpriteRenderer.refreshInterval(zeus, state: .idle) == 1.0 / 6)
+    #expect(SpriteRenderer.refreshInterval(zeus, state: .sleeping) == 1.0 / 6)
+    let pumpkin = try #require(library.character(id: "pumpkin"))
+    #expect(SpriteRenderer.refreshInterval(pumpkin, state: .idle) == 1.0 / 8)
+    #expect(SpriteRenderer.refreshInterval(zeus, state: .working) == SpriteRenderer.proceduralInterval)
     let staticJSON = """
     { "id": "rock", "name": "Rock", "size": [1, 1], "canvas": { "size": [1, 1], "origin": [0, 0], "anchor": [0, 1] },
       "palette": { "k": "#000000" }, "layers": { "a": { "rows": ["k"] } },
@@ -134,6 +139,8 @@ func equalSignaturesRenderIdenticalPixels(state: AvatarState) {
     """
     let b = try #require(SpriteCharacter.load(data: Data(blinker.utf8), source: "b").character)
     #expect(SpriteRenderer.refreshInterval(b, state: .idle, options: .init(showEmote: false, reduceMotion: true)) == 0.5)
+    let fast = try #require(SpriteCharacter.load(data: Data(blinker.replacingOccurrences(of: "\"fps\": 2", with: "\"fps\": 24").utf8), source: "fast").character)
+    #expect(SpriteRenderer.refreshInterval(fast, state: .idle) == 1.0 / 24)
 }
 
 private func particleCharacter(fps: String) throws -> SpriteCharacter {
