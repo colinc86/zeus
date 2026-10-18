@@ -317,7 +317,7 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
         let forgotten = try f.journal.deleteTyping(ids: [rows[0].id]); try f.journal.delete(.all)
         #expect(throws: TypingJournalError.self) { try f.journal.restoreTyping(forgotten) }
     }
-    @Test func groupUndoStripsExpiredWordsAndCrossDayOrMissingSelectionChangesNothing() throws {
+    @Test func groupUndoStripsExpiredWordsAndMissingSelectionChangesNothing() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("lm2c_group_" + UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         var now = Date(timeIntervalSince1970: 1_800_000_000)
@@ -328,7 +328,9 @@ private actor TypingSuspendedProcessor: TypingRunRedacting {
             payload: .init(.init(description: "New topic", text: "other synthetic words", topic: "New topic")))
         try journal.append(row); try journal.append(fresh)
         let before = try journal.items(matching: .init())
-        #expect(throws: TypingJournalError.self) { try journal.deleteTyping(ids: ["old", "new"]) }
+        let group = try journal.deleteTyping(ids: ["old", "new"])
+        #expect(try journal.items(matching: .init()).isEmpty)
+        try journal.restoreTyping(group)
         #expect(throws: TypingJournalError.self) { try journal.deleteTyping(ids: ["old", "missing"]) }
         #expect(try journal.items(matching: .init()) == before)
         let receipt = try journal.deleteTyping(ids: ["old"]); now += 2; try journal.restoreTyping(receipt)

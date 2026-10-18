@@ -130,7 +130,7 @@ enum TypingWordsRetention: String, Codable, CaseIterable, Sendable {
 @MainActor protocol TypingJournalStoring: JournalStore {
     func pruneTyping(words: TypingWordsRetention, now: Date) throws
     func pruneTyping(words: TypingWordsRetention, topicsDays: Int, now: Date) throws
-    /// One atomic day transaction. App/hour groups share a day; cross-day selections fail before mutation.
+    /// One atomic transaction, including groups spanning physical day files after a time-zone change.
     func deleteTyping(ids: Set<String>) throws -> TypingDeletionReceipt
     func restoreTyping(_ receipt: TypingDeletionReceipt) throws
 }
@@ -138,6 +138,7 @@ enum TypingWordsRetention: String, Codable, CaseIterable, Sendable {
 struct TypingDeletionReceipt: Sendable {
     let epoch: UUID
     let items: [JournalItem]
+    var partitions: [String: String] = [:]
 }
 enum TypingJournalError: Error, LocalizedError {
     case unsupported, notFound, conflict, expired
@@ -347,6 +348,7 @@ struct FrameDeletionReceipt: Sendable {
     let frame: Redacted<FrameItem>?
     let before: [JournalItem]
     let after: [JournalItem]
+    var partitions: [String: String] = [:]
 }
 enum FrameJournalError: Error, LocalizedError {
     case unsupported, conflict, notFound
