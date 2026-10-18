@@ -108,6 +108,7 @@ final class ZeusAppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidBecomeActive(_ notification: Notification) {
         shell.login.refresh()
+        shell.managed.refreshAvailability()
         shell.learning.retryLearningStorage()
     }
 

@@ -98,7 +98,7 @@ struct AssistantSettingsView: View {
         HStack {
             title("Agent")
             Spacer()
-            // Only useful after installing an agent while Settings is open (D2-19).
+            // Availability can change while the user installs an agent or a shared prerequisite.
             if managed.showsCheckAgain {
                 KeyboardButton("Check Again") { managed.refreshAvailability() }
                     .accessibilityLabel("Check Again")

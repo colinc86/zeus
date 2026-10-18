@@ -277,8 +277,10 @@ final class ManagedAssistantModel {
         guard controller != nil, (modes[agent] ?? []).isEmpty else { return nil }
         return requirements[agent] ?? "Zeus couldn't check this agent. Press Check Again."
     }
-    /// "Check Again" only does something with a controller, and only helps while an agent is missing (D2-19, D3-8).
-    var showsCheckAgain: Bool { controller != nil && Self.agents.contains { (modes[$0] ?? []).isEmpty } }
+    /// Keep the advertised recovery action available for missing agents and shared prerequisites such as tmux.
+    var showsCheckAgain: Bool {
+        controller != nil && (!requirements.isEmpty || Self.agents.contains { (modes[$0] ?? []).isEmpty })
+    }
     var isMenuAlert: Bool {
         guard enabled else { return false }
         if requiresFreshConversation { return true }
