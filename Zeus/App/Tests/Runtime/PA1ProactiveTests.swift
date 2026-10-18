@@ -46,6 +46,25 @@ import ZeusProtocol
         f.runtime.stop(); try f.runtime.start(); f.runtime.noteProactiveActivity(at: f.clock.now)
         #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .brief }.count == 1)
     }
+    @Test func briefSummaryIsSixBoundedLinesAndDeletionSuppressesLateReceipt() throws {
+        let (settings, defaults, name) = try settings()
+        defer { defaults.removePersistentDomain(forName: name) }
+        let f = try LearningRuntimeFixture(morningBriefSettings: settings, morningBriefLevels: { [.focus] })
+        defer { f.stop() }
+        for index in 0..<9 {
+            try f.journal.append(.init(id: "summary-\(index)", time: f.clock.now.addingTimeInterval(-86400 + Double(index)), level: .focus, kind: .focus,
+                payload: .init(.init(description: "Synthetic work\nwith multiple\nlines " + String(repeating: "x", count: 300)))))
+        }
+        f.runtime.noteProactiveActivity(at: f.clock.now)
+        let brief = try #require(f.runtime.ledger?.records.first { $0.delivery.kind == .brief })
+        let lines = brief.delivery.content.split(separator: "\n").filter { $0.hasPrefix("- ") }
+        #expect(lines.count == 6); #expect(lines.allSatisfy { $0.count <= 242 })
+        try f.journal.delete(.all)
+        _ = try f.runtime.acknowledge(ids: [brief.delivery.id], sessionKey: "claude:/fixture#123.1")
+        f.runtime.recordReflectionReceipt(id: brief.delivery.id)
+        #expect(f.runtime.ledger?.record(id: brief.delivery.id)?.discardedAt != nil)
+        #expect(try f.journal.items(matching: .init()).isEmpty)
+    }
     @Test func fixedTimeHasNoEarlyBriefAndDisabledBriefNeverQueues() throws {
         let (settings, defaults, name) = try settings()
         defer { defaults.removePersistentDomain(forName: name) }
