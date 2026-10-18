@@ -482,7 +482,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
                     throw ToolArgumentError("\(path.isEmpty ? "proposal" : path) has a missing or invalid value; use the type and allowed values in the tool schema.")
                 }
                 proposal.trigger.apps = try RuleAppResolver.resolve(proposal.trigger.apps, observed: evidenceItems)
-                try PersistentRulesStore.validate(proposal)
+                try RuleProposalValidation.validate(proposal)
                 guard (0.4...0.7).contains(proposal.confidence) else { throw ToolArgumentError("confidence must be between 0.4 and 0.7; use a cautious estimate supported by the evidence.") }
                 guard proposal.evidence.allSatisfy({ existingEvidence.contains($0) && reflectedEvidence.contains($0) }) else { throw ToolArgumentError("evidence must reference retained IDs included in this reflection. Invalid IDs: " + proposal.evidence.filter { !existingEvidence.contains($0) || !reflectedEvidence.contains($0) }.joined(separator: ", ")) }
                 if proposal.trigger.isEvaluable || proposal.trigger.kind == "spend" {

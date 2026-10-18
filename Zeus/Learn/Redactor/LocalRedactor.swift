@@ -199,6 +199,10 @@ actor LocalRedactor: Redactor {
 
 /// Repairs only an app identity field, never redacted prose, titles or document paths.
 enum JournalAppName {
+    static func isBundleID(_ string: String) -> Bool {
+        !string.isEmpty && string.utf8.count <= 255 && string.contains(".") &&
+        string.unicodeScalars.allSatisfy { CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_").contains($0) }
+    }
     private static let installed = Mutex<[String: String]>([:])
 
     static func displayName(_ item: JournalItem, resolve: (String) -> String? = installedName) -> String {
