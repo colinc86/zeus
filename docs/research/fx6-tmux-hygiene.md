@@ -1,7 +1,7 @@
 # FX6-P — test socket hygiene
 
 Both remaining named-server fixtures (P4 `TmuxIntegrationTests` and P7
-`E2ETmuxTests`) now use `PrivateTestTmuxRunner`: an explicitly addressed
+`E2ETmuxTests`, including its `Round4TmuxE2ETests` caller) now use `PrivateTestTmuxRunner`: an explicitly addressed
 `-S /private/tmp/ztmux_<UUID>/sock`, no tmux config, and deferred `kill-server`
 plus scratch-directory removal. Defers are registered before constructing
 other fixtures, so a setup failure also cleans up. The failure-path regression
