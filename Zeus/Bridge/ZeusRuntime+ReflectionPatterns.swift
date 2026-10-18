@@ -43,7 +43,7 @@ extension ZeusRuntime {
 
         Do these, in this order:
         1. Update your notes. Revise Notes/about-you.md (what you've concluded about me) and Notes/patterns.md (my routines and recurring tasks) from the patterns below. Date each change and say what changed your mind. Conclusions, not copies: don't paste these lines in.
-        2. Propose rules, if any. Call zeus_get_rules, then zeus_propose_rules with at most three, only for a pattern that held on two or more days, each with two evidence IDs from different days taken from the lines below. Don't propose anything listed under "Don't propose again", even reworded. Acting rules start in shadow; every purchase asks.
+        2. Propose rules, if any. Call zeus_get_rules, then zeus_propose_rules with at most three, only for a pattern that held on two or more days, each with two evidence IDs from different days taken from the lines below. Don't propose anything listed under "Don't propose again", even reworded. Use app names shown below or bundle IDs in trigger.apps; time is local minutes after midnight (07:45 = 465). Check each indexed proposal result and retry only rejected rules. Acting rules start in shadow; every purchase asks.
         3. Get ahead of tomorrow. If one thing needs preparing or flagging (something due, a meeting, a reply I owe, a task I keep putting off), do the prep and send me one short message with an about label. Otherwise zeus_ack and stay quiet. \(budget)
         Never repeat my habits, numbers or private details back to me. A placeholder like ‹name› is something Zeus removed: don't guess it, don't ask me for it.
         """

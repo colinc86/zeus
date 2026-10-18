@@ -4,7 +4,7 @@ import CryptoKit
 import ZeusProtocol
 
 /// Atomic encrypted rule state; user consent and confidence survive a restart.
-@MainActor @Observable final class PersistentRulesStore: RulesStore, LearningRuleTracking, LearningRuleOutcomeSource, RuleLifecycleStoring, LearningStorageRecovering {
+@MainActor @Observable final class PersistentRulesStore: RulesStore, LearningRuleTracking, LearningRuleOutcomeSource, RuleLifecycleStoring, LearningStorageRecovering, PartialRulesProposing {
     struct State: Codable {
         var rules: [LearnedRule] = []
         var autonomy = 0.5
@@ -100,7 +100,28 @@ import ZeusProtocol
         guard let result = try create([own], author: .user, at: now).first else { throw LearningStorageError.invalidRule }
         return result
     }
+    func proposePartially(_ proposals: [RuleProposal], at now: Date) throws -> [Result<LearnedRule, any Error>] {
+        var next = state
+        var results: [Result<LearnedRule, any Error>] = []
+        var accepted: [String] = []
+        for proposal in proposals {
+            do {
+                let (updated, created) = try adding([proposal], author: .agent, to: next, at: now)
+                next = updated
+                if let rule = created.first { accepted.append(rule.id); results.append(.success(rule)) }
+            } catch { results.append(.failure(error)) }
+        }
+        if !accepted.isEmpty {
+            next.batches = state.batches + [accepted]
+            try commit(next)
+        }
+        return results
+    }
     private func create(_ proposals: [RuleProposal], author: RuleAuthor, at now: Date) throws -> [LearnedRule] {
+        let (next, created) = try adding(proposals, author: author, to: state, at: now)
+        try commit(next); return created
+    }
+    private func adding(_ proposals: [RuleProposal], author: RuleAuthor, to state: State, at now: Date) throws -> (State, [LearnedRule]) {
         guard !proposals.isEmpty, proposals.count <= 20, state.rules.count + proposals.count <= 500 else { throw LearningStorageError.invalidRule }
         for proposal in proposals {
             try Self.validate(proposal)
@@ -121,7 +142,7 @@ import ZeusProtocol
         }
         var next = state; next.rules += created; next.batches.append(created.map(\.id))
         if author == .agent { next.proposals = next.proposals.filter { now.timeIntervalSince($0) < 31 * 86400 } + created.map(\.created) }
-        try commit(next); return created
+        return (next, created)
     }
     /// A UI toggle/approval is a single durable outcome, never a second recordOutcome call.
     func setStatus(_ status: LearnedRuleStatus, id: String, at now: Date) throws {
@@ -196,18 +217,7 @@ import ZeusProtocol
         var next = state; next.shownShadowIDs.insert(id); try commit(next); return true
     }
     static func validate(_ proposal: RuleProposal) throws {
-        guard proposal.trigger.kind == nil || proposal.trigger.kind == "spend" else { throw LearningStorageError.invalidRule }
-        let text = proposal.sentence.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, text.count <= 500, proposal.confidence.isFinite, (0...1).contains(proposal.confidence),
-              proposal.evidence.count <= 100, Set(proposal.evidence).count == proposal.evidence.count,
-              proposal.evidence.allSatisfy({ !$0.isEmpty && $0.count <= 200 }),
-              proposal.trigger.apps.count <= 100, proposal.trigger.apps.allSatisfy(EncryptedJournalStore.isBundleID),
-              proposal.trigger.state.map({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && $0.count <= 200 }) ?? true
-        else { throw LearningStorageError.invalidRule }
-        if let time = proposal.trigger.time {
-            guard (0..<1440).contains(time.startMinute), (0..<1440).contains(time.endMinute),
-                  time.weekdays.allSatisfy({ (1...7).contains($0) }) else { throw LearningStorageError.invalidRule }
-        }
+        try RuleProposalValidation.validate(proposal)
     }
     func commit(_ next: State) throws {
         // Never replace unknown encrypted state with an empty launch snapshot.

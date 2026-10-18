@@ -481,7 +481,6 @@ import ZeusProtocol
         catch { lastError = "Zeus couldn't read or save its local journal."; throw error }
     }
     static func isBundleID(_ string: String) -> Bool {
-        !string.isEmpty && string.utf8.count <= 255 && string.contains(".") &&
-        string.unicodeScalars.allSatisfy { CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_").contains($0) }
+        JournalAppName.isBundleID(string)
     }
 }

@@ -30,7 +30,7 @@ def main():
             ('Write', {'file_path': str(pane.project/'Notes/about-you.md'), 'content': '# About you\n\n14 October: Morning planning comes before focused project work, based on repeated observed days.\n'}),
             ('Write', {'file_path': str(pane.project/'Notes/patterns.md'), 'content': '# Patterns\n\n14 October: Mail and Calendar precede the editor around nine on observed mornings. These repeated observations support a quiet project-work window.\n'}),
             ('zeus_get_rules', {}),
-            ('zeus_propose_rules', {'rules': [{'sentence': 'Keep routine updates quiet during morning project work', 'kind': 'passive', 'trigger': {'apps': ['com.apple.Xcode']}, 'evidence': cited}]}),
+            ('zeus_propose_rules', {'rules': [{'sentence': 'Keep routine updates quiet during morning project work', 'kind': 'passive', 'trigger': {'apps': ['Xcode']}, 'evidence': cited}]}),
             ('zeus_ack', {'delivery_ids': [delivery.group(0)]})]
         if len(steps) < len(targets):
             target = targets[len(steps)]; steps.append(target[0]); return target
@@ -56,6 +56,7 @@ def main():
             text = state['reflectionTexts'][0]
             assert len(text.encode()) <= 10240 and 'Sequences' in text and 'Notes/patterns.md' in text, text
             assert len(state['rules']) == 1 and state['rules'][0]['status'] == 'active', state
+            assert state['rules'][0]['trigger']['apps'] == ['com.apple.Xcode'], state
             assert state['deliveries'][0]['attempts'] == 1 and state['deliveries'][0]['pointer'] is True, state
             assert state['receipts'][0]['payload']['value']['text'] == text, state
             notes = {name: (pane.project/'Notes'/name).read_text() for name in ['about-you.md', 'patterns.md']}
