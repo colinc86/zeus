@@ -14,7 +14,7 @@ private actor PausedLearningRedactor: Redactor {
     func release() { continuation?.resume(); continuation = nil }
 }
 @Suite @MainActor struct LearningActivityAdapterTests {
-    @Test func legacyMigrationRedactsBeforeJournalAndRemovesSourceAfterCommit() async throws {
+    @Test func legacyMigrationKeepsAppIdentityAndRedactsProseBeforeCommit() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("lm2_l1_" + UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let old = ActivityStore(root: root.appendingPathComponent("Activity")), now = Date()
@@ -24,7 +24,8 @@ private actor PausedLearningRedactor: Redactor {
         try await adapter.migrateLegacy(redactor: LocalRedactor(useOnDeviceModel: false), allowed: { _ in true }, stillAllowed: { true })
         #expect(!FileManager.default.fileExists(atPath: old.fileURL(for: now).path))
         #expect(try journal.items(matching: .init()).count == 1)
-        #expect(adapter.events(on: now).first?.name == "‹email›")
+        #expect(adapter.events(on: now).first?.name == "private@example.test")
+        #expect(try journal.items(matching: .init()).first?.payload.value.description == "Switched to ‹email›")
         try await adapter.migrateLegacy(redactor: LocalRedactor(useOnDeviceModel: false), allowed: { _ in true }, stillAllowed: { true })
         #expect(try journal.items(matching: .init()).count == 1)
         #expect(throws: LearningStorageError.self) { try adapter.append(.init(t: now, kind: .active)) }
