@@ -195,16 +195,20 @@ Every delivery from Zeus used to end in "ack and stay quiet". From template v6 t
 
 Both go through the ordinary delivery path (`Delivery.Kind.brief` and `.ruleTrigger`), held while the user is drafting or the session is busy like other learnings, and end with the usual `Files:` line of existing folder-relative paths (omitted when none exist). Every learning-type delivery (digest, moment, brief, rule trigger) carries the budget line as its last line before `Files:`. The text is written in the user's voice, like a message from them, because the template says to treat Zeus messages as messages from the user.
 
-**Brief request** (`kind: brief`), at the first activity of a new day, or at the fixed time the Morning brief setting names (§8.4). With Learn from me on, the day's digest is delivered first and the brief follows it; with learning off, only the brief goes, with no journal data: just the date and "start of my day".
+**Brief request** (`kind: brief`), at the first activity of a new day, or at the fixed time the Morning brief setting names (§8.4). The brief carries its **own** short summary of yesterday, built from the levels that are on and already redacted (typing as topics only), so it never waits for the morning digest: the digest still goes out as its own learning delivery, and there is no ordering between the two. With learning off there is no summary block, only the date and "start of my day".
 
 ```
 Start of my day: Friday 17 October.
 Using yesterday's summary, your Notes/, my rules, and your own tools (calendar, mail, tasks) if you have them, send me one short brief of what matters today: what's coming up, what's at risk, what you've prepared. One zeus_present with about "Morning brief": a short title, then at most 6 lines, the most important first. If nothing matters today, zeus_ack and stay quiet.
+Yesterday (from Zeus's journal, private details removed):
+- Active 9:20–18:05, about 7 h at the Mac; lunch 12:30–13:10.
+- Top apps: Xcode 3 h 10 min, Safari 1 h 20 min, Mail 40 min.
+- Typing topics: release notes, a reply to ‹name›.
 Unprompted messages left today: 6 (high priority doesn't count).
-Files: Zeus/days/2026-10-16/summary.md, Zeus/rules.md
+Files: Zeus/rules.md
 ```
 
-With learning off the second line starts "Using your Notes/, my rules, and your own tools…" (no "yesterday's summary"), and `Files:` lists `Zeus/rules.md` only if it exists.
+The "Yesterday" block is at most 6 lines and only from the levels that are on (level 1 timing; level 2 window titles; level 3 picture descriptions; level 4 topics, never the words). With learning off the second line starts "Using your Notes/, my rules, and your own tools…" (no "yesterday's summary") and the block is absent. `Files:` lists only files that already exist: `Zeus/rules.md` when present, and yesterday's `summary.md` only if it has been written by then (never asserted).
 
 **Rule trigger** (`kind: ruleTrigger`), when an evaluable rule of kind acting (or "prepare") transitions to matching; once per rule per trigger window; passive rules are never delivered. Active rule:
 
