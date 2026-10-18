@@ -213,7 +213,12 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
                 fingerprint: fingerprint, optionID: optionID, stillAllowed: { [weak self] in
                     guard let self, self.attached, self.enabled, self.promptScope == scope,
                           self.managedPrompt?.fingerprint == fingerprint, case .blocked = self.managedStatus else { return false }
-                    return !self.actions.contains(where: { [.stop, .restart, .fresh, .applySettings].contains($0) })
+                    return !self.actions.contains(where: { action in
+                        switch action {
+                        case .stop, .restartNow, .fresh, .applySettings: true
+                        default: false
+                        }
+                    })
                 })
             if case .answered = result {
                 clearBlock()

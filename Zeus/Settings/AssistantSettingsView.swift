@@ -69,10 +69,6 @@ struct AssistantSettingsView: View {
         if case .restarting = managed.status, active {
             TimelineView(.periodic(from: .now, by: 1)) { context in statusPanel(now: context.date) }
         } else { statusPanel(now: Date()) }
-        if managed.canCancelRestart {
-            KeyboardButton("Cancel", action: managed.cancelRestart).accessibilityLabel("Cancel assistant restart")
-                .buttonStyle(ZeusButtonStyle(.secondary, size: .small))
-        }
         if managed.confirmation == .restartNow {
             confirmation(managed.restartNowConfirmation, action: "Restart Now")
                 .id("restartNowConfirmation")
@@ -158,7 +154,9 @@ struct AssistantSettingsView: View {
             .toggleStyle(ZeusCheckboxStyle()).disabled(managed.config.folder.isEmpty)
     }
     private func statusPanel(now: Date) -> some View {
-        ZeusManagedStatusPanel(managed.presentation(now: now), attachCommand: managed.attachCommand, note: managed.note,
+        let noteAction: (title: String, action: () -> Void)? = managed.canCancelRestart ? ("Cancel", { managed.cancelRestart() }) : nil
+        return ZeusManagedStatusPanel(managed.presentation(now: now), attachCommand: managed.attachCommand, note: managed.note,
+            noteAction: noteAction,
             disabledActions: managed.disabledActions, onAction: managed.perform, onCopy: { text in
                 NSPasteboard.general.clearContents()
                 return NSPasteboard.general.setString(text, forType: .string)

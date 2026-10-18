@@ -299,7 +299,10 @@ final class ManagedAssistantModel {
         case .starting, .running, .blocked: actions += [.restart, .stop]
         case .restarting: actions.append(.stop)
         }
-        if canRestartNow { actions.append(.restartNow) }
+        if canRestartNow {
+            actions.removeAll { $0 == .start || $0 == .tryAgain }
+            actions.append(.restartNow)
+        }
         return actions
     }
     func presentation(now: Date = Date()) -> ZeusManagedPresentation {
@@ -330,7 +333,13 @@ final class ManagedAssistantModel {
             }
         }
         if !canRestartNow { result.actions.removeAll { $0 == .restartNow } }
-        else if !result.actions.contains(.restartNow) { result.actions.append(.restartNow) }
+        else {
+            if result.actions.contains(.start) || result.actions.contains(.tryAgain) {
+                result.actions.removeAll { $0 == .start || $0 == .tryAgain || $0 == .restartNow }
+                result.actions.insert(.restartNow, at: 0)
+                result.detail = "\(recoveryAgentName) exited."
+            } else if !result.actions.contains(.restartNow) { result.actions.append(.restartNow) }
+        }
         return result
     }
     func menuStatus(usual: String, unread: Int) -> String {

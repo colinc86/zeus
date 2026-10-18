@@ -84,6 +84,18 @@ import ZeusProtocol
         }
     }
 
+    @Test func deadRecoveryHasOnePrimaryActionAndNamesTheAgent() throws {
+        try withShell { shell, controller in
+            controller.managedStatus = .failed(reason: "Process exited")
+            controller.managedRestartNowToken = "dead-pane"
+            let presentation = shell.managed.presentation()
+            #expect(presentation.actions.first == .restartNow)
+            #expect(!presentation.actions.contains(.start) && !presentation.actions.contains(.tryAgain))
+            #expect(!shell.managed.menuActions.contains(.start))
+            #expect(presentation.detail == "Claude Code exited.")
+        }
+    }
+
     @Test func menuSwitchAndEveryConfirmationHaveAVisibleSettingsTarget() throws {
         try withShell { shell, _ in
             shell.managed.chooseAgent(.codex); shell.managed.cancelConfirmation()
@@ -119,7 +131,7 @@ import ZeusProtocol
         try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
         for state in ["waiting", "blocked", "dead"] {
             controller.managedSettingsApplication = state == "waiting" ? .init(id: UUID(), configuration: config, kind: .restart) : nil
-            controller.managedStatus = state == "waiting" ? .running(.working) : state == "blocked" ? .blocked(reason: "Permission required") : .failed(reason: "Assistant exited")
+            controller.managedStatus = state == "waiting" ? .running(.working) : state == "blocked" ? .blocked(reason: "Permission required") : .failed(reason: "Claude Code exited.")
             controller.managedRestartNowToken = state == "waiting" ? nil : "fixture"
             managed.confirmation = state == "waiting" ? nil : .restartNow
             for scheme in [ColorScheme.light, .dark] {

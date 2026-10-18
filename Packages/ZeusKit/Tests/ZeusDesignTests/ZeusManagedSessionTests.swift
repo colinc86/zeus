@@ -132,3 +132,14 @@ struct ZeusManagedSessionTests {
         #expect(!line.contains("new message"))
     }
 }
+
+@MainActor @Test func statusNoteActionIsOptionalAndKeepsItsTitleAndCallback() {
+    let presentation = ZeusManagedSessionTests.present(.running(.working))
+    let plain = ZeusManagedStatusPanel(presentation, attachCommand: nil, note: "Waiting", onAction: { _ in }, onCopy: { _ in true })
+    #expect(plain.note == "Waiting" && plain.noteAction == nil)
+    var cancelled = false
+    let actionable = ZeusManagedStatusPanel(presentation, attachCommand: nil, note: "Waiting", noteAction: ("Cancel", { cancelled = true }), onAction: { _ in }, onCopy: { _ in true })
+    #expect(actionable.noteAction?.title == "Cancel")
+    actionable.noteAction?.action()
+    #expect(cancelled)
+}
