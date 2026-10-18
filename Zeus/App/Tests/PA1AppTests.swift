@@ -49,6 +49,7 @@ extension FB1RatingsFake: ProactiveAssistantControlling {
         fake.fail = false; model.show(card.id)
         #expect(!model.isCollapsed(card) && model.isHeld(card) && model.errors[card.id] == nil)
         #expect(fake.ratings.isEmpty)
+        #expect(model.confirmation(for: card) == nil)
         model.hide(card.id); #expect(model.isCollapsed(card))
         #expect(fake.mutedDecisions[card.id]?.releasedAt != nil)
         model.showMuted([card.id]); #expect(!model.isCollapsed(card))

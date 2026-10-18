@@ -11,6 +11,7 @@ import AppKit
         return CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: any)
     }
     var report: (Date) -> Void = { _ in }
+    isolated deinit { task?.cancel() }
 
     func configure(enabled: Bool) {
         self.enabled = enabled

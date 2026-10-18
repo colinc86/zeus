@@ -31,6 +31,25 @@ import ZeusProtocol
         #expect(settings.effectiveEnabled(managed: false))
         #expect(MorningBriefSettings(defaults: defaults).effectiveEnabled(managed: false))
     }
+    @Test func heldDisclosureUsesNativeShowAndLocalHideWithoutChangingRatings() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("pa1-disclosure-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let cards = CardStore(fileURL: root.appendingPathComponent("cards.json")), fake = FB1RatingsFake()
+        let model = MessageRatingsModel(cards: cards, source: { fake }), card = PA1AppTests.card()
+        cards.add(card); fake.mutedDecisions[card.id] = card.muteDecision
+        let (host, window) = try await mount(MutedMessageLine(card: card, model: model), width: 400, height: 100, scheme: .light, font: .pixel)
+        defer { window.contentView = nil; window.close() }
+        func press(_ label: String) throws {
+            let node = try #require(jumpAXNodes(host).first { ($0 as AnyObject).accessibilityRole?() == .button && ($0 as AnyObject).accessibilityLabel?() == label })
+            #expect((node as AnyObject).accessibilityPerformPress?() == true)
+        }
+        try press("Show held message")
+        for _ in 0..<4 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
+        #expect(!model.isCollapsed(card) && fake.mutedDecisions[card.id]?.releasedAt != nil)
+        try press("Hide held message")
+        #expect(model.isCollapsed(card) && fake.mutedDecisions[card.id]?.releasedAt != nil)
+        #expect(fake.ratings.isEmpty)
+    }
     @Test(.enabled(if: ProcessInfo.processInfo.environment["TEST_RUNNER_PA1_RENDER"] == "1" || ProcessInfo.processInfo.environment["PA1_RENDER"] == "1"))
     func proactiveFixtures() async throws {
         let suite = "pa1-renders-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
@@ -59,6 +78,7 @@ import ZeusProtocol
         }
     }
     private func render<V: View>(_ view: V, name: String, width: CGFloat, height: CGFloat, scheme: ColorScheme, font: ZeusFontChoice) async throws {
+        if ProcessInfo.processInfo.environment["TEST_RUNNER_PA1_EXPANDED_ONLY"] == "1", !name.hasSuffix("-held-expanded") { return }
         let (host, window) = try await mount(view, width: width, height: height, scheme: scheme, font: font)
         defer { window.contentView = nil; window.close() }
         var repo = URL(fileURLWithPath: #filePath); for _ in 0..<4 { repo.deleteLastPathComponent() }

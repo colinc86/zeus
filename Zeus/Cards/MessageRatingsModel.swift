@@ -199,7 +199,7 @@ final class MessageRatingsModel {
         if let decision = decision(card) { drafts[card.id]?.label = decision.kindLabel }
     }
     func confirmation(for card: Card) -> Confirmation? {
-        if let decision = decision(card), decision.releasedAt != nil {
+        if let decision = decision(card), decision.source != .dailyBudget, decision.releasedAt != nil {
             return .init(text: "Shown. Zeus won't count this as \(decision.kindLabel)", receipt: provider?.ratingUndo(for: card.id))
         }
         guard !isHeld(card), let rating = currentRating(card) else { return nil }
