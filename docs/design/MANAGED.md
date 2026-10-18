@@ -118,8 +118,11 @@ From `ZeusManagedPresentation.make`. Buttons are listed primary first.
 - Restart Now maps to `restartManagedSession()` and Try Again to `startManagedSession()`.
 - **Restart while the assistant is busy (FX17).** Restart never interrupts work by itself. Pressing Restart (panel or
   menu) while the assistant is working waits for it to go idle, with the UP1 line in the panel and the thread:
-  "Restarting when <Agent> is idle… · Cancel"; Cancel withdraws the pending restart and nothing happens. A **Restart
-  Now** button appears only when the process has exited (restarting state) or when the same blocked prompt has been
+  "Restarting when <Agent> is idle… · Cancel"; Cancel is the panel note's inline action (`ZeusManagedStatusPanel`
+  `noteAction`: a secondaryText "·" then the title in link style, after the note; Restart stays dimmed in the button
+  row) and withdraws the pending restart, so nothing happens. A **Restart Now** button appears only when the process
+  has exited but its pane and conversation can be resumed (a recovery token exists: it then *replaces* Start / Try
+  Again, never sits beside them, and the detail reads "<Agent> exited.") or when the same blocked prompt has been
   waiting for 2 minutes or more. It always asks first, in the Settings confirmation style (action first, Cancel focused,
   Esc cancels):
   - process gone: "Restart <Agent> now? Any unsent text in Terminal is lost. The conversation is kept."
