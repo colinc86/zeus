@@ -21,7 +21,7 @@ The agent-facing side of Learn from me (LM2 Phase D). `PRIVACY.md` covers what t
 | During the day | Up to four short notes ("back from a break", "winding down") | the same | One line each |
 | Start of the day (PA1, §8.2) | **Brief request** | A delivery marked `kind: brief`, at the first activity or the set time; works with learning off | The date, the ask for one `zeus_present` labelled "Morning brief", the day's remaining budget, and a `Files:` line when there is a summary |
 | A rule's trigger matches (PA1, §8.2) | **Rule trigger** | A delivery marked `kind: ruleTrigger`, once per rule per window; acting and "prepare" rules only | Rule id, text and status, what matched and the window, what to call (`zeus_rule_acted` or `zeus_rule_shadow`), the remaining budget |
-| First idle ≥ 10 min after 18:00 (once a day) | **Reflection** | A delivery marked `kind: reflection`, through the normal message path. It's not a user request. | The day's summary, the **outcomes** of every rule since the last reflection (§5), the rules the user turned off, edited or deleted, and the journal item ids usable as evidence |
+| First idle ≥ 10 min after 18:00 (once a day) | **Reflection** | A delivery marked `kind: reflection`, through the normal message path. It's not a user request. | (RF1, §9) The ask in order (update `Notes/`, propose rules for patterns that held on two or more days, prepare for tomorrow or ack within budget), then a 28-local-day pattern digest (rhythm, focus, sequences, topics, engagement, today vs usual, today's last records) with evidence ids from different local days, the **outcomes** of every rule since the last reflection (§5), and the rules the user turned off, edited or deleted |
 | When the assistant asks | Journal answers | `zeus_get_journal` (§3) | Redacted items for a time range. Pictures or words only if the user allowed "raw on request" for that level |
 | After a rule acts or is shown in shadow | Nothing new | — | The assistant reported it itself (§5) |
 
@@ -251,3 +251,64 @@ When an unprompted card past the day's soft budget arrives (platform counts; `pr
 ### 8.6 Renders
 
 `pa1/pa1-<state>-<theme>-<scheme>` from `build/pa1-renders/`: `settings` (the Morning brief section, managed mode, both schedule choices), `held-collapsed`, `held-expanded`, and `held-day` (the end-of-day notice), in both fonts. Approved by the designer.
+
+## 9. RF1 · The reflection asks for notes, patterns and prep
+
+**Status:** in build (platform RF1-P builds the 28-day pattern digest; designer RF1-D the copy). Dogfood finding 2026-10-17: four reflections, zero rules, and `Notes/about-you.md` and `Notes/patterns.md` never written, because the reflection listed one day's raw events and asked only for rules.
+
+### 9.1 What the reflection asks, in order
+
+The request is the first thing in the delivery, in the user's voice like every Zeus delivery, and asks for three things in this order: **notes first, then rules, then prep or a quiet ack.** The budget line (§8.2) sits inside step 3 so the assistant reads it at the moment it matters.
+
+```
+Zeus reflection for Friday 17 October. A redacted summary of how I've used my Mac over the last 28 days, built on this Mac. It isn't a new request from me; it's your evening to learn and get ahead.
+
+Do these, in this order:
+1. Update your notes. Revise Notes/about-you.md (what you've concluded about me) and Notes/patterns.md (my routines and recurring tasks) from the patterns below. Date each change and say what changed your mind. Conclusions, not copies: don't paste these lines in.
+2. Propose rules, if any. Call zeus_get_rules, then zeus_propose_rules with at most three, only for a pattern that held on two or more days, each with two evidence IDs from different days taken from the lines below. Don't propose anything listed under "Don't propose again", even reworded. Acting rules start in shadow; every purchase asks.
+3. Get ahead of tomorrow. If one thing needs preparing or flagging (something due, a meeting, a reply I owe, a task I keep putting off), do the prep and send me one short message with an about label. Otherwise zeus_ack and stay quiet. Unprompted messages left today: 4 (high priority doesn't count).
+Never repeat my habits, numbers or private details back to me. A placeholder like ‹name› is something Zeus removed: don't guess it, don't ask me for it.
+```
+
+Then the digest, under plain headings, each line in words a person would say, with local times and weekdays, and 2–4 evidence IDs from different local days in brackets at the end of the line, each with its local date:
+
+```
+Rhythm
+- Weekdays you start about 09:10 (08:50–09:40, 11 of 12 days) and wind down about 18:20. [j_a1 Tue 7 Oct, j_b4 Wed 15 Oct, j_c2 Fri 17 Oct]
+- Lunch break most days 12:30–13:10; Fridays you're away longer, about 1 h 20 min. [j_d3 Fri 3 Oct, j_e7 Fri 10 Oct]
+Focus
+- Mornings are mostly Xcode (about 2 h a day); afternoons split between Safari and Mail. [j_f1 Mon 6 Oct, j_g5 Thu 16 Oct]
+Sequences
+- Mail then Calendar, Mondays about 09:00, 4 of 4 Mondays. [j_h2 Mon 29 Sep, j_i8 Mon 13 Oct]
+Topics
+- Recurring: release notes, the Q3 planning deck. New this week: a landlord letter. [j_k3 Tue 14 Oct, j_l6 Thu 16 Oct]
+Engagement
+- You answered 5 of 6 "Meeting prep notes" and ignored every "Build finished"; you rated "On-call reminder" Stop. [c_m1 Tue 14 Oct, c_n2 Wed 15 Oct]
+Today vs usual
+- Started 40 min later than usual and skipped lunch; Logic Pro for 2 h, which is new. [j_o4 Fri 17 Oct, j_a1 Tue 7 Oct]
+Today, last records (at most 20)
+- 17:52 Xcode · Editing release notes [j_p9]
+Rule outcomes since the last reflection
+- "Hold routine updates while my tests are failing": skipped twice, accepted once. [o_q1 Wed 15 Oct, o_r2 Thu 16 Oct]
+Don't propose again
+- "Open the standup doc at 8:55" (you turned it off, until 14 Nov)
+Message preferences
+- Up: Meeting prep notes · Need-to-know: Build finished · Stop: On-call reminder
+Files: Zeus/reflections/2026-10-17.md, Zeus/rules.md
+```
+
+Rules for the digest text (platform builds it, deterministic, about 10 KB, stable order):
+- **Plain words, no field syntax.** No `id=`, `app=`, `signal=`, `delta=`, no ISO timestamps, no UTC. "Tue 09:12", "4 of 4 Mondays", "about 2 h a day".
+- **Headings** are bare lines: Rhythm, Focus, Sequences, Topics, Engagement, Today vs usual, Today, last records (at most 20), Rule outcomes since the last reflection, Don't propose again, Message preferences. A section with nothing to say is left out entirely rather than printed empty.
+- **Evidence** is `[id Weekday d Month, …]` at the end of the line, 2–4 ids from different local days, the same ids the validator accepts. Today's appendix lines cite one id each. A separate "Evidence IDs" list is not needed; the meta carries the ids.
+- **Outcomes** read as sentences, not signal names: skipped, accepted, undone, ignored, turned on.
+- **Suppressed rules** say why in words and until when: "(you turned it off, until 14 Nov)", "(you deleted it)", "(retired, kept skipping it)".
+- **Privacy** unchanged: only already-redacted records at the enabled levels, typing as topics only, placeholders kept. The folder copy under `Zeus/reflections/` is the same text.
+
+### 9.2 Validator message
+
+When a proposal's evidence isn't from two local days, the error names the ids and their local days so the model can fix it: "Evidence j_a1 and j_b4 are both from Tue 14 Oct. An evaluable rule needs ids from two different days of this reflection."
+
+### 9.3 Template v7 and the MCP bullet
+
+The template's "Each evening" bullet and the MCP reflection bullet say the same order: notes, then rules only for patterns that held on two or more days, then prepare or ack within budget. Template v7 carries the change (`<!-- zeus-template: 7 -->`); platform records the hashes.
