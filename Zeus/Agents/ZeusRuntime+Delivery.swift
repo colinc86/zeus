@@ -8,6 +8,7 @@ extension ZeusRuntime {
     /// Central transport selection; a connected polling session intentionally has no push transport.
     func transport(for key: String, delivery: Delivery? = nil) -> ((any DeliveryConnector), ConnectedSession, DeliveryRoutingContext)? {
         if let delivery, learningWasErased(delivery.id) { return nil }
+        if let delivery, !proactiveDeliveryAllowed(delivery) { return nil }
         if let delivery, delivery.meta["learning_kind"] == "rating",
            let first = ledger?.records.first(where: { $0.isPending && $0.delivery.meta["learning_kind"] == "rating" }), first.delivery.id != delivery.id { return nil }
         guard delivery?.kind != .learning || delivery?.meta["learning_kind"] == "rating" || learnings.learningsEnabled else { return nil }
@@ -244,14 +245,14 @@ extension ZeusRuntime {
     /// Retarget only a proven dead agent lifetime, never a transient bridge outage.
     func retargetDeadUserMessages() {
         let dead = Set((ledger?.records ?? []).filter { record in
-            (record.delivery.kind == .userMessage || record.delivery.kind == .reflection || record.delivery.kind == .learning) && record.isPending && record.awaitingAssistant != true
+            (record.delivery.kind == .userMessage || record.delivery.kind == .reflection || record.delivery.kind == .learning || record.delivery.kind == .brief || record.delivery.kind == .ruleTrigger) && record.isPending && record.awaitingAssistant != true
                 && record.delivery.meta["opencode_destination_validated"] != "true"
                 && sends[record.delivery.id] == nil && !sessions.contains(where: { $0.sessionKey == record.delivery.sessionKey })
         }.map { $0.delivery.sessionKey }.filter(targetIsDead))
         guard !dead.isEmpty else { return }
         do {
             try ledger?.mutateRecords { records in
-                for i in records.indices where (records[i].delivery.kind == .userMessage || records[i].delivery.kind == .reflection || records[i].delivery.kind == .learning) && records[i].isPending
+                for i in records.indices where (records[i].delivery.kind == .userMessage || records[i].delivery.kind == .reflection || records[i].delivery.kind == .learning || records[i].delivery.kind == .brief || records[i].delivery.kind == .ruleTrigger) && records[i].isPending
                     && records[i].awaitingAssistant != true
                     && records[i].delivery.meta["opencode_destination_validated"] != "true"
                     && sends[records[i].delivery.id] == nil
@@ -278,7 +279,7 @@ extension ZeusRuntime {
         if !unsaved.isEmpty { dates.append(clock.now.addingTimeInterval(3)) }
         for record in ledger?.records ?? [] where record.isPending {
             let delivery = record.delivery
-            if delivery.kind == .userMessage || delivery.kind == .reflection || delivery.kind == .learning, record.awaitingAssistant != true, !sessions.contains(where: { $0.sessionKey == delivery.sessionKey }), delivery.sessionKey.contains("#") {
+            if delivery.kind == .userMessage || delivery.kind == .reflection || delivery.kind == .learning || delivery.kind == .brief || delivery.kind == .ruleTrigger, record.awaitingAssistant != true, !sessions.contains(where: { $0.sessionKey == delivery.sessionKey }), delivery.sessionKey.contains("#") {
                 dates.append(clock.now.addingTimeInterval(5))
             }
             if record.awaitingAssistant == true, assistantTarget != nil {

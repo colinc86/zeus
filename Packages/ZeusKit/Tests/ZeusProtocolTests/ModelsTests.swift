@@ -102,3 +102,16 @@ private let date = Date(timeIntervalSince1970: 1_700_000_000.125)
     try ZeusPaths.createDirectories(at: temporary)
     #expect(FileManager.default.fileExists(atPath: temporary.appendingPathComponent("Characters").path))
 }
+
+
+@Test func budgetHoldSourceIsAdditiveAndLegacyRatingDecisionsDecode() throws {
+    let old = CardMuteDecision(ratingID: "rating", kindLabel: "Updates", reason: "kind", engine: "exact", score: 1, threshold: 1, decidedAt: date)
+    let encoded = try ZeusJSON.encoder().encode(old)
+    #expect(!String(decoding: encoded, as: UTF8.self).contains("source"))
+    #expect(try ZeusJSON.decoder().decode(CardMuteDecision.self, from: encoded).source == nil)
+    var budget = old; budget.source = .dailyBudget
+    try roundTrip(budget)
+    for kind in [Delivery.Kind.brief, .ruleTrigger] {
+        try roundTrip(Delivery(kind: kind, sessionKey: "claude:/fixture#1.1", content: "Proactive request", createdAt: date))
+    }
+}

@@ -6,7 +6,7 @@ extension ZeusRuntime: LearningDeliveryPresenting {
     var managedSetupStale: ManagedSetupStaleness { managedController.managedSetupStale }
     var managedTemplateReplacement: ManagedTemplateReplacement? { managedController.managedTemplateReplacement }
     func requestLearningDeliveryCancellation(deliveryID: String) {
-        guard let record = ledger?.record(id: deliveryID), [.learning, .reflection].contains(record.delivery.kind),
+        guard let record = ledger?.record(id: deliveryID), [.learning, .reflection, .brief, .ruleTrigger].contains(record.delivery.kind),
               heldByManagedDraft(record), let cardID = managedDraftAlertCardID else { return }
         managedDraftCancellation = .init(id: UUID(), cardID: cardID, deliveryIDs: [deliveryID])
     }
@@ -46,7 +46,7 @@ extension ZeusRuntime: LearningDeliveryPresenting {
     func journalEvidenceDeleted(_ ids: Set<String>?) {
         if ids == nil { clearMessageRatings() }
         reflectionTask?.cancel(); reflectionTask = nil
-        let records = (ledger?.records ?? []).filter { [.learning, .reflection].contains($0.delivery.kind) }
+        let records = (ledger?.records ?? []).filter { [.learning, .reflection, .brief, .ruleTrigger].contains($0.delivery.kind) }
         let erased = Set(records.filter { record in
             guard let ids else { return true }
             let evidence = Set(record.delivery.meta["evidence", default: ""].split(separator: ",").map(String.init))
@@ -102,7 +102,7 @@ extension ZeusRuntime: LearningDeliveryPresenting {
     }
 
     func publishPendingLearnings(_ records: [DeliveryRecord]) {
-        let next = records.filter { $0.isPending && !erasedLearningDeliveryIDs.contains($0.delivery.id) && [.learning, .reflection].contains($0.delivery.kind) }.map { record in
+        let next = records.filter { $0.isPending && !erasedLearningDeliveryIDs.contains($0.delivery.id) && [.learning, .reflection, .brief, .ruleTrigger].contains($0.delivery.kind) }.map { record in
             let key = record.delivery.sessionKey
             let agent = sessions.first { $0.sessionKey == key }?.agent.rawValue ?? String(key.split(separator: ":").first ?? "")
             let name = ["claude": "Claude", "codex": "Codex", "opencode": "OpenCode"][agent] ?? "Your assistant"
@@ -114,7 +114,7 @@ extension ZeusRuntime: LearningDeliveryPresenting {
     }
 
     func refreshLearningDeliveryPresentation() {
-        let records = (ledger?.records ?? []).filter { $0.isPending && !learningWasErased($0.delivery.id) && $0.transportDeliveredAt == nil && [.userMessage, .learning, .reflection].contains($0.delivery.kind) }
+        let records = (ledger?.records ?? []).filter { $0.isPending && !learningWasErased($0.delivery.id) && $0.transportDeliveredAt == nil && [.userMessage, .learning, .reflection, .brief, .ruleTrigger].contains($0.delivery.kind) }
         let previous = deliveryHoldEpisodes
         var next: [String: DeliveryHold] = [:]
         for record in records {

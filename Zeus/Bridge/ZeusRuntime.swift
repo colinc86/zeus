@@ -43,6 +43,10 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored let learningContext: () -> LearningContext
     @ObservationIgnored let reflectionEnabled: () -> Bool
     @ObservationIgnored let learningCalendar: Calendar
+    @ObservationIgnored let morningBriefSettings: MorningBriefSettings?
+    @ObservationIgnored let morningBriefLevels: () -> Set<JournalLevel>
+    @ObservationIgnored var proactiveState: ProactiveState?
+    @ObservationIgnored var proactiveActivityAt: Date?
     var learningInterruptionHold = false
     var learningError: String?
     var pendingLearningDeliveries: [PendingLearningDelivery] = []
@@ -145,7 +149,9 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
          learningFolder: (any LearningFolderRecording)? = nil,
          messageRatings: MessageRatingStore? = nil, ratingSimilarity: any MessageSimilarityComparing = LocalMessageSimilarity(),
          learningContext: @escaping () -> LearningContext = { .init() },
-         reflectionEnabled: @escaping () -> Bool = { false }, learningCalendar: Calendar = .current) {
+         reflectionEnabled: @escaping () -> Bool = { false }, learningCalendar: Calendar = .current,
+         morningBriefSettings: MorningBriefSettings? = nil, morningBriefLevels: @escaping () -> Set<JournalLevel> = { [] }) {
+        self.morningBriefSettings = morningBriefSettings; self.morningBriefLevels = morningBriefLevels
         self.messageRatings = messageRatings; self.ratingSimilarity = ratingSimilarity
         self.learningFolder = learningFolder
         self.learningRules = rules; self.learningJournal = journal; self.learningRedactor = redactor
@@ -168,6 +174,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: socketPath).deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: ledgerURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         let loaded = try DeliveryLedger(location: ledgerURL)
+        proactiveState = try ProactiveState(url: ledgerURL.deletingLastPathComponent().appendingPathComponent("proactive-state.json"))
         let journal = try ResponseJournal(location: ledgerURL.deletingLastPathComponent().appendingPathComponent("response-intents.json"))
         // Import open cards from pre-journal installations without replaying ambiguous
         // historical answers that may already have been delivered synchronously.
@@ -216,7 +223,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
             self.syncLearningFolder()
             self.managedController.considerSessions(self.sessions)
             self.noteManagedScreenActivity(); self.reconcileOwnScreenSampling(); self.updateManagedPresentation(); self.probeManagedChannel()
-            self.bindWaitingUserMessages(); self.processDueDeliveries()
+            self.bindWaitingUserMessages(); self.processDueDeliveries(); self.proactiveSettingsDidChange()
         }
         managedController.settingsApplicationAllowed = { [weak self] in
             guard let self, self.running, self.sends.isEmpty else { return false }

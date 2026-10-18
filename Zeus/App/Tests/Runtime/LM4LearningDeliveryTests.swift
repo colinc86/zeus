@@ -37,7 +37,7 @@ import ZeusProtocol
         _ = try f.runtime.acknowledge(ids: ["lm4-digest"], sessionKey: "claude:/fixture#123.1")
         _ = try f.runtime.acknowledge(ids: ["lm4-digest"], sessionKey: "claude:/fixture#123.1")
         let receipts = try f.journal.items(matching: .init()).filter { $0.kind == .sentToAssistant }
-        #expect(receipts.count == 1 && receipts.first?.payload.value.text == "Synthetic daily summary")
+        #expect(receipts.count == 1 && receipts.first?.payload.value.text == f.runtime.ledger?.record(id: "lm4-digest")?.delivery.content)
         #expect(provider.readIDs == ["lm4-digest"] && f.runtime.pendingLearningDeliveries.isEmpty)
         #expect(f.cards.learningNotices.contains { $0.id == "n_lm4-digest" })
     }

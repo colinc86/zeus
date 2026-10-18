@@ -14,14 +14,14 @@ final class MorningBriefSettings {
     var hour: Int {
         didSet {
             let value = min(23, max(0, hour))
-            if hour != value { hour = value; return }
+            if hour != value { hour = value }
             defaults.set(hour, forKey: "proactive.morningBrief.hour")
         }
     }
     var minute: Int {
         didSet {
             let value = min(59, max(0, minute))
-            if minute != value { minute = value; return }
+            if minute != value { minute = value }
             defaults.set(minute, forKey: "proactive.morningBrief.minute")
         }
     }
@@ -45,6 +45,4 @@ final class MorningBriefSettings {
     func proactiveSettingsDidChange()
     /// Releases only a daily-budget hold. No rating change, alert replay, or queue-wide release.
     func showBudgetHeldCard(id: String) throws
-    /// Collapses a previously shown budget card, retaining its original hold reason.
-    func hideBudgetHeldCard(id: String) throws
 }
