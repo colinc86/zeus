@@ -120,7 +120,7 @@ import ZeusProtocol
 }
 
 /// A bounded 80×24 Claude composer; only owned fixture text is ever rendered.
-private actor PointerPasteRunner: ProcessRunning {
+actor PointerPasteRunner: ProcessRunning {
     private var text = ""
     private var buffer = ""
     private var interrupted = false

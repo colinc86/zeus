@@ -114,6 +114,22 @@ final class DeliveryLedger {
             mutate(&records[index])
         }
     }
+    /// Supersession and expiry commit together before the runtime publishes notices.
+    func discardLearningRequests(_ reasons: [String: String], at date: Date) throws {
+        try transact { records in
+            for index in records.indices {
+                guard records[index].isPending, let reason = reasons[records[index].delivery.id] else { continue }
+                records[index].discardedAt = date
+                records[index].stateUpdatedAt = date
+                records[index].queueReason = reason == "superseded"
+                    ? "Replaced by a newer " + (records[index].delivery.kind == .brief ? "brief." : "reflection.")
+                    : "Not sent: this request is out of date."
+                records[index].delivery.meta["discard_reason"] = reason
+                records[index].delivery.meta.removeValue(forKey: "tmux_paste_destination")
+            }
+        }
+    }
+
     /// Acks only the requesting target session; repeated acknowledgments are harmless.
     func acknowledge(ids: Set<String>, sessionKey: String, at date: Date) throws -> [String] {
         let matched = records.filter { $0.discardedAt == nil && $0.delivery.sessionKey == sessionKey && ids.contains($0.delivery.id) }.map { $0.delivery.id }
