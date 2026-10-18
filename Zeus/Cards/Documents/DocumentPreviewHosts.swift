@@ -74,12 +74,13 @@ struct DocumentPDFHost: NSViewRepresentable {
 struct DocumentQuickLookHost: NSViewRepresentable {
     let page: DocumentViewerModel.Page
     let revision: Int
-    func makeNSView(context: Context) -> QLPreviewView {
-        let view: QLPreviewView = QLPreviewView(frame: .zero, style: .compact)
+    func makeNSView(context: Context) -> DocumentQuickLookView {
+        let view: DocumentQuickLookView = DocumentQuickLookView(frame: .zero, style: .compact)
         view.shouldCloseWithWindow = false
         return view
     }
-    func updateNSView(_ view: QLPreviewView, context: Context) {
+    func updateNSView(_ view: DocumentQuickLookView, context: Context) {
+        guard !view.isClosed else { return }
         guard context.coordinator.id != page.id || context.coordinator.revision != revision else { return }
         let same = context.coordinator.id == page.id
         let state = same ? view.displayState : nil
@@ -89,9 +90,21 @@ struct DocumentQuickLookHost: NSViewRepresentable {
         view.refreshPreviewItem()
         if let state { view.displayState = state }
     }
-    static func dismantleNSView(_ view: QLPreviewView, coordinator: Coordinator) { view.close() }
+    static func dismantleNSView(_ view: DocumentQuickLookView, coordinator: Coordinator) { view.close() }
     func makeCoordinator() -> Coordinator { Coordinator() }
     final class Coordinator { var id: UUID?; var revision = -1; var zoomRequest = 0 }
+}
+
+/// Closes the native preview at most once, regardless of the teardown caller.
+@MainActor final class DocumentQuickLookView: QLPreviewView {
+    private(set) var isClosed = false
+
+    override func close() {
+        guard !isClosed else { return }
+        isClosed = true
+        previewItem = nil
+        super.close()
+    }
 }
 
 struct DocumentImageHost: NSViewRepresentable {

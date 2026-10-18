@@ -1139,15 +1139,17 @@ extension DesignerAuditRenders {
             f.store.recordLearningNotice(.init(id: "morning", kind: .reflection, createdAt: base,
                 summary: summary, actionTitle: "View", detail: detail, ruleID: nil), action: nil)
         }
-        func nodes(_ value: Any, seen: inout Set<ObjectIdentifier>) -> [NSObject] {
-            guard seen.count < 2048, let node = value as? NSObject, seen.insert(ObjectIdentifier(node)).inserted else { return [] }
-            func children(_ method: String, _ attribute: String? = nil) -> [Any] {
-                let selector = NSSelectorFromString(method)
-                return node.responds(to: selector) ? (node.perform(selector, with: attribute)?.takeUnretainedValue() as? [Any] ?? []) : []
+        func nodes(_ value: Any, seen: inout Set<ObjectIdentifier>, depth: Int = 0) -> [NSObject] {
+            guard depth < 64, seen.count < 2048, let node = value as? NSObject,
+                  seen.insert(ObjectIdentifier(node)).inserted else { return [] }
+            let children: [Any]
+            if let accessible = node as? NSAccessibilityProtocol {
+                children = accessible.accessibilityChildren() ?? []
+            } else {
+                let selector = NSSelectorFromString("accessibilityChildren")
+                children = node.responds(to: selector) ? (node.perform(selector)?.takeUnretainedValue() as? [Any] ?? []) : []
             }
-            return [node] + (children("accessibilityChildren") + children("accessibilityAttributeValue:", "AXChildren")
-                + children("accessibilityAttributeValue:", "AXContents") + ((node as? NSView)?.subviews ?? []))
-                .flatMap { nodes($0, seen: &seen) }
+            return [node] + children.flatMap { nodes($0, seen: &seen, depth: depth + 1) }
         }
         func labels() -> [(NSObject, String)] {
             var seen: Set<ObjectIdentifier> = []
