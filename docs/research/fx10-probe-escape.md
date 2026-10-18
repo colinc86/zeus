@@ -40,20 +40,44 @@ preference bytes cannot be recovered or claimed as directly reproduced.
   excluded. GUI launch argv alone is insufficient: the fallback also requires a
   matching private open socket. Hygiene reports new orphan process lifetimes.
 
-## Verification so far
+## Verification
 
-- Eight Python tmux-hygiene tests pass, including a real private server with its
-  socket and root removed before cleanup, and PID-reuse/default-server controls.
-- Fifteen live-gate offline tests pass.
-- A standalone compilation of the production isolation guard allows a HOME child
-  and refuses a sibling, prefix sibling, symlink escape, missing HOME, and default
-  tmux. Swift files parse successfully. App regressions cover saved-folder startup,
-  restart, direct tmux launch without any process call, and invalid probe flags.
-- Full app/build/live gates await the coordinated heavy slot; they are not claimed
-  by this checkpoint.
+- `scripts/build.sh --for-testing` and the final incremental `scripts/build.sh`
+  passed. Warnings were confined to unchanged files and the existing destination
+  selection warning; the changed sources introduced none.
+- `scripts/test.sh`: **1,197 app tests / 243 suites**, **274 package tests**, and
+  offline checks passed. App duration: **567.851 s**. The final Swift changes were
+  covered by this run; subsequent changes were fixture launcher paths and the
+  process-inventory parser, checked below.
+- **31 focused Swift tests / 5 suites** passed: isolation, managed lifecycle,
+  delivery/relaunch, and real private tmux for Claude, Codex, and OpenCode.
+- **9 Python tmux-hygiene tests** and **16 live-gate offline tests** passed,
+  including a real private server whose socket and root were deleted, PID reuse,
+  default-server exclusion, and pane text containing a fake `-S` option.
+- `test_composer_probe_isolation.py` ran the actual Debug app twice in new private
+  homes. An invalid flag exited without creating card history; a valid flag ran
+  the isolated shell. Both exited normally, with no managed-launch artifacts or
+  fixture tmux servers. This also exposed Foundation's `/private/tmp` → `/tmp`
+  spelling change under CFFIXED_USER_HOME; the guard now uses `realpath`.
+- The complete `scripts/live.sh --quick` passed **25/25 probes, no skips**, in
+  **359.47 s**, including **28/28 E2E scenarios**. The initial live run caught a
+  paired CY1 launcher path missed in the first audit; its Python launcher was
+  aligned with the Swift host, then the entire gate was rerun successfully.
+- Final process inventory: **zero fixture tmux server lifetimes**. No default
+  server or unrelated process was signaled. The public check passed.
+
+Retained local evidence: `build/fx10-full.log`, `build/fx10-focused.log`,
+`build/fx10-build.log`, `build/fx10-composer-proof.json`,
+`build/fx10-live-quick.log`, and `build/fx10-live-summary.json`.
+Task build aliases targeted `build/tmp/fx10/`. The embed build phase also reused
+its existing `build/EmbeddedBridge` cache; that cache was removed during cleanup,
+along with `build/tmp/` and all task build aliases. Retained files are logs and
+small verification summaries only.
 
 Cross-owner edits authorized by appdev: composer startup in `ZeusApp.swift` and
 `ComposerGrowthProbe.swift`; paired scratch-folder paths in `SA1RuntimeHost.swift`,
-`SA1LiveProbe.py`, `ConnectOwnLiveTests.swift`, and `ManagedSettingsLiveTests.swift`.
-The separate FX9 commit `74288a9` changes only the learning-story public AX walker;
-appdev adopted it and reports the exact View-button regression passing.
+`SA1LiveProbe.py`, `ConnectOwnLiveTests.swift`, `ManagedSettingsLiveTests.swift`,
+`CY1LocalModel.py`, and `S3LocalResumeModel.py`.
+The separate FX9 public AX walker edit was adopted by appdev as `847be08` and
+passed the exact View-button regression. FX10 was rebased onto `e954dac`; the
+original duplicate `74288a9` is not on this branch.
