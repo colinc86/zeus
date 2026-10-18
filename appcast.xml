@@ -6,6 +6,52 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.3.0</title>
+      <pubDate>Sun, 18 Oct 2026 14:59:18 GMT</pubDate>
+      <sparkle:version>23</sparkle:version>
+      <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<h3 dir="auto">Your assistant works ahead for you</h3>
+<ul dir="auto">
+<li><strong>Morning brief.</strong> At the start of your day, Zeus asks your assistant for one short brief: what's coming up, what's at risk and what it has ready. It uses what it knows about you, its own notes and its own tools, such as calendar, mail and tasks, if it has them. If nothing matters, it stays quiet. It works even with Learn from me off. Turn it on or off in Settings › Morning brief, or rate "Morning brief" messages like any other kind.</li>
+<li><strong>It prepares, not just waits.</strong> When Zeus tells your assistant something new, the assistant now asks itself whether anything needs preparing or flagging. If so, it does the work and tells you in one short message. Otherwise it stays quiet.</li>
+<li><strong>Rules that act now fire.</strong> When a rule's moment comes, Zeus tells your assistant, so a rule you approved can act, and a rule still waiting for your OK shows you what it would have done.</li>
+<li><strong>A daily limit on unprompted messages.</strong> After six unprompted messages in a day, more arrive collapsed with <strong>Show</strong>. Urgent messages always come through.</li>
+</ul>
+<h3 dir="auto">It learns you, not just your last hour</h3>
+<ul dir="auto">
+<li><strong>Evening reflection from weeks of patterns.</strong> The reflection is now a summary of the last four weeks, built on your Mac: when you usually start and wind down, what you work on at which times, things you do in the same order, recurring topics, and which of your assistant's messages you use. It's no longer a list of today's app switches. Your assistant updates its notes about you (<code class="notranslate">Notes/about-you.md</code>, <code class="notranslate">Notes/patterns.md</code>), suggests rules only for patterns that held over several days, and gets ready for tomorrow.</li>
+<li><strong>Reflections and briefs actually arrive.</strong> Long deliveries reach your assistant as a short line it follows to fetch the full text. Before, they could sit in the queue whenever its Terminal window was too small to check them.</li>
+<li><strong>Restart Assistant</strong> picks up the new instructions (v7) if you haven't edited your copy.</li>
+</ul>
+<h3 dir="auto">Fixes</h3>
+<ul dir="auto">
+<li><strong>Back to where you were.</strong> Coming back from a document now returns the conversation to the same spot, however you go back, even after expanding the viewer, stepping between attachments or getting new messages. Before, it jumped to the top.</li>
+<li><strong>No leftover attachments.</strong> If typing or quoting attached the document to your message and you then clear the message, the document is no longer attached. A document you attach on purpose with <strong>Ask About This</strong> stays.</li>
+<li><strong>Back to the right message from the speech bubble.</strong> If you open a document from the speech bubble and then go back, the conversation now shows the message it came from instead of the oldest history.</li>
+<li><strong>Your files are safe in a shared folder.</strong> If your assistant's folder already had a <code class="notranslate">Zeus</code> folder of your own, Delete Everything could remove files Zeus never wrote, and Zeus's first save there could overwrite one of yours with the same name. Zeus now deletes and replaces only files it wrote itself. If one of your files is where Zeus wants to write, Zeus leaves it alone and Settings tells you which file it is.</li>
+<li><strong>Links within a document work.</strong> A link to a heading in the same document scrolls to it instead of opening the document again. A link to a heading in another file opens that file at the heading.</li>
+<li><strong>Stepping between attachments skips what can't be shown.</strong> ‹ › no longer counts apps, scripts or missing files, so it never looks enabled when it can't move.</li>
+<li><strong>Your daily summary keeps its facts.</strong> In your assistant's folder, the daily summary and notes had times and durations replaced with placeholders such as ‹name›, so your assistant couldn't learn your hours from them. They now match what Zeus sent, and existing files are repaired on the next save.</li>
+<li><strong>Universal Control isn't an app.</strong> Time with your cursor on another Mac or iPad is now shown as "On another device" instead of being counted as your top app.</li>
+<li><strong>Steadier document previews.</strong> Zeus now closes a Quick Look preview only once, which prevents a crash found in testing.</li>
+<li><strong>App names stay app names.</strong> Zeus sometimes hid an app name such as "Warp" as if it were a person or a secret in its screen and typing records, so your assistant couldn't tell which app you were working in. App names and other details from macOS now stay intact, older records get their app names back where Zeus can look them up, and what you typed or saw is still redacted.</li>
+<li><strong>Typing topics say what you were working on.</strong> Most typing topics came out as "Drafting in Warp" because one unrecognized recipient, such as an AI assistant, made Zeus discard the whole topic. Topics now describe the subject, such as "Guitar arrangement feedback", and names, numbers and secrets are still kept out.</li>
+<li><strong>Every learning item shows what happened to it.</strong> If a newer brief or reflection replaces one that wasn't sent, or one expires, the conversation now says so instead of still saying it's ready. What Zeus Kept lists those items under a new "Not sent" group for seven days.</li>
+<li><strong>One name for each kind.</strong> Morning summary, Evening reflection, Morning brief request, Note, Rule trigger and Message preference are now called the same thing everywhere. A long item such as a reflection opens in the document viewer instead of filling the conversation.</li>
+<li><strong>Settings list everything Zeus sends.</strong> Settings › Privacy has a new "What Zeus sends your assistant" section that names each kind, when it's sent and which switch controls it. That includes the evening reflection and the morning brief request, which goes even when Learn from me is off. Settings that do nothing while learning is off are now disabled.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.3.0/Zeus-0.3.0.zip" type="application/octet-stream" sparkle:edSignature="Df98Rhkp9Oq2AlSDV2Y70nDU5vqQtSYJksqUqVvFsdLEFQChyHgoVB8AKHu3lMJlgoztpv2k3DU1/lhBngGLBQ==" length="14707559"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.2.9</title>
       <pubDate>Sat, 17 Oct 2026 04:12:32 GMT</pubDate>
       <sparkle:version>22</sparkle:version>
