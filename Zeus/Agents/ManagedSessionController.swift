@@ -364,7 +364,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
                 else { try adopt(pane); try await discoverConversation() }
                 return
             }
-            if configuration()?.startWhenZeusOpens == true { try await start() }
+            if configuration()?.startWhenZeusOpens == true { try await start(reason: "app update") }
             else { setStatus(hasLaunched ? .stopped : .off) }
         case .start:
             guard enabled else { setStatus(.off); return }
@@ -383,12 +383,12 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
                 record?.pane = nil; record?.name = nil
             }
             record?.launchPending = false; record?.pendingWasFresh = false
-            record?.confirmedSessionKey = nil; record?.conversation = nil; record?.nativeEnvironment = [:]; record?.restarts = []; try save(); try await start()
+            record?.confirmedSessionKey = nil; record?.restartNotices = nil; record?.pendingRestartNotice = nil; record?.conversation = nil; record?.nativeEnvironment = [:]; record?.restarts = []; try save(); try await start()
         case .poll: guard attached, enabled else { return }; try await poll()
         case .recover:
             guard attached, enabled, case .restarting = managedStatus else { return }
             try await discoverConversation()
-            record?.restarts.append(clock.now); try save(); try await start(using: record?.appliedConfiguration)
+            record?.restarts.append(clock.now); try save(); try await start(using: record?.appliedConfiguration, reason: "crash recovery")
         case .applySettings:
             let failedRequestID = managedSettingsApplication?.id
             do { try await applySettingsWhenSafe() }
@@ -443,8 +443,22 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         guard record?.launchPending == true else { return }
         if let old = record?.pane, old.pid == pane.pid, old.startTime == pane.startTime || pane.dead {
             if record?.pendingWasFresh == true { record?.conversation?.didLaunch = false }
-        } else { record?.pane = pane }
+            record?.pendingRestartNotice = nil
+        } else { record?.pane = pane; commitRestartNotice() }
         record?.launchPending = false; try save()
+    }
+    private func commitRestartNotice() {
+        if let notice = record?.pendingRestartNotice {
+            let notices = (record?.restartNotices ?? []) + [notice]
+            record?.restartNotices = notices
+            record?.pendingRestartNotice = nil
+        }
+    }
+    func consumeRestartNotice(id: String) throws {
+        guard record?.restartNotices?.contains(where: { $0.id == id }) == true else { return }
+        let old = record?.restartNotices
+        record?.restartNotices?.removeAll { $0.id == id }
+        do { try save() } catch { record?.restartNotices = old; throw error }
     }
     private func adopt(_ pane: ManagedPane) throws {
         guard record?.conversation != nil else { throw ManagedSessionError.invalidState }
@@ -465,7 +479,7 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
         }
         startMonitor()
     }
-    private func start(using requested: ManagedSessionConfig? = nil) async throws {
+    private func start(using requested: ManagedSessionConfig? = nil, reason: String = "Restart Assistant") async throws {
         guard var config = requested ?? configuration(), config.enabled else { setStatus(.off); return }
         try ManagedProbeIsolation.validate(folder: config.folder, environment: environment, isolatedSocket: isolatedSocket)
         try load()
@@ -531,9 +545,12 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
             systemPromptSnapshotOff: conversation.agent == .claude && claudeSnapshotSupported)
         // Persist the intent before respawn; an interrupted command must not replay the first message.
         record?.pendingWasFresh = !conversation.didLaunch; record?.launchPending = true
+        record?.pendingRestartNotice = conversation.didLaunch
+            ? .init(time: clock.now, reason: reason, conversationID: conversation.nonce) : nil
         record?.conversation?.didLaunch = true; try save()
         let launched = try await hosting.launch(pane, owner: record?.owner ?? "", command: command, folder: folder)
         record?.name = launched.name; record?.pane = launched; record?.launchPending = false
+        commitRestartNotice()
         config.folder = folder; record?.appliedConfiguration = config
         record?.launchedToolsHash = ManagedTemplateSetup.toolsHash
         record?.launchedTemplateVersion = ManagedTemplateHistory.version
@@ -676,10 +693,10 @@ final class ManagedSessionController: ManagedSessionControlling, ManagedSettings
             // replace the request. The replacement waits for the new pane to be idle.
             guard attached, enabled, activation == token else { return }
             if startsNew {
-                record?.conversation = nil; record?.confirmedSessionKey = nil; record?.nativeEnvironment = [:]
+                record?.restartNotices = nil; record?.pendingRestartNotice = nil; record?.conversation = nil; record?.confirmedSessionKey = nil; record?.nativeEnvironment = [:]
                 record?.launchPending = false; record?.pendingWasFresh = false
             }
-            record?.restarts = []; try save(); try await start(using: config)
+            record?.restarts = []; try save(); try await start(using: config, reason: request.kind == .agentUpdate ? "update" : "settings change")
             if request.kind == .agentUpdate, attached, enabled, activation == token { managedAgentUpdateLastRestartID = request.id }
             if managedSettingsApplication?.id == request.id { managedSettingsApplication = nil }
             onChange?()

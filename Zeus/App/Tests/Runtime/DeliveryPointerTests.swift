@@ -7,7 +7,7 @@ import ZeusProtocol
     @Test func pointerFitsSmallPaneAndKeepsDurableBody() throws {
         let screen = Array(repeating: "", count: 18) + [String(repeating: "─", count: 80), "❯ ", String(repeating: "─", count: 80), "", "", ""]
         let input = try #require(TmuxInputSnapshot(metadata: Data("2|19|80|0|1|1".utf8), screen: Data(screen.joined(separator: "\n").utf8)))
-        for kind: Delivery.Kind in [.reply, .userMessage, .learning, .reflection, .brief, .ruleTrigger] {
+        for kind: Delivery.Kind in [.reply, .userMessage, .learning, .reflection, .brief, .ruleTrigger, .restart] {
             var delivery = Delivery(id: "d_" + UUID().uuidString, kind: kind, sessionKey: "fixture", content: String(repeating: "Long line of private fixture text.\n", count: 300))
             let original = delivery.content
             #expect(!input.canVerifyPaste(AgentInjectionText.format(delivery)))

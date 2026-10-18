@@ -311,8 +311,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
     func recordReflectionReceipt(id: String) {
         guard !learningWasErased(id), let record = ledger?.record(id: id),
               record.delivery.ackedAt != nil || (record.delivery.meta["tmux_pointer"] == "true" && record.transportDeliveredAt != nil),
-              [.reflection, .learning, .brief, .ruleTrigger].contains(record.delivery.kind), !record.delivery.content.isEmpty else { return }
-        if record.delivery.kind == .brief || record.delivery.kind == .ruleTrigger {
+              [.reflection, .learning, .brief, .ruleTrigger, .restart].contains(record.delivery.kind), !record.delivery.content.isEmpty else { return }
+        if record.delivery.kind == .brief || record.delivery.kind == .ruleTrigger || record.delivery.kind == .restart {
             recordSentLearning(id: id, kind: record.delivery.kind.rawValue, text: .init(record.delivery.content), sessionKey: record.delivery.sessionKey, receivedAt: record.delivery.ackedAt)
             return
         }
@@ -358,6 +358,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         } catch { learningError = "Zeus couldn't record this learning receipt." }
     }
     static func sentLearningSummary(kind: String, text: String) -> String {
+        if kind == "restart" { return "Sent the restart notice" }
         if kind == "rating" { return "Sent the message preference" }
         if kind == "brief" { return "Sent the morning brief request" }
         if kind == "ruleTrigger" { return "Sent a rule trigger" }

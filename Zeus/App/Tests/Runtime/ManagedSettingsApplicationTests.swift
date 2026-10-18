@@ -247,10 +247,12 @@ private actor ApplyCaptureHost: ManagedSessionHosting {
         #expect(f.runtime.managedSettingsApplication?.phase == .waiting)
         held.release("d_s3_second"); _ = await second.value; try await f.managed.settle()
         #expect(await f.managed.host.stops == 1)
-        #expect(Set(f.runtime.ledger?.records.map { $0.delivery.id } ?? []) == ["d_s3_first", "d_s3_second"])
+        #expect(Set(f.runtime.ledger?.records.filter { $0.delivery.kind != .restart }.map { $0.delivery.id } ?? []) == ["d_s3_first", "d_s3_second"])
         #expect(held.delivered.count == 2, "Resume doesn't replay already submitted messages")
         let disk = try DeliveryLedger(location: f.managed.folder.appendingPathComponent("deliveries.json"))
-        #expect(Set(disk.records.map { $0.delivery.id }) == ["d_s3_first", "d_s3_second"])
+        #expect(Set(disk.records.filter { $0.delivery.kind != .restart }.map { $0.delivery.id }) == ["d_s3_first", "d_s3_second"]
+        #expect(disk.records.filter { $0.delivery.kind == .restart }.count == 1)
+        #expect(disk.records.first { $0.delivery.kind == .restart }?.delivery.content.contains("to apply a settings change") == true))
     }
     @Test func confirmedTargetAlreadyReachedDoesNotDiscardThatConversationAgain() async throws {
         let f = try ManagedFixture(agent: .opencode); defer { f.cleanup() }

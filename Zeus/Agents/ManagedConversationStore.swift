@@ -32,6 +32,8 @@ struct ManagedSessionRecord: Codable, Sendable {
     var appliedConfiguration: ManagedSessionConfig?
     var launchedToolsHash: String?
     var launchedTemplateVersion: Int?
+    var pendingRestartNotice: ManagedRestartNotice?
+    var restartNotices: [ManagedRestartNotice]?
 }
 
 struct ManagedSessionStore: Sendable {
@@ -149,4 +151,12 @@ enum ManagedSessionError: Error, LocalizedError, Sendable {
         case .command(let message): message
         }
     }
+}
+
+/// Persisted launch outbox, transferred to the delivery ledger after the owned bridge checks in.
+struct ManagedRestartNotice: Codable, Sendable {
+    var id = "restart_" + UUID().uuidString
+    var time: Date
+    var reason: String
+    var conversationID: String
 }

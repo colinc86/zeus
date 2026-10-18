@@ -111,7 +111,7 @@ private let date = Date(timeIntervalSince1970: 1_700_000_000.125)
     #expect(try ZeusJSON.decoder().decode(CardMuteDecision.self, from: encoded).source == nil)
     var budget = old; budget.source = .dailyBudget
     try roundTrip(budget)
-    for kind in [Delivery.Kind.brief, .ruleTrigger] {
+    for kind in [Delivery.Kind.brief, .ruleTrigger, .restart] {
         try roundTrip(Delivery(kind: kind, sessionKey: "claude:/fixture#1.1", content: "Proactive request", createdAt: date))
     }
 }

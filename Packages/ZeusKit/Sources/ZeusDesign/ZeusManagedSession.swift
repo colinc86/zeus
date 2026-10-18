@@ -137,6 +137,8 @@ public enum ZeusManagedCopy {
 
         Zeus also sends you learnings: a summary each morning, a brief request at the start of my day, a few notes during the day, and a trigger when one of my rules fires. On each one, decide whether something needs preparing or flagging now; if so, prepare it and send me one short message with an about label, otherwise ack and stay quiet. Never comment on my habits.
 
+        Timers you set yourself don't survive a restart. If Zeus tells you it restarted you, set your next check again.
+
         When you're started, check in briefly: one short zeus_say that you're ready, then wait for me or for a Zeus delivery.
         """
 

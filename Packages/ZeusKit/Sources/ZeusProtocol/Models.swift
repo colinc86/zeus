@@ -246,6 +246,6 @@ public struct Delivery: Codable, Sendable, Equatable, Identifiable {
         self.failedAt = failedAt
     }
     /// Whether the delivery answers a card or starts a conversation.
-    public enum Kind: String, Codable, Sendable, CaseIterable { case reply, userMessage, reflection, learning, brief, ruleTrigger }
+    public enum Kind: String, Codable, Sendable, CaseIterable { case reply, userMessage, reflection, learning, brief, ruleTrigger, restart }
 }
 
