@@ -218,6 +218,8 @@ Files: Zeus/rules.md
 
 Shadow rule: the first line reads `Rule trigger (shadow, waiting for my OK): "…" · rule r_ab12.` and the third line reads `This rule isn't approved yet: call zeus_rule_shadow {ruleID: "r_ab12", wouldHave} with what you would have done, and don't do it. Then zeus_ack.` The "Matched:" line is the trigger's own words (the time window, or the app named in the rule) plus the clock times, never journal detail beyond what the trigger names.
 
+**Ledger and waiting rows (LM4 surfaces).** The two kinds get their own labels so the LM4 fallback never calls them "Daily summary": waiting-row titles **"Morning brief request"** and **"Rule trigger"**; the quiet prepared line **"Morning brief request ready for your assistant"** and **"Rule trigger ready for your assistant"** (never "Sent" before the receipt); once received, **"Sent the morning brief request"** and **"Sent a rule trigger: “<rule text>”"**, the rule text tail-truncated like a note's.
+
 **Budget line.** `Unprompted messages left today: N (high priority doesn't count).` N is the day's remaining soft budget (default 6). At zero: `Unprompted messages left today: 0. Anything more arrives held unless it's high priority.` A held card is not deferred: it lands in the thread at once, collapsed (§8.5), and midnight resets the count without replaying anything. The line also goes on digests and moments so the assistant always knows.
 
 ### 8.3 Template v6, the MCP instructions and the managed launch prompt
