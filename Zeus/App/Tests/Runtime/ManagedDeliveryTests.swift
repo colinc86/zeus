@@ -204,7 +204,7 @@ extension ManagedDeliveryTests {
         #expect(cards.card(id: card.id)?.status == .open)
         let next = ManagedSessionController(configuration: { f.config.value }, stateURL: f.folder.appendingPathComponent("state.json"),
             bridge: URL(fileURLWithPath: "/bin/cat"), bridgeSocket: "unused", executables: f.controller.executables,
-            hosting: f.host, clock: f.clock, terminalOpener: f.terminal)
+            hosting: f.host, environment: ["HOME": f.folder.path, "PATH": "/usr/bin:/bin"], clock: f.clock, terminalOpener: f.terminal)
         let second = makeRuntime(next); try second.start(); defer { second.stop() }
         try await eventually { !next.isBusy }
         await f.host.setSnapshot(.init(screen: "", inputMetadata: "0|0|120|0|1"))

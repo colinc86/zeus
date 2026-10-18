@@ -281,6 +281,11 @@ class Pane:
         if native_updater:
             self.env.pop('DISABLE_AUTOUPDATER');self.env.pop('CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC')
     def tm(self,*args,input=None):
+        if args and args[0] in ('new-session','new-window','respawn-pane','split-window'):
+            if '-c' not in args or args.index('-c') + 1 >= len(args):
+                raise ValueError("Native fixtures require an explicit working directory")
+            if not pathlib.Path(args[args.index('-c') + 1]).resolve().is_relative_to(self.home.resolve()):
+                raise ValueError("Native fixture working directory escaped disposable HOME")
         return subprocess.run([self.tmux,'-u','-S',self.socket,'-f','/dev/null',*args],env=self.env,input=input,capture_output=True,text=True,check=True,timeout=10).stdout
     def snapshot(self):
         return {'screen':self.tm('capture-pane','-p','-e','-t','pc1'), 'inputMetadata':self.tm('display-message','-p','-t','pc1','#{cursor_x}|#{cursor_y}|#{pane_width}|#{pane_dead}|#{cursor_flag}|#{bracket_paste_flag}').strip()}

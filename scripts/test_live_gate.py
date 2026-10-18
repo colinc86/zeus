@@ -85,6 +85,13 @@ class GateTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     isolated_environment(root/'home', {key: '/outside-fixture'})
         finally:cleanup_root(root)
+    def test_native_pane_rejects_missing_or_escaped_working_directory_before_spawn(self):
+        pane=LiveSupport.Pane.__new__(LiveSupport.Pane)
+        pane.home=pathlib.Path('/private/tmp/zfx10_example/home')
+        with patch.object(LiveSupport.subprocess,'run') as run:
+            for args in [('new-session','-d'),('respawn-pane','-c','/outside'),('new-window','-c',str(pane.home)+'-sibling')]:
+                with self.assertRaises(ValueError):pane.tm(*args)
+            run.assert_not_called()
     def test_scrubbing_handles_both_mac_socket_aliases(self):
         value={'screen':'/private/tmp/zsa4_demo/project /tmp/zsa4_demo/project','nested':['/CLI/bin/claude']}
         self.assertEqual(scrub_paths(value,{'/private/tmp/zsa4_demo':'/FIXTURE','/CLI/bin/claude':'/CLI/claude'}),

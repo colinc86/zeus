@@ -19,7 +19,6 @@ import ZeusProtocol
     static func validatedHome(_ environment: [String: String]) throws -> URL {
         guard environment["ZEUS_COMPOSER_GROWTH_PROBE"] == "1", let home = environment["HOME"],
               environment["CFFIXED_USER_HOME"] == home,
-              URL(fileURLWithPath: home).standardizedFileURL.path == home,
               ManagedProbeIsolation.canonical(home) == home,
               URL(fileURLWithPath: home).deletingLastPathComponent().path == "/private/tmp",
               URL(fileURLWithPath: home).lastPathComponent.hasPrefix("zcomposer_"),
