@@ -20,6 +20,7 @@ extension ZeusRuntime {
     func callAppTool(_ name: String, args: ToolArguments, sessionKey: String, deferResultCommit: Bool) async throws -> ToolResult {
         if name == "zeus_app_state" { return result(try JSONValue.from(appControl.appControlState)) }
         if name == "zeus_get_learnings" {
+            reconcileOutboundLearningPolicy()
             if let id = try args.string("id") {
                 let record = try fetchedDelivery(id: id, sessionKey: sessionKey, learning: true)
                 return result(["delivery": try JSONValue.from(record.delivery)])
@@ -147,6 +148,8 @@ extension ZeusRuntime {
                 Task { [weak self] in
                     guard let self, self.running, self.generation == token, self.learnings.learningsEnabled, !self.learningWasErased(learning.id),
                           self.bridges[session.sessionKey]?.id == session.id, self.assistantTarget == session.sessionKey else { return }
+                    self.reconcileOutboundLearningPolicy()
+                    guard !self.learningWasErased(learning.id) else { return }
                     // A lost announcement never consumes a learning; polling retains it.
                     do {
                         try await session.notifyLearning(payload)

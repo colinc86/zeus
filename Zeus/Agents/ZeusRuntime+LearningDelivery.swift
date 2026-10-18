@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import ZeusProtocol
 
-extension ZeusRuntime: LearningDeliveryPresenting {
+extension ZeusRuntime: LearningDeliveryPresenting, LearningOutboundPolicyControlling {
     var managedSetupStale: ManagedSetupStaleness { managedController.managedSetupStale }
     var managedTemplateReplacement: ManagedTemplateReplacement? { managedController.managedTemplateReplacement }
     func requestLearningDeliveryCancellation(deliveryID: String) {
@@ -85,6 +85,7 @@ extension ZeusRuntime: LearningDeliveryPresenting {
             content: learning.text, createdAt: learning.createdAt)
         delivery.meta["kind"] = "learning"
         delivery.meta["learning_kind"] = learning.kind.rawValue
+        delivery.meta.merge((learnings as? any LearningDigestPreparing)?.digestMetadata(id: learning.id) ?? [:]) { _, new in new }
         do {
             try ledger.insert(.init(delivery: delivery, awaitingAssistant: assistantTarget == nil ? true : nil))
             processDueDeliveries()

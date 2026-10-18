@@ -53,6 +53,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     var discardedLearningDeliveries: [DiscardedLearningDelivery] = []
     var deliveryHolds: [DeliveryHold] = []
     @ObservationIgnored var deliveryHoldEpisodes: [String: DeliveryHold] = [:]
+    @ObservationIgnored var outboundLearningPolicy: () -> LearningOutboundPolicy? = { nil }
     @ObservationIgnored var journalAccessPolicy: () -> JournalAccessPolicy = { .init() }
     @ObservationIgnored var onViewJournalAnswer: ((String) -> Void)?
     @ObservationIgnored var journalCalls: [Date] = []
@@ -336,6 +337,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
 
     func bridge(_ session: BridgeSession, finishedTool name: String, result: ToolResult, written: Bool) {
         guard running else { return }
+        reconcileOutboundLearningPolicy()
         if name == "zeus_get_journal" {
             if written, !result.isError { recordJournalAnswerReceipt(result, sessionKey: session.sessionKey) }
             else if case .string(let id) = result.structured?["answer_id"] { journalAnswerReceipts.removeValue(forKey: id) }

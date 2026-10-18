@@ -5,12 +5,13 @@ import Observation
 /// the raw events. The runtime reads it through `LearningsProviding`; it never sees raw events.
 @MainActor
 @Observable
-final class LearningsStore: LearningsProviding, LearningReadRecording, LearningDeletionObserving, LearningHistoryProviding {
+final class LearningsStore: LearningsProviding, LearningReadRecording, LearningDeletionObserving, LearningHistoryProviding, LearningDigestPreparing {
     static let fileName = "learnings.json"
     static let keepDays = 365
 
     private struct State: Codable {
         var learnings: [Learning] = []
+        var digests: [String: DigestSource]?
         var lastReadID: String?
         var readIDs: Set<String>?
         var lastReadAt: Date?
@@ -19,6 +20,15 @@ final class LearningsStore: LearningsProviding, LearningReadRecording, LearningD
         /// The moment kinds sent per day, for the four-a-day limit.
         var momentsByDay: [String: [MomentKind]] = [:]
     }
+
+    private struct DigestSource: Codable {
+        var day: Date
+        var policy: String
+    }
+    @ObservationIgnored var currentDigestPolicy: () -> String = { "" }
+    @ObservationIgnored var rebuildDigest: ((Date, Date) -> String?)?
+    @ObservationIgnored var legacyDigestDay: ((Date) -> Date?)?
+    @ObservationIgnored private var preparing = false
 
     private var state: State
     @ObservationIgnored private let files: ActivityStore
@@ -40,16 +50,44 @@ final class LearningsStore: LearningsProviding, LearningReadRecording, LearningD
     var retainedLearningIDs: Set<String> { Set(state.learnings.map(\.id)) }
 
     var learnings: [Learning] { state.learnings }
-    var allLearnings: [Learning] { state.learnings }
+    var allLearnings: [Learning] { prepareDigestsForCurrentPolicy(); return state.learnings }
     var learningsEnabled: Bool { isEnabled() }
 
     func unreadLearnings() -> [Learning] {
+        prepareDigestsForCurrentPolicy()
         guard isEnabled() else { return [] }
         if let id = state.lastReadID, let index = state.learnings.firstIndex(where: { $0.id == id }) {
             return Array(state.learnings[(index + 1)...]).filter { !(state.readIDs ?? []).contains($0.id) }
         }
         if let date = state.lastReadAt { return state.learnings.filter { $0.createdAt > date && !(state.readIDs ?? []).contains($0.id) } }
         return state.learnings.filter { !(state.readIDs ?? []).contains($0.id) }
+    }
+
+    func digestMetadata(id: String) -> [String: String] {
+        guard let source = state.digests?[id] else { return [:] }
+        return ["privacy_policy": source.policy]
+    }
+    func addDigest(text: String, at date: Date, day: Date, policy: String) {
+        let learning = Learning(id: "l_" + UUID().uuidString, kind: .digest, createdAt: date, text: text)
+        state.digests = state.digests ?? [:]
+        state.digests?[learning.id] = .init(day: day, policy: policy)
+        state.learnings.append(learning); save()
+        onRecorded?(learning); onNewLearning?(learning)
+    }
+    func prepareDigestsForCurrentPolicy() {
+        guard !preparing, let rebuildDigest else { return }
+        preparing = true; defer { preparing = false }
+        let policy = currentDigestPolicy()
+        let pending = unreadLearnings().filter { $0.kind == .digest }
+        for old in pending where state.digests?[old.id]?.policy != policy {
+            let day = state.digests?[old.id]?.day ?? legacyDigestDay?(old.createdAt)
+            let text = day.flatMap { rebuildDigest($0, old.createdAt) }
+            state.learnings.removeAll { $0.id == old.id }; state.digests?.removeValue(forKey: old.id)
+            // Invalidate the old identity before publishing a replacement. Its late ack cannot consume new text.
+            onLearningDeletion?([old.id])
+            if let day, let text { addDigest(text: text, at: old.createdAt, day: day, policy: policy) }
+            else { save() }
+        }
     }
 
     func markLearningRead(id: String) {

@@ -43,6 +43,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
     func learningContextDidChange() {
         guard running else { return }
         for pending in Array(journalAnswerReceipts.values) where pending.3 { recordJournalAnswerReceipt(pending.0, sessionKey: pending.1) }
+        reconcileOutboundLearningPolicy()
         reconcileReflectionEvidence()
         let context = learningContext(), now = clock.now
         if !reflectionEnabled() || context.isLocked || context.isPrivate { reflectionTask?.cancel() }
@@ -202,7 +203,8 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let today = calendar.startOfDay(for: now)
         let evening = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: today) ?? today
         // A catch-up and this evening cannot both send on the same local day.
-        guard !(ledger?.records ?? []).contains(where: { $0.delivery.kind == .reflection && $0.delivery.meta["discard_reason"] != "superseded" && calendar.isDate($0.delivery.createdAt, inSameDayAs: now) }) else { return }
+        guard !(ledger?.records ?? []).contains(where: { $0.delivery.kind == .reflection && $0.discardedAt == nil && $0.delivery.meta["discard_reason"] != "superseded" && calendar.isDate($0.delivery.createdAt, inSameDayAs: now) }) else { return }
+        let policy = outboundLearningPolicy()
         let permittedLevels = journalAccessPolicy().enabledLevels
         guard !permittedLevels.isEmpty else { return }
         var query = JournalQuery(); query.levels = permittedLevels
@@ -210,7 +212,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         query.from = calendar.date(byAdding: .day, value: -55, to: today); query.to = now.addingTimeInterval(0.001)
         query.kinds = [.activity, .focus, .description, .typedText, .outcome]; query.limit = 100_000
         let available: [JournalItem]
-        do { available = try journal.items(matching: query) }
+        do { available = try journal.items(matching: query).filter { policy?.allows($0) ?? true } }
         catch { learningError = "Zeus couldn't read the day's journal for reflection."; return }
         let day: Date
         if now >= evening, let idle = context.idleSince, now.timeIntervalSince(idle) >= 600,
@@ -220,10 +222,11 @@ extension ZeusRuntime: LearningRuntimeControlling {
             guard let previous = available.last(where: { $0.time < today && $0.time >= oldestCatchUp }) else { return }
             day = calendar.startOfDay(for: previous.time)
         } else { return }
-        let dayKey = reflectionDayKey(day), baseID = "d_reflection_" + dayKey
+        let dayKey = reflectionDayKey(day), baseID = "d_reflection_" + dayKey + (policy.map { "_" + $0.fingerprint.prefix(12) } ?? "")
         // Never reuse a legacy tombstone: its late ack belongs only to that old body.
-        let id = ledger?.record(id: baseID)?.delivery.meta["discard_reason"] == "superseded"
-            ? baseID + "_patterns" : baseID
+        let id: String
+        if policy != nil, ledger?.record(id: baseID) != nil { id = baseID + "_" + UUID().uuidString }
+        else { id = ledger?.record(id: baseID)?.delivery.meta["discard_reason"] == "superseded" ? baseID + "_patterns" : baseID }
         guard ledger?.record(id: id) == nil else { learningCatchUpPending = false; return }
         let local = ReflectionLocalTime(calendar: calendar)
         let digest = ReflectionPatternDigest(time: local, day: day, levels: permittedLevels, items: available, feedback: reflectionFeedback()).build(byteLimit: 6_200)
@@ -247,9 +250,11 @@ extension ZeusRuntime: LearningRuntimeControlling {
             guard let self, self.generation == token, self.learningObservationToken == observationToken else { return }
             defer {
                 self.reflectionTask = nil; self.scheduleLearningBoundary()
-                if Task.isCancelled || journal.revision != revision { self.considerReflection() }
+                if Task.isCancelled || journal.revision != revision || self.outboundLearningPolicy() != policy {
+                    self.syncLearningFolder(); self.considerReflection()
+                }
             }
-            guard self.running, !Task.isCancelled, self.reflectionEnabled(), self.journalAccessPolicy().enabledLevels == permittedLevels, journal.revision == revision,
+            guard self.running, !Task.isCancelled, self.reflectionEnabled(), self.journalAccessPolicy().enabledLevels == permittedLevels, self.outboundLearningPolicy() == policy, journal.revision == revision,
                   !self.learningContext().isPrivate, !self.learningContext().isLocked,
                   self.assistantTarget == target, self.sessions.contains(where: { $0.id == session.id }), self.ledger?.record(id: id) == nil else { return }
             if calendar.isDate(day, inSameDayAs: today) {
@@ -269,7 +274,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
             }
             let paths = await self.learningFolder?.recordReflection(id: id, text: .init(content), at: self.clock.now) ?? []
             guard self.running, !Task.isCancelled, self.generation == token,
-                  self.learningObservationToken == observationToken, self.reflectionEnabled(), self.journalAccessPolicy().enabledLevels == permittedLevels, journal.revision == revision,
+                  self.learningObservationToken == observationToken, self.reflectionEnabled(), self.journalAccessPolicy().enabledLevels == permittedLevels, self.outboundLearningPolicy() == policy, journal.revision == revision,
                   !self.learningContext().isPrivate, !self.learningContext().isLocked,
                   self.assistantTarget == target, self.sessions.contains(where: { $0.id == session.id }), self.ledger?.record(id: id) == nil else { return }
             content = Self.withLearningFiles(content, paths: paths)
@@ -281,8 +286,9 @@ extension ZeusRuntime: LearningRuntimeControlling {
                              "source_to": String(min(now.addingTimeInterval(0.001), calendar.date(byAdding: .day, value: 1, to: day) ?? now).timeIntervalSince1970),
                              "feedback_evidence": String(data: (try? JSONEncoder().encode(feedbackDates)) ?? Data(), encoding: .utf8) ?? "{}",
                              "levels": permittedLevels.map { String($0.rawValue) }.sorted().joined(separator: ",")]
+            self.stampLearningPolicy(&delivery, policy: policy)
             do {
-                try self.ledger?.insert(.init(delivery: delivery))
+                try self.ledger?.insert(.init(delivery: delivery, outboundPolicySnapshot: policy))
                 self.expireStaleLearningDeliveries()
                 if self.learningFolder != nil {
                     _ = await self.learningFolder?.recordReflection(id: id, text: .init(content), at: delivery.createdAt)

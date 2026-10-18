@@ -10,7 +10,8 @@ extension ZeusRuntime {
         }
         guard let from = Double(delivery.meta["source_from", default: ""]), let to = Double(delivery.meta["source_to", default: ""]) else { return false }
         let levels = Set(delivery.meta["levels", default: ""].split(separator: ",").compactMap { Int($0).flatMap(JournalLevel.init(rawValue:)) })
-        let ids = items.filter { ReflectionPatternDigest.eligible($0, levels: levels, from: Date(timeIntervalSince1970: from), to: Date(timeIntervalSince1970: to)) }.map(\.id)
+        let snapshot = ledger?.record(id: delivery.id)?.outboundPolicySnapshot
+        let ids = items.filter { (snapshot?.allows($0) ?? true) && ReflectionPatternDigest.eligible($0, levels: levels, from: Date(timeIntervalSince1970: from), to: Date(timeIntervalSince1970: to)) }.map(\.id)
         return ReflectionPatternDigest.sourceHash(ids) == expected
     }
 

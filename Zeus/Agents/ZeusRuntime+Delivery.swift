@@ -90,7 +90,7 @@ extension ZeusRuntime {
         let sendToken = UUID(); sendTokens[id] = sendToken
         context.confirmOpenCodeDestination = { [weak self] destination in
             guard let self, self.running, self.generation == token, self.sendTokens[id] == sendToken,
-                  let current = self.ledger?.record(id: id), current.isPending else { throw CancellationError() }
+                  let current = self.ledger?.record(id: id), current.isPending, self.learningPolicyAllows(current.delivery) else { throw CancellationError() }
             try self.ledger?.update(id: id) {
                 $0.meta["opencode_session_id"] = destination.sessionID
                 $0.meta["opencode_endpoint"] = destination.endpoint.absoluteString
@@ -99,7 +99,7 @@ extension ZeusRuntime {
         }
         context.confirmTmuxPaste = { [weak self, weak context] destination in
             guard let self, self.running, self.generation == token, self.sendTokens[id] == sendToken,
-                  self.ledger?.record(id: id)?.isPending == true else { throw CancellationError() }
+                  self.ledger?.record(id: id)?.isPending == true, self.learningPolicyAllows(saved.delivery) else { throw CancellationError() }
             try self.ledger?.updateRecord(id: id) {
                 $0.delivery.meta["tmux_paste_destination"] = destination
                 $0.delivery.meta.removeValue(forKey: "tmux_hidden_paste")
@@ -119,7 +119,7 @@ extension ZeusRuntime {
             var postponed = false
             do {
                 try Task.checkCancellation()
-                guard self != nil else { return .queued(reason: "Zeus runtime stopped; the delivery remains saved.") }
+                guard let self, self.learningPolicyAllows(saved.delivery) else { throw CancellationError() }
                 try await connector.deliver(saved.delivery, to: session, bridge: bridge, routing: context)
                 outcome = .delivered
             } catch {
@@ -206,6 +206,7 @@ extension ZeusRuntime {
         return attempted.addingTimeInterval(180 * pow(2, Double(max(0, min(3, delivery.attempts - 1)))))
     }
     func processDueDeliveries() {
+        reconcileOutboundLearningPolicy()
         guard running else { return }
         expireStaleLearningDeliveries()
         scheduleRatingDelivery()
@@ -337,6 +338,7 @@ extension ZeusRuntime {
 
     func acknowledge(ids: Set<String>, sessionKey: String) throws -> [String] {
         guard let ledger else { return [] }
+        reconcileOutboundLearningPolicy()
         let acked = try ledger.acknowledge(ids: ids.filter { !learningWasErased($0) }, sessionKey: sessionKey, at: clock.now)
         if !acked.isEmpty { noteActivityAcknowledgments(acked, sessionKey: sessionKey) }
         for id in acked { recordReflectionReceipt(id: id); recordContextDeliveryReceipt(id: id) }

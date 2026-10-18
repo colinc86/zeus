@@ -953,6 +953,9 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     func connectLearningRuntime(_ runtime: any LearningRuntimeControlling) {
         learningRuntime = runtime
+        if let policy = runtime as? any LearningOutboundPolicyControlling {
+            policy.outboundLearningPolicy = { [weak learning] in learning?.outboundPolicy }
+        }
         learning.contextDidChange = { [weak runtime] in runtime?.learningContextDidChange() }
         learning.runtimeProblem = { [weak runtime] in runtime?.learningError }
         if let access = runtime as? any LearningJournalAccessControlling {

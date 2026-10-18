@@ -233,7 +233,7 @@ import UniformTypeIdentifiers
         let retained = Set(history.map(\.id))
         if learnings is any LearningHistoryProviding { safeLearnings = safeLearnings.filter { retained.contains($0.key) } }
         if levels.contains(.activity) {
-            for learning in history where safeLearnings[learning.id] == nil {
+            for learning in history {
                 // Learnings are generated from safe inputs; preserve the same facts the assistant receives.
                 safeLearnings[learning.id] = learning
             }
