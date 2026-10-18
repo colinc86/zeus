@@ -56,6 +56,9 @@ private final class R4cController: ManagedSessionControlling {
         #expect(model.showsCheckAgain)
         controller.installed = [.claude, .codex, .opencode]
         model.refreshAvailability()
+        #expect(model.showsCheckAgain)
+        controller.problems = [:]
+        model.refreshAvailability()
         #expect(!model.showsCheckAgain)
     }
 }
