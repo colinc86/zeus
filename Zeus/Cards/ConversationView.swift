@@ -49,7 +49,13 @@ struct ConversationView: View {
     /// This root's own colors come from the theme directly: the environment it sets applies to its children.
     private var palette: ZeusPalette { settings.currentTheme.palette(for: colorScheme, contrast: colorSchemeContrast) }
 
-    private var entries: [ConversationEntry] { Array(model.thread.suffix(pageCount)) }
+    private var loadedPageCount: Int {
+        if panel.document.isOpen, let first = panel.document.threadBookmark?.firstEntryID,
+           let index = model.thread.firstIndex(where: { $0.id == first }) { return model.thread.count - index }
+        return pageCount
+    }
+    private var threadWidth: CGFloat { panel.document.isOpen ? (panel.document.threadBookmark?.width ?? panel.width) : panel.width }
+    private var entries: [ConversationEntry] { Array(model.thread.suffix(loadedPageCount)) }
     // Replace the old 2-point separator with a 24-point strip and its 1-point rule.
     private var stripExtraHeight: CGFloat { ZeusStatusStrip.height(for: settings.fontChoice, scale: settings.fontScale) - 1 }
     private var threadHeight: CGFloat { ConversationLayout.threadHeight(content: contentHeight, composer: composerHeight, screen: panel.screenHeight, strip: stripExtraHeight) }
@@ -179,8 +185,14 @@ struct ConversationView: View {
                 let id = entryID.flatMap { $0.hasPrefix("card:") ? String($0.dropFirst(5)) : nil }
                 let card = id.flatMap { store.card(id: $0) }
                 let offset = scrollDriver.viewport?.offset ?? viewport.offset
+                let bookmark = entryID.flatMap { entry in frames[entry].map {
+                    DocumentViewerModel.ThreadBookmark(entryID: entry, relativeTop: $0.minY - offset,
+                        firstEntryID: entries.first?.id, width: panel.width, viewportWidth: scrollDriver.scrollView?.bounds.width)
+                } }
                 guard panel.document.open(attachment, siblings: card?.attachments ?? [attachment], sourceCardID: id,
                                           context: card.map { $0.title ?? ZeusMarkdown.spokenText(markdown: $0.body).components(separatedBy: ".").first ?? "" }) else { return false }
+                scrollDriver.stopRestoring()
+                panel.document.threadBookmark = bookmark
                 panel.document.threadOffset = offset; panel.document.threadPageCount = pageCount; panel.document.fromPeek = false
                 setPinned(false); scrollDriver.stopFollowing(); composerFocused = false; focusedControl = nil
                 return true
@@ -204,16 +216,22 @@ struct ConversationView: View {
                 Button("Cancel", role: .cancel) {}
             } message: { Text(ConversationHistoryCopy.confirmation) }
             .onChange(of: totalHeight, initial: true) { resize(totalHeight) }
-            .onChange(of: panel.document.isOpen) { if panel.document.isOpen { setPinned(false); scrollDriver.stopFollowing() } }
+            .onChange(of: panel.document.isOpen) {
+                if panel.document.isOpen { setPinned(false); scrollDriver.stopFollowing(); scrollDriver.stopRestoring() }
+                else if !scrollDriver.isRestoring {
+                    Task { @MainActor in await Task.yield(); panel.document.removeEmptyAutomaticAttachments(in: model) }
+                }
+            }
             .onChange(of: panel.document.expanded) { resize(totalHeight) }
             .onChange(of: panel.document.backRequest) { backFromDocument() }
             .onChange(of: panel.document.composerRequest) { focusComposer() }
             .onChange(of: model.draft) { panel.document.typed(in: model) }
-            .onChange(of: store.conversationClearRevision) { panel.document.close() }
+            .onChange(of: store.conversationClearRevision) { scrollDriver.stopRestoring(); panel.document.close() }
             .onChange(of: composerHeight) { followLatest() }
             .onChange(of: composerFocused) { panel.composerFocused = composerFocused }
             .onChange(of: panel.keyboardScrollRequest) {
                 guard let command = panel.keyboardScroll else { return }
+                scrollDriver.stopRestoring()
                 userHasScrolled = true
                 switch command {
                 case .latest: latest(proxy)
@@ -239,6 +257,7 @@ struct ConversationView: View {
                 // A pointer already reached its target. Centering it now moves the button
                 // out from under a held press. Keyboard focus still reveals its target.
                 guard !panel.focusCameFromPointer, !panel.document.isOpen else { return }
+                scrollDriver.stopRestoring()
                 Task { @MainActor in
                     await Task.yield()
                     guard panel.isVisible, focusedControl == target, !panel.focusCameFromPointer else { return }
@@ -250,8 +269,12 @@ struct ConversationView: View {
             .onAppear {
                 guard panel.isVisible else { return }
                 if panel.document.isOpen {
-                    pageCount = panel.document.threadPageCount; setPinned(false)
-                    Task { @MainActor in await Task.yield(); if let offset = panel.document.threadOffset { scrollDriver.scroll(to: offset) } }
+                    pageCount = max(loadedPageCount, panel.document.threadPageCount); setPinned(false)
+                    Task { @MainActor in
+                        await Task.yield()
+                        if let bookmark = panel.document.threadBookmark { proxy.scrollTo(bookmark.entryID, anchor: .top) }
+                        else if let offset = panel.document.threadOffset { scrollDriver.scroll(to: offset) }
+                    }
                 }
                 if ratings?.drafts.isEmpty != false { focusComposer() }; if !panel.document.isOpen { openTarget(proxy) }
                 withAnimation(.easeOut(duration: 0.12)) { appeared = true }
@@ -271,7 +294,7 @@ struct ConversationView: View {
                     withAnimation(.easeOut(duration: 0.08)) { appeared = false }
                 }
             }
-            .onDisappear { scrollDriver.stopFollowing() }
+            .onDisappear { scrollDriver.stopFollowing(); scrollDriver.stopRestoring() }
             .onChange(of: messaging.assistantActivity) { _, current in
                 guard panel.isVisible else { return }
                 if (!atBottom || userScrolling), current != nil { pendingLatest = true }
@@ -299,17 +322,33 @@ struct ConversationView: View {
     }
 
     private func backFromDocument() {
+        let count = loadedPageCount
         guard panel.document.back() else { return }
-        let offset = panel.document.threadOffset
+        pageCount = count
+        resize(totalHeight) // Restore chat width before the hidden lazy thread is presented.
         let target = panel.document.fromPeek ? nil : panel.document.returnTarget
-        panel.focusCameFromPointer = true // Focus restoration must not center the original chip.
-        Task { @MainActor in
-            await Task.yield()
-            if let offset { scrollDriver.scroll(to: offset) }
-            if let target { composerFocused = false; focusedControl = target } else { focusComposer() }
-            await Task.yield()
-            if let offset { scrollDriver.scroll(to: offset) }
+        panel.focusCameFromPointer = true
+        scrollDriver.restore(to: scrollDriver.viewport?.offset ?? panel.document.threadOffset ?? 0) {
+            Task { @MainActor in
+                await Task.yield()
+                guard panel.isVisible, !panel.document.isOpen, scrollDriver.isRestoring else { return }
+                if let target { composerFocused = false; focusedControl = target } else { focusComposer() }
+                panel.document.removeEmptyAutomaticAttachments(in: model)
+            }
         }
+        if panel.document.threadBookmark != nil {
+            Task { @MainActor in
+                await Task.yield()
+                guard !panel.document.isOpen, scrollDriver.isRestoring else { return }
+                restoreDocumentAnchor()
+            }
+        } else if let offset = panel.document.threadOffset { scrollDriver.restore(to: offset) }
+    }
+    private func restoreDocumentAnchor() {
+        guard scrollDriver.isRestoring, !panel.document.isOpen,
+              let bookmark = panel.document.threadBookmark,
+              let frame = frames[bookmark.entryID] else { return }
+        scrollDriver.restore(to: frame.minY - bookmark.relativeTop)
     }
     private func returnFromDocument(_ proxy: ScrollViewProxy) {
         let id = panel.document.current?.sourceCardID
@@ -361,6 +400,7 @@ struct ConversationView: View {
         Task { @MainActor in await Task.yield(); composerFocused = panel.isVisible }
     }
     private func openTarget(_ proxy: ScrollViewProxy) {
+        scrollDriver.stopRestoring()
         panel.document.close()
         guard let id = panel.scrollTargetCardID,
               let index = model.thread.firstIndex(where: { $0.sourceCardID == id }) else { latest(proxy); return }
@@ -465,6 +505,7 @@ struct ConversationView: View {
     }
 
     private func latest(_ proxy: ScrollViewProxy) {
+        scrollDriver.stopRestoring()
         panel.document.close()
         setPinned(true)
         // Realize the newest lazy row before applying its measured cap. Top alignment is safe
@@ -483,7 +524,7 @@ struct ConversationView: View {
 
     private func thread(proxy: ScrollViewProxy) -> some View {
         let allEntries = model.thread
-        let loadedEntries = Array(allEntries.suffix(pageCount))
+        let loadedEntries = Array(allEntries.suffix(loadedPageCount))
         let sources = Dictionary(uniqueKeysWithValues: store.cards.map { ($0.id, $0) })
         let labeledEntries = ConversationLayout.sessionLabelEntries(loadedEntries, cards: store.cards)
         let rows = loadedEntries.indices.map { index in
@@ -492,7 +533,7 @@ struct ConversationView: View {
         let shortcutID = model.shortcutTarget?.id
         return ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                if model.thread.count > pageCount {
+                if model.thread.count > loadedPageCount {
                     Button("Load Earlier Messages") {
                         setPinned(false)
                         let first = entries.first?.id
@@ -551,7 +592,7 @@ struct ConversationView: View {
             let wasScrolling = userScrolling
             let scrolling = phase == .interacting || phase == .decelerating
             if userScrolling != scrolling { userScrolling = scrolling }
-            if userScrolling { userHasScrolled = true; scrollDriver.stopFollowing() }
+            if userScrolling { userHasScrolled = true; scrollDriver.stopFollowing(); scrollDriver.stopRestoring() }
             if userScrolling || wasScrolling {
                 setPinned(ConversationAutoScroll.isPinned(viewport: viewport, newestMessageTop: newestMessageTop))
                 if !userScrolling { followLatest() }
@@ -568,7 +609,7 @@ struct ConversationView: View {
             else if current.contentHeight > previous.contentHeight || previous.height != current.height { followLatest() }
         }
         .coordinateSpace(name: "thread")
-        .frame(height: threadHeight)
+        .frame(width: panel.document.isOpen ? panel.document.threadBookmark?.viewportWidth : nil, height: threadHeight)
         .onChange(of: atBottom) { panel.atBottom = atBottom }
         .onPreferenceChange(ThreadFrames.self) { value in
             let previousNewest = frames["latestMessage"]
@@ -580,6 +621,7 @@ struct ConversationView: View {
             var next = value
             if next["latestMessage"] == nil { next["latestMessage"] = previousNewest }
             frames = next
+            restoreDocumentAnchor()
             updateSeenVisibility()
             recordScrollDiagnostics()
             if userScrolling { setPinned(ConversationAutoScroll.isPinned(viewport: viewport, newestMessageTop: newestMessageTop)) }
@@ -610,7 +652,7 @@ struct ConversationView: View {
                 ZeusSessionLabel(settings.sessionLabels.label(key), colorIndex: ZeusSessionLabel.colorIndex(for: key))
             }
             if let notice = entry.threadNotice {
-                ConversationNoticeLine(notice: notice, maxWidth: ConversationWidth.bubble(panelWidth: panel.width, user: false),
+                ConversationNoticeLine(notice: notice, maxWidth: ConversationWidth.bubble(panelWidth: threadWidth, user: false),
                                        hasAction: store.hasNoticeAction(id: notice.id), perform: { store.performNoticeAction(id: notice.id) },
                                        hasSecondaryAction: store.hasSecondaryNoticeAction(id: notice.id),
                                        performSecondary: { store.performSecondaryNoticeAction(id: notice.id) })
@@ -627,7 +669,7 @@ struct ConversationView: View {
             } else {
             if case .agentCard(let card) = entry.content, let ratings, ratings.isHeld(card) { MutedMessageLine(card: card, model: ratings) }
             ConversationVisibleBubble(bubble: ConversationBubble(entry: entry, answerCaption: ConversationLayout.answerCaption(entry, after: previous, sources: sources), showTime: !grouped, shortcuts: entry.sourceCardID == shortcutID,
-                               model: model, settings: settings, ratings: ratings, isVisible: panel.isVisible, maxWidth: ConversationWidth.bubble(panelWidth: panel.width, user: entry.isUser),
+                               model: model, settings: settings, ratings: ratings, isVisible: panel.isVisible, maxWidth: ConversationWidth.bubble(panelWidth: threadWidth, user: entry.isUser),
                                openSettings: openSettings, copySetup: copySetup, sessions: messaging.sessions, focus: $focusedControl,
                                onReply: { id in model.rearmReplyTarget(cardID: id); panel.focusRequest += 1 }), visibility: visibility)
                 .background(GeometryReader { geometry in

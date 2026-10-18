@@ -79,4 +79,26 @@ import Testing
         #expect(scroll.contentView.bounds.minY == 950)
     }
 
+    @Test func restorationWaitsForLayoutAndYieldsToNavigation() async {
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 300, height: 200))
+        final class FlippedDocument: NSView { override var isFlipped: Bool { true } }
+        let document = FlippedDocument(frame: NSRect(x: 0, y: 0, width: 300, height: 300))
+        scroll.documentView = document
+        let driver = ConversationScrollDriver(); driver.scrollView = scroll
+        var completed = 0
+        driver.restore(to: 700) { completed += 1 }
+        for _ in 0..<10 { await Task.yield() }
+        #expect(completed == 0)
+        document.setFrameSize(NSSize(width: 300, height: 1200))
+        for _ in 0..<10 { await Task.yield() }
+        #expect(driver.viewport?.offset == 700 && completed == 1)
+        scroll.contentView.scroll(to: CGPoint(x: 0, y: 0)) // A later native layout/focus adjustment.
+        for _ in 0..<10 { await Task.yield() }
+        #expect(driver.viewport?.offset == 700 && completed == 1)
+        driver.perform(.line(-1))
+        document.setFrameSize(NSSize(width: 300, height: 1400))
+        for _ in 0..<10 { await Task.yield() }
+        #expect(driver.viewport?.offset == 660 && !driver.isRestoring)
+    }
+
 }

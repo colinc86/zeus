@@ -32,7 +32,16 @@ final class DocumentViewerModel {
     var composerRequest = 0
     var quoteRequest = 0
     var autoAttachedPage: UUID?
+    @ObservationIgnored private var automaticAttachments: Set<String> = []
     var threadOffset: CGFloat?
+    struct ThreadBookmark {
+        let entryID: String
+        let relativeTop: CGFloat
+        let firstEntryID: String?
+        let width: CGFloat
+        var viewportWidth: CGFloat? = nil
+    }
+    var threadBookmark: ThreadBookmark?
     var threadPageCount = ConversationLayout.pageSize
     var fromPeek = false
     var attachmentPosition: String? { attachments.count > 1 ? "\(attachmentIndex + 1)/\(attachments.count)" : nil }
@@ -61,6 +70,7 @@ final class DocumentViewerModel {
         else { attachments = [value]; attachmentIndex = 0 }
         returnTarget = sourceCardID.map { .init(entryID: "card:\($0)", controlID: "open:\(attachment.id)") }
         offsets.removeAll()
+        threadBookmark = nil; threadOffset = nil; threadPageCount = ConversationLayout.pageSize; fromPeek = false
         pages = [.init(attachment: value, sourceCardID: sourceCardID, context: context)]
         activate()
         return true
@@ -98,13 +108,18 @@ final class DocumentViewerModel {
     func ask(in conversation: ConversationModel) {
         guard let page = current else { return }
         autoAttachedPage = page.id
+        // Ask About This promotes an existing chip for this path too, even when
+        // navigation created a new attachment ID for the same document.
+        for item in conversation.draftAttachments where item.target == page.attachment.target {
+            automaticAttachments.remove(item.id)
+        }
         if !conversation.draftAttachments.contains(where: { $0.target == page.attachment.target }) {
             conversation.draftAttachments.append(page.attachment)
         }
     }
     func quote(in conversation: ConversationModel) {
         guard current != nil, !selectedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        ask(in: conversation)
+        attachAutomatically(in: conversation)
         let trimmed = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
         let passage = String(trimmed.prefix(2_000)) + (trimmed.count > 2_000 ? "…" : "")
         let quote = passage.split(separator: "\n", omittingEmptySubsequences: false).map { "> " + $0 }.joined(separator: "\n")
@@ -112,8 +127,28 @@ final class DocumentViewerModel {
         conversation.draft += "\(quote)\n\n"
     }
     func typed(in conversation: ConversationModel) {
-        guard let page = current, autoAttachedPage != page.id, !conversation.draft.isEmpty else { return }
-        autoAttachedPage = page.id; ask(in: conversation)
+        removeEmptyAutomaticAttachments(in: conversation)
+        guard let page = current, autoAttachedPage != page.id, !conversation.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        attachAutomatically(in: conversation)
+    }
+    private func attachAutomatically(in conversation: ConversationModel) {
+        guard let page = current else { return }
+        autoAttachedPage = page.id
+        if !conversation.draftAttachments.contains(where: { $0.target == page.attachment.target }) {
+            automaticAttachments.insert(page.attachment.id)
+            conversation.draftAttachments.append(page.attachment)
+        }
+    }
+    /// Called after returning to Messages as well as on draft edits. Explicit chips are never removed.
+    func removeEmptyAutomaticAttachments(in conversation: ConversationModel) {
+        guard conversation.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        let present = Set(conversation.draftAttachments.map(\.id))
+        // A missing chip was removed by the person: retain the page marker so typing cannot undo ×.
+        if let page = current, automaticAttachments.contains(page.attachment.id), present.contains(page.attachment.id) {
+            autoAttachedPage = nil
+        }
+        conversation.draftAttachments.removeAll { automaticAttachments.contains($0.id) }
+        automaticAttachments.removeAll()
     }
     func refresh() { load(updated: true) }
     private func activate() {
