@@ -4,7 +4,7 @@ import Foundation
 import ZeusLink
 import ZeusProtocol
 
-enum TmuxPasteRecoveryError: Error, LocalizedError {
+enum TmuxPasteRecoveryError: Error, LocalizedError, Equatable {
     case absent, hidden
     var errorDescription: String? {
         switch self {
@@ -417,21 +417,25 @@ struct TmuxInputSnapshot: Equatable, Sendable {
     /// labels cannot establish the original bytes after a process restart.
     func containsOnlyOpenCodePaste(_ text: String) -> Bool {
         guard let start = openCodeBoxStart, start < y,
-              lines[start].dropFirst(3).trimmingCharacters(in: .whitespaces).isEmpty,
+              let border = lines.suffix(4).first(where: { $0.hasPrefix("  ╹") }) else { return false }
+        let edge = border.prefix { $0 == " " || $0 == "╹" || $0 == "▀" || $0 == "━" }
+            .replacingOccurrences(of: " +$", with: "", options: .regularExpression).count
+        guard edge > 8, x < edge,
+              lines[start].prefix(edge).dropFirst(3).trimmingCharacters(in: .whitespaces).isEmpty,
               let mode = lines.indices.last(where: { $0 > y && lines[$0].hasPrefix("  ┃  ") && lines[$0].contains(" · ") }),
-              ((y + 1)..<mode).allSatisfy({ lines[$0].hasPrefix("  ┃") && lines[$0].dropFirst(3).trimmingCharacters(in: .whitespaces).isEmpty }),
+              ((y + 1)..<mode).allSatisfy({ lines[$0].hasPrefix("  ┃") && lines[$0].prefix(edge).dropFirst(3).trimmingCharacters(in: .whitespaces).isEmpty }),
               !openCodePasteIsHidden else { return false }
         var remaining = text[...]
         for row in (start + 1)...y {
             guard lines[row].hasPrefix("  ┃  ") else { return false }
-            let body = String(lines[row].dropFirst(5)).replacingOccurrences(of: " +$", with: "", options: .regularExpression)
+            let body = String(lines[row].prefix(edge).dropFirst(5)).replacingOccurrences(of: " +$", with: "", options: .regularExpression)
             guard remaining.hasPrefix(body), !body.isEmpty || remaining.first == "\n" else { return false }
             remaining = remaining.dropFirst(body.count)
             if row < y {
                 let endSpaces = remaining.prefix { $0 == " " }.count
                 if remaining.dropFirst(endSpaces).first == "\n" { remaining = remaining.dropFirst(endSpaces + 1) }
                 else {
-                    let gap = width - 8 - Self.cellWidth(body)
+                    let gap = edge - 6 - Self.cellWidth(body)
                     let next = remaining.dropFirst(endSpaces).prefix { !$0.isWhitespace }
                     guard gap >= 0,
                           endSpaces > 0 ? endSpaces + Self.cellWidth(String(next)) >= gap : (gap == 0 || (gap == 1 && remaining.first.map { Self.cellWidth(String($0)) == 2 } == true)) else { return false }

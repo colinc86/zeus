@@ -505,7 +505,7 @@ extension ZeusRuntime {
         let problems = pending.filter { record in
             let inactiveManaged = belongsToManagedAssistant(record) && [.off, .stopped].contains(managedStatus)
                 || (belongsToManagedAssistant(record) && { if case .failed = managedStatus { return true }; return false }())
-            return record.delivery.failedAt != nil || (clock.now.timeIntervalSince(record.delivery.createdAt) > 120
+            return record.delivery.meta["tmux_hidden_paste"] == "true" || record.delivery.failedAt != nil || (clock.now.timeIntervalSince(record.delivery.createdAt) > 120
                 && (!canConsume(record) || nativeDestinationProblem(record) != nil || inactiveManaged))
         }
         let ids = Set(problems.map { $0.delivery.id })

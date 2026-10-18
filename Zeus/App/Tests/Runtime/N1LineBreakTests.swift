@@ -145,7 +145,7 @@ private actor N1PasteRunner: ProcessRunning {
         let connector = TmuxConnector(executable: URL(fileURLWithPath: "/fixture/tmux"), runner: humanDraft)
         await #expect(throws: ConnectorError.inputBusy) { try await connector.deliver(delivery, to: session, bridge: nil, routing: settings) }
         delivery.meta["tmux_paste_destination"] = "/test/tmux.sock:%0"
-        await #expect(throws: ConnectorError.inputChanged) { try await connector.deliver(delivery, to: session, bridge: nil, routing: settings) }
+        await #expect(throws: TmuxPasteRecoveryError.hidden) { try await connector.deliver(delivery, to: session, bridge: nil, routing: settings) }
         #expect(await humanDraft.calls.allSatisfy { !$0.arguments.contains("load-buffer") && !$0.arguments.contains("paste-buffer") && !$0.arguments.contains("send-keys") })
     }
 

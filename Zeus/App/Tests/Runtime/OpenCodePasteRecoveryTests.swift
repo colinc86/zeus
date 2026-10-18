@@ -17,7 +17,7 @@ private func openCodeRecoveryFrame(_ text: String) -> ManagedPaneSnapshot {
     rows[start] = "  ┃"
     for (i, line) in body.enumerated() { rows[start + 1 + i] = "  ┃  " + line }
     rows[35] = "  ┃  Build · fixture"
-    rows[36] = "  ╹━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    rows[36] = "  ╹" + String(repeating: "▀", count: 115)
     rows[37] = "  ctrl+p commands"
     return .init(screen: rows.joined(separator: "\n"), inputMetadata: "\(5 + (body.last?.count ?? 0))|34|120|0|1|1")
 }
@@ -27,6 +27,7 @@ private actor OpenCodeRecoveryRunner: ProcessRunning {
     var buffer = ""
     var enters = 0, pastes = 0
     init(text: String) { frame = openCodeRecoveryFrame(text) }
+    func clearInput() { frame = openCodeRecoveryFrame("") }
     func run(executable: URL, arguments: [String], input: Data?) async throws -> ProcessResult {
         if arguments.contains("display-message") { return .init(status: 0, stdout: Data(frame.inputMetadata.utf8)) }
         if arguments.contains("capture-pane") { return .init(status: 0, stdout: Data(frame.screen.utf8)) }
@@ -43,10 +44,11 @@ struct OpenCodePasteRecoveryTests {
     func persistedPasteRecoversWithFreshRuntimeAndUnblocksLaterDelivery(attempts: Int, state: String) async throws {
         let f = try RuntimeFixture(); defer { f.stop() }
         f.routing.deliveryMethod = .tmux
-        let session = connectorSession(agent: .opencode, pane: "%0", socket: "/test/tmux.sock")
+        let session = ConnectedSession(id: UUID(), sessionKey: "opencode:/assistant#1234.5678", agent: .opencode,
+            cwd: "/assistant", clientName: nil, supportsChannel: false, tmuxPane: "%0", connectedAt: f.clock.now, tmuxSocketPath: "/test/tmux.sock")
         var delivery = Delivery(id: "d_recover", kind: .userMessage, sessionKey: session.sessionKey,
             content: String(repeating: "A bounded morning brief with useful context. ", count: 3) + "\nSecond line.",
-            meta: ["tmux_paste_destination": "/test/tmux.sock:%0"])
+            meta: ["tmux_paste_destination": "/test/tmux.sock:%0"], createdAt: f.clock.now)
         delivery.attempts = attempts
         if attempts == 5 { delivery.failedAt = f.clock.now }
         let text = AgentInjectionText.format(delivery)
@@ -69,6 +71,8 @@ struct OpenCodePasteRecoveryTests {
         if state == "exact" {
             #expect(next.ledger?.record(id: delivery.id)?.delivery.meta["tmux_paste_destination"] == nil)
             #expect(next.ledger?.record(id: delivery.id)?.tmuxPasteRecoveredAt == f.clock.now)
+            #expect(next.ledger?.record(id: delivery.id)?.delivery.failedAt == nil)
+            #expect(next.ledger?.record(id: delivery.id)?.transportDeliveredAt != nil)
             next.processDueDeliveries()
             #expect(await runner.enters == 1)
             let result = await next.sendUserMessage("Later message", deliveryID: "d_later")
@@ -82,8 +86,18 @@ struct OpenCodePasteRecoveryTests {
             #expect(await runner.pastes == 0)
             if state == "hidden" {
                 #expect(next.ledger?.record(id: delivery.id)?.queueReason == TmuxPasteRecoveryError.hidden.localizedDescription)
+                #expect(next.userMessageDeliveries.first(where: { $0.id == delivery.id })?.reason == TmuxPasteRecoveryError.hidden.localizedDescription)
                 f.clock.advance(121); next.processDueDeliveries()
                 #expect(next.deliveryIssue?.detail == TmuxPasteRecoveryError.hidden.localizedDescription)
+                try await eventually { next.sends.isEmpty }
+                await runner.clearInput()
+                f.clock.advance(5); next.processDueDeliveries()
+                try await eventually { next.sends.isEmpty }
+                #expect(next.ledger?.record(id: delivery.id)?.delivery.meta["tmux_paste_destination"] == nil)
+                #expect(next.ledger?.record(id: delivery.id)?.delivery.meta["tmux_hidden_paste"] == nil)
+                #expect(next.ledger?.record(id: delivery.id)?.transportDeliveredAt == nil, "Clearing input is not a delivery receipt")
+                #expect(await runner.enters == 1, "Only the later message is submitted")
+                #expect(await runner.pastes == 1)
             }
         }
     }
