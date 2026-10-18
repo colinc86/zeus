@@ -8,7 +8,8 @@ enum MorningBriefSchedule: String, Codable, CaseIterable, Sendable { case firstA
 @MainActor @Observable
 final class MorningBriefSettings {
     @ObservationIgnored private let defaults: UserDefaults
-    var enabled: Bool { didSet { defaults.set(enabled, forKey: "proactive.morningBrief.enabled") } }
+    private(set) var hasEnabledPreference: Bool
+    var enabled: Bool { didSet { hasEnabledPreference = true; defaults.set(enabled, forKey: "proactive.morningBrief.enabled") } }
     var schedule: MorningBriefSchedule { didSet { defaults.set(schedule.rawValue, forKey: "proactive.morningBrief.schedule") } }
     var hour: Int {
         didSet {
@@ -25,11 +26,14 @@ final class MorningBriefSettings {
         }
     }
 
+    func effectiveEnabled(managed: Bool) -> Bool { hasEnabledPreference ? enabled : managed }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        hasEnabledPreference = defaults.object(forKey: "proactive.morningBrief.enabled") != nil
         enabled = defaults.object(forKey: "proactive.morningBrief.enabled") as? Bool ?? true
         schedule = MorningBriefSchedule(rawValue: defaults.string(forKey: "proactive.morningBrief.schedule") ?? "") ?? .firstActivity
-        hour = min(23, max(0, defaults.object(forKey: "proactive.morningBrief.hour") as? Int ?? 9))
+        hour = min(23, max(0, defaults.object(forKey: "proactive.morningBrief.hour") as? Int ?? 8))
         minute = min(59, max(0, defaults.object(forKey: "proactive.morningBrief.minute") as? Int ?? 0))
     }
 }
@@ -41,4 +45,6 @@ final class MorningBriefSettings {
     func proactiveSettingsDidChange()
     /// Releases only a daily-budget hold. No rating change, alert replay, or queue-wide release.
     func showBudgetHeldCard(id: String) throws
+    /// Collapses a previously shown budget card, retaining its original hold reason.
+    func hideBudgetHeldCard(id: String) throws
 }
