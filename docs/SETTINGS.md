@@ -120,14 +120,14 @@ All observation switches start off. See [Learn from me](LEARNING.md) for collect
 | **Keep topics** | 30 days | 7, 30 or 90 days. |
 | **Keep the words** | 24 hours | Don't keep, 24 hours or 7 days. |
 | **Notes to your assistant** | All four moment types selected | First activity, back from a long break, later start, winding down. Up to four notes per day. |
-| **Your assistant's folder** | Applied managed working folder; none in Connect your own | Shows the `Zeus/` record's path and write errors. |
+| **Your assistant's folder** | Applied managed working folder; none in Connect your own | Shows the `Zeus/` record's path, write errors and files Zeus left alone because it did not write them. |
 | Folder **Show in Finder** | Action when configured | Opens the readable record. |
 | Folder **Choose…** / **Stop keeping a folder** | Connect your own only | Chooses or stops the export destination; stopping leaves existing files alone. |
 | Folder **Assistant Settings** | Managed mode with no folder | Opens Assistant settings to choose the working folder. |
 | **What Zeus has recorded** | Empty until recording | Today's activity list. |
 | **Open What Zeus Kept…** | Action | Opens stored records and the Sent ledger. |
 | **Pause for Today** / **Resume** | Not paused | Stops observation until midnight, or resumes sooner. |
-| **Delete Everything…** | Action | Confirms deletion of the journal, summaries, Sent ledger, message ratings and their matching/signal history, empties the active `Zeus/` folder, and cancels affected pending deliveries. **Also delete your assistant's notes** starts off; selecting it also empties `Notes/`. Rules remain separately managed. |
+| **Delete Everything…** | Action | Confirms deletion of the journal, summaries, Sent ledger, message ratings and their matching/signal history, removes the files Zeus wrote in `Zeus/` inside the current assistant folder, and cancels affected pending deliveries. Anything else in that folder stays. **Also delete your assistant's notes** starts off; selecting it deletes everything in `Notes/`, including files you or your assistant put there. This can't be undone. Rules remain separately managed. |
 
 ## Rules
 
