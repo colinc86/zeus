@@ -41,7 +41,7 @@ import Testing
     }
 }
 
-@MainActor private final class PictureRecoveryJournal: JournalStore, FrameJournalStoring {
+@MainActor final class PictureRecoveryJournal: JournalStore, FrameJournalStoring {
     let revision: UInt64 = 0
     var lastError: String? { nil }
     var records: [JournalItem] = []
