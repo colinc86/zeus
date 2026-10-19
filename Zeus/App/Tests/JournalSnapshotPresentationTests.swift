@@ -113,7 +113,7 @@ import Testing
             } else {
                 let l = NSSelectorFromString("accessibilityLabel"), c = NSSelectorFromString("accessibilityChildren")
                 let v = NSSelectorFromString("accessibilityValue")
-                enabled = true
+                enabled = (node as AnyObject).isAccessibilityEnabled?() ?? true
                 label = node.responds(to: l) ? node.perform(l)?.takeUnretainedValue() as? String : nil
                 value = node.responds(to: v) ? node.perform(v)?.takeUnretainedValue() as? String : nil
                 children = node.responds(to: c) ? node.perform(c)?.takeUnretainedValue() as? [Any] ?? [] : []
