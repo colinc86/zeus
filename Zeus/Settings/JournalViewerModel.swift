@@ -75,6 +75,8 @@ final class JournalViewerModel {
         pictures.didChange = { [weak self] in self?.reload() }
         reload(); observe()
     }
+    isolated deinit { loadTask?.cancel(); expiryTask?.cancel(); undoExpiry?.cancel() }
+
     /// Ask the writer for its existing day directory, preserving its calendar and missing-file policy.
     var dayFolderURL: URL? { folder?.provider?.dayFolderURL(for: day) }
     func showDayInFinder() { if let url = dayFolderURL { folder?.reveal(url) } }

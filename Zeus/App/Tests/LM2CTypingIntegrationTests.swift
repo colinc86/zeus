@@ -87,7 +87,7 @@ import Testing
         #expect(shell.cards.cards.isEmpty); #expect(shell.cards.notices.isEmpty)
         source.isSecure = false; #expect(!shell.menuModel.outline.contains(line + " (disabled)"))
     }
-    @Test func selectedTopicRetentionAndWordsSplitReachTheEncryptedStoreEvenWhenCaptureIsOff() throws {
+    @Test func selectedTopicRetentionAndWordsSplitReachTheEncryptedStoreEvenWhenCaptureIsOff() async throws {
         let name = "zeus-typing-retention-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
@@ -110,6 +110,8 @@ import Testing
         let row = try #require(store.items(matching: .init()).first)
         #expect(row.payload.value.text == nil); #expect(row.payload.value.topic == "Planning source changes")
         #expect(row.payload.value.details["words_not_kept"] == "setting")
+        await learning.viewer?.waitForLoad()
+        #expect(learning.viewer?.items.count == 1)
         #expect(learning.viewer?.items.allSatisfy { $0.payload.value.text == nil } == true)
     }
     @Test func returningFromSystemSettingsRefreshesModelAvailabilityWhileTypingIsOff() throws {
