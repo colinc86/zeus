@@ -82,7 +82,8 @@ import Testing
         #expect(try LearningEncryption.read([JournalItem].self, at: root.appendingPathComponent("2026-11-01.zjournal"), key: key) == [frame])
         #expect(try LearningEncryption.read([JournalItem].self, at: root.appendingPathComponent("2026-10-31.zjournal"), key: key) == [description])
     }
-    @Test func interruptionAtEveryKeyAccessNeverExposesHalfAGroup() throws {
+    @Test(arguments: [false, true])
+    func interruptionAtEveryKeyAccessNeverExposesHalfAGroup(restoring: Bool) throws {
         var sawCommittedInterruption = false, sawPrecommitFailure = false
         for access in 1...30 {
             let root = root(); defer { try? FileManager.default.removeItem(at: root) }
@@ -91,21 +92,26 @@ import Testing
             let la = EncryptedJournalStore(root: root, keyProvider: key, calendar: calendar("America/Los_Angeles"), clock: { now })
             try chicago.append(item("one", at: now)); try la.append(item("two", at: now))
             _ = try la.items(matching: .init())
+            let receipt = restoring ? try la.deleteTyping(ids: ["one", "two"]) : nil
             var notified = false, succeeded = false
             la.onJournalDeletion = { _ in notified = true }
             key.calls = 0; key.failFrom = access
-            do { _ = try la.deleteTyping(ids: ["one", "two"]); succeeded = true }
+            do {
+                if let receipt { try la.restoreTyping(receipt) }
+                else { _ = try la.deleteTyping(ids: ["one", "two"]) }
+                succeeded = true
+            }
             catch { sawPrecommitFailure = true }
             let pending = FileManager.default.fileExists(atPath: root.appendingPathComponent("pending.ztransaction").path)
             if pending {
                 sawCommittedInterruption = true
-                #expect(succeeded && notified)
+                #expect(succeeded && (restoring || notified))
                 #expect(throws: (any Error).self) { try la.items(matching: .init()) }
             }
-            #expect(notified == succeeded)
+            #expect(notified == (succeeded && !restoring))
             key.failFrom = nil
             let reopened = EncryptedJournalStore(root: root, keyProvider: key, calendar: calendar("America/Los_Angeles"), clock: { now })
-            #expect(try reopened.items(matching: .init()).count == (succeeded ? 0 : 2))
+            #expect(try reopened.items(matching: .init()).count == (succeeded == restoring ? 2 : 0))
             #expect(!FileManager.default.fileExists(atPath: root.appendingPathComponent("pending.ztransaction").path))
         }
         #expect(sawCommittedInterruption && sawPrecommitFailure)
