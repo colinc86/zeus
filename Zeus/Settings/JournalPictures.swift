@@ -60,6 +60,7 @@ enum JournalTimelineRow: Identifiable {
     private(set) var rows: [JournalPicture] = []
     var selectedID: String?
     private(set) var error: String?
+    private var readRevision: UInt64 = 0
     private(set) var deleted: FrameDeletionReceipt?
     var confirmsDeleteBoth = false
     @ObservationIgnored private var undoDeadline: Date?
@@ -73,7 +74,7 @@ enum JournalTimelineRow: Identifiable {
     init(journal: any JournalStore, clock: @escaping () -> Date = Date.init) { self.journal = journal; self.clock = clock }
     var selected: JournalPicture? { rows.first { $0.id == selectedID } }
     /// Explicit reload also retries absent files; transient failures are never cached as missing.
-    func retryReads() { missing.removeAll() }
+    func retryReads() { missing.removeAll(); readRevision &+= 1 }
     func update(_ rows: [JournalTimelineRow]) {
         self.rows = rows.compactMap { if case .picture(let picture) = $0 { picture } else { nil } }
         if cachedRevision != journal.revision {
@@ -82,6 +83,7 @@ enum JournalTimelineRow: Identifiable {
         if let selectedID, !self.rows.contains(where: { $0.id == selectedID }) { self.selectedID = nil }
     }
     func frame(_ picture: JournalPicture) -> Redacted<FrameItem>? {
+        _ = readRevision
         if let frame = frames[picture.id] { return frame }
         guard !missing.contains(picture.id), let store = journal as? any FrameJournalStoring else { return nil }
         do {

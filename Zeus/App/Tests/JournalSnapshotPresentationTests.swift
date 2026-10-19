@@ -103,15 +103,17 @@ import Testing
         var seen: Set<ObjectIdentifier> = []
         func walk(_ node: NSObject, depth: Int) -> [String] {
             guard depth < 64, seen.count < 2048, seen.insert(ObjectIdentifier(node)).inserted else { return [] }
-            let label: String?, children: [Any]
+            let label: String?, value: String?, children: [Any]
             if let node = node as? any NSAccessibilityProtocol {
-                label = node.accessibilityLabel(); children = node.accessibilityChildren() ?? []
+                label = node.accessibilityLabel(); value = node.accessibilityValue() as? String; children = node.accessibilityChildren() ?? []
             } else {
                 let l = NSSelectorFromString("accessibilityLabel"), c = NSSelectorFromString("accessibilityChildren")
+                let v = NSSelectorFromString("accessibilityValue")
                 label = node.responds(to: l) ? node.perform(l)?.takeUnretainedValue() as? String : nil
+                value = node.responds(to: v) ? node.perform(v)?.takeUnretainedValue() as? String : nil
                 children = node.responds(to: c) ? node.perform(c)?.takeUnretainedValue() as? [Any] ?? [] : []
             }
-            return [label].compactMap { $0 } + children.compactMap { $0 as? NSObject }.flatMap { walk($0, depth: depth + 1) }
+            return [label, value].compactMap { $0 } + children.compactMap { $0 as? NSObject }.flatMap { walk($0, depth: depth + 1) }
         }
         return walk(root, depth: 0)
     }
