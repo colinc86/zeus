@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import SwiftUI
 import Testing
 import ZeusDesign
 import ZeusProtocol
@@ -26,6 +27,57 @@ import ZeusSprites
         #expect(native.size == rect.warningTopLeft.size)
         let shifted = rect.warningFrame(in: bounds.offsetBy(dx: 7, dy: 9), flipped: false)
         #expect(shifted == native.offsetBy(dx: 7, dy: 9))
+    }
+
+    @Test func badgeCornerStaysInsideTheCanvasWhenTheArtTouchesItsEdges() {
+        let rect = AvatarArtRect(canvas: PixelSize(width: 40, height: 50), pixels: CGRect(x: 10, y: 0, width: 30, height: 50), scale: 2)
+        #expect(rect.badgeCorner == CGPoint(x: 80, y: 0))
+    }
+
+    /// The avatar window is exactly the canvas: the whole badge must land inside it, its trailing edge on the corner.
+    @Test(arguments: ["ghost", "zeus", "bat"])
+    func unreadBadgeDrawsWholeInsideTheAvatarWindow(_ id: String) async throws {
+        let suite = "zeus-badge-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let cards = CardStore(fileURL: root.appendingPathComponent("cards.json"))
+        let settings = AppSettings(defaults: defaults, userDirectory: nil)
+        settings.avatarSize = .small
+        settings.currentCharacterID = id
+        let character = try #require(settings.currentCharacter)
+        let layout = AvatarArtLayout()
+        layout.rect = AvatarArtRect(canvas: character.canvasSize, pixels: SpriteLayout.artBounds(character: character), scale: settings.pixelScale)
+        let host = NSHostingView(rootView: SpriteAvatarView(settings: settings, status: AvatarStatusModel(cards: cards),
+                                                             messaging: AgentMessagingHub(), artLayout: layout, activity: SurfaceActivity()))
+        let window = NSWindow(contentRect: CGRect(origin: CGPoint(x: -24000, y: -24000), size: layout.rect.canvasSize),
+                              styleMask: [.borderless], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = host
+        defer { window.orderOut(nil) }
+        func snapshot() async throws -> (bytes: [UInt8], row: Int, wide: Int) {
+            try await Task.sleep(for: .milliseconds(150))
+            host.layoutSubtreeIfNeeded()
+            let rep = try #require(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+            host.cacheDisplay(in: host.bounds, to: rep)
+            return ([UInt8](UnsafeBufferPointer(start: rep.bitmapData, count: rep.bytesPerRow * rep.pixelsHigh)), rep.bytesPerRow, rep.pixelsWide)
+        }
+        let without = try await snapshot().bytes
+        cards.add(Card(kind: .message, body: "Unread"))
+        let (with, row, wide) = try await snapshot()
+        let scale = CGFloat(wide) / layout.rect.canvasSize.width
+        var minX = Int.max, maxX = -1
+        // New pixels in the badge's fill color (the sprite may change state too, so a plain diff isn't enough).
+        let fill = try #require(NSColor(ZeusPalette.dark.badge).usingColorSpace(.deviceRGB))
+        let target = [fill.redComponent, fill.greenComponent, fill.blueComponent].map { Int(($0 * 255).rounded()) }
+        func isFill(_ i: Int) -> Bool { (0..<3).allSatisfy { abs(Int(with[i + $0]) - target[$0]) <= 12 } && with[i + 3] > 200 }
+        for i in stride(from: 0, to: with.count, by: 4) where (i % row) / 4 < wide && with[i..<i + 4] != without[i..<i + 4] && isFill(i) {
+            minX = min(minX, (i % row) / 4); maxX = max(maxX, (i % row) / 4)
+        }
+        try #require(maxX >= 0, "\(id): the badge didn't draw")
+        let corner = layout.rect.badgeCorner
+        #expect(abs(CGFloat(maxX + 1) / scale - corner.x) <= 2, "\(id): badge fill ends at \(CGFloat(maxX + 1) / scale), corner \(corner.x)")
+        #expect(CGFloat(maxX - minX + 1) / scale >= 15, "\(id): only \(CGFloat(maxX - minX + 1) / scale) pt of the badge is visible")
     }
 
     @Test func bothDialogFormsAttachToTheSilhouetteInsteadOfCanvasHeadroom() {

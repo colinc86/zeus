@@ -20,7 +20,11 @@ struct AvatarArtRect: Equatable {
         CGRect(x: bottomLeft.minX, y: canvasSize.height - bottomLeft.maxY,
                width: bottomLeft.width, height: bottomLeft.height)
     }
-    var badgeCorner: CGPoint { CGPoint(x: topLeft.maxX + Self.decorationOverlap, y: topLeft.minY - Self.decorationOverlap) }
+    /// Where the unread badge's top-trailing corner goes: just outside the art, but never past the canvas
+    /// (the avatar window is exactly the canvas, so anything beyond it is cut off).
+    var badgeCorner: CGPoint {
+        CGPoint(x: min(topLeft.maxX + Self.decorationOverlap, canvasSize.width), y: max(topLeft.minY - Self.decorationOverlap, 0))
+    }
     var warningTopLeft: CGRect {
         CGRect(origin: CGPoint(x: topLeft.minX - Self.decorationOverlap, y: topLeft.minY - Self.decorationOverlap), size: Self.warningSize)
     }
