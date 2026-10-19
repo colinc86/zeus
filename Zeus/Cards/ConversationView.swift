@@ -540,14 +540,30 @@ struct ConversationView: View {
         Task { @MainActor in
             await Task.yield()
             guard panel.isVisible, atBottom, !userScrolling, !panel.document.isOpen else { return }
-            if let last = model.thread.last { proxy.scrollTo(last.id, anchor: .top) }
-            else { proxy.scrollTo("bottom", anchor: .bottom) }
+            if model.thread.isEmpty { proxy.scrollTo("bottom", anchor: .bottom) }
+            // After a tall measured row, a direct jump can land on blank space; walk down
+            // instead (see `latestRevealTarget`). Ordinary threads take the direct jump.
+            var stepping = false
+            for step in 1...Self.latestRevealSteps {
+                let ids = entries.map(\.id)
+                guard let last = ids.last, let target = ConversationLayout.latestRevealTarget(
+                    ids: ids, frames: frames, viewportHeight: viewport.height, stepping: stepping) else { break }
+                proxy.scrollTo(step == Self.latestRevealSteps ? last : target, anchor: .top)
+                if target == last { break }
+                stepping = true
+                // Wait for the lazy stack to measure the row it scrolled to.
+                for _ in 0..<6 where frames[target] == nil { try? await Task.sleep(for: .milliseconds(16)) }
+                guard panel.isVisible, atBottom, !userScrolling, !panel.document.isOpen else { return }
+            }
             await Task.yield()
             followLatest()
             await Task.yield()
             if panel.isVisible { visibility.jumpsReady = true }
         }
     }
+
+    /// Bounds the rows `latest` walks after a tall row; each step reveals about a viewport.
+    private static let latestRevealSteps = 60
 
     private func thread(proxy: ScrollViewProxy) -> some View {
         let allEntries = model.thread
