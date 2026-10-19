@@ -51,8 +51,10 @@ struct ToolArguments {
         return array
     }
     func options(_ key: String) throws -> [CardOption] {
-        let result = try array(key).map { json in
+        let result = try array(key).enumerated().map { index, json in
             let item = try ToolArguments(json)
+            let unknown = Set(item.values.keys).subtracting(["id", "label", "style"]).sorted()
+            guard unknown.isEmpty else { throw ToolArgumentError("\(key)[\(index)] has unknown keys: \(unknown.joined(separator: ", ")). Allowed keys: id, label, style.") }
             return CardOption(id: try item.requiredString("id"), label: try item.requiredString("label"),
                               style: try item.enumeration("style", as: CardOption.Style.self) ?? .secondary)
         }
@@ -70,10 +72,11 @@ struct ToolArguments {
                 throw ToolArgumentError("attachments[\(index)].target must be \(expected) for kind \(kind.rawValue)")
             }
             if let summary = attachment.summary, summary.count > 400 {
-                throw ToolArgumentError("attachments[\(index)].summary must be at most 400 characters.")
+                throw ToolArgumentError("attachments[\(index)].summary (\(attachment.label)) must be at most 400 characters; it has \(summary.count).")
             }
-            if kind != .url, (attachment.summary?.filter { !$0.isWhitespace }.count ?? 0) < 20 {
-                throw ToolArgumentError(Self.attachmentSummaryGuidance)
+            let count = attachment.summary?.filter { !$0.isWhitespace }.count ?? 0
+            if kind != .url, count < 20 {
+                throw ToolArgumentError("attachments[\(index)].summary (\(attachment.label)) needs at least 20 non-whitespace characters; it has \(count). " + Self.attachmentSummaryGuidance)
             }
             return attachment
         }

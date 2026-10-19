@@ -98,10 +98,15 @@ public enum ZeusMCP {
         let options: JSONValue = ["type": "array", "items": object([
             "id": described(text, "Short stable slug, e.g. yes / later."), "label": text, "style": described(enumeration(CardOption.Style.allCases.map(\.rawValue)), "primary = recommended, destructive = irreversible.")
         ], required: ["id", "label"])]
-        let attachments: JSONValue = ["type": "array", "items": object([
+        let attachment = object([
             "kind": enumeration(Attachment.Kind.allCases.map(\.rawValue)), "label": text, "target": described(text, "file/folder: absolute or ~ path. url: http(s) URL."),
             "summary": ["type": "string", "maxLength": 400, "description": "1–3 sentences saying what's in this attachment and why it matters. Required for files/folders: at least 20 non-whitespace characters. Optional for links. Put the takeaway in the message text too."]
-        ], required: ["kind", "label", "target"])]
+        ], required: ["kind", "label", "target"])
+        var attachmentFields: [String: JSONValue] = [:]
+        if case .object(let fields) = attachment { attachmentFields = fields }
+        attachmentFields["if"] = ["properties": ["kind": ["enum": ["file", "folder"]]], "required": ["kind"]]
+        attachmentFields["then"] = ["required": ["summary"], "properties": ["summary": ["minLength": 20, "pattern": "(?:\\s*\\S){20}"]]]
+        let attachments: JSONValue = ["type": "array", "items": .object(attachmentFields)]
         let progress: JSONValue = ["type": ["number", "null"], "minimum": 0, "maximum": 1]
         let about: JSONValue = ["type": "string", "minLength": 1, "maxLength": 60, "description": "Short plain kind label, e.g. On-call reminder. Keep it stable across similar messages; never relabel to evade a preference."]
         return [

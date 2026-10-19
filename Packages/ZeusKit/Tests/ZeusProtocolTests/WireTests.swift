@@ -100,6 +100,10 @@ import Testing
         #expect(fields["summary"]?["type"] == "string")
         #expect(fields["summary"]?["maxLength"] == 400)
         #expect(item["required"] == ["kind", "label", "target"]) // URL summaries remain optional.
+        #expect(item["if"]?["properties"]?["kind"]?["enum"] == ["file", "folder"])
+        #expect(item["then"]?["required"] == ["summary"])
+        #expect(item["then"]?["properties"]?["summary"]?["minLength"] == 20)
+        #expect(item["then"]?["properties"]?["summary"]?["pattern"] == .string("(?:\\s*\\S){20}"))
     }
     #expect(ZeusMCP.protocolVersion == "2025-06-18")
     #expect(ZeusMCP.capabilities(agent: .claude)["experimental"]?["claude/channel"] == [:])
