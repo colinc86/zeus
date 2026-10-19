@@ -54,7 +54,9 @@ struct JournalViewerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(model.sentOnly ? "Everything Zeus sent your assistant about you. Your assistant's model provider received these like any message." : "Exactly as stored on this Mac, with redactions visible.").settingsCaption()
-            if model.items.isEmpty && model.waiting.isEmpty && model.notSent.isEmpty {
+            if model.isLoading {
+                Text("Loading what Zeus kept…").settingsCaption()
+            } else if model.items.isEmpty && model.waiting.isEmpty && model.notSent.isEmpty {
                 Text(model.emptyCaption).settingsCaption()
             }
             ScrollViewReader { proxy in

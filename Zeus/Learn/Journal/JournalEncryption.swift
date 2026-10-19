@@ -49,6 +49,10 @@ enum LearningStorageError: Error, LocalizedError {
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         let bytes = try Data(contentsOf: url)
         let secret = try key.key()
+        return try decode(type, bytes: bytes, url: url, secret: secret)
+    }
+    /// The same authenticated format is used by synchronous reads and detached snapshot reads.
+    nonisolated static func decode<T: Decodable>(_ type: T.Type, bytes: Data, url: URL, secret: Data) throws -> T {
         guard secret.count == 32 else { throw LearningStorageError.keyUnavailable }
         do {
             let box = try AES.GCM.SealedBox(combined: bytes)
@@ -68,5 +72,5 @@ enum LearningStorageError: Error, LocalizedError {
         try bytes.write(to: url, options: key.requiresProtectedFiles ? [.atomic, .completeFileProtection] : [.atomic])
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
     }
-    private static func identity(_ url: URL) -> Data { Data(("Zeus learning v1/" + url.lastPathComponent).utf8) }
+    nonisolated private static func identity(_ url: URL) -> Data { Data(("Zeus learning v1/" + url.lastPathComponent).utf8) }
 }

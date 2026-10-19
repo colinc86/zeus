@@ -506,6 +506,11 @@ This paragraph is used in the consent sheet and in SETUP.md:
   - "Picture not kept: it looked private" (the model's flag)
   - "Picture deleted after 7 days"
   - "Picture deleted by you"
+  - "Picture missing: Zeus can't find its file." when the file is gone with no stored reason (FX24)
+  - "Picture can't be shown right now." when a read fails transiently; the row and the detail say the same, and an
+    explicit open that fails keeps the error line "Couldn't read this picture. Nothing was deleted." (FX24)
+- While the day's snapshot is still loading, the viewer shows "Loading what Zeus kept…" in place of any empty-state
+  caption, never "Nothing kept on this day." for a day it hasn't read yet (FX24).
 
 **Detail window:** clicking a thumbnail (or Return on a focused row) opens a sheet titled "Picture from 10:12".
 - **Left:** the frame, fitted.
