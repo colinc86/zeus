@@ -66,6 +66,7 @@ import Testing
         try chicago.appendFrame(picture, item: frame); try la.append(description)
         let before = try la.items(matching: .init())
         var notified = false
+        defer { la.onJournalDeletion = nil }
         la.onJournalDeletion = { _ in
             notified = true
             #expect((try? la.frame(id: "frame")) == nil)
