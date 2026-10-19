@@ -56,7 +56,7 @@ struct JournalViewerView: View {
             Text(model.sentOnly ? "Everything Zeus sent your assistant about you. Your assistant's model provider received these like any message." : "Exactly as stored on this Mac, with redactions visible.").settingsCaption()
             if model.isLoading {
                 Text("Loading what Zeus kept…").settingsCaption()
-            } else if model.items.isEmpty && model.waiting.isEmpty && model.notSent.isEmpty {
+            } else if model.error == nil && model.items.isEmpty && model.waiting.isEmpty && model.notSent.isEmpty {
                 Text(model.emptyCaption).settingsCaption()
             }
             ScrollViewReader { proxy in
