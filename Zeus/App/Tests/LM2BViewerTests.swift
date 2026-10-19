@@ -7,7 +7,7 @@ import Testing
     func key() throws -> Data { Data(repeating: 86, count: 32) }
 }
 @MainActor struct LM2BViewerTests {
-    @Test func pairedPictureUsesExactStoredDescriptionAndDeletionUndoIsAtomic() throws {
+    @Test func pairedPictureUsesExactStoredDescriptionAndDeletionUndoIsAtomic() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-picture-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }
         let journal = EncryptedJournalStore(root: root, keyProvider: LM2BPrivateKey()), now = Date()
@@ -20,6 +20,7 @@ import Testing
             payload: .init(.init(description: "Reviewing ‹name›'s changes.", details: ["frame_id": "frame", "window": "Example.swift"])))
         try journal.append(description)
         let viewer = JournalViewerModel(journal: journal, now: now, clock: { now })
+        await viewer.waitForLoad()
         #expect(viewer.items.count == 2); #expect(viewer.timeline.count == 1)
         let picture = try #require(viewer.pictures.rows.first)
         #expect(picture.description == description.payload.value.description)
@@ -28,14 +29,17 @@ import Testing
         viewer.pictures.selectedID = picture.id
         var invalidations = 0; viewer.beforeDelete = { invalidations += 1 }
         viewer.pictures.delete(picture, includingDescription: false)
+        await viewer.waitForLoad()
         #expect(invalidations == 1); #expect(try journal.frame(id: "frame") == nil)
         #expect(viewer.pictures.rows.count == 1)
         #expect(viewer.pictures.rows[0].description == description.payload.value.description)
         #expect(viewer.pictures.caption(viewer.pictures.rows[0]) == "Picture deleted by you")
         viewer.pictures.undoDelete()
+        await viewer.waitForLoad()
         #expect(try journal.frame(id: "frame") == frame)
         #expect(viewer.pictures.deleted == nil)
         viewer.pictures.delete(try #require(viewer.pictures.rows.first), includingDescription: true)
+        await viewer.waitForLoad()
         #expect(viewer.pictures.rows.isEmpty); #expect(viewer.pictures.deleted == nil)
         #expect(try journal.items(matching: .init()).isEmpty)
     }

@@ -4,10 +4,12 @@ import Observation
 import ZeusProtocol
 
 /// Per-day AES-GCM storage. Full-text matching is indexed in memory only; no plaintext index is written.
-@MainActor @Observable final class EncryptedJournalStore: JournalStore, FrameJournalStoring, TypingJournalStoring, LearningStorageRecovering, JournalDeletionObserving, JournalFolderSource {
+@MainActor @Observable final class EncryptedJournalStore: JournalSnapshotProviding, FrameJournalStoring, TypingJournalStoring, LearningStorageRecovering, JournalDeletionObserving, JournalFolderSource {
     @ObservationIgnored var onFolderDeletion: ((Set<String>?) -> Void)?
     @ObservationIgnored var onJournalDeletion: ((Set<String>?) -> Void)?
-    private(set) var revision: UInt64 = 0
+    private(set) var revision: UInt64 = 0 {
+        didSet { snapshotCache = nil; snapshotKey = nil; snapshotStamp = nil }
+    }
     private(set) var lastError: String?
     private(set) var storageWaitingForUnlock = false
     var pendingStorageWrites: Int { pendingEntries.count }
@@ -25,6 +27,22 @@ import ZeusProtocol
     @ObservationIgnored private var typingTopicsPreference = 30
     @ObservationIgnored private var index: [String: String] = [:]
     @ObservationIgnored private var forgetEpoch = UUID()
+    @ObservationIgnored var snapshotRead: @Sendable ([URL], Data) async throws -> [JournalSnapshotPartition] = { urls, secret in
+        try await JournalSnapshotReader.read(urls, secret: secret)
+    }
+    @ObservationIgnored private var snapshotCache: JournalSnapshot?
+    @ObservationIgnored private var snapshotKey: Data?
+    @ObservationIgnored private var snapshotStamp: SnapshotStamp?
+    private struct SnapshotStamp: Equatable {
+        let revision: UInt64
+        let forget: UUID
+        let typing: UUID
+        let words: TypingWordsRetention?
+        let topics: Int
+    }
+    private var currentSnapshotStamp: SnapshotStamp {
+        .init(revision: revision, forget: forgetEpoch, typing: typingForgetEpoch, words: typingWordsPreference, topics: typingTopicsPreference)
+    }
     init(root: URL = ZeusPaths.appSupport.appendingPathComponent("Journal", isDirectory: true),
          keyProvider: any JournalKeyProviding = KeychainJournalKeyProvider(), calendar: Calendar = .current,
          clock: @escaping () -> Date = Date.init) {
@@ -187,6 +205,71 @@ import ZeusProtocol
         guard FileManager.default.fileExists(atPath: root.path) else { return [] }
         return try FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil).filter { $0.pathExtension == "zframe" }
     }
+    /// Transaction recovery and key access precede detached reads. No stale or unscrubbed result is published.
+    func journalSnapshot() async throws -> JournalSnapshot {
+        while true {
+            try Task.checkCancellation()
+            do {
+                let urls = try files()
+                let secret = try keyProvider.key()
+                guard secret.count == 32 else { throw LearningStorageError.keyUnavailable }
+                let stamp = currentSnapshotStamp
+                if let snapshotCache, snapshotStamp == stamp, snapshotKey == secret,
+                   snapshotCache.expiresAt.map({ $0 > retentionClock() }) ?? true {
+                    return snapshotCache
+                }
+                snapshotCache = nil; snapshotKey = nil; snapshotStamp = nil
+                let partitions: [JournalSnapshotPartition]
+                do { partitions = try await snapshotRead(urls, secret) }
+                catch {
+                    try Task.checkCancellation()
+                    if stamp != currentSnapshotStamp { continue }
+                    throw error
+                }
+                try Task.checkCancellation()
+                guard stamp == currentSnapshotStamp else { continue }
+                // A recovered transaction or an unavailable/replaced key must never be bypassed by captured bytes.
+                guard try files() == urls else { continue }
+                guard try keyProvider.key() == secret else { throw LearningStorageError.keyUnavailable }
+                guard stamp == currentSnapshotStamp else { continue }
+                let now = retentionClock()
+                var next: Date?
+                var retained: [JournalItem] = []
+                for partition in partitions {
+                    let kept = try partition.items.compactMap { item -> JournalItem? in
+                        guard item.level == .typed, item.kind == .typedText else { return item }
+                        let topicExpiry = effectiveTopicExpiry(item)
+                        guard topicExpiry > now else { return nil }
+                        next = min(next ?? topicExpiry, topicExpiry)
+                        let value = try applyingTypingRetention(to: item)
+                        if value.payload.value.text != nil {
+                            let expiry = Self.wordsExpiry(value); next = min(next ?? expiry, expiry)
+                        }
+                        return value
+                    }
+                    if kept != partition.items {
+                        // Keep the physical partition and the existing expiry commit semantics. A partial failure
+                        // retains successful revision increments but publishes nothing; a retry reads committed files.
+                        try LearningEncryption.write(kept, to: partition.url, key: keyProvider)
+                        index.removeAll(); revision &+= 1
+                    }
+                    retained += kept
+                }
+                guard next.map({ $0 > retentionClock() }) ?? true else { continue }
+                typingExpiryInitialized = true; scheduleTypingExpiry(next)
+                let value = JournalSnapshot(revision: revision, items: retained, expiresAt: next)
+                snapshotCache = value; snapshotKey = secret; snapshotStamp = currentSnapshotStamp
+                lastError = pendingEntries.isEmpty ? nil : LearningStorageAvailability.waitingMessage
+                return value
+            } catch is CancellationError { throw CancellationError() }
+            catch {
+                snapshotCache = nil; snapshotKey = nil; snapshotStamp = nil
+                lastError = "Zeus couldn't read or save its local journal."
+                throw error
+            }
+        }
+    }
+
     func items(matching query: JournalQuery) throws -> [JournalItem] {
         try perform {
             // Enforce expired words before search/export even if the app slept through its timer or capture is off.

@@ -30,6 +30,7 @@ import ZeusProtocol
         try journal.append(.init(id: "description", time: now, level: .screen, app: "com.example.Editor", kind: .description,
             payload: .init(.init(description: "Reviewing source changes.", details: ["frame_id": "picture", "window": "Example.swift"])) ))
         let viewer = JournalViewerModel(journal: journal, now: now), policies = ObservationSettings(defaults: defaults)
+        await viewer.waitForLoad()
         let learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: root.appendingPathComponent("activity"), source: { RenderActivitySource() }), rules = LM2RulesFake()
         learn.settings.enabled = true
         policies.edit(2) { $0.enabled = true; $0.consented = true }

@@ -31,47 +31,50 @@ import Testing
         let ime = JournalTypingRun(item: run("ime", topic: nil, words: nil, reason: "inputMethod"))
         #expect(ime.topic.isEmpty); #expect(ime.missingWordsCaption.isEmpty)
     }
-    @Test func encryptedViewerSearchMatchesTopicsAndWordsAndDeleteUndoRestoresOneWholeRun() throws {
+    @Test func encryptedViewerSearchMatchesTopicsAndWordsAndDeleteUndoRestoresOneWholeRun() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-typing-viewer-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }
         let store = EncryptedJournalStore(root: root, keyProvider: LM2BPrivateKey(), calendar: calendar, clock: { self.now })
         try store.append(run("a")); try store.append(run("b", offset: 10, topic: "Planning a source change", words: nil))
         let viewer = JournalViewerModel(journal: store, calendar: calendar, now: now)
         viewer.level = 4; viewer.search = "appointment"
+        await viewer.waitForLoad()
         #expect(viewer.items.map(\.id) == ["a"])
         viewer.search = "pasted"; #expect(viewer.items.map(\.id) == ["a"])
         guard case .typing(let group) = try #require(viewer.timeline.first) else { Issue.record("Expected typing group"); return }
         #expect(group.runs.count == 1)
-        viewer.deleteItem(group.runs[0].item); #expect(viewer.items.isEmpty)
-        viewer.undoDelete(); #expect(viewer.items.map(\.id) == ["a"])
+        viewer.deleteItem(group.runs[0].item); await viewer.waitForLoad(); #expect(viewer.items.isEmpty)
+        viewer.undoDelete(); await viewer.waitForLoad(); #expect(viewer.items.map(\.id) == ["a"])
         #expect(viewer.items[0].payload.value.topic == "Replying about an appointment")
         #expect(viewer.items[0].payload.value.text == "hi ‹name› here ‹pasted› thanks")
         viewer.search = ""; #expect(viewer.items.count == 2)
     }
-    @Test func groupDeletionAndUndoOnlyAffectTheSelectedStretches() throws {
+    @Test func groupDeletionAndUndoOnlyAffectTheSelectedStretches() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-typing-group-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }
         let store = EncryptedJournalStore(root: root, keyProvider: LM2BPrivateKey(), calendar: calendar, clock: { self.now })
         try store.append(run("a")); try store.append(run("b", offset: 10)); try store.append(run("other", app: "test.other"))
         let viewer = JournalViewerModel(journal: store, calendar: calendar, now: now)
         #expect(viewer.deleteTyping(ids: ["a", "b"]))
+        await viewer.waitForLoad()
         #expect(viewer.items.map(\.id) == ["other"]); #expect(viewer.deletedTyping?.items.count == 2)
-        viewer.undoDelete(); #expect(Set(viewer.items.map(\.id)) == ["a", "b", "other"])
+        viewer.undoDelete(); await viewer.waitForLoad(); #expect(Set(viewer.items.map(\.id)) == ["a", "b", "other"])
         #expect(viewer.items.allSatisfy { $0.payload.value.topic != nil && $0.payload.value.text != nil })
         #expect(!viewer.deleteTyping(ids: ["a", "missing"]))
         #expect(viewer.items.count == 3); #expect(viewer.error != nil)
     }
-    @Test func deletingAFilteredGroupIncludesItsHiddenStretchesButKeepsOtherAppsAndHours() throws {
+    @Test func deletingAFilteredGroupIncludesItsHiddenStretchesButKeepsOtherAppsAndHours() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-typing-search-delete-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }
         let store = EncryptedJournalStore(root: root, keyProvider: LM2BPrivateKey(), calendar: calendar, clock: { self.now })
         try store.append(run("match")); try store.append(run("hidden", offset: 10, topic: "Planning changes", words: nil))
         try store.append(run("other-app", app: "test.other")); try store.append(run("other-hour", offset: -3600))
         let viewer = JournalViewerModel(journal: store, calendar: calendar, now: now); viewer.search = "appointment"; viewer.app = "test.mail"
+        await viewer.waitForLoad()
         let groups = viewer.timeline.compactMap { if case .typing(let group) = $0 { group } else { nil } }
         let group = try #require(groups.first { $0.runs.contains { $0.id == "match" } })
         #expect(group.runs.count == 1); #expect(group.totalCount == 2); #expect(viewer.deleteTypingGroup(group))
         #expect(Set(try store.items(matching: .init()).map(\.id)) == ["other-app", "other-hour"])
-        viewer.undoDelete(); #expect(try store.items(matching: .init()).count == 4)
+        viewer.undoDelete(); await viewer.waitForLoad(); #expect(try store.items(matching: .init()).count == 4)
     }
 }

@@ -19,10 +19,11 @@ struct JournalSnapshotPartition: Sendable {
 
 /// Reads immutable inputs only; retention, transaction recovery and publication remain store-owned.
 enum JournalSnapshotReader {
-    static func read(_ urls: [URL], secret: Data) async throws -> [JournalSnapshotPartition] {
+    static func read(_ urls: [URL], secret: Data, didRead: @escaping @Sendable (URL) -> Void = { _ in }) async throws -> [JournalSnapshotPartition] {
         let task = Task.detached(priority: .utility) {
             try urls.map { url in
                 try Task.checkCancellation()
+                didRead(url)
                 return JournalSnapshotPartition(url: url,
                     items: try LearningEncryption.decode([JournalItem].self, bytes: Data(contentsOf: url), url: url, secret: secret))
             }

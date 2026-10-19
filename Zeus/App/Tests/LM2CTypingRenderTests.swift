@@ -24,6 +24,7 @@ import ZeusDesign
                     topic: topic, details: ["words_not_kept": "setting"]))))
         }
         let viewer = JournalViewerModel(journal: store, now: now); viewer.level = 4
+        await viewer.waitForLoad()
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         for theme in ZeusThemeLibrary.load(userDirectory: nil).themes {
             settings.setTheme(id: theme.id)
