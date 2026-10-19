@@ -102,7 +102,8 @@ import Synchronization
         #expect(shadow.status == .shadow)
         try store.recordOutcome(.accepted, ruleIDs: [shadow.id], at: Date())
         #expect(store.rules.last?.status == .shadow)
-        _ = try store.markShadowShown(id: shadow.id)
+        try store.recordAction(.init(id: "first-shadow", ruleID: shadow.id, sessionKey: "fixture", text: "posted a recap",
+                                    undo: nil, created: Date(), kind: .shadow))
         try store.setStatus(.active, id: shadow.id, at: Date())
         #expect(store.rules.last?.status == .active)
         let own = try store.addOwn(.init(sentence: "My rule", kind: .acts), at: Date())

@@ -99,7 +99,9 @@ def main():
                 assert len(state['cards']) == 1 and tools.count('zeus_present') == 1, state
                 assert "yesterday's summary" not in state['deliveries'][-1]['content'], state
             else:
-                assert sorted(a['kind'] for a in state['ruleActions']) == ['acted', 'shadow'], state
+                seed = [a for a in state['ruleActions'] if a['id'] == 'first-shadow']
+                assert len(seed) == 1 and seed[0]['kind'] == 'shadow' and seed[0]['state'] == 'approved', state
+                assert sorted(a['kind'] for a in state['ruleActions'] if a['id'] != 'first-shadow') == ['acted', 'shadow'], state
                 assert not state['cards'], state
                 assert tools.count('zeus_rule_acted') == 1 and tools.count('zeus_rule_shadow') == 1
             assert all(d['attempts'] == 1 for d in state['deliveries']), state

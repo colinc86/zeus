@@ -109,7 +109,8 @@ import ZeusProtocol
         let rule = try #require(f.rules.propose([.init(sentence: "Prepare the test recap", trigger: .init(state: "ready"), kind: .acts)], at: f.clock.now).first)
         f.box.context.states = ["ready"]; f.runtime.learningContextDidChange()
         let queued = try #require(f.runtime.ledger?.records.first { $0.delivery.kind == .ruleTrigger })
-        _ = try f.rules.markShadowShown(id: rule.id)
+        try f.rules.recordAction(.init(id: "first-shadow", ruleID: rule.id, sessionKey: "fixture", text: "prepared a test recap",
+                                      undo: nil, created: f.clock.now, kind: .shadow))
         try f.rules.setStatus(.active, id: rule.id, at: f.clock.now)
         f.runtime.learningContextDidChange()
         #expect(f.runtime.ledger?.record(id: queued.delivery.id)?.discardedAt != nil)
@@ -122,7 +123,8 @@ import ZeusProtocol
     @Test func actedToolAcceptsOpenWindowAndRefusesAfterItCloses() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
         let rule = try #require(f.rules.propose([.init(sentence: "Prepare the test recap", trigger: .init(state: "ready"), kind: .acts)], at: f.clock.now).first)
-        _ = try f.rules.markShadowShown(id: rule.id)
+        try f.rules.recordAction(.init(id: "first-shadow", ruleID: rule.id, sessionKey: "fixture", text: "prepared a test recap",
+                                      undo: nil, created: f.clock.now, kind: .shadow))
         try f.rules.setStatus(.active, id: rule.id, at: f.clock.now)
         f.box.context.states = ["ready"]; f.runtime.learningContextDidChange()
         let args: JSONValue = ["ruleID": .string(rule.id), "did": "Prepared a synthetic recap", "undo": "Discard the recap"]

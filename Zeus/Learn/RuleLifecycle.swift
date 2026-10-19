@@ -122,3 +122,12 @@ extension PersistentRulesStore {
         try commit(next)
     }
 }
+
+extension RuleActionRecord {
+    /// Standing approval requires a real pending dry run; purchases always use their own question.
+    func isEligibleShadowResult(for rule: LearnedRule) -> Bool {
+        rule.status == .shadow && rule.kind == .acts && rule.trigger.kind != "spend"
+            && ruleID == rule.id && kind == .shadow && amount == nil && approvalCardID == nil
+            && (state == .pending || state == .ignored)
+    }
+}

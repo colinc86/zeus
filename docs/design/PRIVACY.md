@@ -275,7 +275,7 @@ Each section is a `settingsTitle` with a count. Empty sections are hidden, excep
 | Section | Holds | Row extras |
 |---|---|---|
 | "Active" | status active | toggle (on) |
-| "Waiting for your OK" | shadow | "Seen once: would have <outcome>" caption (fallback when there is no outcome text: "Seen once. Zeus didn't act."), buttons "OK" and "Not This" |
+| "Waiting for your OK" | shadow | "Seen once: would have <outcome>" caption once a real dry run exists; before one: "Waiting for its first try. Zeus hasn't seen this rule run yet." Buttons "OK" and "Not This"; **OK is disabled until the rule has a real pending or ignored dry run** (tooltip "Available after the first try"), so a standing OK never comes from nothing (FX22). A **spending rule** shows "Every purchase asks you first; there's no standing OK." and has no OK button at all: each purchase asks with its own card. |
 | "Suggested" | proposed | buttons "Turn On" and "Dismiss" |
 | "Retired" (collapsed by default, "Show 3 retired") | retired | "Retired <date>: you skipped it often" or "…turned off", and "Turn Back On" |
 

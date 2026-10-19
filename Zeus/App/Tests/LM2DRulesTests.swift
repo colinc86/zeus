@@ -38,9 +38,9 @@ import Testing
         store.outcomeEvents.append(.init(id: "foreign", ruleID: "other", at: now.addingTimeInterval(99), outcome: .accepted, source: .explicit, delta: 0.1))
         #expect(model.outcomes(for: rule).map(\.outcome) == [.stale, .ignored, .skipped, .undone, .accepted])
         #expect(model.outcomes(for: rule).allSatisfy { !RulesPaneModel.outcomeLabel($0.outcome).isEmpty })
-        #expect(model.shadowCaption(rule) == "Seen once. Zeus didn't act.")
+        #expect(model.shadowCaption(rule) == "Every purchase asks you first; there's no standing OK.")
         try store.recordAction(.init(id: "shadow", ruleID: rule.id, sessionKey: "synthetic", text: "would have bought coffee for €14", undo: nil, created: now, kind: .shadow))
-        #expect(model.shadowCaption(rule) == "Seen once: would have bought coffee for €14")
+        #expect(model.shadowCaption(rule) == "Every purchase asks you first; there's no standing OK.")
         model.selectedRuleID = rule.id
         let revision = model.selectionRevision
         model.selectedRuleID = rule.id
