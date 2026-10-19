@@ -87,6 +87,15 @@ import ZeusProtocol
         #expect(defaultFrom.structured?["from"] == .string(yesterday.ISO8601Format()))
     }
 
+    @Test func fractionalRangeErrorSuggestsAnActuallyAllowedStart() async throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        let to = "2026-10-14T18:15:00.125Z"
+        let error = await f.runtime.callTool("zeus_get_journal", arguments: ["from": "2026-10-01T00:00:00Z", "to": .string(to)], sessionKey: session)
+        #expect(error.isError && error.text.contains("whole-second from is 2026-10-07T18:15:01Z"))
+        let retry = await f.runtime.callTool("zeus_get_journal", arguments: ["from": "2026-10-07T18:15:01Z", "to": .string(to)], sessionKey: session)
+        #expect(!retry.isError)
+    }
+
     @Test func misspelledNestedOptionKeyCannotSilentlyLoseDestructiveStyle() async throws {
         let f = try RuntimeFixture(); defer { f.stop() }
         let result = await f.call("zeus_ask", ["text": "Delete the draft?", "wait_seconds": 0,

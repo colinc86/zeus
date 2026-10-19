@@ -25,7 +25,10 @@ extension ZeusRuntime: LearningJournalAccessControlling {
         guard from <= to else { throw ToolArgumentError("from must not be later than to.") }
         guard from >= earliest else {
             let format = ISO8601DateFormatter(); format.timeZone = learningCalendar.timeZone
-            throw ToolArgumentError("Use at most 7 local calendar days. With this to, the earliest allowed from is \(format.string(from: earliest)).")
+            // Round the suggested whole-second retry forward, never outside the allowed range.
+            let retryStart = Date(timeIntervalSince1970: earliest.timeIntervalSince1970.rounded(.up))
+            let precision = retryStart == earliest ? "" : "whole-second "
+            throw ToolArgumentError("Use at most 7 local calendar days. With this to, the earliest allowed \(precision)from is \(format.string(from: retryStart)).")
         }
         let limit = try args.number("limit") ?? 20
         guard limit.rounded() == limit, (1...50).contains(limit) else { throw ToolArgumentError("limit must be a whole number from 1 to 50.") }
