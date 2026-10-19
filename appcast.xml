@@ -6,6 +6,41 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.3.5</title>
+      <pubDate>Mon, 19 Oct 2026 02:44:18 GMT</pubDate>
+      <sparkle:version>28</sparkle:version>
+      <sparkle:shortVersionString>0.3.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<h2 dir="auto">Steadier, lighter and more careful with your data</h2>
+<h3 dir="auto">Fixes</h3>
+<ul dir="auto">
+<li><strong>Deleting really deletes, wherever you are.</strong> If you changed time zones, for example while traveling, deleting a typing record or screen picture in What Zeus Kept could say it succeeded while leaving it on disk. Zeus now removes it from the day it was actually saved in.</li>
+<li><strong>What Zeus Kept stays fast.</strong> With weeks of history, every search keystroke or day change could freeze Zeus for half a second. The window now reads your history once, in the background, and searches it instantly.</li>
+<li><strong>Honest picture states.</strong> A screen picture that can't be read for a moment shows as unavailable, never as "deleted by you", and comes back once it can be read.</li>
+<li><strong>Rules waiting for a first try.</strong> A new rule that hasn't run yet no longer shows an OK button that does nothing. Pressing OK repeatedly no longer counts as approving it.</li>
+<li><strong>Hide Until Tomorrow means tomorrow morning.</strong> Zeus comes back at the start of your day, 08:00 or when your quiet hours end, instead of at midnight.</li>
+<li><strong>Zeus keeps its place on your desk.</strong> Unplugging a display no longer moves Zeus's spot for good. It returns to where you put it when the display is back.</li>
+<li><strong>Morning briefs keep their time across clock changes.</strong></li>
+<li><strong>Less energy at rest.</strong> Zeus uses less CPU when idle and checks your assistant's Terminal more efficiently.</li>
+<li><strong>Clearer answers for your assistant.</strong>
+<ul dir="auto">
+<li>A second purchase request now gets a clear "another purchase is waiting" answer.</li>
+<li>A week of history across the end of daylight saving time works.</li>
+<li>Attachment mistakes are named precisely.</li>
+</ul>
+</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.3.5/Zeus-0.3.5.zip" type="application/octet-stream" sparkle:edSignature="yEAhl1D8ri/u1XzXhWj7Z8geva7dXGi1gjLNRpf/D/c5K3Fh9ltRGkTy1sHU8KuUT6kgy86vvY/Bhsp8aKrnCQ==" length="15036100"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.3.4</title>
       <pubDate>Sun, 18 Oct 2026 22:48:44 GMT</pubDate>
       <sparkle:version>27</sparkle:version>
