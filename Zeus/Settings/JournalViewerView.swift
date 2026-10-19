@@ -118,10 +118,10 @@ struct JournalViewerView: View {
                     KeyboardButton("Show Day in Finder", action: model.showDayInFinder)
                         .disabled(model.dayFolderURL == nil).accessibilityLabel("Show this journal day in Finder")
                     KeyboardButton("Delete This Day…") { requestDelete(.day(model.day), "Delete everything Zeus kept on \(model.day.formatted(date: .abbreviated, time: .omitted))? This can't be undone.") }
-                        .accessibilityLabel("Delete this journal day")
+                        .accessibilityLabel("Delete this journal day").disabled(model.isLoading)
                     if !model.app.isEmpty {
                         KeyboardButton("Delete \(JournalDisplay.appName(model.app))…") { requestDelete(.app(model.app), "Delete everything Zeus kept from \(JournalDisplay.appName(model.app)), on every day? This can't be undone.") }
-                            .accessibilityLabel("Delete this app's journal")
+                            .accessibilityLabel("Delete this app's journal").disabled(model.isLoading)
                     }
                 }
                 KeyboardButton("Export…", action: export).accessibilityLabel("Export journal selection").disabled(model.items.isEmpty)

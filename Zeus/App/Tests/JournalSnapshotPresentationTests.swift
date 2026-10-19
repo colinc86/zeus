@@ -73,11 +73,13 @@ import Testing
         try await Self.layout(host)
         #expect(Self.labels(host).contains("Loading what Zeus kept…"))
         #expect(!Self.labels(host).contains("Nothing kept on this day."))
+        #expect(Self.states(host).contains { $0.0 == "Delete this journal day" && !$0.1 })
         try Self.render(host, "loading-" + (dark ? "dark" : "light"))
         model.search = "Synthetic"; source.finish(); await model.waitForLoad()
         try await Self.layout(host)
         #expect(!Self.labels(host).contains("Loading what Zeus kept…"))
         #expect(model.items.count == 1 && source.scans == 1)
+        #expect(Self.states(host).contains { $0.0 == "Delete this journal day" && $0.1 })
 
         let pictures = PictureRecoveryJournal()
         pictures.records = [.init(id: "unavailable", time: now, level: .screen, kind: .frame,
@@ -99,21 +101,24 @@ import Testing
     private static func layout(_ host: NSView) async throws {
         for _ in 0..<4 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
     }
-    private static func labels(_ root: NSObject) -> [String] {
+    private static func labels(_ root: NSObject) -> [String] { states(root).map { $0.0 } }
+    private static func states(_ root: NSObject) -> [(String, Bool)] {
         var seen: Set<ObjectIdentifier> = []
-        func walk(_ node: NSObject, depth: Int) -> [String] {
+        func walk(_ node: NSObject, depth: Int) -> [(String, Bool)] {
             guard depth < 64, seen.count < 2048, seen.insert(ObjectIdentifier(node)).inserted else { return [] }
-            let label: String?, value: String?, children: [Any]
+            let label: String?, value: String?, enabled: Bool, children: [Any]
             if let node = node as? any NSAccessibilityProtocol {
+                enabled = node.isAccessibilityEnabled()
                 label = node.accessibilityLabel(); value = node.accessibilityValue() as? String; children = node.accessibilityChildren() ?? []
             } else {
                 let l = NSSelectorFromString("accessibilityLabel"), c = NSSelectorFromString("accessibilityChildren")
                 let v = NSSelectorFromString("accessibilityValue")
+                enabled = true
                 label = node.responds(to: l) ? node.perform(l)?.takeUnretainedValue() as? String : nil
                 value = node.responds(to: v) ? node.perform(v)?.takeUnretainedValue() as? String : nil
                 children = node.responds(to: c) ? node.perform(c)?.takeUnretainedValue() as? [Any] ?? [] : []
             }
-            return [label, value].compactMap { $0 } + children.compactMap { $0 as? NSObject }.flatMap { walk($0, depth: depth + 1) }
+            return [label, value].compactMap { $0 }.map { ($0, enabled) } + children.compactMap { $0 as? NSObject }.flatMap { walk($0, depth: depth + 1) }
         }
         return walk(root, depth: 0)
     }
