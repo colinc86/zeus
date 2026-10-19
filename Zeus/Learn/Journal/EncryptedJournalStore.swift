@@ -216,7 +216,6 @@ import ZeusProtocol
                 let stamp = currentSnapshotStamp
                 if let snapshotCache, snapshotStamp == stamp, snapshotKey == secret,
                    snapshotCache.expiresAt.map({ $0 > retentionClock() }) ?? true {
-                    lastError = pendingEntries.isEmpty ? nil : LearningStorageAvailability.waitingMessage
                     return snapshotCache
                 }
                 snapshotCache = nil; snapshotKey = nil; snapshotStamp = nil
