@@ -47,7 +47,7 @@ import ZeusProtocol
 }
 
 @MainActor private final class A12Fixture {
-    let suite = "zeus-a12-\(UUID())"
+    let suite = TestDefaults.suite("zeus-a12")
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-a12-\(UUID())")
     let defaults: UserDefaults
     let settings: AppSettings

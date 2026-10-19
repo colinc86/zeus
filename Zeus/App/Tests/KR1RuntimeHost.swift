@@ -17,7 +17,7 @@ import ZeusProtocol
                 guard CommandLine.arguments.count == 2 else { throw CocoaError(.fileReadInvalidFileName) }
                 let root = URL(fileURLWithPath: CommandLine.arguments[1]).resolvingSymlinksInPath()
                 guard root.path.contains("/zkr1_"), URL(fileURLWithPath: NSHomeDirectory()).resolvingSymlinksInPath() == root else { throw CocoaError(.fileReadNoPermission) }
-                guard let defaults = UserDefaults(suiteName: "zeus-kr1-live") else { throw CocoaError(.fileReadUnknown) }
+                guard let defaults = UserDefaults(suiteName: root.appendingPathComponent("Library/Preferences/zeus-kr1-live").path) else { throw CocoaError(.fileReadUnknown) }
                 let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: KR1Credentials())
                 settings.hasShownWelcome = true
                 // Avoid competing with the human's running Zeus/default shortcut.

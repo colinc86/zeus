@@ -8,7 +8,7 @@ import ZeusSprites
 @MainActor
 struct AppSettingsTests {
     @Test func fontScaleDefaultsPersistsAndRecoversUnknownValues() throws {
-        let suite = "zeus-font-scale-\(UUID())"
+        let suite = TestDefaults.suite("zeus-font-scale")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         #expect(AppSettings(defaults: defaults, userDirectory: nil).fontScale == .default)
@@ -23,7 +23,7 @@ struct AppSettingsTests {
     }
 
     @Test func settingsPersistCharacterSizeAndRoutingAndRejectUnknownCharacters() throws {
-        let suite = "zeus-settings-tests-\(UUID())"
+        let suite = TestDefaults.suite("zeus-settings-tests")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         defaults.set("missing", forKey: "character.id")
@@ -53,7 +53,7 @@ struct AppSettingsTests {
     }
 
     @Test func quietHoursCoverOvernightDaytimeAndBoundaries() throws {
-        let suite = "zeus-quiet-tests-\(UUID())"
+        let suite = TestDefaults.suite("zeus-quiet-tests")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)

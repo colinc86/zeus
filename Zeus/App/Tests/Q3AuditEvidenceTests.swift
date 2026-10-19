@@ -19,7 +19,7 @@ import ZeusProtocol
 
 @MainActor private final class Q3Fixture {
     let root: URL
-    let suite = "zeus-q3-\(UUID())"
+    let suite = TestDefaults.suite("zeus-q3")
     let defaults: UserDefaults
     let clock = TestClock()
     let settings: AppSettings

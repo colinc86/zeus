@@ -35,7 +35,7 @@ import ZeusDesign
     }
     @Test(arguments: [ZeusFontChoice.pixel, .system])
     func serverURLLabelRemainsVisibleWhenTheFieldIsFilled(font: ZeusFontChoice) throws {
-        let suite = "zeus-server-field-label-\(UUID())"
+        let suite = TestDefaults.suite("zeus-server-field-label")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: NoFieldCredentials())
         settings.openCodeURLText = ""
@@ -52,7 +52,7 @@ import ZeusDesign
 
     @Test(arguments: [ZeusFontChoice.pixel, .system], [false, true])
     func paneFieldKeepsZeusChromeForBothFontsAndConnectionStates(font: ZeusFontChoice, connected: Bool) throws {
-        let suite = "zeus-pane-field-style-\(UUID())"
+        let suite = TestDefaults.suite("zeus-pane-field-style")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: NoFieldCredentials())
         let socket = connected ? "/tmp/unused-field-\(UUID()).sock" : nil

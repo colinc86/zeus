@@ -96,7 +96,7 @@ struct IdlePerformanceTests {
 
     @Test func conversationHostUnmountsWithoutLosingDraftOrThread() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-conversation-host-\(UUID())")
-        let name = "zeus-conversation-host-\(UUID())"
+        let name = TestDefaults.suite("zeus-conversation-host")
         let defaults = try #require(UserDefaults(suiteName: name))
         defer { try? FileManager.default.removeItem(at: root); defaults.removePersistentDomain(forName: name) }
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json"))
@@ -120,7 +120,7 @@ struct IdlePerformanceTests {
 
     @Test func idleTicksDoNotPublishPresentationActivityOrVisibility() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-idle-\(UUID())")
-        let name = "zeus-idle-\(UUID())"
+        let name = TestDefaults.suite("zeus-idle")
         let defaults = try #require(UserDefaults(suiteName: name))
         defer { try? FileManager.default.removeItem(at: root); defaults.removePersistentDomain(forName: name) }
         let clock = TestClock()
@@ -150,7 +150,7 @@ struct IdlePerformanceTests {
         let now = Date(timeIntervalSince1970: 1000)
         #expect(LifecycleDeadline.earliest(after: now, candidates: [nil, now, now.addingTimeInterval(-1)]) == nil)
         #expect(LifecycleDeadline.earliest(after: now, candidates: [now.addingTimeInterval(30), now.addingTimeInterval(3)]) == now.addingTimeInterval(3))
-        let name = "zeus-deadline-\(UUID())"
+        let name = TestDefaults.suite("zeus-deadline")
         let defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let clock = TestClock()
@@ -181,7 +181,7 @@ struct IdlePerformanceTests {
     }
 
     @Test func quietDeadlinesFollowLocalCalendarAndDisabledOrAllDayHasNoClock() throws {
-        let name = "zeus-quiet-deadline-\(UUID())"
+        let name = TestDefaults.suite("zeus-quiet-deadline")
         let defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)

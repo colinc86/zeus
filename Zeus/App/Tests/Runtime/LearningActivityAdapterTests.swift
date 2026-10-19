@@ -48,7 +48,7 @@ private actor PausedLearningRedactor: Redactor {
     }
     @Test func disableOrDeletionDuringRedactionCannotAppend() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("lm2_l1_" + UUID().uuidString)
-        let suite = "lm2-l1-" + UUID().uuidString
+        let suite = TestDefaults.suite("lm2-l1")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { try? FileManager.default.removeItem(at: root); defaults.removePersistentDomain(forName: suite) }
         let settings = LearnSettings(defaults: defaults); settings.enabled = true

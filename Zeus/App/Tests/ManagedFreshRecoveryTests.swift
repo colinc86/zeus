@@ -7,7 +7,7 @@ import ZeusProtocol
 @MainActor struct ManagedFreshRecoveryTests {
     @Test(arguments: [ManagedSessionStatus.stopped, .failed(reason: "Raw missing ID"), .restarting(at: .distantFuture)])
     func missingConversationOffersFreshRecoveryAndNeverPromisesAResume(state: ManagedSessionStatus) throws {
-        let suite = "zeus-fresh-recovery-\(UUID())"
+        let suite = TestDefaults.suite("zeus-fresh-recovery")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         settings.managedSession = .init(enabled: true, folder: "/fixture", agent: .codex, launchPrompt: "Fixture", startWhenZeusOpens: false)
@@ -36,7 +36,7 @@ import ZeusProtocol
     }
 
     @Test func menuRecoveryPresentsTheConfirmationAndWaitsForItsApproval() throws {
-        let suite = "zeus-menu-fresh-recovery-\(UUID())"
+        let suite = TestDefaults.suite("zeus-menu-fresh-recovery")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-menu-fresh-recovery-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }

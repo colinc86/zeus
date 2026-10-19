@@ -10,7 +10,7 @@ import ZeusDesign
 // back. Isolated defaults and history; no global shortcut, runtime or real panels beyond the test host's.
 
 @MainActor private final class OneMenuFixture {
-    let suite = "zeus-one-menu-\(UUID())"
+    let suite = TestDefaults.suite("zeus-one-menu")
     let defaults: UserDefaults
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-one-menu-\(UUID())")
     let settings: AppSettings

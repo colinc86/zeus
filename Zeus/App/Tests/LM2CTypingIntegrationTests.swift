@@ -22,9 +22,9 @@ import Testing
 }
 @MainActor struct LM2CTypingIntegrationTests {
     @Test func consentPermissionPrivateInputAndRevocationUseTheCoreFacts() throws {
-        let name = "zeus-typing-adapter-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-typing-adapter"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let policies = ObservationSettings(defaults: defaults), learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)
         let fake = AppTypingObserverFake(), source = LM2FocusSource()
@@ -43,9 +43,9 @@ import Testing
         model.privacy.setEnabled(false); #expect(fake.stops > 0); #expect(fake.requests == 1)
     }
     @Test func pauseExpiresWithoutLevelOneAndSafariRequiresExplicitChoice() async throws {
-        let name = "zeus-typing-pause-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-typing-pause"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         var now = Date(timeIntervalSince1970: 1_800_000_000); let deadline = now.addingTimeInterval(300)
         let policies = ObservationSettings(defaults: defaults), learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil, clock: { now })
@@ -69,9 +69,9 @@ import Testing
         #expect(!model.privacy.policy.allows(bundleID: "com.apple.Safari", name: "Safari", privateApps: learn.settings.excludedApps))
     }
     @Test func privateInputOnlyAddsADisabledMenuLineWithoutTouchingCardsOrAvatar() throws {
-        let name = "zeus-typing-menu-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-typing-menu"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         let shell = ShellController(defaults: defaults, cards: CardStore(fileURL: root.appendingPathComponent("cards.json")), settings: settings)
@@ -88,9 +88,9 @@ import Testing
         source.isSecure = false; #expect(!shell.menuModel.outline.contains(line + " (disabled)"))
     }
     @Test func selectedTopicRetentionAndWordsSplitReachTheEncryptedStoreEvenWhenCaptureIsOff() async throws {
-        let name = "zeus-typing-retention-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-typing-retention"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let now = Date(), store = EncryptedJournalStore(root: root, keyProvider: LM2BPrivateKey(), clock: { now })
         for (id, age) in [("old", 45.0), ("week", 8.0), ("today", 0.1)] {
@@ -115,9 +115,9 @@ import Testing
         #expect(learning.viewer?.items.allSatisfy { $0.payload.value.text == nil } == true)
     }
     @Test func returningFromSystemSettingsRefreshesModelAvailabilityWhileTypingIsOff() throws {
-        let name = "zeus-typing-availability-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-typing-availability"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         var available = false
         let observer = AppTypingObserverFake()

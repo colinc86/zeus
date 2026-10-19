@@ -20,7 +20,7 @@ import Testing
 
 @MainActor struct LF1AppTests {
     @Test func coveringDefaultsOnRequiresConfirmationAndPersistsOnlyAfterConfirming() throws {
-        let name = "lf1-cover-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("lf1-cover"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let settings = LearnSettings(defaults: defaults)
         let model = ScreenPrivacyModel(policies: ObservationSettings(defaults: defaults), privacy: settings)
@@ -67,9 +67,9 @@ import Testing
         fake.dayFolder = nil; folder.show(item); model.showDayInFinder(); #expect(revealed == [url, dayURL, dayURL])
     }
     @Test func shellSharesConcreteWriterAndSuppliesLiveConsentPolicyWithoutStartingIt() throws {
-        let name = "lf1-wiring-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("lf1-wiring"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let journal = LM2JournalFake(), rules = LM2RulesFake(), redactor = LocalRedactor(useOnDeviceModel: false)
         let writer = LearningFolderWriter(journal: journal, rules: rules, stateURL: root.appendingPathComponent("state.json"), enabledLevels: { [] }, redactor: redactor)
@@ -92,7 +92,7 @@ import Testing
         #expect(!FileManager.default.fileExists(atPath: own.appendingPathComponent("Zeus").path))
     }
     @Test func deleteEverythingDefaultsToKeepingNotesAndPassesExplicitChoiceAfterJournalErasure() throws {
-        let name = "lf1-delete-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("lf1-delete"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)
         let model = LearningPresentation(defaults: defaults, learn: learn)

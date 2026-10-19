@@ -42,7 +42,7 @@ import ZeusProtocol
 
 @MainActor private struct SettingsApplyFixture {
     let defaults: UserDefaults
-    let suite = "zeus-s3-ui-\(UUID())"
+    let suite = TestDefaults.suite("zeus-s3-ui")
     let settings: AppSettings
     let controller: SettingsApplyController
     let model: ManagedAssistantModel

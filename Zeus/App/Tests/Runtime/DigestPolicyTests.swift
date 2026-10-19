@@ -5,7 +5,7 @@ import ZeusProtocol
 
 @MainActor private final class DigestPolicyFixture {
     let root = URL(fileURLWithPath: "/tmp/fx20_" + UUID().uuidString.prefix(8))
-    let suite = "zeus-digest-policy-" + UUID().uuidString
+    let suite = TestDefaults.suite("zeus-digest-policy")
     let defaults: UserDefaults
     let clock = TestRuntimeClock()
     let journal: EncryptedJournalStore
@@ -153,7 +153,7 @@ import ZeusProtocol
 
 @Suite @MainActor struct OutboundPolicyTests {
     @Test func briefAndReflectionFilterScopeAndInvalidateQueuedSnapshots() async throws {
-        let suite = "zeus-outbound-policy-" + UUID().uuidString
+        let suite = TestDefaults.suite("zeus-outbound-policy")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = MorningBriefSettings(defaults: defaults); settings.enabled = false

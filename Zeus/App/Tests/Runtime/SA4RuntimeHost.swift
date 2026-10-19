@@ -41,7 +41,7 @@ private struct SA4Runner: ProcessRunning {
         let tmux = URL(fileURLWithPath: CommandLine.arguments[4]), environment = ProcessInfo.processInfo.environment
         guard environment["HOME"] == root.appendingPathComponent("home").path, root.path.contains("/zsa4_") else { throw ConnectorError.invalidURL }
         let socket = root.appendingPathComponent("bridge.sock").path
-        let domain = "zeus.sa4." + UUID().uuidString
+        let domain = root.appendingPathComponent("home/Library/Preferences/zeus.sa4." + UUID().uuidString).path
         guard let defaults = UserDefaults(suiteName: domain) else { throw ConnectorError.invalidURL }
         defer { defaults.removePersistentDomain(forName: domain) }
         let routing = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: SA4NoPassword())

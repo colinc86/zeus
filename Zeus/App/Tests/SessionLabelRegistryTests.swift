@@ -9,7 +9,7 @@ import ZeusProtocol
               supportsChannel: false, tmuxPane: nil, connectedAt: Date(timeIntervalSince1970: Double(pid)))
     }
     @Test func ordinalsSurviveDisconnectReloadAndReconnectWithoutRenamingHistory() throws {
-        let suite = "zeus-label-registry-\(UUID())"
+        let suite = TestDefaults.suite("zeus-label-registry")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)

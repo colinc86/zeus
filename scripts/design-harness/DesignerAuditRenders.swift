@@ -150,7 +150,7 @@ import ZeusSprites
 @MainActor private final class Fixture {
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-q2-\(UUID())")
     let defaults: UserDefaults
-    let suite = "zeus-q2-\(UUID())"
+    let suite = TestDefaults.suite("zeus-q2")
     let store: CardStore
     let settings: AppSettings
     let messaging = AuditMessaging()
@@ -464,7 +464,7 @@ private let t0 = Date(timeIntervalSince1970: 1_791_100_000) // a fixed afternoon
         defer { try? FileManager.default.removeItem(at: folder) }
         try Data("{\n  \"id\": \"blob\"\n  \"name\": \"Blob\"\n}".utf8).write(to: folder.appendingPathComponent("Blob.json"))
         for look in Snap.Look.basic {
-            let suite = "zeus-c1-render-\(UUID())"
+            let suite = TestDefaults.suite("zeus-c1-render")
             let defaults = UserDefaults(suiteName: suite) ?? .standard
             defer { defaults.removePersistentDomain(forName: suite) }
             let settings = AppSettings(defaults: defaults, userDirectory: folder)

@@ -5,14 +5,14 @@ import ZeusProtocol
 
 @Suite @MainActor struct PA1ProactiveTests {
     private func settings() throws -> (MorningBriefSettings, UserDefaults, String) {
-        let name = "pa1-" + UUID().uuidString
+        let name = TestDefaults.suite("pa1")
         let defaults = try #require(UserDefaults(suiteName: name))
         let settings = MorningBriefSettings(defaults: defaults)
         settings.enabled = true
         return (settings, defaults, name)
     }
     @Test func defaultIsManagedOnlyAndTimeClampsPersist() throws {
-        let name = "pa1-" + UUID().uuidString
+        let name = TestDefaults.suite("pa1")
         let defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let value = MorningBriefSettings(defaults: defaults)

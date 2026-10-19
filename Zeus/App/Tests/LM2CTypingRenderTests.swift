@@ -9,9 +9,9 @@ import ZeusDesign
     @Test(.enabled(if: ProcessInfo.processInfo.environment["TEST_RUNNER_LM2C_RENDER"] == "1" || ProcessInfo.processInfo.environment["LM2C_RENDER"] == "1"))
     func allThemesAndSystemAppearances() async throws {
         ZeusFonts.registerBundled()
-        let name = "zeus-typing-renders-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-typing-renders"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let now = Date(), store = EncryptedJournalStore(root: root, keyProvider: LM2BPrivateKey())
         let policies = ObservationSettings(defaults: defaults), privacy = LearnSettings(defaults: defaults)

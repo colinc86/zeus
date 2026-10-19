@@ -22,15 +22,18 @@ enum PerformanceProbe {
 
     /// Even an invalid requested probe constructs only fixture dependencies, then exits at startup.
     static func makeShell(environment: [String: String] = ProcessInfo.processInfo.environment) -> ShellController {
-        let domain = "test.zeus.performance." + UUID().uuidString
+        let name = "test.zeus.performance." + UUID().uuidString
+        let home = (try? validatedHome(environment))
+            ?? FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        // An absolute-path suite keeps the plist in the disposable home; cfprefsd ignores HOME.
+        let domain = home.appendingPathComponent("Library/Preferences/" + name).path
         guard let defaults = UserDefaults(suiteName: domain) else { preconditionFailure("Cannot create probe defaults") }
         defaultsDomain = domain
-        let home = (try? validatedHome(environment))
-            ?? FileManager.default.temporaryDirectory.appendingPathComponent(domain)
         let preferences = home.appendingPathComponent("Library/Preferences/com.colinc86.Zeus.plist")
         if let data = try? Data(contentsOf: preferences),
            let values = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] {
-            defaults.setPersistentDomain(values, forName: domain)
+            // Not setPersistentDomain: on a path domain removeObject can't clear what it seeds.
+            for (key, value) in values { defaults.set(value, forKey: key) }
         }
         // Capture permissions and live workspace content are outside a performance fixture.
         defaults.set(false, forKey: "learn.enabled")

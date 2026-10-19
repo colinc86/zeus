@@ -74,7 +74,7 @@ private struct LM4Runner: ProcessRunning {
         let routing = LM4Routing(), cards = LM4Cards(), learnings = LM4Learnings()
         let proactive = CommandLine.arguments.count > 5 && CommandLine.arguments[5].hasPrefix("pa1-")
         let proactiveClock = LM4Clock(), context = PA1Context()
-        let defaultsName = "pa1-live-" + UUID().uuidString
+        let defaultsName = root.appendingPathComponent("home/Library/Preferences/pa1-live-" + UUID().uuidString).path
         guard let defaults = UserDefaults(suiteName: defaultsName) else { throw ManagedSessionError.invalidFolder }
         defer { defaults.removePersistentDomain(forName: defaultsName) }
         let briefSettings = MorningBriefSettings(defaults: defaults)

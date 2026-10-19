@@ -39,7 +39,7 @@ import ZeusProtocol
 }
 
 @MainActor private final class LiveManagedFixture {
-    let suite = "zeus-live-managed-\(UUID())"
+    let suite = TestDefaults.suite("zeus-live-managed")
     let defaults: UserDefaults
     let root: URL
     let settings: AppSettings

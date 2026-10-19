@@ -5,7 +5,7 @@ import ZeusProtocol
 
 @MainActor struct DeliveryRecoveryIntegrationTests {
     private func fixture() throws -> (String, UserDefaults, AppSettings, TruthManagedController, ManagedAssistantModel) {
-        let suite = "zeus-delivery-recovery-\(UUID())"
+        let suite = TestDefaults.suite("zeus-delivery-recovery")
         let defaults = try #require(UserDefaults(suiteName: suite))
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         settings.managedSession = .init(enabled: true, folder: "/fixture", agent: .claude, launchPrompt: "Fixture", startWhenZeusOpens: false)

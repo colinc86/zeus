@@ -42,9 +42,9 @@ import ZeusProtocol
 
 @MainActor struct SafeRestartPresentationTests {
     private func withShell(_ body: (ShellController, RestartPresentationController) throws -> Void) throws {
-        let name = "zeus-fx17-" + UUID().uuidString
+        let name = TestDefaults.suite("zeus-fx17")
         let defaults = try #require(UserDefaults(suiteName: name))
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { defaults.removePersistentDomain(forName: name); try? FileManager.default.removeItem(at: root) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: RestartCredentials())
         var config = AppSettings.newManagedSession(); config.folder = root.path
@@ -116,7 +116,7 @@ import ZeusProtocol
     @Test(.enabled(if: ProcessInfo.processInfo.environment["FX17_RENDER"] == "1" || ProcessInfo.processInfo.environment["TEST_RUNNER_FX17_RENDER"] == "1"))
     func restartSettingsRenders() async throws {
         ZeusFonts.registerBundled()
-        let name = "zeus-fx17-render-" + UUID().uuidString
+        let name = TestDefaults.suite("zeus-fx17-render")
         let defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: RestartCredentials())

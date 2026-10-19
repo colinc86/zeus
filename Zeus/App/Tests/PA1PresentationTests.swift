@@ -20,7 +20,7 @@ import ZeusProtocol
         return (host, window)
     }
     @Test func morningBriefCheckboxUsesModeDefaultAndPersistsAnExplicitChoice() async throws {
-        let suite = "pa1-ui-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("pa1-ui"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = MorningBriefSettings(defaults: defaults)
         #expect(settings.effectiveEnabled(managed: true) && !settings.effectiveEnabled(managed: false))
@@ -52,8 +52,8 @@ import ZeusProtocol
     }
     @Test(.enabled(if: ProcessInfo.processInfo.environment["TEST_RUNNER_PA1_RENDER"] == "1" || ProcessInfo.processInfo.environment["PA1_RENDER"] == "1"))
     func proactiveFixtures() async throws {
-        let suite = "pa1-renders-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let suite = TestDefaults.suite("pa1-renders"), defaults = try #require(UserDefaults(suiteName: suite))
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         defer { defaults.removePersistentDomain(forName: suite); try? FileManager.default.removeItem(at: root) }
         let settings = MorningBriefSettings(defaults: defaults)
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json")), fake = FB1RatingsFake()

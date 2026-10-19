@@ -15,7 +15,7 @@ import Testing
 
 @MainActor struct LM2FocusTests {
     @Test func hardStopsRunBeforeAXAndUnknownAppsFailClosed() async throws {
-        let suite = "zeus-focus-test-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-focus-test"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = ObservationSettings(defaults: defaults), source = LM2FocusSource()
         var privateApps: [ExcludedApp] = [], commits = 0
@@ -33,7 +33,7 @@ import Testing
     }
 
     @Test func dedupAndPrivateBrowserNeverReachRedactor() async throws {
-        let suite = "zeus-focus-test-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-focus-test"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = ObservationSettings(defaults: defaults), source = LM2FocusSource()
         settings.edit(2) { $0.enabled = true; $0.consented = true }
@@ -51,7 +51,7 @@ import Testing
 
     @Test func disablingLockingDeletingOrSwitchingWhileModelRunsCannotCommit() async throws {
         for change in 0..<4 {
-            let suite = "zeus-focus-test-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+            let suite = TestDefaults.suite("zeus-focus-test"), defaults = try #require(UserDefaults(suiteName: suite))
             defer { defaults.removePersistentDomain(forName: suite) }
             let settings = ObservationSettings(defaults: defaults), source = LM2FocusSource()
             settings.edit(2) { $0.enabled = true; $0.consented = true }
@@ -77,7 +77,7 @@ import Testing
     }
 
     @Test func writeFailureRetriesAndDoesNotExposeUnderlyingContent() async throws {
-        let suite = "zeus-focus-test-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-focus-test"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = ObservationSettings(defaults: defaults), source = LM2FocusSource()
         settings.edit(2) { $0.enabled = true; $0.consented = true }

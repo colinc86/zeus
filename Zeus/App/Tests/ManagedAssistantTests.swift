@@ -42,7 +42,7 @@ private final class ManagedUIController: ManagedSessionControlling, ManagedTermi
     let controller: ManagedUIController
     let model: ManagedAssistantModel
     init(status: ManagedSessionStatus = .off, installed: Set<AgentKind> = [.claude, .codex, .opencode]) throws {
-        suite = "zeus-managed-ui-\(UUID())"
+        suite = TestDefaults.suite("zeus-managed-ui")
         defaults = try #require(UserDefaults(suiteName: suite))
         settings = AppSettings(defaults: defaults, userDirectory: nil)
         controller = ManagedUIController()
@@ -120,7 +120,7 @@ private final class ManagedUIController: ManagedSessionControlling, ManagedTermi
     @Test func adoptionUsesTheNativeConversationInsteadOfPendingPreferencesWhenLaunchMetadataIsMissing() async throws {
         let f = try ManagedFixture(); defer { f.cleanup() }
         f.controller.activate(); try await f.settle(); f.controller.shutdown()
-        let suite = "zeus-adopted-ui-\(UUID())"
+        let suite = TestDefaults.suite("zeus-adopted-ui")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         var pending = AppSettings.newManagedSession(); pending.agent = .codex; pending.folder = "/new/folder"

@@ -44,7 +44,7 @@ import ZeusProtocol
 
 @MainActor private struct UpdateUIFixture {
     let root: URL
-    let suite = "zeus-up1-\(UUID())"
+    let suite = TestDefaults.suite("zeus-up1")
     let defaults: UserDefaults
     let settings: AppSettings
     let controller = UpdateUIController()

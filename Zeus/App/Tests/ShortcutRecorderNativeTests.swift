@@ -28,7 +28,7 @@ import ZeusDesign
 
     private func exercise(evidence: Bool) async throws {
         _ = NSApplication.shared
-        let suite = "zeus-kr1-native-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-kr1-native"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: ShortcutNoCredentials())
         let registration = ShortcutNativeRegistration(), hotKey = GlobalHotKey()

@@ -10,7 +10,7 @@ import ZeusDesign
               clientName: nil, supportsChannel: channel, tmuxPane: nil, connectedAt: Date())
     }
     @Test func autoNamesTheOlderDirectSessionEvenWhileANewerOneIsExplicitlySelected() throws {
-        let suite = "zeus-auto-copy-\(UUID())"
+        let suite = TestDefaults.suite("zeus-auto-copy")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         let newest = session(.claude, "/fixture/new"), direct = session(.claude, "/fixture/old", true)
@@ -26,7 +26,7 @@ import ZeusDesign
     }
     @Test(arguments: [AgentKind.codex, .opencode])
     func autoUsesTheChosenAgentAndShowsItsNewestFolder(agent: AgentKind) throws {
-        let suite = "zeus-auto-backend-\(UUID())"
+        let suite = TestDefaults.suite("zeus-auto-backend")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         settings.backend = try #require(AssistantBackend(rawValue: agent.rawValue))
@@ -37,7 +37,7 @@ import ZeusDesign
         #expect(AssistantSessionPicker.autoTitle(settings: settings, sessions: []) == "Auto")
     }
     @Test func manualUnmappedOpenCodeFolderRepresentativeDoesNotChangeTheAutoPreview() throws {
-        let suite = "zeus-auto-folder-\(UUID())"
+        let suite = TestDefaults.suite("zeus-auto-folder")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil); settings.backend = .opencode
         let newest = session(.opencode, "/shared")

@@ -37,9 +37,9 @@ import ZeusSprites
     /// The avatar window is exactly the canvas: the whole badge must land inside it, its trailing edge on the corner.
     @Test(arguments: ["ghost", "zeus", "bat"])
     func unreadBadgeDrawsWholeInsideTheAvatarWindow(_ id: String) async throws {
-        let suite = "zeus-badge-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-badge"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json"))
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
@@ -154,7 +154,7 @@ import ZeusSprites
             var file = source; file["id"] = id; file["name"] = name
             try JSONSerialization.data(withJSONObject: file).write(to: root.appendingPathComponent(id + ".json"))
         }
-        let suite = "zeus-character-menu-\(UUID())"
+        let suite = TestDefaults.suite("zeus-character-menu")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: root)

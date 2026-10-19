@@ -5,9 +5,9 @@ import ZeusProtocol
 
 @MainActor struct LM2BContextReceiptTests {
     @Test func queuedIntentSurvivesRestartAndOnlyReceiptCreatesExactDeduplicatedLedger() throws {
-        let name = "zeus-context-ledger-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-context-ledger"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let file = root.appendingPathComponent("cards.json"), journal = LM2JournalFake()
         let learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)
@@ -66,7 +66,7 @@ import ZeusProtocol
         #expect(cards.contextIntents.isEmpty); #expect(CardStore(fileURL: file).contextIntents.isEmpty)
     }
     @Test func eraseBoundaryPreventsAnOldPendingReceiptFromRestoringDeletedJournal() throws {
-        let name = "zeus-context-erase-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-context-erase"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let journal = LM2JournalFake(), learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)
         let presentation = LearningPresentation(defaults: defaults, learn: learn)

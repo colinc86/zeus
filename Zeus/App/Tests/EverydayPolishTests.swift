@@ -7,7 +7,7 @@ import ZeusProtocol
 @MainActor
 struct EverydayPolishTests {
     private func defaults() throws -> (String, UserDefaults) {
-        let name = "zeus-polish-tests-\(UUID())"
+        let name = TestDefaults.suite("zeus-polish-tests")
         return (name, try #require(UserDefaults(suiteName: name)))
     }
 

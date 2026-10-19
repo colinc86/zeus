@@ -169,7 +169,7 @@ import ZeusDesign
 
     @Test func shellUsesTheHubForRuleThreeBAndANewPreviewCardEndsThePreview() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-shell-activity-\(UUID())")
-        let name = "zeus-shell-activity-\(UUID())"
+        let name = TestDefaults.suite("zeus-shell-activity")
         let defaults = try #require(UserDefaults(suiteName: name))
         defer { try? FileManager.default.removeItem(at: root); defaults.removePersistentDomain(forName: name) }
         defaults.set(true, forKey: "avatar.manuallyHidden")

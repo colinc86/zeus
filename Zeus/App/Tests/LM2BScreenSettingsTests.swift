@@ -4,7 +4,7 @@ import Testing
 
 @MainActor struct LM2BScreenSettingsTests {
     private func fixture() throws -> (String, UserDefaults, ObservationSettings, ScreenPrivacyModel) {
-        let name = "zeus-screen-settings-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-screen-settings"), defaults = try #require(UserDefaults(suiteName: name))
         let settings = ObservationSettings(defaults: defaults)
         return (name, defaults, settings, ScreenPrivacyModel(policies: settings, privacy: LearnSettings(defaults: defaults)))
     }

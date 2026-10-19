@@ -4,7 +4,7 @@ import Testing
 
 @MainActor struct LM2CTypingSettingsTests {
     private func fixture() throws -> (String, UserDefaults, ObservationSettings, TypingPrivacyModel) {
-        let name = "zeus-typing-ui-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-typing-ui"), defaults = try #require(UserDefaults(suiteName: name))
         let policies = ObservationSettings(defaults: defaults)
         return (name, defaults, policies, TypingPrivacyModel(policies: policies, privacy: LearnSettings(defaults: defaults)))
     }

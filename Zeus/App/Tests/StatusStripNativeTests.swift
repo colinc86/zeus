@@ -20,7 +20,7 @@ import ZeusProtocol
     func sendUserMessage(_ text: String) async -> MessageSendResult { .delivered }
 }
 @MainActor private final class StripNativeFixture {
-    let suite = "zeus-tb1-native-\(UUID())"
+    let suite = TestDefaults.suite("zeus-tb1-native")
     let root: URL, defaults: UserDefaults, settings: AppSettings, cards: CardStore, model: ConversationModel
     let transport = StripTransport(), panel = ConversationPanelState(), activity = SurfaceActivity()
     let window: StripPanel
@@ -28,7 +28,7 @@ import ZeusProtocol
     init() throws {
         _ = ZeusFonts.registerBundled()
         defaults = try #require(UserDefaults(suiteName: suite))
-        root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: StripPasswords())
         settings.fontChoice = .system; settings.typewriterEnabled = false
         cards = CardStore(fileURL: root.appendingPathComponent("cards.json"))

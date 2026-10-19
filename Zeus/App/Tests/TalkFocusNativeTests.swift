@@ -19,7 +19,7 @@ import ZeusProtocol
 /// Real editor + ConversationView, entirely offscreen and never key; no posted input or screen capture.
 @Suite(.serialized) @MainActor struct TalkFocusNativeTests {
     @Test func nativeComposerAfterTalkProducesAMessageInsteadOfAHistoricalAnswer() async throws {
-        let suite = "zeus-talk-native-\(UUID())"
+        let suite = TestDefaults.suite("zeus-talk-native")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-talk-native-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }

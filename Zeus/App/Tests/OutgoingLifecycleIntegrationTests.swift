@@ -6,7 +6,7 @@ import ZeusProtocol
 
 @MainActor private final class OutgoingUIFixture {
     let root = URL(fileURLWithPath: "/tmp/zuiout_" + UUID().uuidString.prefix(8))
-    let suite = "zeus-outgoing-ui-\(UUID())"
+    let suite = TestDefaults.suite("zeus-outgoing-ui")
     let defaults: UserDefaults
     let settings: AppSettings
     let clock = TestRuntimeClock()

@@ -19,9 +19,9 @@ import ZeusProtocol
     @Test(arguments: [ZeusFontChoice.system, .pixel], [ZeusFontScale.default, .larger])
     func fieldGrowsToItsLineCapAndReturnsToEmptyHeightAfterSend(font: ZeusFontChoice, scale: ZeusFontScale) async throws {
         #expect(ZeusFonts.registerBundled())
-        let suite = "zeus-composer-growth-\(UUID())"
+        let suite = TestDefaults.suite("zeus-composer-growth")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         settings.fontChoice = font; settings.fontScale = scale; settings.typewriterEnabled = false

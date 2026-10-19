@@ -24,9 +24,9 @@ import ZeusDesign
         #expect(DocumentKeyboard.command(keyCode: 3, characters: "f", modifiers: []) == nil)
     }
     @Test func nativePanelKeyDispatchBackFindOpenAndRevealUseDocumentTargets() async throws {
-        let suite = "zeus-dv1-keys-\(UUID())"
+        let suite = TestDefaults.suite("zeus-dv1-keys")
         let defaults = try #require(UserDefaults(suiteName: suite))
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let url = root.appendingPathComponent("keys.txt"); try "Find this passage".write(to: url, atomically: true, encoding: .utf8)
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: DocumentNoCredentials())

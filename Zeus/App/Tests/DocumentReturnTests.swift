@@ -21,7 +21,7 @@ import ZeusProtocol
 @MainActor private final class DV2Fixture {
     let root: URL
     let defaults: UserDefaults
-    let suite = "zeus-dv2-\(UUID())"
+    let suite = TestDefaults.suite("zeus-dv2")
     let cards: CardStore
     let settings: AppSettings
     let messaging = DV2Messaging()
@@ -34,7 +34,7 @@ import ZeusProtocol
     let second: ZeusProtocol.Attachment
     let sourceID: String
     init(index: Int, count: Int = 430) throws {
-        root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defaults = try #require(UserDefaults(suiteName: suite))
         settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: DV2Passwords())

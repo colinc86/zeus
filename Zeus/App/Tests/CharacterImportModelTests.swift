@@ -7,7 +7,7 @@ import ZeusSprites
 // folder and UserDefaults suite; nothing touches the user's real folder.
 
 @MainActor private final class CharacterFixture {
-    let suite = "zeus-c1-\(UUID())"
+    let suite = TestDefaults.suite("zeus-c1")
     let defaults: UserDefaults
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-c1-\(UUID())/Characters", isDirectory: true)
     let source = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-c1-src-\(UUID())", isDirectory: true)

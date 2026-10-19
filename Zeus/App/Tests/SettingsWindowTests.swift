@@ -30,7 +30,7 @@ import ZeusDesign
 /// Native Settings layout and AX actions, wholly offscreen with isolated defaults/history.
 @Suite(.serialized) @MainActor struct SettingsWindowTests {
     @Test func sizePersistsAcrossPreferenceInstances() throws {
-        let suite = "zeus-a11-\(UUID())"
+        let suite = TestDefaults.suite("zeus-a11")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         #expect(SettingsWindowSize.read(from: defaults) == CGSize(width: 572, height: 572))
@@ -42,7 +42,7 @@ import ZeusDesign
     }
 
     @Test func invalidAndOffscreenSizesClampToTheMinimumAndScreenOnThePixelGrid() throws {
-        let suite = "zeus-a11-\(UUID())"
+        let suite = TestDefaults.suite("zeus-a11")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         for size in [CGSize(width: -20, height: 20), CGSize(width: CGFloat.nan, height: CGFloat.infinity)] {
@@ -61,7 +61,7 @@ import ZeusDesign
     }
 
     @Test func nativeWindowRestoresResizableContentAndGeneralJumpsScrollToTheirSections() async throws {
-        let suite = "zeus-a11-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-a11"), defaults = try #require(UserDefaults(suiteName: suite))
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-a11-\(UUID())")
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: A11NoCredentials())
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json"))

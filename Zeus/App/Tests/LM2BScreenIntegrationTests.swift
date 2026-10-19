@@ -22,9 +22,9 @@ import Testing
 }
 @MainActor struct LM2BScreenIntegrationTests {
     @Test func coveringChoiceReachesCapturePolicyOnlyAfterConfirmationAndInvalidatesPendingFrames() throws {
-        let name = "lf1-screen-policy-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("lf1-screen-policy"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let policies = ObservationSettings(defaults: defaults), learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)
         let fake = AppScreenObserverFake()
@@ -42,9 +42,9 @@ import Testing
     }
 
     @Test func productionAdapterStartsOnlyAfterConsentAndMapsPermissionAndHardStops() throws {
-        let name = "zeus-screen-adapter-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-screen-adapter"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let policies = ObservationSettings(defaults: defaults), source = LM2FocusSource()
         let learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)
@@ -63,9 +63,9 @@ import Testing
         model.privacy.setEnabled(false); #expect(fake.stops > 0); #expect(fake.requests == 1)
     }
     @Test func pauseDeadlineRestartsWithoutAnyLevelOneTimerOrPreferenceEdit() async throws {
-        let name = "zeus-screen-deadline-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-screen-deadline"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         var now = Date(timeIntervalSince1970: 1_800_000_000)
         let deadline = now.addingTimeInterval(600)
@@ -90,9 +90,9 @@ import Testing
         #expect(model.browserPrivacy(.init(bundleID: "unclassified.browser", processID: 42, windowID: 1)) == .unknown)
     }
     @Test func adapterNeverUsesDormantAllowListAsDenyListAndL3KeepsOwnRetention() throws {
-        let name = "zeus-screen-policy-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-screen-policy"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let policies = ObservationSettings(defaults: defaults), source = LM2FocusSource()
         let learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)

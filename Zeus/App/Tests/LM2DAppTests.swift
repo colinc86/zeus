@@ -4,7 +4,7 @@ import Testing
 
 @MainActor struct LM2DAppTests {
     @Test func rawConsentIsIndependentCancelSafeDurableAndRevocable() throws {
-        let name = "zeus-depth-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-depth"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let settings = ObservationSettings(defaults: defaults)
         let consent = RawJournalConsentModel(settings: settings, level: .screen)
@@ -18,7 +18,7 @@ import Testing
         settings.setRawAllowed(true, level: 2); #expect(!settings.rawAllowed(2))
     }
     @Test func journalPolicyFollowsEnabledConsentedLevelsWithoutRetiredRawGrant() throws {
-        let name = "zeus-depth-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-depth"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)
         let model = LearningPresentation(defaults: defaults, learn: learn)

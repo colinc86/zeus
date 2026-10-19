@@ -59,7 +59,7 @@ import ZeusProtocol
     }
 
     @Test func openCodeValidationRejectsCredentialsAndMatchesConnectorAvailability() throws {
-        let suite = "zeus-url-credentials-\(UUID())"
+        let suite = TestDefaults.suite("zeus-url-credentials")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)

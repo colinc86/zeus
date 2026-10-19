@@ -85,7 +85,7 @@ import ZeusProtocol
     }
 
     @Test func newlyPreparedBriefSupersedesYesterdayBeforePolicyErasure() throws {
-        let name = "fx11-" + UUID().uuidString
+        let name = TestDefaults.suite("fx11")
         let defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let settings = MorningBriefSettings(defaults: defaults); settings.enabled = true

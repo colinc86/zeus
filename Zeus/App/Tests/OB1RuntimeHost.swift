@@ -33,7 +33,7 @@ private struct OB1PrivateRunner: ProcessRunning {
               URL(fileURLWithPath: NSHomeDirectory()).resolvingSymlinksInPath() == root.appendingPathComponent("home").resolvingSymlinksInPath() else {
             throw ManagedSessionError.command("OB1 refused a non-private HOME")
         }
-        guard let defaults = UserDefaults(suiteName: "zeus-ob1-" + root.lastPathComponent) else { throw ManagedSessionError.invalidState }
+        guard let defaults = UserDefaults(suiteName: root.appendingPathComponent("home/Library/Preferences/zeus-ob1-" + root.lastPathComponent).path) else { throw ManagedSessionError.invalidState }
         let settings = AppSettings(defaults: defaults, userDirectory: root.appendingPathComponent("home/Library/Application Support/Zeus/Characters"), passwordStore: OB1NoCredentials())
         // The private host uses scoped native actions, never the human's global shortcut.
         settings.talkHotKey.enabled = false

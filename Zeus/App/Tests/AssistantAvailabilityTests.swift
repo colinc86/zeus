@@ -38,7 +38,7 @@ import ZeusProtocol
 }
 
 @MainActor private final class AvailabilityFixture {
-    let suite = "zeus-availability-\(UUID())"
+    let suite = TestDefaults.suite("zeus-availability")
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-availability-\(UUID())")
     let defaults: UserDefaults
     let settings: AppSettings

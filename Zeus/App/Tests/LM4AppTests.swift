@@ -54,7 +54,7 @@ import ZeusProtocol
 
 @MainActor final class LM4Fixture {
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-lm4-\(UUID())")
-    let suite = "zeus-lm4-\(UUID())"
+    let suite = TestDefaults.suite("zeus-lm4")
     let defaults: UserDefaults
     let controller = LM4Controller()
     let cards: CardStore

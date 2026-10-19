@@ -10,9 +10,9 @@ import ZeusProtocol
 }
 @MainActor struct OB1OnboardingTests {
     @Test func freshManagedLaunchShowsExactlyTheD19WelcomeAndKeepsItsModeOnRelaunch() throws {
-        let suite = "zeus-ob1-welcome-\(UUID())"
+        let suite = TestDefaults.suite("zeus-ob1-welcome")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: OB1TestCredentials())
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json"))
@@ -24,9 +24,9 @@ import ZeusProtocol
         #expect(!WelcomeCard.installForLaunch(cards: cards, settings: restored, isHidden: false) && cards.cards.count == 1)
     }
     @Test func failedHistorySaveDoesNotConsumeTheWelcome() throws {
-        let suite = "zeus-ob1-save-\(UUID())"
+        let suite = TestDefaults.suite("zeus-ob1-save")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
         let blocker = root.appendingPathComponent("not-a-directory"); try Data().write(to: blocker)
@@ -51,7 +51,7 @@ extension OB1OnboardingTests {
 
 extension OB1OnboardingTests {
     @Test func stoppedManagedAssistantIsOffWithoutMislabelingConnectedOrRetainedOwnSessions() throws {
-        let suite = "zeus-ob1-off-\(UUID())"
+        let suite = TestDefaults.suite("zeus-ob1-off")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: OB1TestCredentials())
         settings.managedLaunchedConfig = settings.managedSession
@@ -75,9 +75,9 @@ extension OB1OnboardingTests {
 extension OB1OnboardingTests {
     @Test func freshShellStartupShowsOnlyTheQuietWelcome() throws {
         _ = NSApplication.shared
-        let suite = "zeus-ob1-shell-\(UUID())"
+        let suite = TestDefaults.suite("zeus-ob1-shell")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: OB1TestCredentials())
         // This regression exercises onboarding, without competing for the human's real global shortcut.

@@ -22,7 +22,7 @@ import ZeusProtocol
 
 @MainActor struct R3aSettingsTests {
     private func defaults() throws -> (String, UserDefaults) {
-        let name = "zeus-r3a-settings-\(UUID())"
+        let name = TestDefaults.suite("zeus-r3a-settings")
         return (name, try #require(UserDefaults(suiteName: name)))
     }
     @Test func managedOnboardingPersistsModeBeforeTheDurableWelcomeMarker() throws {

@@ -27,16 +27,18 @@ import ZeusProtocol
         return URL(fileURLWithPath: home, isDirectory: true)
     }
 
-    /// A fresh domain and explicit file URLs avoid cfprefsd and Foundation home fallbacks.
+    /// A fresh absolute-path domain and explicit file URLs keep everything in the disposable home;
+    /// cfprefsd ignores HOME, so a plain domain name would land in the real ~/Library/Preferences.
     static func makeShell() -> ShellController {
         let name = "test.zeus.composer." + UUID().uuidString
-        guard let defaults = UserDefaults(suiteName: name) else { preconditionFailure("Couldn't create isolated probe defaults") }
-        defaultsDomain = name
+        let home = (try? validatedHome(ProcessInfo.processInfo.environment))
+            ?? FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let domain = home.appendingPathComponent("Library/Preferences/" + name).path
+        guard let defaults = UserDefaults(suiteName: domain) else { preconditionFailure("Couldn't create isolated probe defaults") }
+        defaultsDomain = domain
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: NoCredentials())
         settings.managedSession = AppSettings.newManagedSession(enabled: false)
         settings.hasShownWelcome = true
-        let home = (try? validatedHome(ProcessInfo.processInfo.environment))
-            ?? FileManager.default.temporaryDirectory.appendingPathComponent(name)
         return ShellController(defaults: defaults, cards: CardStore(fileURL: home.appendingPathComponent("cards.json")), settings: settings)
     }
 

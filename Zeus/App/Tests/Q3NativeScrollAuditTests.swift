@@ -25,7 +25,7 @@ import ZeusProtocol
 /// never activated, and no keyboard/mouse input or screen capture is used.
 @MainActor private final class Q3ScrollHarness {
     let root: URL
-    let suite = "zeus-q3-scroll-\(UUID())"
+    let suite = TestDefaults.suite("zeus-q3-scroll")
     let defaults: UserDefaults
     let cards: CardStore
     let settings: AppSettings
