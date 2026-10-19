@@ -132,8 +132,7 @@ import ZeusProtocol
             let rows = try all()
             let before = rows.filter { ($0.id == id && $0.kind == .frame) || ($0.kind == .description && $0.payload.value.details["frame_id"] == id) }
             guard let first = before.first, includingDescription || before.contains(where: { $0.id == id && $0.kind == .frame }) else { throw FrameJournalError.notFound }
-            let url = file(first.time)
-            guard before.allSatisfy({ file($0.time) == url }) else { throw LearningStorageError.invalidItem }
+            let locations = try partitions(for: Set(before.map(\.id)))
             let image = try frame(id: id)
             var after: [JournalItem] = []
             if !includingDescription {
@@ -153,26 +152,25 @@ import ZeusProtocol
                                    payload: .init(.init(description: "Picture deleted by you", details: details)))]
                 }
             }
-            let ids = Set(before.map(\.id)); let day = try read(url)
-            try LearningEncryption.write(day.filter { !ids.contains($0.id) } + after, to: url, key: keyProvider)
-            // The atomic day rewrite is the commit marker. A failed unlink leaves only unreachable encrypted bytes,
+            let ids = Set(before.map(\.id))
+            try replace(ids: ids, with: after, partitions: locations)
+            // The atomic metadata transaction is the commit marker. A failed unlink leaves only unreachable encrypted bytes,
             // reclaimed by prune/Delete Everything, never a readable picture or a half-deleted description pair.
             try? FileManager.default.removeItem(at: frameFile(id))
             index.removeAll(); revision &+= 1
             reportDeletion(ids.subtracting(Set(after.map(\.id))))
-            return .init(frameID: id, epoch: forgetEpoch, frame: image, before: before, after: after)
+            return .init(frameID: id, epoch: forgetEpoch, frame: image, before: before, after: after, partitions: locations)
         }
     }
     func restoreFrame(_ receipt: FrameDeletionReceipt) throws {
         try perform {
             guard receipt.epoch == forgetEpoch else { throw FrameJournalError.conflict }
-            guard let first = receipt.before.first, receipt.before.allSatisfy({ file($0.time) == file(first.time) }) else { throw LearningStorageError.invalidItem }
+            guard !receipt.before.isEmpty else { throw LearningStorageError.invalidItem }
             let ids = Set((receipt.before + receipt.after).map(\.id)), rows = try all()
             let current = rows.filter { ids.contains($0.id) }.sorted { $0.id < $1.id }
             guard current == receipt.after.sorted(by: { $0.id < $1.id }) else { throw FrameJournalError.conflict }
-            let url = file(first.time)
             if let image = receipt.frame { try LearningEncryption.write(image, to: frameFile(receipt.frameID), key: keyProvider) }
-            do { try LearningEncryption.write(try read(url).filter { !ids.contains($0.id) } + receipt.before, to: url, key: keyProvider) }
+            do { try replace(ids: ids, with: receipt.before, partitions: receipt.partitions) }
             catch { if receipt.frame != nil { try? FileManager.default.removeItem(at: frameFile(receipt.frameID)) }; throw error }
             index.removeAll(); revision &+= 1
         }
@@ -231,7 +229,8 @@ import ZeusProtocol
             }
             if case .all = selection {
                 // Forget works even with an unavailable key or damaged ciphertext.
-                for url in try files() + frameFiles() { try FileManager.default.removeItem(at: url); revision &+= 1 }
+                if FileManager.default.fileExists(atPath: transactionFile.path) { try FileManager.default.removeItem(at: transactionFile) }
+                for url in try physicalFiles() + frameFiles() { try FileManager.default.removeItem(at: url); revision &+= 1 }
                 index.removeAll(); typingExpiryTask?.cancel(); typingExpiryTask = nil
                 nextTypingExpiry = nil; typingExpiryInitialized = true
                 reportDeletion(nil); return
@@ -306,24 +305,23 @@ import ZeusProtocol
         try perform {
             try expireTypingWords(now: retentionClock())
             let selected = try all().filter { ids.contains($0.id) && $0.level == .typed && $0.kind == .typedText }
-            guard !ids.isEmpty, selected.count == ids.count, let first = selected.first else { throw TypingJournalError.notFound }
-            let url = file(first.time)
-            guard selected.allSatisfy({ file($0.time) == url }) else { throw TypingJournalError.conflict }
-            try LearningEncryption.write(try read(url).filter { !ids.contains($0.id) }, to: url, key: keyProvider)
+            guard !ids.isEmpty, selected.count == ids.count else { throw TypingJournalError.notFound }
+            let locations = try partitions(for: ids)
+            try replace(ids: ids, with: [], partitions: locations)
             index.removeAll(); revision &+= 1
             reportDeletion(ids)
-            return .init(epoch: typingForgetEpoch, items: selected)
+            return .init(epoch: typingForgetEpoch, items: selected, partitions: locations)
         }
     }
     func restoreTyping(_ receipt: TypingDeletionReceipt) throws {
         try perform {
-            guard receipt.epoch == typingForgetEpoch, let first = receipt.items.first else { throw TypingJournalError.conflict }
-            let ids = Set(receipt.items.map(\.id)), url = file(first.time), now = retentionClock()
-            guard ids.count == receipt.items.count, receipt.items.allSatisfy({ $0.level == .typed && $0.kind == .typedText && file($0.time) == url }),
+            guard receipt.epoch == typingForgetEpoch, !receipt.items.isEmpty else { throw TypingJournalError.conflict }
+            let ids = Set(receipt.items.map(\.id)), now = retentionClock()
+            guard ids.count == receipt.items.count, receipt.items.allSatisfy({ $0.level == .typed && $0.kind == .typedText }),
                   try !all().contains(where: { ids.contains($0.id) }) else { throw TypingJournalError.conflict }
             guard receipt.items.allSatisfy({ Self.topicExpiry($0) > now }) else { throw TypingJournalError.expired }
             let restored = try receipt.items.map { try applyingTypingRetention(to: $0) }
-            try LearningEncryption.write(try read(url) + restored, to: url, key: keyProvider)
+            try replace(ids: ids, with: restored, partitions: receipt.partitions)
             index.removeAll(); revision &+= 1; typingExpiryInitialized = false
         }
     }
@@ -442,6 +440,49 @@ import ZeusProtocol
             try removeOrphanFrames()
         }
     }
+    private var transactionFile: URL { root.appendingPathComponent("pending.ztransaction") }
+    private func partitionURL(_ name: String) throws -> URL {
+        guard name.range(of: #"^\d{4}-\d{2}-\d{2}\.zjournal$"#, options: .regularExpression) != nil else {
+            throw LearningStorageError.corrupt
+        }
+        return root.appendingPathComponent(name)
+    }
+    /// Replay a committed multi-file replacement before any reader or subsequent mutation can see partial state.
+    private func finishTransaction() throws {
+        guard let changes = try LearningEncryption.read([String: [JournalItem]].self, at: transactionFile, key: keyProvider) else { return }
+        let targets = try changes.sorted { $0.key < $1.key }.map { (try partitionURL($0.key), $0.value) }
+        for (url, rows) in targets { try LearningEncryption.write(rows, to: url, key: keyProvider) }
+        try FileManager.default.removeItem(at: transactionFile)
+    }
+    private func partitions(for ids: Set<String>) throws -> [String: String] {
+        var result: [String: String] = [:]
+        for url in try files() {
+            for item in try read(url) where ids.contains(item.id) { result[item.id] = url.lastPathComponent }
+        }
+        return result
+    }
+    /// The encrypted transaction file is the atomic commit point. It contains no plaintext staging data.
+    private func replace(ids: Set<String>, with replacements: [JournalItem], partitions locations: [String: String]) throws {
+        var changes: [String: [JournalItem]] = [:]
+        for url in try files() {
+            let rows = try read(url), kept = rows.filter { !ids.contains($0.id) }
+            if kept != rows { changes[url.lastPathComponent] = kept }
+        }
+        for item in replacements {
+            let name = locations[item.id] ?? file(item.time).lastPathComponent
+            let url = try partitionURL(name)
+            if changes[name] == nil { changes[name] = try read(url) }
+            changes[name, default: []].append(item)
+        }
+        guard !changes.isEmpty else { return }
+        if changes.count == 1, let (name, rows) = changes.first {
+            try LearningEncryption.write(rows, to: partitionURL(name), key: keyProvider)
+        } else {
+            try LearningEncryption.write(changes, to: transactionFile, key: keyProvider)
+            // The transaction is committed even if checkpointing is interrupted. Reads fail closed until replay succeeds.
+            try? finishTransaction()
+        }
+    }
     private func file(_ date: Date) -> URL {
         let c = calendar.dateComponents([.year, .month, .day], from: date)
         return root.appendingPathComponent(String(format: "%04d-%02d-%02d.zjournal", c.year ?? 0, c.month ?? 0, c.day ?? 0))
@@ -460,12 +501,17 @@ import ZeusProtocol
         return try read(file(day))
     }
     private func files() throws -> [URL] {
+        try finishTransaction()
+        return try physicalFiles()
+    }
+    private func physicalFiles() throws -> [URL] {
         guard FileManager.default.fileExists(atPath: root.path) else { return [] }
         return try FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "zjournal" }.sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
     private func read(_ url: URL) throws -> [JournalItem] {
-        try LearningEncryption.read([JournalItem].self, at: url, key: keyProvider) ?? []
+        try finishTransaction()
+        return try LearningEncryption.read([JournalItem].self, at: url, key: keyProvider) ?? []
     }
     private func all() throws -> [JournalItem] {
         let items = try files().flatMap { try read($0) }
