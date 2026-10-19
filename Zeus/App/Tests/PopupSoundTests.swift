@@ -46,17 +46,14 @@ private let t0 = Date(timeIntervalSince1970: 1_800_000_000)
             .init(panelOpen: true),   // the conversation is open: the user may be typing, and the thread shows it
             .init(hidden: true),      // hidden, snoozed or asleep
             .init(quiet: true),       // quiet hours
-            .init(focused: true),     // a macOS Focus Zeus can see
         ]
         for suppression in suppressed {
             var gate = PopupSoundGate()
             do { let played = gate.shouldPlay(enabled: true, appeared: true, suppression: suppression, now: t0); #expect(!played, "\(suppression)") }
         }
-        // Unknown or off Focus status doesn't silence it.
-        for focused in [nil, false] as [Bool?] {
-            var gate = PopupSoundGate()
-            do { let played = gate.shouldPlay(enabled: true, appeared: true, suppression: .init(focused: focused), now: t0); #expect(played) }
-        }
+        var gate = PopupSoundGate()
+        let played = gate.shouldPlay(enabled: true, appeared: true, suppression: .init(), now: t0)
+        #expect(played)
     }
 
     @Test func atMostOneSoundEveryFewSeconds() {

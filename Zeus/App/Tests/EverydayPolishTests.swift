@@ -30,7 +30,7 @@ struct EverydayPolishTests {
         #expect(defaults.object(forKey: "avatar.hiddenUntil") == nil)
     }
 
-    @Test func untilTomorrowUsesLocalMidnightAcrossDaylightSavingChanges() throws {
+    @Test func untilTomorrowUsesLocalWakeHourAcrossDaylightSavingChanges() throws {
         let (name, defaults) = try defaults(); defer { defaults.removePersistentDomain(forName: name) }
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: "America/Chicago"))
@@ -39,14 +39,14 @@ struct EverydayPolishTests {
         let spring = AvatarVisibilityModel(defaults: defaults, clock: { clock.now }, calendar: calendar)
         spring.hide(for: .tomorrow)
         let springEnd = try #require(spring.hiddenUntil)
-        #expect(springEnd.timeIntervalSince(clock.now) == TimeInterval(23 * 3600))
+        #expect(springEnd.timeIntervalSince(clock.now) == TimeInterval(31 * 3600)) // 08:00 next day across the 23-hour day
         clock.now = try #require(calendar.date(from: DateComponents(year: 2026, month: 11, day: 1, hour: 0)))
         let autumn = AvatarVisibilityModel(defaults: defaults, clock: { clock.now }, calendar: calendar)
         autumn.hide(for: .tomorrow)
         let autumnEnd = try #require(autumn.hiddenUntil)
-        #expect(autumnEnd.timeIntervalSince(clock.now) == TimeInterval(25 * 3600))
+        #expect(autumnEnd.timeIntervalSince(clock.now) == TimeInterval(33 * 3600)) // 08:00 next day across the 25-hour day
         let until = try #require(autumn.hiddenUntil)
-        #expect(calendar.component(.hour, from: until) == 0)
+        #expect(calendar.component(.hour, from: until) == 8)
         #expect(calendar.component(.day, from: until) == 2)
     }
 
@@ -63,7 +63,7 @@ struct EverydayPolishTests {
         model.tick()
         #expect(model.hiddenUntil == original)
         model.hide(for: .tomorrow)
-        #expect(model.hiddenUntil == local.date(byAdding: .day, value: 1, to: local.startOfDay(for: clock.now)))
+        #expect(model.hiddenUntil == local.date(byAdding: .day, value: 1, to: local.startOfDay(for: clock.now)).flatMap { local.date(bySettingHour: 8, minute: 0, second: 0, of: $0) })
         #expect(model.hiddenUntil != original)
     }
 

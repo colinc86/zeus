@@ -143,16 +143,16 @@ import ZeusSprites
 
     @Test func suppressionNeverReplaysAndDoesNotMarkUnseenCards() {
         let f = PeekFixture(); defer { f.cleanup() }
-        for suppression in [PeekModel.Suppression(panelOpen: true), .init(hidden: true), .init(quiet: true), .init(focused: true)] {
+        for suppression in [PeekModel.Suppression(panelOpen: true), .init(hidden: true), .init(quiet: true)] {
             #expect(!f.add(Card(kind: .message, body: "Suppressed"), suppression: suppression))
             f.model.tick(suppression: .init())
             #expect(!f.model.isVisible)
         }
-        #expect(f.store.unseenCount == 4)
-        #expect(f.add(Card(kind: .message, body: "Unknown Focus"), suppression: .init(focused: nil)))
+        #expect(f.store.unseenCount == 3)
+        #expect(f.add(Card(kind: .message, body: "Allowed"), suppression: .init()))
         f.model.tick(suppression: .init(quiet: true))
         #expect(!f.model.isVisible)
-        #expect(f.store.unseenCount == 5)
+        #expect(f.store.unseenCount == 4)
     }
 
     @Test func replacementShowsNewestCountsOtherUnseenAndOpeningResetsArrivalWindow() throws {
