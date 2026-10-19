@@ -37,21 +37,27 @@ final class JournalViewerModel {
     private(set) var timeline: [JournalTimelineRow] = []
     @ObservationIgnored private let calendar: Calendar
     @ObservationIgnored var beforeDelete: () -> Void = {}
-    var day: Date { didSet { reload() } }
-    var level = 0 { didSet { reload() } }
-    var app = "" { didSet { reload() } }
-    var search = "" { didSet { reload() } }
-    var sentOnly = false { didSet { if sentOnly { level = 0; app = "" }; reload() } }
+    var day: Date { didSet { filtersChanged() } }
+    var level = 0 { didSet { filtersChanged() } }
+    var app = "" { didSet { filtersChanged() } }
+    var search = "" { didSet { filtersChanged() } }
+    var sentOnly = false { didSet { if sentOnly { level = 0; app = "" }; filtersChanged() } }
     private(set) var selectedAnswerID: String?
     private(set) var answerSelectionRevision: UInt64 = 0
+    @ObservationIgnored private var pendingAnswerID: String?
     func showAnswer(id: String) {
-        var lookup = JournalQuery(); lookup.kinds = [.sentToAssistant]; lookup.limit = 100_000
-        do {
-            guard let answer = try journal.items(matching: lookup).first(where: { $0.id == id }) else {
-                error = "This journal answer is no longer kept."; return
-            }
-            search = ""; sentOnly = true; day = answer.time; selectedAnswerID = id; answerSelectionRevision &+= 1
-        } catch { self.error = "Couldn't read this journal answer. Try again." }
+        pendingAnswerID = id
+        if let snapshot, snapshot.revision == journal.revision,
+           snapshot.expiresAt.map({ $0 > clock() }) ?? true { selectPendingAnswer(snapshot) }
+        else if loadTask == nil { reload() }
+    }
+    private func selectPendingAnswer(_ snapshot: JournalSnapshot) {
+        guard let id = pendingAnswerID else { return }
+        pendingAnswerID = nil
+        guard let answer = snapshot.items.first(where: { $0.kind == .sentToAssistant && $0.id == id }) else {
+            error = "This journal answer is no longer kept."; return
+        }
+        search = ""; sentOnly = true; day = answer.time; selectedAnswerID = id; answerSelectionRevision &+= 1
     }
     private(set) var items: [JournalItem] = []
     private(set) var applications: [String] = []
@@ -69,6 +75,8 @@ final class JournalViewerModel {
         pictures.didChange = { [weak self] in self?.reload() }
         reload(); observe()
     }
+    isolated deinit { loadTask?.cancel(); expiryTask?.cancel(); undoExpiry?.cancel() }
+
     /// Ask the writer for its existing day directory, preserving its calendar and missing-file policy.
     var dayFolderURL: URL? { folder?.provider?.dayFolderURL(for: day) }
     func showDayInFinder() { if let url = dayFolderURL { folder?.reveal(url) } }
@@ -84,19 +92,93 @@ final class JournalViewerModel {
         query.limit = 100_000
         return query
     }
+    private(set) var isLoading = false
+    @ObservationIgnored private var snapshot: JournalSnapshot?
+    @ObservationIgnored private var searchIndex: [String: String] = [:]
+    @ObservationIgnored private var loadTask: Task<Void, Never>?
+    @ObservationIgnored private var loadID = UUID()
+    @ObservationIgnored private var expiryTask: Task<Void, Never>?
+
+    /// Explicit refresh revalidates access and retries pictures, even if the revision is unchanged.
     func reload() {
-        do {
-            var received = JournalQuery(); received.kinds = [.sentToAssistant]; received.limit = 1
-            hasReceivedItems = try !journal.items(matching: received).isEmpty
-            items = try journal.items(matching: query).sorted { $0.time == $1.time ? $0.id < $1.id : $0.time > $1.time }
-            var all = query; all.apps = []; all.levels = []; all.text = ""
-            applications = Array(Set(try journal.items(matching: all).compactMap(\.app))).sorted()
-            var catalogQuery = query; catalogQuery.text = ""
-            timeline = JournalTimelineRow.grouped(items, catalog: try journal.items(matching: catalogQuery), calendar: calendar)
-            pictures.update(timeline)
-            error = nil
-        } catch { self.error = "Couldn't read the journal. Nothing was deleted."; items = []; timeline = []; pictures.update([]) }
+        pictures.retryReads()
+        loadTask?.cancel(); loadTask = nil; expiryTask?.cancel(); expiryTask = nil
+        let id = UUID(); loadID = id
+        snapshot = nil; searchIndex = [:]
+        if let source = journal as? any JournalSnapshotProviding {
+            isLoading = true; items = []; timeline = []; pictures.update([])
+            loadTask = Task { @MainActor [weak self] in
+                do {
+                    let value = try await source.journalSnapshot()
+                    guard let self, self.loadID == id, !Task.isCancelled else { return }
+                    self.loadTask = nil
+                    guard value.revision == self.journal.revision,
+                          value.expiresAt.map({ $0 > self.clock() }) ?? true else { self.reload(); return }
+                    self.accept(value)
+                } catch {
+                    guard let self, self.loadID == id, !Task.isCancelled else { return }
+                    self.loadTask = nil; self.readFailed()
+                }
+            }
+        } else {
+            // In-memory/legacy adapters still get one query, not four queries per filter edit.
+            do {
+                var all = JournalQuery(); all.limit = 100_000
+                let values = try journal.items(matching: all)
+                accept(.init(revision: journal.revision, items: values, expiresAt: nil))
+            } catch { readFailed() }
+        }
     }
+    private func readFailed() {
+        isLoading = false; snapshot = nil; searchIndex = [:]
+        error = "Couldn't read the journal. Nothing was deleted."
+        items = []; timeline = []; applications = []; hasReceivedItems = false; pictures.update([])
+    }
+    private func accept(_ value: JournalSnapshot) {
+        snapshot = value
+        searchIndex = Dictionary(value.items.map { item in
+            (item.id, (item.payload.value.description + "\n" + (item.payload.value.topic ?? "") + "\n" + (item.payload.value.text ?? ""))
+                .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current))
+        }, uniquingKeysWith: { _, last in last })
+        hasReceivedItems = value.items.contains { $0.kind == .sentToAssistant }
+        isLoading = false; error = nil; applyFilters(value); selectPendingAnswer(value)
+        if let expiry = value.expiresAt {
+            let delay = max(0, expiry.timeIntervalSince(clock()))
+            expiryTask = Task { @MainActor [weak self] in
+                do { try await Task.sleep(for: .seconds(delay)) } catch { return }
+                self?.reload()
+            }
+        }
+    }
+    private func filtersChanged() {
+        guard let snapshot, snapshot.revision == journal.revision,
+              snapshot.expiresAt.map({ $0 > clock() }) ?? true else {
+            if loadTask == nil { reload() }
+            return
+        }
+        applyFilters(snapshot)
+    }
+    private func applyFilters(_ snapshot: JournalSnapshot) {
+        let q = query
+        let dayItems = snapshot.items.filter { item in
+            (q.from.map { item.time >= $0 } ?? true) && (q.to.map { item.time < $0 } ?? true)
+                && q.kinds.contains(item.kind)
+        }
+        applications = Array(Set(dayItems.compactMap(\.app))).sorted()
+        let catalog = dayItems.filter { item in
+            (q.levels.isEmpty || q.levels.contains(item.level)) && (q.apps.isEmpty || q.apps.contains(item.app ?? ""))
+        }
+        let needle = search.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        items = catalog.filter { needle.isEmpty || (searchIndex[$0.id] ?? "").contains(needle) }
+            .sorted { $0.time == $1.time ? $0.id < $1.id : $0.time > $1.time }
+        timeline = JournalTimelineRow.grouped(items, catalog: catalog, calendar: calendar)
+        pictures.update(timeline)
+    }
+    /// Tests and explicit navigation may await the current load without starting a second scan.
+    func waitForLoad() async {
+        while let task = loadTask { await task.value }
+    }
+
     @discardableResult func delete(_ selection: JournalDeletion) -> Bool {
         beforeDelete(); forgetUndo()
         do { try journal.delete(selection); reload(); return true }

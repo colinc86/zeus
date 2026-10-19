@@ -15,7 +15,7 @@ struct JournalPicture: Identifiable, Equatable {
     func missingCaption(now: Date) -> String {
         if metadata?.details["picture_not_kept"] == "private" { return "Picture not kept: it looked private" }
         if metadata?.details["picture_not_kept"] == "deletedByUser" { return "Picture deleted by you" }
-        return expiresAt <= now ? "Picture deleted after 7 days" : "Picture deleted by you"
+        return expiresAt <= now ? "Picture deleted after 7 days" : "Picture missing: Zeus can't find its file."
     }
     var expiresAt: Date { Calendar.current.date(byAdding: .day, value: 7, to: time) ?? time }
     func caption(now: Date, hasPicture: Bool) -> String {
@@ -60,6 +60,7 @@ enum JournalTimelineRow: Identifiable {
     private(set) var rows: [JournalPicture] = []
     var selectedID: String?
     private(set) var error: String?
+    private var readRevision: UInt64 = 0
     private(set) var deleted: FrameDeletionReceipt?
     var confirmsDeleteBoth = false
     @ObservationIgnored private var undoDeadline: Date?
@@ -67,9 +68,13 @@ enum JournalTimelineRow: Identifiable {
     @ObservationIgnored private var cachedRevision: UInt64 = .max
     @ObservationIgnored private var frames: [String: Redacted<FrameItem>] = [:]
     @ObservationIgnored private var missing: Set<String> = []
+    @ObservationIgnored private var failedReads: Set<String> = []
+    private static let readError = "Couldn't read this picture. Nothing was deleted."
     @ObservationIgnored private var thumbnails: [String: NSImage] = [:]
     init(journal: any JournalStore, clock: @escaping () -> Date = Date.init) { self.journal = journal; self.clock = clock }
     var selected: JournalPicture? { rows.first { $0.id == selectedID } }
+    /// Explicit reload also retries absent files; transient failures are never cached as missing.
+    func retryReads() { missing.removeAll(); readRevision &+= 1 }
     func update(_ rows: [JournalTimelineRow]) {
         self.rows = rows.compactMap { if case .picture(let picture) = $0 { picture } else { nil } }
         if cachedRevision != journal.revision {
@@ -78,13 +83,17 @@ enum JournalTimelineRow: Identifiable {
         if let selectedID, !self.rows.contains(where: { $0.id == selectedID }) { self.selectedID = nil }
     }
     func frame(_ picture: JournalPicture) -> Redacted<FrameItem>? {
+        _ = readRevision
         if let frame = frames[picture.id] { return frame }
         guard !missing.contains(picture.id), let store = journal as? any FrameJournalStoring else { return nil }
         do {
-            guard let frame = try store.frame(id: picture.id) else { missing.insert(picture.id); return nil }
+            let frame = try store.frame(id: picture.id)
+            failedReads.remove(picture.id)
+            if failedReads.isEmpty && error == Self.readError { error = nil }
+            guard let frame else { missing.insert(picture.id); return nil }
             if frames.count >= 16 { frames.removeAll(); thumbnails.removeAll() }
             frames[picture.id] = frame; return frame
-        } catch { missing.insert(picture.id); self.error = "Couldn't read this picture. Nothing was deleted."; return nil }
+        } catch { failedReads.insert(picture.id); self.error = Self.readError; return nil }
     }
     func thumbnail(_ picture: JournalPicture) -> NSImage? {
         if let image = thumbnails[picture.id] { return image }
@@ -93,7 +102,11 @@ enum JournalTimelineRow: Identifiable {
                 [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: 192] as CFDictionary) else { return nil }
         let value = NSImage(cgImage: image, size: .zero); thumbnails[picture.id] = value; return value
     }
-    func caption(_ picture: JournalPicture) -> String { picture.caption(now: clock(), hasPicture: frame(picture) != nil) }
+    func caption(_ picture: JournalPicture) -> String {
+        let available = frame(picture) != nil
+        if failedReads.contains(picture.id) { return "Picture can't be shown right now." }
+        return picture.caption(now: clock(), hasPicture: available)
+    }
     func delete(_ picture: JournalPicture, includingDescription: Bool) {
         guard let store = journal as? any FrameJournalStoring else { return }
         beforeDelete(); forgetUndo()
