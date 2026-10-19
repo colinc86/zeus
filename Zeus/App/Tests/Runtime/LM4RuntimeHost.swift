@@ -121,7 +121,8 @@ private struct LM4Runner: ProcessRunning {
                         if command["command"] == "nextBrief" { context.levels = []; proactiveClock.now = proactiveClock.now.addingTimeInterval(86400); live.noteProactiveActivity(at: proactiveClock.now) }
                         if command["command"] == "triggers", let rules {
                             let active = try rules.propose([.init(sentence: "Prepare the synthetic project recap", trigger: .init(state: "fixture ready"), kind: .acts)], at: proactiveClock.now)[0]
-                            _ = try rules.markShadowShown(id: active.id)
+                            try rules.recordAction(.init(id: "first-shadow", ruleID: active.id, sessionKey: "fixture", text: "prepared a synthetic project recap",
+                                                         undo: nil, created: proactiveClock.now, kind: .shadow))
                             try rules.setStatus(.active, id: active.id, at: proactiveClock.now)
                             _ = try rules.propose([.init(sentence: "Draft the synthetic project checklist", trigger: .init(state: "fixture ready"), kind: .acts)], at: proactiveClock.now)
                             context.value.states = ["fixture ready"]; live.learningContextDidChange()
