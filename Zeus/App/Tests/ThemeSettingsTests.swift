@@ -8,7 +8,7 @@ import ZeusDesign
 // folder (the Themes folder sits next to it) and UserDefaults suite; nothing touches the user's real folders.
 
 @MainActor private final class ThemeFixture {
-    let suite = "zeus-t1-\(UUID())"
+    let suite = TestDefaults.suite("zeus-t1")
     let defaults: UserDefaults
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-t1-\(UUID())", isDirectory: true)
     let source = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-t1-src-\(UUID())", isDirectory: true)
@@ -62,7 +62,7 @@ import ZeusDesign
     }
 
     @Test func testsWithoutAFolderNeverSeeTheRealOne() {
-        let settings = AppSettings(defaults: UserDefaults(suiteName: "zeus-t1-none-\(UUID())") ?? .standard, userDirectory: nil)
+        let settings = AppSettings(defaults: UserDefaults(suiteName: TestDefaults.suite("zeus-t1-none")) ?? .standard, userDirectory: nil)
         #expect(settings.userThemeDirectory == nil)
         #expect(settings.availableThemes.map(\.id) == ZeusThemeLibrary.bundledOrder)
     }

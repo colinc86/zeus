@@ -34,7 +34,7 @@ private struct CY1ScopedRunner: ProcessRunning {
         let home = root.appendingPathComponent("home"), folder = root.appendingPathComponent("home/project")
         let socket = root.appendingPathComponent("tmux.sock").path
         let bridgeSocket = root.appendingPathComponent("bridge.sock").path
-        let suite = "zeus-cy1-live-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-cy1-live"), defaults = try #require(UserDefaults(suiteName: suite))
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: CY1NoCredentials())
         settings.managedSession = .init(enabled: false, folder: "", agent: agent, launchPrompt: "", startWhenZeusOpens: false)
         settings.backend = try #require(AssistantBackend(rawValue: agent.rawValue))

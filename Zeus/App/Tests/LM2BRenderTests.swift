@@ -10,9 +10,9 @@ import ZeusProtocol
     @Test(.enabled(if: ProcessInfo.processInfo.environment["TEST_RUNNER_LM2B_RENDER"] == "1" || ProcessInfo.processInfo.environment["LM2B_RENDER"] == "1"))
     func allThemesAndOppositeSystemAppearances() async throws {
         ZeusFonts.registerBundled()
-        let name = "zeus-screen-renders-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-screen-renders"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let journal = EncryptedJournalStore(root: root.appendingPathComponent("journal"), keyProvider: LM2BPrivateKey()), now = Date()
         let synthetic = try ScreenTestImages.draw()

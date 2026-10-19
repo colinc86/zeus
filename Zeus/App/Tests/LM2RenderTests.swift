@@ -10,7 +10,7 @@ import ZeusDesign
     @Test(.enabled(if: ProcessInfo.processInfo.environment["TEST_RUNNER_LM2_RENDER"] == "1" || ProcessInfo.processInfo.environment["LM2_RENDER"] == "1"))
     func privacyRulesAndConsentRenders() async throws {
         ZeusFonts.registerBundled()
-        let suite = "zeus-lm2-render-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-lm2-render"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let policies = ObservationSettings(defaults: defaults), privacy = LearnSettings(defaults: defaults)
         policies.edit(2) { $0.enabled = true; $0.consented = true; $0.apps = [.init(name: "Xcode", bundleIDs: ["com.apple.dt.Xcode"])] }

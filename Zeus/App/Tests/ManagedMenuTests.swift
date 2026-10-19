@@ -27,7 +27,7 @@ import ZeusDesign
 
 @MainActor struct ManagedMenuTests {
     @Test func menuRetryAndRestartNowShareTheManagedActionAvailabilityGuards() throws {
-        let suite = "zeus-menu-actions-\(UUID())"
+        let suite = TestDefaults.suite("zeus-menu-actions")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         settings.managedSession = .init(enabled: true, folder: "/fixture", agent: .claude,
@@ -58,7 +58,7 @@ import ZeusDesign
     }
 
     @Test func managedAlertsKeepTheirStatusAlongsideUnreadAndOrdinaryUnreadHasOneLine() throws {
-        let suite = "zeus-menu-alert-\(UUID())"
+        let suite = TestDefaults.suite("zeus-menu-alert")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-menu-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }

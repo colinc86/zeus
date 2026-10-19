@@ -19,9 +19,9 @@ import ZeusProtocol
 
 @MainActor struct ManagedDraftPresentationTests {
     @Test func menuShowsTheActionableDraftStateEvenWithUnreadMessages() throws {
-        let suite = "zeus-draft-menu-\(UUID())"
+        let suite = TestDefaults.suite("zeus-draft-menu")
         let defaults = try #require(UserDefaults(suiteName: suite))
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         defer { defaults.removePersistentDomain(forName: suite); try? FileManager.default.removeItem(at: root) }
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json"))
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
@@ -48,9 +48,9 @@ import ZeusProtocol
     /// Offscreen UI evidence; opt-in so ordinary test gates don't mount a panel.
     @Test(.enabled(if: ProcessInfo.processInfo.environment["ZEUS_P2_RENDER"] == "1"))
     func renderDraftCardAndConfirmationWithoutCapturingTheScreen() async throws {
-        let suite = "zeus-draft-render-\(UUID())"
+        let suite = TestDefaults.suite("zeus-draft-render")
         let defaults = try #require(UserDefaults(suiteName: suite))
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         defer { defaults.removePersistentDomain(forName: suite); try? FileManager.default.removeItem(at: root) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         settings.typewriterEnabled = false

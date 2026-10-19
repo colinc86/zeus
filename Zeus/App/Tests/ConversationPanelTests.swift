@@ -138,7 +138,7 @@ import ZeusProtocol
     }
 
     @Test func passwordUsesInjectedKeychainOnlyAndPreferredAgentTracksBackend() throws {
-        let name = "zeus-password-\(UUID())"
+        let name = TestDefaults.suite("zeus-password")
         let defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let password = PasswordMemory()

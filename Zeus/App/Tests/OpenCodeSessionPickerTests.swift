@@ -46,7 +46,7 @@ private actor SessionListTransport: ConnectorHTTPTransport {
     }
 
     @Test func mappingIsExplicitScopedPersistentAndGroupsOnlyUnmappedFolders() throws {
-        let suite = "zeus-native-selection-\(UUID())"
+        let suite = TestDefaults.suite("zeus-native-selection")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)

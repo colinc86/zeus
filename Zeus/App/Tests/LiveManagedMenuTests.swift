@@ -8,7 +8,7 @@ import ZeusProtocol
     @Test(arguments: [ManagedSessionStatus.off, .starting, .running(.idle), .running(.working), .running(.unknown),
                       .blocked(reason: "Trust?"), .stopped, .restarting(at: .distantFuture), .failed(reason: "Fixture")])
     func everyManagedStateKeepsItsOwnStatusAndUnreadCount(state: ManagedSessionStatus) throws {
-        let suite = "zeus-live-menu-\(UUID())"
+        let suite = TestDefaults.suite("zeus-live-menu")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-live-menu-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }

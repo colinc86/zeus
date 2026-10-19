@@ -25,8 +25,8 @@ private struct ContextRedactor: Redactor {
 }
 @MainActor struct LM2BContextTests {
     private func fixture() throws -> (String, UserDefaults, URL, ObservationSettings, LearnSettings, QuestionSource) {
-        let name = "zeus-context-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let name = TestDefaults.suite("zeus-context"), defaults = try #require(UserDefaults(suiteName: name))
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         return (name, defaults, root, ObservationSettings(defaults: defaults), LearnSettings(defaults: defaults), QuestionSource())
     }
     @Test func l2OnlyProducesSeparateRedactedRemovableChipsWithoutSending() async throws {
@@ -94,11 +94,11 @@ private struct ContextRedactor: Redactor {
         wrong = true; #expect(await ask.capture(directory: root).items.isEmpty)
     }
     @Test func menuAlwaysOffersContextAfterTalkButOffShortcutHasNoEquivalent() throws {
-        let name = "zeus-context-menu-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-context-menu"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         var key = settings.talkHotKey; key.enabled = false; settings.talkHotKey = key
-        let shell = ShellController(defaults: defaults, cards: CardStore(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent(name).appendingPathComponent("cards.json")), settings: settings)
+        let shell = ShellController(defaults: defaults, cards: CardStore(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent).appendingPathComponent("cards.json")), settings: settings)
         let section = try #require(shell.menuModel.sections.first { $0.contains { $0.id == "talk" } })
         #expect(section.prefix(2).map(\.id) == ["talk", "askAboutThis"])
         #expect(section[1].shortcut == nil)

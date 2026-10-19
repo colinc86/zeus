@@ -51,7 +51,7 @@ import ZeusSprites
     }
 
     @Test func shellHistoryCallbackPrunesPeekStateAndPreservesAVisibleRevealedQuestion() throws {
-        let suite = "zeus-peek-prune-shell-\(UUID())"
+        let suite = TestDefaults.suite("zeus-peek-prune-shell")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let f = PeekFixture(); defer { f.cleanup() }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)

@@ -6,7 +6,7 @@ import ZeusDesign
 @MainActor
 struct AgentSettingsTests {
     @Test func backendDefaultsAndOverridesPersist() throws {
-        let suite = "zeus-agent-tests-\(UUID())"
+        let suite = TestDefaults.suite("zeus-agent-tests")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
@@ -35,7 +35,7 @@ struct AgentSettingsTests {
     }
 
     @Test func missingDeliverySettingUsesSavedBackendDefaultAndInvalidValuesFallBack() throws {
-        let suite = "zeus-agent-default-tests-\(UUID())"
+        let suite = TestDefaults.suite("zeus-agent-default-tests")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         defaults.set("codex", forKey: "agent.backend")
@@ -50,7 +50,7 @@ struct AgentSettingsTests {
     }
 
     @Test func openCodeURLValidationRetainsEditableText() throws {
-        let suite = "zeus-url-tests-\(UUID())"
+        let suite = TestDefaults.suite("zeus-url-tests")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)

@@ -92,11 +92,11 @@ import Testing
     }
 
     @Test func menuAndCaptionUseTheNonLetterEquivalent() throws {
-        let suite = "zeus-kr1-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-kr1"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         settings.talkHotKey = TalkHotKey(keyCode: UInt32(kVK_LeftArrow), command: false, option: true, control: true)
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let shell = ShellController(defaults: defaults, cards: CardStore(fileURL: root.appendingPathComponent("cards.json")), settings: settings)
         let item = try #require(shell.menuModel.sections.flatMap { $0 }.first { $0.id == "talk" })

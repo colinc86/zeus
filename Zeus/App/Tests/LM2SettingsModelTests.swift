@@ -196,7 +196,7 @@ private struct LM2FixtureRedactor: Redactor {
 }
 @MainActor struct LM2PresentationTests {
     @Test func restoredL1ScopeHookKeepsPrivateAppsExcludedAndPreservesSavedRetention() throws {
-        let suite = "zeus-lm2-merge-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-lm2-merge"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = LearnSettings(defaults: defaults)
         #expect(settings.retentionDays == 90)
@@ -208,7 +208,7 @@ private struct LM2FixtureRedactor: Redactor {
         #expect(LearnSettings(defaults: defaults).retentionDays == 14)
     }
     @Test func l2ContextUsesItsOwnScopeEvenWhenL1AllowListIsEmptyAndRetentionUsesEachLevel() throws {
-        let suite = "zeus-lm2-presentation-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-lm2-presentation"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)
         let model = LearningPresentation(defaults: defaults, learn: learn)
@@ -235,7 +235,7 @@ private struct LM2FixtureRedactor: Redactor {
 
 @MainActor struct LM2StoragePresentationTests {
     private func withModel(_ check: (LearningPresentation, LM2JournalFake, LM2RulesFake) throws -> Void) throws {
-        let suite = "zeus-lm2-storage-ui-\(UUID())"
+        let suite = TestDefaults.suite("zeus-lm2-storage-ui")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let learn = LearnFromMe(settings: LearnSettings(defaults: defaults), root: nil)

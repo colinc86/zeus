@@ -59,7 +59,7 @@ private final class R5cController: ManagedSessionControlling {
 /// A4D-6: Start New Conversation as a status-panel action goes through the usual confirmation.
 @MainActor struct R5cNewConversationActionTests {
     @Test func actionAsksFirstAndFollowsCanStart() throws {
-        let suite = "zeus-r5c-\(UUID())"
+        let suite = TestDefaults.suite("zeus-r5c")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let controller = R5cController()
         let model = ManagedAssistantModel(settings: AppSettings(defaults: defaults, userDirectory: nil), controller: { controller })

@@ -6,8 +6,8 @@ import ZeusDesign
 
 @MainActor @Suite(.serialized) struct A12ResizeTests {
     @Test func resetThroughTheShellKeepsAnUnsentDraft() throws {
-        let suite = "zeus-a12-shell-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let suite = TestDefaults.suite("zeus-a12-shell"), defaults = try #require(UserDefaults(suiteName: suite))
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: A12ResizeNoCredentials())
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json"))
         let shell = ShellController(defaults: defaults, cards: cards, settings: settings)
@@ -20,8 +20,8 @@ import ZeusDesign
     }
 
     @Test func nativeResizeFocusRingFollowsEveryLiveThemeWithoutReplacingTheEditor() async throws {
-        let suite = "zeus-a12-themes-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let suite = TestDefaults.suite("zeus-a12-themes"), defaults = try #require(UserDefaults(suiteName: suite))
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: A12ResizeNoCredentials())
         settings.typewriterEnabled = false
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json")), hub = AgentMessagingHub()
@@ -63,7 +63,7 @@ import ZeusDesign
         let window = NSPanel(contentRect: CGRect(x: -20000, y: -20000, width: 420, height: 200),
             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = handle
-        let suite = "zeus-a12-width-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-a12-width"), defaults = try #require(UserDefaults(suiteName: suite))
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: A12ResizeNoCredentials())
         defer { window.contentView = nil; window.close(); defaults.removePersistentDomain(forName: suite) }
         var edges: [ConversationWidth.Edge] = [], ended = 0

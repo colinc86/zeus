@@ -5,7 +5,7 @@ import ZeusProtocol
 
 @MainActor struct MenuPickerIntegrationTests {
     private func settings() throws -> (String, UserDefaults, AppSettings) {
-        let suite = "zeus-menu-picker-\(UUID())"
+        let suite = TestDefaults.suite("zeus-menu-picker")
         let defaults = try #require(UserDefaults(suiteName: suite))
         return (suite, defaults, AppSettings(defaults: defaults, userDirectory: nil))
     }

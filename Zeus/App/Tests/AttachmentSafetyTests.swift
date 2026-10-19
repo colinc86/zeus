@@ -64,7 +64,7 @@ struct AttachmentSafetyTests {
     }
 
     @MainActor @Test func avatarAccessibilityIncludesCharacterAndUnreadCount() throws {
-        let suite = "zeus-ax-\(UUID())"
+        let suite = TestDefaults.suite("zeus-ax")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-ax-\(UUID())")

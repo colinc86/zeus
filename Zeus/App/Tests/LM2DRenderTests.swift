@@ -8,7 +8,7 @@ import ZeusDesign
     @Test(.enabled(if: ProcessInfo.processInfo.environment["TEST_RUNNER_LM2D_RENDER"] == "1" || ProcessInfo.processInfo.environment["LM2D_RENDER"] == "1"))
     func allThemesAndSystemAppearances() async throws {
         ZeusFonts.registerBundled()
-        let name = "zeus-depth-renders-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("zeus-depth-renders"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let now = Date(timeIntervalSince1970: 1_792_090_800)
         let policies = ObservationSettings(defaults: defaults)

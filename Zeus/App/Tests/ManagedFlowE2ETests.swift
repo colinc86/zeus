@@ -20,7 +20,7 @@ import ZeusDesign
         let home = root.appendingPathComponent("home", isDirectory: true)
         try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
         let socket = root.appendingPathComponent("tmux.sock").path
-        let suite = "zeus-m4b-flow-\(UUID())"
+        let suite = TestDefaults.suite("zeus-m4b-flow")
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer {
             let cleanup = Process(); cleanup.executableURL = tmux; cleanup.arguments = ["-S", socket, "kill-server"]

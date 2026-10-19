@@ -36,7 +36,7 @@ Zeus is a macOS menu-bar app: an animated pixel character that is the face of yo
 
 ## Safety rules (these protect users)
 - Zeus never edits the user's agent configuration, MCP settings or credentials, and never auto-accepts an agent's prompts.
-- Tests and scripts must never touch the user's real tmux server, agent configs, keychain or home folder. Use a private tmux socket (`-S`/`TMUX_TMPDIR`), a scratch folder and a disposable `HOME`.
+- Tests and scripts must never touch the user's real tmux server, agent configs, keychain or home folder. Use a private tmux socket (`-S`/`TMUX_TMPDIR`), a scratch folder and a disposable `HOME`. cfprefsd ignores `HOME`, so scratch `UserDefaults` take an absolute-path suite name (`TestDefaults.suite(_:)` in tests); `scripts/test.sh` fails if a run leaves a plist in `~/Library/Preferences`.
 - Never commit secrets, signing identities, personal paths or machine names. Release signing values live in the git-ignored `scripts/release.local.env`.
 
 ## Pull requests

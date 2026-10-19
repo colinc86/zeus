@@ -33,7 +33,7 @@ private var fixtures: URL {
 }
 
 @MainActor private final class LearnFixture {
-    let suite = "zeus-l1-\(UUID())"
+    let suite = TestDefaults.suite("zeus-l1")
     let defaults: UserDefaults
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-l1-\(UUID())/Activity", isDirectory: true)
     let clock: Clock
@@ -328,7 +328,7 @@ private var fixtures: URL {
     }
 
     @Test func shellTestsWithoutAFolderNeverRecord() {
-        let learn = LearnFromMe(settings: LearnSettings(defaults: UserDefaults(suiteName: "zeus-l1-none-\(UUID())") ?? .standard), root: nil)
+        let learn = LearnFromMe(settings: LearnSettings(defaults: UserDefaults(suiteName: TestDefaults.suite("zeus-l1-none")) ?? .standard), root: nil)
         learn.setEnabled(true)
         #expect(!learn.isAvailable && !learn.isRecording && learn.learnings == nil)
     }

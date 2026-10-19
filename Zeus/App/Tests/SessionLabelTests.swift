@@ -50,7 +50,7 @@ private func labelledSession(pid: Int32 = 7208, start: UInt64 = 1_791_826_260_00
     }
 
     @Test func aMissingSavedKeyFallsBackToAutoPersistsAndShowsNoticeUntilAnotherChoice() throws {
-        let name = "zeus-session-choice-\(UUID())"
+        let name = TestDefaults.suite("zeus-session-choice")
         let defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
@@ -75,9 +75,9 @@ private func labelledSession(pid: Int32 = 7208, start: UInt64 = 1_791_826_260_00
     }
 
     @Test func shellReconcilesWithoutSettingsOpenAndIgnoresPreviewAndUnavailableRuntime() async throws {
-        let name = "zeus-session-observation-\(UUID())"
+        let name = TestDefaults.suite("zeus-session-observation")
         let defaults = try #require(UserDefaults(suiteName: name))
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { defaults.removePersistentDomain(forName: name); try? FileManager.default.removeItem(at: root) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json"))

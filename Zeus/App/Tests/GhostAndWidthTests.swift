@@ -93,7 +93,7 @@ struct GhostAndWidthTests {
     }
 
     @Test func settingsPersistAndRejectInvalidSavedOrEditedNumbers() throws {
-        let suite = "zeus-w1-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-w1"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         #expect(!settings.fadeZeusWhenIdle && settings.idleOpacity == 0.3 && settings.idleFadeDelay == 30)
@@ -137,9 +137,9 @@ struct GhostAndWidthTests {
         handle.edge = .left; handle.beginDrag(at: 200, width: 380)
         handle.drag(to: 100.2); handle.drag(to: 90.7)
         #expect(widths == [480, 489])
-        let suite = "zeus-w1-hover-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-w1-hover"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json")), settings = AppSettings(defaults: defaults, userDirectory: nil)
         let view = AvatarInteractionView(rootView: SpriteAvatarView(settings: settings, status: AvatarStatusModel(cards: cards),
@@ -155,9 +155,9 @@ struct GhostAndWidthTests {
     }
 
     @Test func nativePanelResizesWithoutReplacingDraftAndRendersGhostSettings() async throws {
-        let suite = "zeus-w1-render-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-w1-render"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: suite).lastPathComponent)
         defer { try? FileManager.default.removeItem(at: root) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         settings.typewriterEnabled = false; settings.fadeZeusWhenIdle = true

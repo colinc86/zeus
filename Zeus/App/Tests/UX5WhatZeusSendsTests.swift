@@ -36,7 +36,7 @@ import ZeusDesign
         return (host, window)
     }
     private func freshSettings() -> LearnSettings {
-        let suite = "ux5-" + UUID().uuidString
+        let suite = TestDefaults.suite("ux5")
         let defaults = UserDefaults(suiteName: suite) ?? .standard
         defaults.removePersistentDomain(forName: suite)
         return LearnSettings(defaults: defaults)
@@ -105,7 +105,7 @@ import ZeusDesign
     }
 
     @Test func briefScheduleChoicesBothCarryADetailLine() async throws {
-        let suite = "ux5-brief-" + UUID().uuidString
+        let suite = TestDefaults.suite("ux5-brief")
         let defaults = UserDefaults(suiteName: suite) ?? .standard
         defer { defaults.removePersistentDomain(forName: suite) }
         let brief = MorningBriefSettings(defaults: defaults); brief.enabled = true

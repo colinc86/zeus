@@ -61,9 +61,9 @@ import ZeusProtocol
         let previousEnhanced = NSApp.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? NSNumber(value: false)
         defer { if NSApp.responds(to: enhanced) { NSApp.perform(enhanced, with: previousEnhanced, with: "AXEnhancedUserInterface") } }
         if NSApp.responds(to: enhanced) { NSApp.perform(enhanced, with: NSNumber(value: true), with: "AXEnhancedUserInterface") }
-        let name = "zeus-first-click-\(UUID())"
+        let name = TestDefaults.suite("zeus-first-click")
         let defaults = try #require(UserDefaults(suiteName: name))
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { defaults.removePersistentDomain(forName: name); try? FileManager.default.removeItem(at: root) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: FirstClickPasswords())
         settings.typewriterEnabled = typewriter; settings.fontChoice = .system
@@ -177,9 +177,9 @@ import ZeusProtocol
         let previous = NSApp.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? NSNumber(value: false)
         NSApp.perform(enhanced, with: NSNumber(value: true), with: "AXEnhancedUserInterface")
         defer { NSApp.perform(enhanced, with: previous, with: "AXEnhancedUserInterface") }
-        let name = "zeus-fx2-peek-\(UUID())"
+        let name = TestDefaults.suite("zeus-fx2-peek")
         let defaults = try #require(UserDefaults(suiteName: name))
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(URL(fileURLWithPath: name).lastPathComponent)
         defer { defaults.removePersistentDomain(forName: name); try? FileManager.default.removeItem(at: root) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: FirstClickPasswords())
         settings.typewriterEnabled = typewriter; settings.fontChoice = .system

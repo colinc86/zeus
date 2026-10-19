@@ -22,7 +22,7 @@ import ZeusProtocol
 
 @MainActor struct ConnectOwnModeTests {
     @Test func savedLeaseNoticeSurvivesReopenButDoesNotClaimAReusedPIDOrRouteToIt() throws {
-        let suite = "zeus-cy1-lease-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-cy1-lease"), defaults = try #require(UserDefaults(suiteName: suite))
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-cy1-lease-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let child = Process(); child.executableURL = URL(fileURLWithPath: "/bin/sleep"); child.arguments = ["60"]
@@ -62,7 +62,7 @@ import ZeusProtocol
     }
 
     @Test func keepRunningSwitchesAndRetainsTheNoticeAfterManagedStatusTurnsOffUntilExit() throws {
-        let suite = "zeus-cy1-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-cy1"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         let controller = ConnectOwnController(), model = ManagedAssistantModel(settings: settings, controller: { controller })
@@ -85,7 +85,7 @@ import ZeusProtocol
     }
 
     @Test func stopKeepsManagedModeUntilTheOwnedPaneIsReleased() async throws {
-        let suite = "zeus-cy1-stop-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-cy1-stop"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         let controller = ConnectOwnController(), model = ManagedAssistantModel(settings: settings, controller: { controller })
@@ -101,7 +101,7 @@ import ZeusProtocol
     }
 
     @Test func switchingBackHidesTheNoticeAndDoesNotStopTheSurvivingAgent() throws {
-        let suite = "zeus-cy1-back-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-cy1-back"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         let controller = ConnectOwnController(), model = ManagedAssistantModel(settings: settings, controller: { controller })

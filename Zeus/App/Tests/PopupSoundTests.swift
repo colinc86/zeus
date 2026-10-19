@@ -9,7 +9,7 @@ import Testing
 }
 
 @MainActor private final class SoundFixture {
-    let suite = "zeus-popup-sound-\(UUID())"
+    let suite = TestDefaults.suite("zeus-popup-sound")
     let defaults: UserDefaults
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-popup-sound-\(UUID())")
     let settings: AppSettings

@@ -93,7 +93,7 @@ import ZeusProtocol
     }
 
     @Test func theSettingDefaultsToOnlyMyAssistantAndRoundTrips() throws {
-        let suite = "zeus-st1-\(UUID())"; let defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-st1"); let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         #expect(settings.whoMayTalk == .assistantOnly && settings.onlyAssistantMayTalk)

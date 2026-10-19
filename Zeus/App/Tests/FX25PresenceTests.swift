@@ -5,7 +5,7 @@ import Testing
 /// FX25: Hide Until Tomorrow ends at the start of the user's day; Zeus keeps a home per display set.
 @MainActor struct FX25PresenceTests {
     private func defaults() throws -> (String, UserDefaults) {
-        let name = "zeus-fx25-\(UUID())"
+        let name = TestDefaults.suite("zeus-fx25")
         return (name, try #require(UserDefaults(suiteName: name)))
     }
     private var chicago: Calendar {
@@ -92,7 +92,7 @@ import Testing
         #expect(restored == homes)
         #expect(defaults.object(forKey: AvatarHomes.lastXKey) as? Double == 1300)
         // Legacy single anchor still restores as the fallback.
-        let legacyName = "zeus-fx25-legacy-\(UUID())"
+        let legacyName = TestDefaults.suite("zeus-fx25-legacy")
         let legacy = try #require(UserDefaults(suiteName: legacyName)); defer { legacy.removePersistentDomain(forName: legacyName) }
         legacy.set(640.0, forKey: AvatarHomes.lastXKey); legacy.set(120.0, forKey: AvatarHomes.lastYKey)
         #expect(AvatarHomes(defaults: legacy).anchor(for: docked) == CGPoint(x: 640, y: 120))

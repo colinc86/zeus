@@ -70,7 +70,7 @@ import Testing
         #expect(!sent.text.contains("‹secret›"))
     }
     @Test func reflectionAndMorningBriefPreserveGeneratedFactsAndAlreadyRedactedInputs() async throws {
-        let name = "fx8-" + UUID().uuidString
+        let name = TestDefaults.suite("fx8")
         let defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let settings = MorningBriefSettings(defaults: defaults); settings.enabled = true

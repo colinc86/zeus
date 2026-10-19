@@ -91,7 +91,7 @@ import ZeusProtocol
         let previous = NSApp.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? NSNumber(value: false)
         NSApp.perform(enhanced, with: NSNumber(value: true), with: "AXEnhancedUserInterface")
         defer { NSApp.perform(enhanced, with: previous, with: "AXEnhancedUserInterface") }
-        let name = "fb1-keys-\(UUID())", root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let name = TestDefaults.suite("fb1-keys"), root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name); try? FileManager.default.removeItem(at: root) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil, passwordStore: FB1Passwords())

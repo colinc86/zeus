@@ -11,7 +11,7 @@ import ZeusProtocol
 
 @MainActor struct TalkCompositionTests {
     @Test func managedTalkCannotAnswerADayOldQuestionFromAnotherSession() async throws {
-        let suite = "zeus-talk-routing-\(UUID())"
+        let suite = TestDefaults.suite("zeus-talk-routing")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-talk-routing-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }

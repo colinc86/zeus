@@ -17,7 +17,7 @@ import ZeusDesign
     private let key = "opencode:/assistant#101.1000"
 
     @Test func selectionSavesIDAndCanonicalEndpointTogetherAndURLEditsLeaveBytesUntouched() throws {
-        let suite = "zeus-destination-\(UUID())"
+        let suite = TestDefaults.suite("zeus-destination")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let model = settings(defaults)
         model.openCodeURLText = "HTTP://SERVER-A.TEST:80/proxy/"
@@ -40,7 +40,7 @@ import ZeusDesign
     }
 
     @Test func legacySelectionsRequireExplicitReselectionAndClearCannotResurrectThem() throws {
-        let suite = "zeus-destination-legacy-\(UUID())"
+        let suite = TestDefaults.suite("zeus-destination-legacy")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let other = "opencode:/other#102.1000"
         defaults.set([key: "ses_old", other: "ses_other"], forKey: "agent.openCodeSelections")
@@ -62,7 +62,7 @@ import ZeusDesign
     }
 
     @Test func invalidSelectionOrURLCannotPartiallyReplaceARecordedDestination() throws {
-        let suite = "zeus-destination-invalid-\(UUID())"
+        let suite = TestDefaults.suite("zeus-destination-invalid")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let model = settings(defaults)
         #expect(model.setOpenCodeSessionID("ses_valid", for: key))
@@ -78,7 +78,7 @@ import ZeusDesign
     }
 
     @Test func actualSettingsCapabilityBlocksChangedEndpointUntilTheSameIDIsChosenAgain() async throws {
-        let suite = "zeus-destination-connector-\(UUID())"
+        let suite = TestDefaults.suite("zeus-destination-connector")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let model = settings(defaults), http = NativeOpenCodeHTTP()
         let connector = OpenCodeConnector(transport: http, credentials: { nil })

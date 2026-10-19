@@ -27,7 +27,7 @@ private final class R4cController: ManagedSessionControlling {
 /// R4c: copy and small presentation rules from the Round 3 designer audit.
 @MainActor struct R4cCopyTests {
     private static func model(controller: R4cController?) throws -> (ManagedAssistantModel, () -> Void) {
-        let suite = "zeus-r4c-\(UUID())"
+        let suite = TestDefaults.suite("zeus-r4c")
         let defaults = try #require(UserDefaults(suiteName: suite))
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         let model = ManagedAssistantModel(settings: settings, controller: { controller })

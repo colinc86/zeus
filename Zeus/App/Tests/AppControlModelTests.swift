@@ -18,7 +18,7 @@ import ZeusDesign
     func controlRefreshVisibility() { refreshes += 1 }
 }
 @MainActor private final class AC2Fixture {
-    let suite = "zeus-ac2-\(UUID())"
+    let suite = TestDefaults.suite("zeus-ac2")
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("zeus-ac2-\(UUID())")
     let defaults: UserDefaults
     let settings: AppSettings

@@ -20,7 +20,7 @@ import ZeusProtocol
                 guard CommandLine.arguments.count == 2 else { throw CocoaError(.fileReadInvalidFileName) }
                 let root = URL(fileURLWithPath: CommandLine.arguments[1]).resolvingSymlinksInPath()
                 guard root.path.contains("/zlm2_"), URL(fileURLWithPath: NSHomeDirectory()).resolvingSymlinksInPath() == root,
-                      let defaults = UserDefaults(suiteName: "zeus-lm2-private") else { throw CocoaError(.fileReadNoPermission) }
+                      let defaults = UserDefaults(suiteName: root.appendingPathComponent("Library/Preferences/zeus-lm2-private").path) else { throw CocoaError(.fileReadNoPermission) }
                 let source = MacFocusCaptureSource(), settings = ObservationSettings(defaults: defaults)
                 let store = EncryptedJournalStore(root: root.appendingPathComponent("Journal"), keyProvider: LM2PrivateKey())
                 let redactor = LocalRedactor()

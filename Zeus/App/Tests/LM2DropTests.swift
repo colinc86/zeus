@@ -64,7 +64,7 @@ import ZeusProtocol
         policy.apps = [.init(name: "Public", bundleIDs: ["public.test"])]
         #expect(policy.allows(bundleID: "public.test", name: nil, privateApps: [privateApp]))
         #expect(!policy.allows(bundleID: "other.test", name: nil, privateApps: []))
-        let suite = "zeus-observation-test-\(UUID())", defaults = try #require(UserDefaults(suiteName: suite))
+        let suite = TestDefaults.suite("zeus-observation-test"), defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = ObservationSettings(defaults: defaults)
         #expect(!settings.policy(2).enabled)

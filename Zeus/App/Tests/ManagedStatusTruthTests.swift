@@ -35,7 +35,7 @@ import ZeusDesign
 
 @MainActor struct ManagedStatusTruthTests {
     @Test func neverLaunchedAndStoppedPresentDifferentTruthWithoutInventingAnExit() throws {
-        let suite = "zeus-status-truth-\(UUID())"
+        let suite = TestDefaults.suite("zeus-status-truth")
         let defaults = try #require(UserDefaults(suiteName: suite)); defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, userDirectory: nil)
         settings.managedSession = .init(enabled: true, folder: "/fixture", agent: .claude, launchPrompt: "Fixture", startWhenZeusOpens: false)

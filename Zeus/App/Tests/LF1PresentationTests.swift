@@ -91,7 +91,7 @@ import ZeusDesign
     }
     @Test(.enabled(if: ProcessInfo.processInfo.environment["TEST_RUNNER_LF1_RENDER"] == "1" || ProcessInfo.processInfo.environment["LF1_RENDER"] == "1"))
     func lightAndDarkFolderFixtures() async throws {
-        let name = "lf1-renders-\(UUID())", defaults = try #require(UserDefaults(suiteName: name))
+        let name = TestDefaults.suite("lf1-renders"), defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let screen = ScreenPrivacyModel(policies: ObservationSettings(defaults: defaults), privacy: LearnSettings(defaults: defaults))
         screen.policies.edit(3) { $0.enabled = true; $0.consented = true }; screen.permission = .granted
