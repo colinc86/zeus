@@ -57,9 +57,13 @@ struct SpriteAvatarView: View {
         }
         .overlay(alignment: .topLeading) {
             if status.badgeCount > 0 {
+                // The badge's trailing edge sits on the corner: a frame that ends there, not an alignment guide
+                // (the overlay ignored that and pushed the badge past the window's edge).
+                let corner = artLayout.rect.badgeCorner
                 ZeusBadge(count: status.badgeCount)
-                    .alignmentGuide(.leading) { $0[.trailing] }
-                    .offset(x: artLayout.rect.badgeCorner.x, y: artLayout.rect.badgeCorner.y)
+                    .fixedSize()
+                    .frame(width: corner.x, alignment: .trailing)
+                    .offset(y: corner.y)
                     .accessibilityLabel("\(status.badgeCount) unread \(status.badgeCount == 1 ? "message" : "messages")")
             }
             if let issue = messaging.deliveryIssue {
