@@ -15,8 +15,7 @@ final class PeekModel {
         var panelOpen = false
         var hidden = false
         var quiet = false
-        var focused: Bool? = nil
-        var allowsPeek: Bool { !panelOpen && !hidden && !quiet && focused != true }
+        var allowsPeek: Bool { !panelOpen && !hidden && !quiet }
     }
 
     private var cardID: String?

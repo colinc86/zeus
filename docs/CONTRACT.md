@@ -405,7 +405,7 @@ The runtime classifies new say/ask/present cards as `CardOrigin.reply` only whil
    - **Questions.** The bubble shows up to 3 option buttons; clicking one answers the card directly, with no expansion. A question with more than 3 options, or one that only takes text, shows "Reply…", which expands the panel.
    - **Several arrivals.** The bubble shows the newest card with a "+N more" tag, never a stack of bubbles.
    - **Auto-hide.** It hides after `clamp(4 + words/4, 6, 15)` seconds and pauses while the mouse is over it. It has an × to close it. `high` priority cards stay until the user interacts.
-   - **Quiet hours, hidden avatar, Do Not Disturb.** No bubble, only the badge (and the menu bar dot).
+   - **Quiet hours and a hidden avatar.** No bubble, only the badge (and the menu bar dot). Zeus does not see macOS Focus or Do Not Disturb: the Focus-status entitlement needs a provisioning profile the Developer ID pipeline doesn't carry (FX25).
    - **Seen.** A card shown in a bubble counts as seen only once the user interacts with the bubble or opens the panel. Otherwise it stays unseen, so the badge and `alert` remain.
    - **Placement.** Anchored to Zeus like the panel: above or beside Zeus, with a tail, clamped to the screen, following drags.
 

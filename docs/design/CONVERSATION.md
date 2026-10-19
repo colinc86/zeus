@@ -219,7 +219,7 @@ A standard `NSMenu`, in this order:
 5. **Size ▸**: Small / Medium / Large, with a ✓ on the current one.
 6. separator
 7. **Hide for 1 hour**
-8. **Hide until tomorrow**: hidden until 08:00 local tomorrow, or until quiet hours end if they're set and end later.
+8. **Hide until tomorrow**: hidden until 08:00 local tomorrow, or, when 08:00 tomorrow falls inside quiet hours, until those quiet hours end (FX25: `AvatarVisibilityModel` takes the wake hour and `AppSettings.quietHoursEnd(containing:)`). The menu bar line reads "Hidden until tomorrow, 8:00 AM" (same day: "Hidden until 2:30 PM"; later: "Hidden until Oct 19, 8:00 AM").
 9. separator
 10. **Quit Zeus**
 
@@ -323,7 +323,7 @@ When a message arrives and the panel is **closed**, Zeus *says* it: a small spee
 | New agent card of kind `message`, `question` or `content` | **Yes** |
 | `progress` card, `zeus_update_card`, status changes, `userMessage`, an expiry | No |
 | Panel open | No: the thread shows it (§7) |
-| Quiet hours, avatar hidden (§9), or macOS Focus/Do Not Disturb if detectable | No: only the badge and the menu bar dot |
+| Quiet hours or avatar hidden (§9) | No: only the badge and the menu bar dot. macOS Focus and Do Not Disturb aren't visible to Zeus (CONTRACT §10.7, FX25); quiet hours and Hide are the user's tools for that. |
 | A new card while a bubble is showing | **Replace the content in place**: no exit/enter. Restart the typewriter, the talking and the auto-hide timer, and update "+N more". |
 
 **"+N more"** is the number of *other* unseen, peek-eligible cards that arrived since the panel was last opened. The bubble always shows the **newest** one.
@@ -437,7 +437,7 @@ An optional sound when the bubble pops up: Settings › General › Sounds › *
 | The bubble appears (hidden → shown), for any card that pops it (§14.1), questions included | **Yes**, once |
 | A new card replaces a bubble that's already showing | No: same pop-up |
 | Within 4 s of the last sound (`PopupSoundGate.minimumInterval`) | No |
-| Anything that stops the bubble (§14.1): panel open, so the user may be typing there; hidden or snoozed; quiet hours; a macOS Focus Zeus can see | No |
+| Anything that stops the bubble (§14.1): panel open, so the user may be typing there; hidden or snoozed; quiet hours | No |
 
 - **Sounds:** **Zeus chime** (default) or the macOS sounds Glass, Ping, Pop and Tink. Choosing one, or turning the toggle on, plays it as a preview.
 - **Zeus chime:** three quick 25%-duty square-wave notes, B5 → E6 → B6 (45, 45 and 160 ms, the last one ringing out), at 20% of full scale. It's generated in code (`ZeusChime`), not a recording.

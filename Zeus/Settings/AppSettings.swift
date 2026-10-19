@@ -459,6 +459,14 @@ final class AppSettings: CharacterControlling, ThemeControlling, AgentRoutingSet
         return hour >= quietStartHour || hour < quietEndHour
     }
 
+    /// The end of the quiet hours that contain `date`; nil when quiet hours are off, `date` isn't quiet, or they never end
+    /// (equal start and end means all day). Used by "Hide Until Tomorrow" (FX25).
+    func quietHoursEnd(containing date: Date, calendar: Calendar = .current) -> Date? {
+        guard isQuiet(at: date, calendar: calendar), quietStartHour != quietEndHour else { return nil }
+        return calendar.nextDate(after: date, matching: DateComponents(hour: quietEndHour, minute: 0, second: 0),
+                                 matchingPolicy: .nextTime, repeatedTimePolicy: .first)
+    }
+
     /// Calendar matching preserves local quiet-hour boundaries across DST transitions.
     func nextQuietBoundary(after date: Date, calendar: Calendar = .current) -> Date? {
         guard quietHoursEnabled, quietStartHour != quietEndHour else { return nil }

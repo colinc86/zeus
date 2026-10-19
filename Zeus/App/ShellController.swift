@@ -84,6 +84,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     @ObservationIgnored private(set) var ghost = AvatarGhostState()
     @ObservationIgnored private var avatarHovered = false
     @ObservationIgnored private var resizeFixedX: CGFloat?
+    /// Where Zeus lives, per display set (FX25). Saved only when the user or the assistant places him, never on a display change.
+    @ObservationIgnored private var homes: AvatarHomes
 
     init(defaults: UserDefaults = .standard, cards: CardStore? = nil, settings: AppSettings? = nil,
          popupSound: any PopupSoundPlaying = SystemPopupSoundPlayer.shared,
@@ -92,9 +94,12 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         self.defaults = defaults
         morningBrief = MorningBriefSettings(defaults: defaults)
         self.popupSound = popupSound
-        visibility = AvatarVisibilityModel(defaults: defaults)
         let cards = cards ?? CardStore()
         let settings = settings ?? AppSettings(defaults: defaults)
+        visibility = AvatarVisibilityModel(defaults: defaults, quietHoursEnd: { [weak settings] wake, calendar in
+            settings?.quietHoursEnd(containing: wake, calendar: calendar)
+        })
+        homes = AvatarHomes(defaults: defaults)
         self.cards = cards
         peek = PeekModel(store: cards)
         self.settings = settings
@@ -269,9 +274,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         NotificationCenter.default.addObserver(self, selector: #selector(screensChanged),
                                                name: NSApplication.didChangeScreenParametersNotification, object: nil)
         resizeAvatar()
-        if let x = defaults.object(forKey: "avatar.anchor.x") as? Double,
-           let y = defaults.object(forKey: "avatar.anchor.y") as? Double, x.isFinite, y.isFinite {
-            moveAnchor(to: CGPoint(x: x, y: y))
+        if let anchor = homes.anchor(for: screenRects) {
+            moveAnchor(to: anchor)
         } else if let x = defaults.object(forKey: "avatar.x") as? Double,
                   let y = defaults.object(forKey: "avatar.y") as? Double, x.isFinite, y.isFinite {
             // Preserve A1's origin when migrating to anchor-based persistence.
@@ -978,7 +982,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     private var peekSuppression: PeekModel.Suppression {
         .init(panelOpen: cardPanelState.isVisible, hidden: visibility.isHidden || suspended,
-              quiet: settings.isQuiet(at: Date()), focused: FocusStatus.isFocused)
+              quiet: settings.isQuiet(at: Date()))
     }
 
     private func receivedCard(_ newCard: Card) {
@@ -1087,8 +1091,8 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     private var screenArtRect: CGRect { artLayout.rect.screenRect(canvasOrigin: avatar.frame.origin) }
 
     private func savePosition() {
-        defaults.set(screenAnchor.x, forKey: "avatar.anchor.x")
-        defaults.set(screenAnchor.y, forKey: "avatar.anchor.y")
+        homes.record(screenAnchor, screens: screenRects)
+        homes.save(to: defaults)
     }
 
     func resetPosition() {
@@ -1097,10 +1101,11 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         savePosition()
     }
 
+    /// A display came or went: put Zeus back where he lives on this display set (clamped onto a screen that exists),
+    /// without saving, so an unplugged display never rewrites his home (FX25).
     @objc private func screensChanged(_ notification: Notification) {
         resizeFixedX = nil
-        moveAvatar(to: avatar.frame.origin)
-        savePosition()
+        if let anchor = homes.anchor(for: screenRects) { moveAnchor(to: anchor) } else { moveAvatar(to: avatar.frame.origin) }
     }
 
     func injectDemo(_ kind: DemoCardKind) {
@@ -1229,7 +1234,7 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
         if let issue = menuIssueDetail { top.append(.line(issue)) }
         if let privateInput = learning.privateInputMenuLine { top.append(.line(privateInput)) }
         if let until = visibility.hiddenUntil, visibility.isHidden {
-            top.append(.line("Hidden until \(until.formatted(date: .abbreviated, time: .shortened))"))
+            top.append(.line(MenuPresentation.hiddenUntilLine(until, now: Date())))
         }
 
         var zeus: [Item] = [
