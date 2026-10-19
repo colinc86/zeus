@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import Synchronization
 import Testing
 @testable import Zeus
@@ -78,6 +79,30 @@ import Testing
             f.key.unavailable = true
             await #expect(throws: (any Error).self) { try await f.store.journalSnapshot() }
         }
+    }
+
+    @Test func cachedMetadataDoesNotClearAnUnrecoveredPictureError() async throws {
+        let f = try SnapshotFixture(); defer { f.remove() }
+        let item = JournalItem(id: "picture", time: f.now, level: .screen, kind: .frame,
+            payload: .init(.init(description: "Synthetic picture")))
+        let frame = Redacted(FrameItem(heic: Data([0]), width: 1, height: 1, boxes: [], appName: "Fixture", windowTitle: "Synthetic"))
+        try f.store.appendFrame(frame, item: item)
+        _ = try await f.store.journalSnapshot()
+        let url = try #require(try FileManager.default.contentsOfDirectory(at: f.root, includingPropertiesForKeys: nil)
+            .first { $0.pathExtension == "zframe" })
+        let encrypted = try Data(contentsOf: url)
+        try Data([0]).write(to: url)
+        #expect(throws: (any Error).self) { try f.store.frame(id: item.id) }
+        #expect(f.store.lastError != nil)
+        let changes = SnapshotReads()
+        withObservationTracking { _ = f.store.lastError } onChange: { changes.record(url) }
+        #expect(try await f.store.journalSnapshot().items == [item])
+        #expect(changes.count == 0, "A cached metadata read must not emit a false recovery notification")
+        #expect(f.store.lastError != nil, "Cached metadata has not recovered the unreadable picture")
+        try encrypted.write(to: url)
+        #expect(try f.store.frame(id: item.id) == frame)
+        #expect(f.store.lastError == nil)
+        #expect(changes.count == 1, "The actual repaired picture emits the recovery notification")
     }
 
     @Test func initialExpiryScrubsDiskBeforeReturningWithoutASecondDecodeScan() async throws {
