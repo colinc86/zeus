@@ -28,3 +28,16 @@ The morning brief computes tomorrow's configured hour/minute on tomorrow's civil
 The existing cross-day rejection assertion in `TypingLearningTests` is replaced with successful atomic deletion/Undo because cross-partition selection is now supported; missing-ID, expiry, conflict and forget-epoch assertions remain.
 
 Verification results are recorded in the task hand-back.
+
+## Final verification
+
+Rebased onto main `deae20c`; verified code tip `326c2d0`. All gates ran from an isolated checkout under `build/tmp/fx23/`, with fixture keys, private sockets and disposable agent profiles only.
+
+- Focused `JournalZoneTests`, `TypingLearningTests`, `PA1ProactiveTests`: **38 tests / 3 suites PASS**, 1.515 s on the rebased tree.
+- `scripts/test.sh`: **1,292 app tests / 263 suites PASS**, 572.536 s (1,253 passed, 39 expected opt-in skips); **277 package tests** plus offline checks passed. No failures or test-host crashes. Tmux hygiene clean.
+- `scripts/build.sh`: PASS; no new compiler warnings. Existing destination-selection warning unchanged.
+- `scripts/check-public.sh`: PASS.
+- Complete `scripts/live.sh --quick`: **26/26 PASS**, 615.87 s, including reflection, morning brief, rule trigger, all three real agents and private-tmux E2E. Run identifier `20261019T003939.018461Z`; tmux hygiene clean.
+- `git diff --check`: PASS. Scratch checkout, generated binaries and logs removed with `build/tmp` before hand-back.
+
+Before/after: the Chicago Nov 1 record viewed after switching to Los Angeles previously survived Delete in its Nov 1 file; now the original physical record is removed, and Undo restores it to that file even when the group also contains an Oct 31 partition. A configured 02:30 brief previously scheduled Monday after spring-forward at 03:00; it now schedules Monday at 02:30. No storage migration or tool schema change.
