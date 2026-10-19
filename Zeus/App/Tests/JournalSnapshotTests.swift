@@ -18,11 +18,14 @@ import Testing
         f.store.snapshotRead = { urls, secret in
             try await JournalSnapshotReader.read(urls, secret: secret) { url in metrics.record(url) }
         }
+        let loadStart = Date()
         let viewer = JournalViewerModel(journal: f.store, calendar: f.calendar, now: f.now, clock: { f.now })
         await viewer.waitForLoad()
         #expect(viewer.items.count == 358)
         #expect(metrics.count == 28 && !metrics.usedMainThread)
+        let loadSeconds = Date().timeIntervalSince(loadStart), filterStart = Date()
         for query in ["O", "Or", "Orc", "Orchid", ""] { viewer.search = query }
+        print("Journal snapshot: 10000 items / 28 days, async load \(loadSeconds)s; five cached searches \(Date().timeIntervalSince(filterStart))s; physical reads \(metrics.count)")
         viewer.day = f.now.addingTimeInterval(-86400); viewer.level = 2; viewer.app = "test.editor"
         #expect(viewer.items.count == 358)
         #expect(metrics.count == 28)
