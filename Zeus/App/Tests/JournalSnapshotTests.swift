@@ -91,7 +91,7 @@ import Testing
         }
         let value = try await f.store.journalSnapshot()
         #expect(value.items.count == 1 && value.items[0].payload.value.text == nil)
-        let persisted = try #require(LearningEncryption.read([JournalItem].self, at: url, key: f.key))
+        let persisted = try #require(try LearningEncryption.read([JournalItem].self, at: url, key: f.key))
         #expect(persisted[0].payload.value.text == nil)
         #expect(metrics.count == 1 && !metrics.usedMainThread)
         #expect(value.revision == 1)
@@ -100,7 +100,7 @@ import Testing
     @Test func initialRecoveryFinishesCommittedPartitionsBeforeDecode() async throws {
         let f = try SnapshotFixture(); defer { f.remove() }
         let item = f.typing()
-        try LearningEncryption.write([String: [JournalItem]]([f.day(item.time): [item]]),
+        try LearningEncryption.write([f.day(item.time): [item]],
             to: f.root.appendingPathComponent("pending.ztransaction"), key: f.key)
         let value = try await f.store.journalSnapshot()
         #expect(value.items == [item])
