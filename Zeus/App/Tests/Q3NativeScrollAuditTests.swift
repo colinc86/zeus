@@ -18,6 +18,9 @@ import ZeusProtocol
     var allowsKey = false
     override var canBecomeKey: Bool { allowsKey }
     override var canBecomeMain: Bool { false }
+    /// Pins the backing scale, so layout doesn't depend on the test Mac's display (1x or Retina).
+    var scale: CGFloat?
+    override var backingScaleFactor: CGFloat { scale ?? super.backingScaleFactor }
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
 }
 
@@ -37,7 +40,7 @@ import ZeusProtocol
     var host: TestHostingView?
     var newestID: String?
 
-    init(longNewest: Bool, newestBody: String? = nil) throws {
+    init(longNewest: Bool, newestBody: String? = nil, scale: CGFloat? = nil) throws {
         var worktree = URL(fileURLWithPath: #filePath)
         for _ in 0..<4 { worktree.deleteLastPathComponent() }
         root = worktree.appendingPathComponent("build/q3-scroll/\(UUID())")
@@ -49,6 +52,7 @@ import ZeusProtocol
         window = Q3OffscreenPanel(contentRect: CGRect(x: -10000, y: -10000, width: 380, height: 600),
                          styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
+        (window as? Q3OffscreenPanel)?.scale = scale
         panel.screenHeight = 1000
         let origin = Date(timeIntervalSince1970: 1_791_800_000)
         for index in 0..<30 {
@@ -262,9 +266,13 @@ import ZeusProtocol
         #expect(!f.cards.seenIDs.contains(try #require(f.cards.cards.first?.id)))
     }
 
-    @Test func openingAVeryTallEarlierMessageShowsTheLatestButtonForExistingUnreadReplies() async throws {
-        let f = try Q3ScrollHarness(longNewest: true, newestBody: String(repeating: "Earlier visible line.\n", count: 4000))
+    /// A tall measured row used to make the jump land where the lazy stack placed no rows, so the
+    /// thread showed blank. Whether it did depended on the row height, and so on the display scale.
+    @Test(arguments: [(lines: 100, scale: 1.0), (100, 2.0), (4000, 1.0), (4000, 2.0)])
+    func openingAVeryTallEarlierMessageShowsTheLatestButtonForExistingUnreadReplies(lines: Int, scale: CGFloat) async throws {
+        let f = try Q3ScrollHarness(longNewest: true, newestBody: String(repeating: "Earlier visible line.\n", count: lines), scale: scale)
         defer { f.cleanup() }
+        #expect(f.window.backingScaleFactor == scale)
         let earlier = try #require(f.newestID)
         for index in 0..<20 { f.append("Unread reply \(index)") }
         let newest = try #require(f.newestID)
@@ -445,6 +453,28 @@ import ZeusProtocol
         #expect(frame.minY >= native.offset - 2)
         #expect(frame.maxY <= native.offset + native.height + 2)
         #expect(frame.maxY <= native.contentHeight + 2)
+    }
+
+    @Test func jumpToLatestWalksDownFromATallMeasuredRow() {
+        let ids = ["a", "tall", "b", "c", "newest"]
+        let row = { (y: CGFloat, height: CGFloat) in CGRect(x: 0, y: y, width: 300, height: height) }
+        func target(_ frames: [String: CGRect], height: CGFloat = 500, stepping: Bool = false) -> String? {
+            ConversationLayout.latestRevealTarget(ids: ids, frames: frames, viewportHeight: height, stepping: stepping)
+        }
+        // A tall row is measured: step to the row just below the lowest measured row.
+        #expect(target(["tall": row(0, 2000)]) == "b")
+        #expect(target(["a": row(0, 40), "tall": row(40, 2000)]) == "b")
+        // Ordinary rows, or nothing, measured: jump straight to the newest row...
+        #expect(target(["b": row(0, 40)]) == "newest")
+        #expect(target([:]) == "newest")
+        // ...unless the walk has started, since the stack's estimates are still off.
+        #expect(target(["b": row(0, 40)], stepping: true) == "c")
+        #expect(target([:], stepping: true) == "newest")
+        // The newest row is measured: the walk ends there.
+        #expect(target(["tall": row(0, 2000), "newest": row(2000, 40)], stepping: true) == "newest")
+        // Before the viewport has a height, nothing counts as tall.
+        #expect(target(["tall": row(0, 2000)], height: 0) == "newest")
+        #expect(ConversationLayout.latestRevealTarget(ids: [], frames: [:], viewportHeight: 500, stepping: false) == nil)
     }
 
     @Test func exactBottomThresholdAndLongMessageTopCapAreCoveredWithoutSyntheticInputEvents() {

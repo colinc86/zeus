@@ -114,6 +114,21 @@ enum ConversationLayout {
         guard let lastVisible = entries.lastIndex(where: { visible.contains($0.id) }) else { return 0 }
         return entries.dropFirst(lastVisible + 1).filter { !$0.isUser && !$0.isNotice && !$0.isRatingHeld && !$0.isMuted && !seen.contains($0.sourceCardID) }.count
     }
+    /// The row to scroll to next while jumping to the newest row; the jump ends at the last ID.
+    ///
+    /// A lazy stack estimates the rows it hasn't measured from the rows it has. Once it has
+    /// measured a row taller than the viewport, those estimates stay far off, and a direct jump
+    /// to the last row can land where the stack places no rows: the thread shows blank and the
+    /// newest row never reports a frame. The row just below the lowest measured row is placed
+    /// exactly, so from a tall row on (`stepping`), walk down a row at a time instead.
+    static func latestRevealTarget(ids: [String], frames: [String: CGRect], viewportHeight: CGFloat, stepping: Bool) -> String? {
+        guard let last = ids.last else { return nil }
+        guard frames[last] == nil, viewportHeight > 0 else { return last }
+        let measured = ids.indices.filter { frames[ids[$0]] != nil }
+        guard let lowest = measured.last,
+              stepping || measured.contains(where: { (frames[ids[$0]]?.height ?? 0) > viewportHeight }) else { return last }
+        return ids[lowest + 1]
+    }
     static func isAtBottom(lastBottom: CGFloat, viewportHeight: CGFloat) -> Bool { lastBottom <= viewportHeight + 24 }
     static func intersects(_ frame: CGRect, viewportHeight: CGFloat) -> Bool { frame.maxY > 0 && frame.minY < viewportHeight }
     static func hotKeyCloses(isVisible: Bool, isKey: Bool) -> Bool { isVisible && isKey }
