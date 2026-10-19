@@ -120,6 +120,20 @@ import Testing
         #expect(try FileManager.default.contentsOfDirectory(atPath: root.path).isEmpty)
         key.failFrom = nil; #expect(try store.items(matching: .init()).isEmpty)
     }
+    @Test func timedWordExpiryAfterTravelRewritesTheOriginalPartition() throws {
+        let root = root(); defer { try? FileManager.default.removeItem(at: root) }
+        var now = date("2026-11-01T05:31:00Z")
+        let key = FixtureJournalKey()
+        let chicago = EncryptedJournalStore(root: root, keyProvider: key, calendar: calendar("America/Chicago"), clock: { now })
+        try chicago.append(item("words", at: now))
+        now += 86401
+        let la = EncryptedJournalStore(root: root, keyProvider: key, calendar: calendar("America/Los_Angeles"), clock: { now })
+        let retained = try #require(la.items(matching: .init()).first)
+        #expect(retained.payload.value.text == nil && retained.payload.value.topic == "Synthetic topic")
+        let physical = try LearningEncryption.read([JournalItem].self, at: root.appendingPathComponent("2026-11-01.zjournal"), key: key)
+        #expect(physical == [retained])
+        #expect(try FileManager.default.contentsOfDirectory(atPath: root.path) == ["2026-11-01.zjournal"])
+    }
     @Test func travellingRetentionAndAppErasureRewritePhysicalFiles() throws {
         let root = root(); defer { try? FileManager.default.removeItem(at: root) }
         let now = date("2026-11-01T05:31:00Z"), key = FixtureJournalKey()
