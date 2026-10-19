@@ -17,8 +17,16 @@ extension ZeusRuntime: LearningJournalAccessControlling {
         let query = try args.string("query") ?? ""
         guard query.count <= 256 else { throw ToolArgumentError("Use at most 256 characters for the journal query.") }
         let to = try journalDate(args.string("to")) ?? now
-        let from = try journalDate(args.string("from")) ?? to.addingTimeInterval(-86400)
-        guard from <= to, to.timeIntervalSince(from) <= 7 * 86400 else { throw ToolArgumentError("That range is longer than 7 days or ends before it starts.") }
+        guard let earliest = learningCalendar.date(byAdding: .day, value: -7, to: to),
+              let yesterday = learningCalendar.date(byAdding: .day, value: -1, to: to) else {
+            throw ToolArgumentError("That journal date is outside the supported calendar range.")
+        }
+        let from = try journalDate(args.string("from")) ?? yesterday
+        guard from <= to else { throw ToolArgumentError("from must not be later than to.") }
+        guard from >= earliest else {
+            let format = ISO8601DateFormatter(); format.timeZone = learningCalendar.timeZone
+            throw ToolArgumentError("Use at most 7 local calendar days. With this to, the earliest allowed from is \(format.string(from: earliest)).")
+        }
         let limit = try args.number("limit") ?? 20
         guard limit.rounded() == limit, (1...50).contains(limit) else { throw ToolArgumentError("limit must be a whole number from 1 to 50.") }
         let raw = try args.bool("raw", default: false)

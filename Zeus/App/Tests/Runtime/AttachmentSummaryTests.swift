@@ -22,7 +22,9 @@ import ZeusProtocol
         for summary in invalid {
             let result = await f.call(tool, arguments(tool, attachments: [attachment("url"), attachment(kind, summary: summary)]))
             #expect(result.isError)
-            #expect(result.structured?["error"] == .string(ToolArguments.attachmentSummaryGuidance))
+            let count: Int
+            if case .string(let text) = summary { count = text.filter { !$0.isWhitespace }.count } else { count = 0 }
+            #expect(result.structured?["error"] == .string("attachments[1].summary (Draft) needs at least 20 non-whitespace characters; it has \(count). " + ToolArguments.attachmentSummaryGuidance))
             #expect(f.cards.values.isEmpty && additions == 0)
         }
     }

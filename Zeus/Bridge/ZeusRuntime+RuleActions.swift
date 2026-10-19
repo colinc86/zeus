@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import ZeusProtocol
 
 extension ZeusRuntime {
@@ -37,10 +38,6 @@ extension ZeusRuntime {
         let spend = rule.trigger.kind == "spend"
         if name == "zeus_rule_shadow" {
             guard rule.status == .shadow || (spend && rule.status == .active) else { throw ToolArgumentError("Only a shadow rule can report a shadow result.") }
-            if let old = store.ruleActions.first(where: { $0.ruleID == id && $0.kind == .shadow && (!spend || $0.state == .pending || $0.state == .ignored) }) {
-                reconnectPhaseDNotices()
-                return result(["action_id": .string(old.id), "approvalID": .string(old.id), "status": .string(old.state.rawValue), "act": false])
-            }
             var action = RuleActionRecord(id: "rule_action_" + UUID().uuidString, ruleID: id, sessionKey: sessionKey,
                 text: safe.value.description, undo: nil, created: clock.now, kind: .shadow)
             if spend {
@@ -49,6 +46,17 @@ extension ZeusRuntime {
                     throw ToolArgumentError("Every purchase needs its amount and three-letter currency, for example amount=14, currency=EUR. Wait for this purchase's answer.")
                 }
                 action.amount = amount; action.currency = currency; action.approvalCardID = Self.ruleSpendPrefix + UUID().uuidString
+                // Compare original requests without retaining unredacted purchase descriptions.
+                let request: JSONValue = ["text": .string(rawText), "undo": rawUndo.map(JSONValue.string) ?? .null,
+                                          "amount": .number(amount), "currency": .string(currency)]
+                action.requestFingerprint = SHA256.hash(data: try ZeusJSON.encoder().encode(request)).map { String(format: "%02x", $0) }.joined()
+            }
+            if let old = store.ruleActions.first(where: { $0.ruleID == id && $0.kind == .shadow && (!spend || $0.state == .pending || $0.state == .ignored) }) {
+                if spend && (old.sessionKey != sessionKey || old.requestFingerprint == nil || old.requestFingerprint != action.requestFingerprint) {
+                    throw ToolArgumentError("Purchase \(old.id) is still waiting for the user's answer for this rule. Don't ask for another purchase until they approve or decline it; only an exact retry from the same session reuses it. Don't act yet.")
+                }
+                reconnectPhaseDNotices()
+                return result(["action_id": .string(old.id), "approvalID": .string(old.id), "status": .string(old.state.rawValue), "act": false])
             }
             try store.recordAction(action)
             reconnectPhaseDNotices(); learningContextDidChange(); try checkCardPersistence()

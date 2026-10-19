@@ -434,6 +434,9 @@ struct RuleActionRecord: Codable, Equatable, Identifiable, Sendable {
     var approvalCardID: String? = nil
     var amount: Double? = nil
     var currency: String? = nil
+
+    /// Digest of the original purchase request; absent on legacy actions, which cannot be replayed.
+    var requestFingerprint: String? = nil
 }
 /// Optional durable outcome/action API for runtime and the Rules "Why?" panel.
 @MainActor protocol RuleLifecycleStoring: RulesStore {
