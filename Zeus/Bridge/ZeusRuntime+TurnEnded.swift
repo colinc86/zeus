@@ -28,6 +28,8 @@ extension ZeusRuntime {
             let expected = managedController.sessionKey == key ? managedController.record?.conversation?.nativeID : routing.openCodeSessionID(for: key)
             if let expected, expected != native { return nil }
         }
+        // The answer ends with the turn even when zeus_say already ended the typing row.
+        noteReplyWindowTurnEnded(sessionKey: key, deliveryID: event.deliveryID, firedAt: event.firedAt)
         if let id = event.deliveryID, let delivery = ledger?.record(id: id)?.delivery,
            delivery.sessionKey == key, (delivery.lastAttemptAt?.timeIntervalSince1970 ?? .infinity) <= event.firedAt {
             // Selective late-receipt tombstone. A newer in-flight delivery retains

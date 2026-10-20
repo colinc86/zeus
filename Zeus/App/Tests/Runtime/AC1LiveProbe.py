@@ -186,7 +186,7 @@ def lv1_case(executable, case):
                 if Model.stage == 2:
                     control.call("learning_add", id="lv1-new-moment", text="Fixture new moment after connection.")
                     event = eventually(lambda: notification(trace, "notifications/zeus/learning"), "No learning announcement")
-                    assert event["params"] == {"id": "lv1-new-moment", "kind": "moment", "text": "Fixture new moment after connection.\nUnprompted messages left today: 6 (high priority doesn't count)."}, event
+                    assert event["params"] == {"id": "lv1-new-moment", "kind": "moment", "text": "Fixture new moment after connection."}, event
                     before_disable = control.call("state")
                     assert before_disable["unread"] == ["lv1-new-moment"], before_disable
                     assert before_disable["readThrough"] == ["lv1-moment"], before_disable

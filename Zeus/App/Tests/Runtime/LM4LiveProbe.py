@@ -60,7 +60,8 @@ def main():
             state=eventually(lambda:(s if (s:=control.call('state'))['deliveries'] and s['deliveries'][0]['acked'] and s['receipts'] else None),'digest -> model zeus_ack -> sent ledger',timeout=60)
             assert state['unread']==0 and len(state['deliveries'])==1 and state['deliveries'][0]['kind']=='learning' and state['deliveries'][0]['attempts']==1,state
             delivered=state['receipts'][0]['payload']['value']['text']
-            assert delivered.startswith('Synthetic morning summary: working on a fixture project.\nUnprompted messages left today: '),state
+            assert delivered.startswith('Synthetic morning summary: working on a fixture project.\n\nFiles: '),state
+            assert 'Unprompted messages left today' not in delivered,state
             assert '\n\nFiles: Zeus/days/' in delivered,state
             relative=delivered.split('Files: ',1)[1]
             assert (pane.project/relative).read_text().strip()=='Synthetic morning summary: working on a fixture project.'

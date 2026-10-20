@@ -42,7 +42,7 @@ import ZeusProtocol
         #expect(!brief.delivery.content.contains("NEVER_RAW_WORDS"))
         for candidate in 1...4 { #expect(brief.delivery.content.contains("level-\(candidate)") == (candidate == level)) }
         #expect(brief.delivery.content.contains("yesterday's summary") == (level != 0))
-        #expect(brief.delivery.content.contains("Unprompted messages left today: 6"))
+        #expect(!brief.delivery.content.contains("Unprompted messages left today"))
         f.runtime.stop(); try f.runtime.start(); f.runtime.noteProactiveActivity(at: f.clock.now)
         #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .brief }.count == 1)
     }
@@ -114,6 +114,7 @@ import ZeusProtocol
         let first = try #require(f.runtime.ledger?.records.first { $0.delivery.kind == .ruleTrigger })
         #expect(first.delivery.meta["rule_id"] == rule.id)
         #expect(first.delivery.content.contains("shadow, waiting for my OK"))
+        #expect(!first.delivery.content.contains("Unprompted messages left today"))
         #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .ruleTrigger }.count == 1)
         f.runtime.stop(); try f.runtime.start()
         #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .ruleTrigger }.count == 1)
@@ -161,26 +162,32 @@ import ZeusProtocol
         #expect((await f.runtime.callTool("zeus_rule_acted", arguments: args, sessionKey: "claude:/fixture#123.1")).isError)
         #expect(f.rules.ruleActions.filter { $0.kind == .acted }.count == 1)
     }
-    @Test func seventhUnpromptedCardIsHeldBeforeArrivalButUrgencyAndRepliesAreExempt() async throws {
+    /// Regression: 0.3.8 hid every unprompted message after the sixth of the day ("Held: over today's limit").
+    @Test func unpromptedMessagesAreNeverHeldByCount() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
-        for index in 0..<6 {
+        for index in 1...20 {
             let result = await f.runtime.callTool("zeus_say", arguments: ["text": .string("Update \(index)")], sessionKey: "claude:/fixture#123.1")
-            #expect(!result.isError); #expect(f.cards.values.last?.muteDecision == nil)
+            #expect(!result.isError)
+            let card = try #require(f.cards.values.last)
+            #expect(card.origin == .unprompted)
+            if [7, 8, 20].contains(index) {
+                #expect(card.muteDecision == nil)
+                #expect(!card.isRatingHeld)
+                #expect(PeekModel.eligible(card))
+            }
         }
-        f.cards.onAdd = { card in #expect(card.muteDecision?.source == .dailyBudget) }
-        _ = await f.runtime.callTool("zeus_say", arguments: ["text": "Seventh update"], sessionKey: "claude:/fixture#123.1")
-        f.cards.onAdd = nil
-        let held = try #require(f.cards.values.last)
-        try f.runtime.showBudgetHeldCard(id: held.id)
-        #expect(f.cards.card(id: held.id)?.muteDecision?.releasedAt != nil)
-        #expect(f.cards.card(id: held.id)?.muteDecision?.source == .dailyBudget)
-        _ = await f.runtime.callTool("zeus_say", arguments: ["text": "Urgent", "priority": "high"], sessionKey: "claude:/fixture#123.1")
-        #expect(f.cards.values.last?.muteDecision == nil)
+        #expect(f.cards.values.allSatisfy { $0.muteDecision == nil })
+    }
+    @Test func reflectionRequestCarriesNoMessageCount() {
+        let request = ZeusRuntime.reflectionRequest(date: "Friday 17 October")
+        #expect(!request.contains("Unprompted messages left today") && !request.contains("budget"))
+        #expect(request.contains("Otherwise zeus_ack and stay quiet.\n"))
+    }
+    @Test func startDeletesTheRemovedDailyLimitCounter() throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        let stale = f.root.appendingPathComponent("proactive-state.json")
+        try Data(#"{"budgetCards":{"2026-10-14":["a","b","c","d","e","f"]}}"#.utf8).write(to: stale)
         f.runtime.stop(); try f.runtime.start()
-        #expect(f.runtime.remainingUnpromptedBudget == 0)
-        let reply = try f.runtime.applyProactiveBudget(.init(kind: .message, body: "Requested response", origin: .reply))
-        #expect(reply.muteDecision == nil)
-        f.clock.advance(86400)
-        #expect(f.runtime.remainingUnpromptedBudget == 6)
+        #expect(!FileManager.default.fileExists(atPath: stale.path))
     }
 }

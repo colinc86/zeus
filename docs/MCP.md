@@ -42,13 +42,13 @@ Summaries appear in [compact attachment chips](CONVERSATION.md#attachments-from-
 
 Supply an honest, consistent `about` label on messages you send on your own, such as `"On-call reminder"` or `"Meeting prep notes"`. It identifies the kind the user can rate. Omission is supported; the UI falls back to a title or text excerpt. The assistant cannot set `origin` or a mute decision.
 
-Zeus classifies a new card as a reply only while that session has an open, unexpired response to a user message or answer. Classification happens before posting ends that response. An explicit working/thinking status or a learning/reflection delivery alone does not make a reply. Replies are neither rated nor held by ratings; legacy cards without an origin are not assumed unprompted.
+Zeus classifies a new card as a reply while that session is answering a user message or answer: every card in the answer, not only the first. The answer ends when the turn ends (hook or native completion), when Zeus delivers anything else to that session, when the session reconnects, or after 30 minutes without a Zeus tool call. Classification happens before posting ends the typing row. An explicit working/thinking status or a learning/reflection delivery alone does not make a reply. Replies are neither rated nor held by ratings; legacy cards without an origin are not assumed unprompted.
 
 Only **Stop these** with kind scope holds new unprompted cards. Exact normalized labels take precedence, including explicit **More like this**/**Neutral** preferences; otherwise Zeus checks similarity against stopped kinds on the Mac. A held card is retained and the tool still returns its normal result, but it does not peek, sound or count as unread. `priority: "high"` cannot bypass this. Do not relabel or repeat a stopped kind to get it through.
 
 **Neutral** means send only when the user needs to know, using your judgment; Zeus delivers those messages normally. **Just this one** is feedback without a kind rule. Ratings are explicit user preferences delivered through the normal acknowledgment flow, not rules to create with `zeus_propose_rules`. There is no MCP tool for setting or erasing the user's ratings.
 
-Ordinary-priority unprompted cards count toward a limit of six per local day. Further cards still return their normal result but arrive silently held; replies and high-priority cards are exempt. Rating holds are applied first, so **Stop these** still wins. See [the daily limit](CONVERSATION.md#daily-limit-on-unprompted-messages).
+Ratings are how the user tells you how much to send: **Need-to-know** (the **Neutral** button) means send only what they need to see. Zeus never holds a card back because of how many you've sent, and deliveries carry no remaining-message count.
 
 ## Conversation tools
 
@@ -224,7 +224,7 @@ Returns `{ok:true, version}` on success. There is no Undo. A failure is reported
 
 With no arguments, returns `{learnings:[…]}` containing unread digests and moments, oldest first, in a bounded batch. Each learning includes its `id`, `kind`, `createdAt` and `text`. Disabled learning returns an empty array. Rating deliveries use `zeus_get_responses` or the active push route instead and remain available with learning off.
 
-When a folder copy is available, learning text includes a final `Files:` line with the relevant paths. Successful result consumption marks returned learnings read and creates their sent receipts. A notification alone does not. Use them to decide whether useful preparation or a short labeled update is needed now, within the user's permissions, ratings and daily message limit. Otherwise acknowledge quietly. They are not user requests, and private observations should not be quoted unprompted.
+When a folder copy is available, learning text includes a final `Files:` line with the relevant paths. Successful result consumption marks returned learnings read and creates their sent receipts. A notification alone does not. Use them to decide whether useful preparation or a short labeled update is needed now, within the user's permissions and ratings. Otherwise acknowledge quietly. They are not user requests, and private observations should not be quoted unprompted.
 
 Optional `id` (string) fetches an exact saved learning, reflection, brief or rule-trigger delivery as `{delivery: Delivery}`, with the full original text in `delivery.content`. This is separate from the no-argument unread list. It requires the original recipient session and rejects discarded, erased or policy-disabled deliveries. Process it, then call `zeus_ack`; this exact fetch does not acknowledge it automatically. A brief can be fetched with observation off while its own setting remains enabled.
 

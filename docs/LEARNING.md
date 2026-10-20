@@ -125,7 +125,7 @@ Find **Ask my assistant for a morning brief** under **Settings › Assistant ›
 
 The brief works with any learning level, or all levels off. With learning off, the request contains no journal data; the assistant can use its own `Notes/`, rules and calendar, mail or task tools if available. Detecting the start of your day uses only recent input timing, not the contents of what you type. With learning enabled, the request can include redacted descriptions and topics from yesterday's permitted records, never picture bytes or retained typing words. The previous-day summary remains a separate learning record.
 
-Rate the **Morning brief** kind with **More like this**, **Neutral** or **Stop these**, just like other unprompted messages. The [daily message limit](CONVERSATION.md#daily-limit-on-unprompted-messages) also applies. **Stop these** holds matching messages; turning off **Ask my assistant for a morning brief** stops the requests themselves.
+Rate the **Morning brief** kind with **More like this**, **Neutral** or **Stop these**, just like other unprompted messages. **Stop these** holds matching messages; turning off **Ask my assistant for a morning brief** stops the requests themselves.
 
 A prepared request appears as **Morning brief request ready for your assistant**. After acknowledgment or successful submission of a [short delivery pointer](ASSISTANT.md#long-deliveries), **Sent the morning brief request · View** shows the full prepared text. In **What Zeus Kept › Sent to your assistant**, **Waiting** can contain a **Morning brief request** while the assistant is disconnected, busy or has an unsent Terminal draft. These are request receipts, not confirmation that the assistant has produced a brief.
 
@@ -138,7 +138,7 @@ A morning summary describes the previous day. With Apps and timing enabled, it i
 - **A later start than usual**
 - **Day winding down (no input for 20 min after 17:00)**
 
-These produce up to four notes a day. Template v7 asks the assistant to decide whether a summary or note calls for useful preparation or something to flag now, then send one short labeled message if needed; otherwise it acknowledges quietly. It must respect ratings, the daily message limit and action approvals.
+These produce up to four notes a day. Template v7 asks the assistant to decide whether a summary or note calls for useful preparation or something to flag now, then send one short labeled message if needed; otherwise it acknowledges quietly. It must respect ratings and action approvals.
 
 Summaries can include context from other enabled levels. The deliveries carry descriptions and topics, not picture bytes or retained typing words. Those retained details are available separately in the folder.
 
@@ -162,7 +162,7 @@ Template v7 asks the assistant to do three things in order:
 
 1. **Update your notes.** Revise `Notes/about-you.md` and `Notes/patterns.md`, dating each change and explaining what changed its mind. Keep conclusions, not copies of the reflection.
 2. **Propose rules, if any.** Read the current rules, then propose at most three useful rules only for a pattern that held on two or more days, citing evidence from different local days in that reflection. No proposal is needed when the evidence does not support one.
-3. **Get ahead of tomorrow.** If something needs preparing or flagging, do the preparation and send one short labeled message within the daily limit; otherwise acknowledge quietly.
+3. **Get ahead of tomorrow.** If something needs preparing or flagging, do the preparation and send one short labeled message; otherwise acknowledge quietly.
 
 The reflection is not a new request from you or permission for an external action. Acting rules still start in shadow, and every purchase asks. The assistant must not narrate your habits or repeat private details unprompted. **Sent a daily reflection · View** lets you inspect the exact text; [long deliveries](ASSISTANT.md#long-deliveries) explain why a Sent receipt can precede the assistant fetching or acting on it.
 

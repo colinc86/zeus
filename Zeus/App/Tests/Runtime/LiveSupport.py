@@ -159,7 +159,7 @@ def finish_host_build(out,package):
     # declarations. The host never constructs a key provider or opens a keychain.
     for name in ["JournalEncryption.swift", "LearningStorageRecovery.swift"]:
         (package/"Sources/Host"/name).write_text((REPO/"Zeus/Learn/Journal"/name).read_text())
-    for name in ["MessageRatingSeams.swift", "MessageRatingStore.swift", "MessageSimilarity.swift", "ProactiveAssistantSeams.swift", "ProactiveState.swift", "LearningOutboundPolicy.swift"]:
+    for name in ["MessageRatingSeams.swift", "MessageRatingStore.swift", "MessageSimilarity.swift", "ProactiveAssistantSeams.swift", "LearningOutboundPolicy.swift"]:
         (package/"Sources/Host"/name).write_text((REPO/"Zeus/Learn"/name).read_text())
     for path in (REPO/"Zeus/Learn/Redactor").glob("*.swift"):
         (package/"Sources/Host"/path.name).write_text(path.read_text())

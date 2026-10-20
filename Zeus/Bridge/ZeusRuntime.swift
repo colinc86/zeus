@@ -21,6 +21,8 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored var activityOrder = 0
     /// Sessions whose managed/selected-own screen showed "working" since their current activity started (a later idle screen ends it).
     @ObservationIgnored var activityWorkingSeen: Set<String> = []
+    /// Open answers to the user, by session. Separate from the typing row (CONTRACT §10).
+    @ObservationIgnored var replyWindows: [String: ReplyWindow] = [:]
     @ObservationIgnored let ownScreenReader: any OwnSessionScreenReading
     @ObservationIgnored var ownScreenTask: Task<Void, Never>?
     @ObservationIgnored var ownScreenSamplingLease: OwnScreenLease?
@@ -45,7 +47,6 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored let learningCalendar: Calendar
     @ObservationIgnored let morningBriefSettings: MorningBriefSettings?
     @ObservationIgnored let morningBriefLevels: () -> Set<JournalLevel>
-    @ObservationIgnored var proactiveState: ProactiveState?
     @ObservationIgnored var proactiveActivityAt: Date?
     var learningInterruptionHold = false
     var learningError: String?
@@ -179,7 +180,8 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         try FileManager.default.createDirectory(at: URL(fileURLWithPath: socketPath).deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: ledgerURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         let loaded = try DeliveryLedger(location: ledgerURL)
-        proactiveState = try ProactiveState(url: ledgerURL.deletingLastPathComponent().appendingPathComponent("proactive-state.json"))
+        // The removed daily-limit counter (0.3.8 and earlier) left this file behind.
+        try? FileManager.default.removeItem(at: ledgerURL.deletingLastPathComponent().appendingPathComponent("proactive-state.json"))
         let journal = try ResponseJournal(location: ledgerURL.deletingLastPathComponent().appendingPathComponent("response-intents.json"))
         // Import open cards from pre-journal installations without replaying ambiguous
         // historical answers that may already have been delivered synchronously.
@@ -385,6 +387,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     func registerSession(_ session: ConnectedSession, bridge: BridgeSession? = nil) {
         guard running else { return }
         endAssistantActivity(sessionKey: session.sessionKey)
+        closeReplyWindow(sessionKey: session.sessionKey)
         sessions.removeAll { $0.sessionKey == session.sessionKey }
         sessions.insert(session, at: 0)
         bridges[session.sessionKey] = bridge
@@ -415,6 +418,7 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
         guard sessions.first(where: { $0.sessionKey == sessionKey })?.id == id else { return }
         sessions.removeAll { $0.id == id }; bridges.removeValue(forKey: sessionKey)
         endAssistantActivity(sessionKey: sessionKey)
+        closeReplyWindow(sessionKey: sessionKey)
         activityTokens.removeValue(forKey: sessionKey)
         disconnectedAt[sessionKey] = clock.now
         updateDisconnectedTargets()

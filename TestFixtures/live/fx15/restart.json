@@ -1,96 +1,94 @@
 {
-  "agent": "2.1.302 (Claude Code)",
+  "agent": "2.1.304 (Claude Code)",
   "fresh_notices": 0,
   "resumed_notices": 2,
   "same_native_conversation": true,
-  "budget_unchanged": true,
   "state": {
     "receipts": [
       {
-        "level": 1,
         "kind": "sentToAssistant",
-        "time": "2026-10-18T16:42:06.641Z",
-        "id": "sent:restart_2F227193-39E2-4C51-9295-4958D2D69F9E:dac62e40bffbba2a90ad138f",
+        "time": "2026-10-20T21:55:20.924Z",
+        "id": "sent:restart_C4A0D8F6-81CC-4BF3-B0D0-1E4200D2CCA4:d3193f06b62c156570cf4375",
+        "level": 1,
         "payload": {
-          "report": {
-            "counts": [],
-            "semanticEngine": "patternsOnly"
-          },
           "value": {
             "description": "Sent the restart notice",
+            "text": "Zeus restarted you at 16:55 because you pressed Restart Assistant. Timers and scheduled checks you set before the restart are gone. Check what you had planned and set it again. Then zeus_ack.",
             "details": {
-              "sessionID": "dac62e40bffbba2a90ad138fdf3e863009f5856555c167af944460a6750ed364",
-              "delivery_id": "restart_2F227193-39E2-4C51-9295-4958D2D69F9E",
-              "kind": "restart",
+              "agent": "claude",
+              "delivery_id": "restart_C4A0D8F6-81CC-4BF3-B0D0-1E4200D2CCA4",
               "sessionLabel": "Claude \u00b7 Zeus",
-              "agent": "claude"
-            },
-            "text": "Zeus restarted you at 11:41 because you pressed Restart Assistant. Timers and scheduled checks you set before the restart are gone. Check what you had planned and set it again. Then zeus_ack."
+              "kind": "restart",
+              "sessionID": "d3193f06b62c156570cf437571f401b6916646b5e74ac55dccc3a88167b5d830"
+            }
+          },
+          "report": {
+            "semanticEngine": "patternsOnly",
+            "counts": []
           }
         }
       },
       {
-        "time": "2026-10-18T16:42:20.585Z",
         "kind": "sentToAssistant",
+        "time": "2026-10-20T21:55:34.463Z",
+        "id": "sent:restart_43E3B97F-2764-4AD9-BB69-0E52252BDB5E:ae2128c4bf0ac6c16c9581ec",
         "payload": {
-          "report": {
-            "counts": [],
-            "semanticEngine": "patternsOnly"
-          },
           "value": {
             "description": "Sent the restart notice",
+            "text": "Zeus restarted you at 16:55 because you pressed Restart Assistant. Timers and scheduled checks you set before the restart are gone. Check what you had planned and set it again. Then zeus_ack.",
             "details": {
-              "sessionID": "d6bb5e95c603279259c39729e4f320537d82dc3f0cc562fc4b325d0a23c3e987",
-              "delivery_id": "restart_1CC3EEF8-4E2F-49B7-97FE-406CDF35CCB6",
-              "kind": "restart",
+              "delivery_id": "restart_43E3B97F-2764-4AD9-BB69-0E52252BDB5E",
+              "agent": "claude",
               "sessionLabel": "Claude \u00b7 Zeus",
-              "agent": "claude"
-            },
-            "text": "Zeus restarted you at 11:42 because you pressed Restart Assistant. Timers and scheduled checks you set before the restart are gone. Check what you had planned and set it again. Then zeus_ack."
+              "kind": "restart",
+              "sessionID": "ae2128c4bf0ac6c16c9581ec878d76ba0547d228d038a3247e4bc53f81de175d"
+            }
+          },
+          "report": {
+            "semanticEngine": "patternsOnly",
+            "counts": []
           }
         },
-        "id": "sent:restart_1CC3EEF8-4E2F-49B7-97FE-406CDF35CCB6:d6bb5e95c603279259c39729",
         "level": 1
       }
     ],
-    "pane": "%0",
-    "budget": 6,
-    "unread": 0,
-    "ok": true,
+    "error": null,
     "deliveries": [
       {
-        "id": "restart_2F227193-39E2-4C51-9295-4958D2D69F9E",
+        "attempts": 1,
         "discarded": false,
+        "meta": {
+          "kind": "restart",
+          "managed_conversation": "F643696D-781F-406B-BF02-3B6142AAFDB1"
+        },
+        "id": "restart_C4A0D8F6-81CC-4BF3-B0D0-1E4200D2CCA4",
         "kind": "restart",
         "acked": true,
-        "meta": {
-          "managed_conversation": "ED2D3531-65E9-4381-BB9F-74C9B1C31B4E",
-          "kind": "restart"
-        },
-        "content": "Zeus restarted you at 11:41 because you pressed Restart Assistant. Timers and scheduled checks you set before the restart are gone. Check what you had planned and set it again. Then zeus_ack.",
-        "attempts": 1
+        "content": "Zeus restarted you at 16:55 because you pressed Restart Assistant. Timers and scheduled checks you set before the restart are gone. Check what you had planned and set it again. Then zeus_ack."
       },
       {
-        "id": "restart_1CC3EEF8-4E2F-49B7-97FE-406CDF35CCB6",
-        "discarded": false,
-        "kind": "restart",
-        "acked": true,
-        "meta": {
-          "managed_conversation": "ED2D3531-65E9-4381-BB9F-74C9B1C31B4E",
-          "kind": "restart"
-        },
         "attempts": 1,
-        "content": "Zeus restarted you at 11:42 because you pressed Restart Assistant. Timers and scheduled checks you set before the restart are gone. Check what you had planned and set it again. Then zeus_ack."
+        "discarded": false,
+        "meta": {
+          "kind": "restart",
+          "managed_conversation": "F643696D-781F-406B-BF02-3B6142AAFDB1"
+        },
+        "id": "restart_43E3B97F-2764-4AD9-BB69-0E52252BDB5E",
+        "kind": "restart",
+        "content": "Zeus restarted you at 16:55 because you pressed Restart Assistant. Timers and scheduled checks you set before the restart are gone. Check what you had planned and set it again. Then zeus_ack.",
+        "acked": true
       }
     ],
-    "ruleActions": [],
-    "error": null,
     "ratings": 0,
-    "muted": [],
-    "cards": [],
-    "sessions": 1,
     "status": "running(Host.ManagedSessionStatus.Activity.idle)",
-    "nativeID": "ED2D3531-65E9-4381-BB9F-74C9B1C31B4E"
+    "unread": 0,
+    "sessions": 1,
+    "ok": true,
+    "ruleActions": [],
+    "pane": "%0",
+    "nativeID": "F643696D-781F-406B-BF02-3B6142AAFDB1",
+    "muted": [],
+    "cards": []
   },
   "isolation": "private tmux, disposable HOME/config, localhost model, fixture key"
 }

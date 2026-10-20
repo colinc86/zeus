@@ -352,7 +352,7 @@ The protocols live in `Zeus/Shared/AppSeams.swift`, which the PM owns. That file
 
 Zeus is a **conversation**, not a stack of cards to clear.
 
-The runtime classifies new say/ask/present cards as `CardOrigin.reply` only while a response row started by a user message or answer is open; otherwise they are `unprompted`. An agent status override alone cannot make a reply. The optional `about` is a plain kind label, not an agent-controlled origin. Classification happens before the new card ends that response row. Legacy and local cards may have no origin. Stopped kinds hold only unprompted cards, including high-priority cards, before CardStore publication; replies are never held (§13, FB1).
+The runtime classifies new say/ask/present cards as `CardOrigin.reply` while that session is answering the user: its live response row was started by a user message or answer, or its **reply window** is open; otherwise they are `unprompted`. Every message in an answer is a reply, not only the first. A reply window opens (or is replaced) when a user message, a card answer or an answered synchronous `zeus_ask` reaches the session, and when a card is classified from such a live row. It is separate from the typing row: posting a card ends the row but leaves the window open. It closes when any other delivery (learning, brief, rule trigger, reflection, restart) reaches that session, by push or by `zeus_get_responses`; when the native turn ends (a `turnEnded` hook for that session that fired after the input arrived and names that input or none, or for the managed session a new native completion footer or the completion line of that delivery ID); when the session registers again or disconnects, the runtime stops, the input is discarded, or the user deletes everything they taught Zeus; and after **30 minutes** without a Zeus tool call from that session (the only end for external sessions without hooks). It is memory-only and never exposed to agents. An agent status override alone cannot make a reply. Polling-only sessions never open a response row or a reply window, so their cards stay `unprompted`. The optional `about` is a plain kind label, not an agent-controlled origin. Classification happens before the new card ends that response row. Legacy and local cards may have no origin. Stopped kinds hold only unprompted cards, including high-priority cards, before CardStore publication; replies are never held (§13, FB1).
 
 1. **One conversation panel.**
    - Every click target in the conversation panel responds to the first click, whether or not the panel is key.
@@ -417,7 +417,7 @@ The runtime classifies new say/ask/present cards as `CardOrigin.reply` only whil
      - `.sent`: a user message or a card answer was delivered (channel push written, tmux/OpenCode injected, or a synchronous `zeus_ask` result returned) to a session.
      - `.thinking`: that session has shown activity since: an ack, or any Zeus tool call.
      - `.working`: that session called `zeus_set_status` with `thinking` or `working`. The detail and progress come from that call. This applies even when no user message started it (unsolicited work).
-   - **Ends when** the session posts a new card (`zeus_say` / `zeus_ask` / `zeus_present`), calls `zeus_set_status` with `auto` or any other state, the override TTL expires, the session disconnects, or the delivery is discarded. For the **managed session** it also ends when a positive idle screen follows a working screen, or 20 s after the row started (an agent that ends its turn without `zeus_say` must not keep Zeus thinking; 2026-10-14). A short turn can begin and end between screen samples, so a fresh **native completion** also ends it early: for Claude, a new "✻ … · done" footer scoped to the user prompt that started this response (never a scheduled-task footer); for Codex and OpenCode, the native completion line following the history echo of this exact delivery ID. Repainted old footers, a new user echo and unsent composer text are not completion. Explicit `working` statuses keep their TTL regardless of screen evidence (SA1/SA2, 2026-10-14). A `turnEnded` wire message (§3, SA3) from a hook Zeus added at launch ends only the implicit `.sent`/`.thinking` response whose input began by `firedAt` and whose optional delivery ID matches, for the session whose agent and exactly one registered parent process lifetime match the bounded ancestry (never cwd or pane alone; a known OpenCode destination must agree on the native ID). A changed response token, a runtime restart or an explicit `working` status invalidates it; a correlated early connector or answer receipt is tombstoned so a fast completion is never resurrected, while newer in-flight input keeps its own receipt. Launches without the hook keep the screen and stale rules. An interruption by Escape in the terminal emits no hook from Claude Code; it falls back to those rules (decided 2026-10-14). The same screen rules extend to a **Connect-your-own** assistant using "Its Terminal pane" (SA4) only when the user explicitly selected that pane and its socket matches the registered session: Zeus captures it read-only every 3 s only while that session has an implicit `.sent`/`.thinking` activity, and stops on completion, a selection or mode change, disconnect or runtime shutdown; pane, server and agent lifetimes are validated around each capture and the session, destination, generation and response token are revalidated after every await. For an own Claude session without a pre-response sample, completion requires the current delivery envelope in the history, never an old footer. An ended source cannot revive; a newer in-flight transport receipt may still start its own response. Own-session sampling never mirrors prompts, alerts on drafts or creates blocked cards (those stay managed-only). Sessions without a selected pane keep the hook and stale rules. It also ends after **5 minutes with no activity** from that session (`.sent` and `.thinking` only; `.working` follows its TTL). Only a newly delivered message or answer, or an explicit `zeus_set_status` with `thinking`/`working`, starts it again. Acks and other tool calls only advance a row that already exists (`.sent` → `.thinking`); they never create one (P12).
+   - **Ends when** the session posts a new card (`zeus_say` / `zeus_ask` / `zeus_present`; this ends only the row, not the answer's reply window, §10), calls `zeus_set_status` with `auto` or any other state, the override TTL expires, the session disconnects, or the delivery is discarded. For the **managed session** it also ends when a positive idle screen follows a working screen, or 20 s after the row started (an agent that ends its turn without `zeus_say` must not keep Zeus thinking; 2026-10-14). A short turn can begin and end between screen samples, so a fresh **native completion** also ends it early: for Claude, a new "✻ … · done" footer scoped to the user prompt that started this response (never a scheduled-task footer); for Codex and OpenCode, the native completion line following the history echo of this exact delivery ID. Repainted old footers, a new user echo and unsent composer text are not completion. Explicit `working` statuses keep their TTL regardless of screen evidence (SA1/SA2, 2026-10-14). A `turnEnded` wire message (§3, SA3) from a hook Zeus added at launch ends only the implicit `.sent`/`.thinking` response whose input began by `firedAt` and whose optional delivery ID matches, for the session whose agent and exactly one registered parent process lifetime match the bounded ancestry (never cwd or pane alone; a known OpenCode destination must agree on the native ID). A changed response token, a runtime restart or an explicit `working` status invalidates it; a correlated early connector or answer receipt is tombstoned so a fast completion is never resurrected, while newer in-flight input keeps its own receipt. Launches without the hook keep the screen and stale rules. An interruption by Escape in the terminal emits no hook from Claude Code; it falls back to those rules (decided 2026-10-14). The same screen rules extend to a **Connect-your-own** assistant using "Its Terminal pane" (SA4) only when the user explicitly selected that pane and its socket matches the registered session: Zeus captures it read-only every 3 s only while that session has an implicit `.sent`/`.thinking` activity, and stops on completion, a selection or mode change, disconnect or runtime shutdown; pane, server and agent lifetimes are validated around each capture and the session, destination, generation and response token are revalidated after every await. For an own Claude session without a pre-response sample, completion requires the current delivery envelope in the history, never an old footer. An ended source cannot revive; a newer in-flight transport receipt may still start its own response. Own-session sampling never mirrors prompts, alerts on drafts or creates blocked cards (those stay managed-only). Sessions without a selected pane keep the hook and stale rules. It also ends after **5 minutes with no activity** from that session (`.sent` and `.thinking` only; `.working` follows its TTL). Only a newly delivered message or answer, or an explicit `zeus_set_status` with `thinking`/`working`, starts it again. Acks and other tool calls only advance a row that already exists (`.sent` → `.thinking`); they never create one (P12).
    - **Several sessions.** One indicator: the most recently started activity wins.
    - **Agent instructions.** `ZeusMCP.instructions` and the assistant template (`Zeus/Resources/AssistantTemplate`) tell the agent that Zeus shows "thinking" automatically after a message, and that if it finishes **without** posting to Zeus, it should call `zeus_set_status {"state":"auto"}` to clear it.
    - **Auto-scroll.** When a new message or typing row appears, or a typewriter grows, the thread follows it, **but never scrolls past the point where the newest message's top reaches the top of the viewport**. A long message is read from its top, not its bottom. Auto-scroll only happens while the user is "at the bottom" (within ~1 line of it, or already pinned to the newest message's top). If they've scrolled up to read history, the thread doesn't move; a small "↓ New message" pill appears, and clicking it or pressing ⌘↓ jumps there (with the same top-of-message cap).
@@ -483,7 +483,7 @@ reason (app update, Restart Assistant, crash recovery, update or settings change
 explains that native timers were lost, and asks the assistant to recreate its next check.
 Unacknowledged notices may follow a later launch of the same native conversation;
 starting a different conversation discards them. It uses ordinary transport/acknowledgment and is independent of learning being enabled.
-It is not a user message and does not spend the six-message unprompted budget.
+It is not a user message: cards answering it are `unprompted`.
 `zeus_get_learnings {id}` can retrieve its exact body; consumption is recorded only
 through the normal receipt path. Pending/sent ledger vocabulary is **Restart notice**.
 Zeus does not persist or recreate native timers itself; no scheduling tool is added.
@@ -594,7 +594,7 @@ Export work follows what changed, not the retained history (PERF3). Journal appe
 
 ### FB1 message kinds and ratings
 
-`zeus_say`, `zeus_ask` and `zeus_present` accept optional `about`, a plain kind label of 1–60 characters. Cards persist `about`, runtime-classified `origin` (`reply` or `unprompted`) and an optional `muteDecision`. Missing fields on legacy/local cards stay nil; they are not assumed unsolicited. A reply requires an open, unexpired activity record started by a user-message or answer delivery for that session; a status override or a learning/reflection delivery alone does not qualify. Origin is captured before posting ends the response row. Agents cannot set origin or muting.
+`zeus_say`, `zeus_ask` and `zeus_present` accept optional `about`, a plain kind label of 1–60 characters. Cards persist `about`, runtime-classified `origin` (`reply` or `unprompted`) and an optional `muteDecision`. Missing fields on legacy/local cards stay nil; they are not assumed unsolicited. A reply requires an open, unexpired activity record started by a user-message or answer delivery for that session, or that session's open reply window (§10); a status override or a learning/reflection delivery alone does not qualify, and any non-user delivery closes the window. Origin is captured before posting ends the response row. Agents cannot set origin or muting.
 
 The optional runtime `MessageRatingsProviding` capability exposes ratings, retained per-card mute decisions, today's held IDs, quiet suggestions, revision/error and typed mutations. Rate/edit/remove/correct return an encrypted, durable compare-and-swap Undo receipt; a later preference mutation invalidates it. Undo is a new preference delivery, never recall of information already sent. `correctMuted` releases only that card and does not replay a notification or change the kind rule. `showMuted` invokes the app's navigation callback without releasing cards.
 
@@ -607,7 +607,7 @@ Quiet signals never mute automatically. An unsolicited kind with five distinct m
 Message preference startup distinguishes an unavailable key from corrupt data. An unavailable key keeps the store waiting and retries without replacing persisted state; user replies remain usable, but new unprompted cards wait for preferences to load. Explicit preference edits must persist before succeeding. Corrupt data is a surfaced startup error, never an empty preference fallback. Erasure removes the encrypted state even while the key is unavailable.
 
 
-### PA1 proactive deliveries and noise budget
+### PA1 proactive deliveries
 
 `Delivery.kind` adds `brief` and `ruleTrigger` (§4). These are assistant-directed
 context, not user requests: their resulting cards remain `unprompted`. They use
@@ -625,8 +625,8 @@ rearms after a nonmatch. Restarting during an open window does not duplicate it.
 Closing the window cancels pending delivery. Changing approval/status cancels an
 obsolete queued snapshot without firing again within that same window. Rule-action tools still require the
 current trigger and authority checks: shadow is never permission, and purchases
-still need their exact one-use approval. Delivery text includes the remaining
-unprompted budget and existing `Files:` paths only.
+still need their exact one-use approval. Delivery text includes existing `Files:`
+paths only.
 
 `MorningBriefSettings` is independent of capture consent. The mode default is on
 for managed and off for Connect your own; an explicit choice persists across modes.
@@ -639,18 +639,19 @@ or changing allowed evidence levels prevents an old pending request from sending
 At levels 1–4 the request includes only already-redacted permitted summary data;
 level 4 supplies topics, never typed words. With capture off it contains no journal
 data. It requests one `zeus_present` with `about: "Morning brief"`, or quiet ack if
-nothing matters. Existing digest/moment deliveries also include the budget line.
+nothing matters.
 
-The normal-priority unprompted-card soft budget is six per local day. Replies and
-high-priority cards do not spend it. Ratings are evaluated first, and Stop still
-holds high-priority messages. Over-budget cards carry `CardMuteDecision.source =
-dailyBudget` before CardStore publication; legacy/nil source means rating. They
-arrive silently collapsed as “Held: over today's limit · Show”. Count IDs persist
-across relaunch independently of retained card history. Show records `releasedAt`
-without changing a rating or replaying notifications; Hide is app-local presentation
-only. Source/reason remain for the daily summary even after Show. Midnight resets
-the budget and never replays yesterday's held alerts. Normal rating controls remain
-available on an expanded budget-held card; rating-correction controls do not apply.
+**No count limit (0.3.9).** Zeus never holds a message back because of how many
+the assistant has sent. Ratings are the only thing that quiets messages: Up asks for
+more of a kind, Neutral ("need-to-know") asks the assistant to send that kind only
+when the user needs to see it, and Stop these mutes that kind (FB1). No delivery
+carries a remaining-message count. The daily limit of 0.3.8 is removed: its
+`proactive-state.json` counter is deleted at runtime start, and
+`CardMuteDecision.Source.dailyBudget` is decoded only so old history loads.
+`CardStore` clears those decisions when it loads and saves the history, so cards
+once shown as “Held: over today's limit” become ordinary messages. They do not peek
+or play again; their unread state follows the saved seen IDs. The app also ignores
+any `dailyBudget` decision it is given. Legacy/nil source means rating.
 
 ### Tool validation refinements (FX26)
 

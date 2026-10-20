@@ -807,7 +807,7 @@ private struct ConversationBubble: View, Equatable {
             }
             ZeusBubble(entry.isUser ? .user : .agent, muted: entry.isMuted || card.map { ratings?.isHeld($0) == true } == true, highPriority: card?.priority == .high && card.map { ratings?.isHeld($0) == true } != true, maxWidth: maxWidth) {
                 if let card {
-                    if let ratings, ratings.canRate(card), (!ratings.isHeld(card) || ratings.isBudgetHeld(card)) {
+                    if let ratings, ratings.canRate(card), !ratings.isHeld(card) {
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
                             if let title = card.title { Text(title).zeusFont(.button).foregroundStyle(palette.title) }
                             Spacer(minLength: 0)

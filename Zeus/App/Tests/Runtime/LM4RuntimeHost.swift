@@ -139,7 +139,6 @@ private struct LM4Runner: ProcessRunning {
                             "cards": .array(try cards.values.map(JSONValue.from)),
                             "ruleActions": .array(try (rules?.ruleActions ?? []).map(JSONValue.from)),
                             "ratings": .number(Double(live.ratings.count)),
-                            "budget": .number(Double(live.remainingUnpromptedBudget)),
                             "nativeID": controller.record?.conversation?.nativeID.map(JSONValue.string) ?? .null,
                             "muted": .array(live.mutedToday.map(JSONValue.string)),
                             "unread": .number(Double(learnings.values.count)),

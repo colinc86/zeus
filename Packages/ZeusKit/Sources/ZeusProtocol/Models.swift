@@ -118,9 +118,16 @@ public struct CardResponse: Codable, Sendable, Equatable {
 /// Shared card state for the Mac and iOS clients.
 /// Runtime-classified source. Agents cannot choose this value.
 public enum CardOrigin: String, Codable, Sendable { case reply, unprompted }
-/// Persisted explanation of a local rating or daily-budget hold. A release never replays a notification.
+/// Persisted explanation of a local rating mute. A release never replays a notification.
 public struct CardMuteDecision: Codable, Equatable, Sendable {
-    public enum Source: String, Codable, Sendable { case rating, dailyBudget }
+    /// What decided the mute.
+    public enum Source: String, Codable, Sendable {
+        /// A user's message rating.
+        case rating
+        /// Deprecated: the removed daily unprompted-message limit. Decoded only so old history
+        /// loads; Zeus clears these decisions when it loads card history and never creates them.
+        case dailyBudget
+    }
     /// Missing on legacy records, which are rating decisions.
     public var source: Source?
     public var ratingID: String
