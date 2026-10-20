@@ -103,10 +103,20 @@ enum StatusStripState {
         if card.kind == .question, card.input != nil { return .init(entryID: "card:\(card.id)", controlID: "reply") }
         return nil
     }
+    /// The first unread card after the newest card the person has seen or written. Rows they
+    /// scrolled past stay unread, so the oldest unread card can be days old; opening there
+    /// lands far behind where they left off.
+    static func unreadAfterSeen(_ cards: Cards) -> Card? {
+        let thread = ordered(cards.values.filter { !$0.isRatingHeld && !$0.isWithdrawn })
+        let start = thread.lastIndex { $0.kind == .userMessage || cards.seen.contains($0.id) }.map { $0 + 1 } ?? 0
+        return thread[start...].first { $0.kind != .userMessage && !cards.seen.contains($0.id) }
+    }
+    /// Opening from the avatar or menu: an open question, or what arrived since the person last
+    /// looked; with nothing newer unread, the latest message.
     static func avatarTarget(cards: Cards, status: AvatarPresentation) -> Jump? {
         switch status.state {
         case .waiting: questions(cards).first.map { .question($0.id) }
-        case .alert: unread(cards).first.map { .unread($0.id) }
+        case .alert: unread(cards).isEmpty ? nil : unreadAfterSeen(cards).map { .unread($0.id) } ?? .latest
         default: nil
         }
     }

@@ -484,3 +484,65 @@ import ZeusProtocol
         #expect(ConversationAutoScroll.isPinned(viewport: .init(offset: 700, contentHeight: 3000, height: 500), newestMessageTop: 700))
     }
 }
+
+/// The overnight report: open at the latest, close, let a lot arrive, reopen the next morning.
+/// Each open mounts a new thread at the top of its 300-row page, days back, which lays out those
+/// oldest rows first. With a row there taller than the viewport, the jump to the newest walked down
+/// from it a row at a time and stopped after 60 steps, still days back; otherwise a direct jump
+/// could stop short of the newest row.
+@Suite(.serialized) @MainActor struct ConversationReopenAtLatestTests {
+    /// Rows of every height: one line, a paragraph, and every eighth row taller than the viewport.
+    private static func body(_ index: Int, label: String, tall: Int) -> String {
+        let lines = [1, 3, 8, 1, 2, tall, 1, 5][index % 8]
+        return (0..<lines).map { "\(label) \(index), line \($0): a sentence long enough to wrap in the bubble." }.joined(separator: "\n")
+    }
+    @discardableResult private func add(_ f: Q3ScrollHarness, count: Int, from start: Date, label: String, tall: Int = 30) -> [String] {
+        (0..<count).map { index in
+            let card = Card(kind: .message, body: Self.body(index, label: label, tall: tall), createdAt: start.addingTimeInterval(Double(index) * 600))
+            f.cards.add(card); f.newestID = card.id
+            f.model.noteArrival(card, visible: false, animate: false)
+            return card.id
+        }
+    }
+    private func expectShown(_ f: Q3ScrollHarness, _ label: String) throws {
+        f.record(label)
+        let scroll = try #require(f.nativeScrollView())
+        let driver = ConversationScrollDriver(); driver.scrollView = scroll
+        let native = try #require(driver.viewport)
+        let frame = try #require(f.panel.newestMessageFrameForDiagnostics, "\(label): the newest row was never laid out")
+        #expect(f.panel.atBottom, "\(label)")
+        #expect(frame.minY >= native.offset - 2 && frame.maxY <= native.offset + native.height + 2, "\(label): the newest row is not on screen")
+        #expect(native.offset + native.height >= native.contentHeight - 2, "\(label): not at the end of the thread")
+    }
+
+    /// The hotkey and "Talk to Zeus" open with no target (`ShellController.openConversation(at: nil)`).
+    /// `tall` is every eighth row's line count: about two viewports high, or about thirty.
+    @Test(arguments: [0, 40, 400], [30, 400])
+    func reopeningAfterArrivalsWhileClosedLandsOnTheNewest(arrivals: Int, tall: Int) async throws {
+        let f = try Q3ScrollHarness(longNewest: false); defer { f.cleanup() }
+        let day = 86_400.0
+        add(f, count: 250, from: Date().addingTimeInterval(-4 * day), label: "Earlier", tall: tall)
+        f.mount(); try await f.settle()
+        try expectShown(f, "first open")
+        f.unmount(); try await f.settle()
+        add(f, count: arrivals, from: Date().addingTimeInterval(-day / 2), label: "Overnight", tall: tall)
+        f.mount(); try await f.settle()
+        try expectShown(f, "morning open")
+    }
+
+    /// Clicking Zeus with unread messages opens at the first one since the person last looked.
+    @Test func reopeningAtARecentUnreadCardLandsOnIt() async throws {
+        let f = try Q3ScrollHarness(longNewest: false); defer { f.cleanup() }
+        let day = 86_400.0
+        add(f, count: 250, from: Date().addingTimeInterval(-4 * day), label: "Earlier")
+        f.mount(); try await f.settle()
+        f.unmount(); try await f.settle()
+        let overnight = add(f, count: 400, from: Date().addingTimeInterval(-day / 2), label: "Overnight")
+        f.mount(target: overnight[390]); try await f.settle()
+        f.record("recent unread")
+        let scroll = try #require(f.nativeScrollView())
+        let driver = ConversationScrollDriver(); driver.scrollView = scroll
+        let native = try #require(driver.viewport)
+        #expect(native.contentHeight - native.offset < 5000, "the ten newest rows are near the end of the thread")
+    }
+}

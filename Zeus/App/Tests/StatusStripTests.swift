@@ -80,6 +80,28 @@ import ZeusProtocol
         #expect(StatusStripState.avatarTarget(cards: snapshot, status: .init(state: .alert)) == .unread(c.id))
         #expect(StatusStripState.avatarTarget(cards: snapshot, status: .init(state: .thinking)) == nil)
     }
+    /// Opening at the latest marks only the rows on screen as seen; the ones scrolled past stay
+    /// unread. Clicking Zeus the next morning must not jump back to them, days behind.
+    @Test func avatarUnreadJumpStartsAfterWhatWasLastSeen() {
+        let skipped = card("skipped-monday", at: 1, kind: .message)
+        let seen = card("seen-monday", at: 2, kind: .message)
+        let overnight = card("overnight", at: 3, kind: .message), later = card("later", at: 4, kind: .message)
+        var snapshot = StatusStripState.Cards(values: [skipped, seen, overnight, later], seen: [seen.id])
+        let alert = AvatarPresentation(state: .alert)
+        #expect(StatusStripState.avatarTarget(cards: snapshot, status: alert) == .unread(overnight.id))
+        // Everything newer was read: open at the latest, not at the old skipped row.
+        snapshot.seen = [seen.id, overnight.id, later.id]
+        #expect(StatusStripState.avatarTarget(cards: snapshot, status: alert) == .latest)
+        // The person's own message marks where they were, too.
+        let sent = card("sent", at: 3.5, kind: .userMessage)
+        snapshot = .init(values: [skipped, seen, overnight, sent, later], seen: [seen.id])
+        #expect(StatusStripState.avatarTarget(cards: snapshot, status: alert) == .unread(later.id))
+        // Nothing seen yet: the first unread, as before. Nothing unread: no target.
+        snapshot = .init(values: [skipped, seen], seen: [])
+        #expect(StatusStripState.avatarTarget(cards: snapshot, status: alert) == .unread(skipped.id))
+        snapshot.seen = [skipped.id, seen.id]
+        #expect(StatusStripState.avatarTarget(cards: snapshot, status: alert) == nil)
+    }
     @Test func failedBubblePrecedesQueuedAndPendingReplies() {
         let a = card("queued", at: 1, kind: .userMessage), b = card("failed", at: 2, kind: .userMessage)
         var snapshot = StatusStripState.Cards(values: [a,b], outgoing: [a.id: .queued("Offline"), b.id: .failed("Not sent")])

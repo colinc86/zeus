@@ -357,6 +357,7 @@ The runtime classifies new say/ask/present cards as `CardOrigin.reply` only whil
 1. **One conversation panel.**
    - Every click target in the conversation panel responds to the first click, whether or not the panel is key.
    - Clicking Zeus, or the global hotkey, toggles a single panel: a scrolling thread with the newest message at the bottom and a **composer that's always there**.
+   - Opening it with the hotkey or Talk to Zeus lands on the newest message, however long the thread is and however much arrived while it was closed. Clicking Zeus while it shows unread opens at the first unread message after the newest one already seen or written; unread rows scrolled past earlier don't pull it back, and with nothing newer it opens at the newest message.
    - Agent cards render inline as message bubbles. Questions keep their option buttons live until answered, and content cards show attachments. A progress card updates in place, and a card dismissed by the agent, or one that expired, fades to muted and never counts as unread (FX16).
    - The user's own messages and answers appear as right-aligned bubbles.
    - Users never have to dismiss anything. Opening the panel marks everything visible as seen.

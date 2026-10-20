@@ -541,6 +541,17 @@ struct ConversationView: View {
             await Task.yield()
             guard panel.isVisible, atBottom, !userScrolling, !panel.document.isOpen else { return }
             if model.thread.isEmpty { proxy.scrollTo("bottom", anchor: .bottom) }
+            // A thread that just opened has measured only the top rows of its page, which can be
+            // days older than the newest: too far to walk (below). Scroll the native document to
+            // its end first. A nearby measured row, like an earlier message opened from a jump,
+            // is walked from instead: after a tall row, that end can hold no rows at all.
+            let ids = entries.map(\.id)
+            if let last = ids.last, frames[last] == nil,
+               ids.count - 1 - (ids.lastIndex { frames[$0] != nil } ?? -1) > Self.latestRevealSteps / 2 {
+                scrollDriver.perform(.latest)
+                for _ in 0..<6 where frames[last] == nil { try? await Task.sleep(for: .milliseconds(16)) }
+                guard panel.isVisible, atBottom, !userScrolling, !panel.document.isOpen else { return }
+            }
             // After a tall measured row, a direct jump can land on blank space; walk down
             // instead (see `latestRevealTarget`). Ordinary threads take the direct jump.
             var stepping = false
@@ -549,11 +560,13 @@ struct ConversationView: View {
                 guard let last = ids.last, let target = ConversationLayout.latestRevealTarget(
                     ids: ids, frames: frames, viewportHeight: viewport.height, stepping: stepping) else { break }
                 proxy.scrollTo(step == Self.latestRevealSteps ? last : target, anchor: .top)
-                if target == last { break }
+                if target == last && frames[last] != nil { break }
                 stepping = true
-                // Wait for the lazy stack to measure the row it scrolled to.
+                // Wait for the lazy stack to measure the row it scrolled to. A jump to the newest
+                // row that placed no rows is tried again, walking from any row it did place.
                 for _ in 0..<6 where frames[target] == nil { try? await Task.sleep(for: .milliseconds(16)) }
                 guard panel.isVisible, atBottom, !userScrolling, !panel.document.isOpen else { return }
+                if target == last && frames[last] != nil { break }
             }
             await Task.yield()
             followLatest()
