@@ -7,6 +7,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
     func startLearning() {
         learningObservationToken = UUID()
         learningCatchUpPending = true
+        reflectionEvidenceChecked = nil
         (learningJournal as? any JournalDeletionObserving)?.onJournalDeletion = { [weak self] ids in self?.journalEvidenceDeleted(ids) }
         (learnings as? any LearningDeletionObserving)?.onLearningDeletion = { [weak self] ids in self?.eraseLearningDeliveries(ids: ids) }
         if let source = learnings as? any LearningDeletionObserving {
@@ -400,14 +401,35 @@ extension ZeusRuntime: LearningRuntimeControlling {
     private func reconcileReflectionEvidence() {
         guard let journal = learningJournal, let ledger else { return }
         let reflections = ledger.records.filter { $0.delivery.kind == .reflection && !$0.delivery.content.isEmpty }
-        guard !reflections.isEmpty else { return }
+        guard !reflections.isEmpty else { reflectionEvidenceChecked = nil; return }
+        let signature = reflections.map { record in
+            ([record.delivery.id] + ["evidence", "source_hash", "source_from", "source_to", "levels"].map { record.delivery.meta[$0] ?? "" }).joined(separator: "\u{1f}")
+        }
+        // Appends can only change a verdict when they fall inside a hashed reflection window; re-scan the whole journal
+        // only then, or after anything was rewritten or removed.
+        if let checked = reflectionEvidenceChecked, checked.signature == signature {
+            if checked.revision == journal.revision { return }
+            if let appended = (journal as? any JournalAppendHistory)?.appendedItems(since: checked.revision),
+               !reflections.contains(where: { Self.reflectionWindow($0.delivery, contains: appended) }) {
+                reflectionEvidenceChecked = (journal.revision, signature); return
+            }
+        }
+        reflectionEvidenceChecked = nil
         do {
             var query = JournalQuery(); query.limit = 100_000
             let items = try journal.items(matching: query)
+            let revision = journal.revision
             let erased = Set(reflections.filter { !reflectionSourcesRetained($0.delivery, items: items) }.map { $0.delivery.id })
-            guard !erased.isEmpty else { return }
+            guard !erased.isEmpty else { reflectionEvidenceChecked = (revision, signature); return }
             eraseLearningDeliveries(ids: erased)
         } catch { learningError = "Zeus couldn't reconcile deleted reflection evidence." }
+    }
+    /// Whether any appended item could change `reflectionSourcesRetained` for this reflection.
+    /// Evidence lists only lose IDs through deletion; a source hash covers its [source_from, source_to) window.
+    static func reflectionWindow(_ delivery: Delivery, contains items: [JournalItem]) -> Bool {
+        guard delivery.meta["source_hash"] != nil else { return false }
+        guard let from = Double(delivery.meta["source_from", default: ""]), let to = Double(delivery.meta["source_to", default: ""]) else { return true }
+        return items.contains { $0.time.timeIntervalSince1970 >= from && $0.time.timeIntervalSince1970 < to }
     }
     private func reflectionDayKey(_ date: Date) -> String {
         let c = learningCalendar.dateComponents([.year, .month, .day], from: date)

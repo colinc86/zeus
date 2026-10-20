@@ -21,6 +21,7 @@ final class LearningPresentation {
     private(set) var error: String?
     @ObservationIgnored private var source: (any FocusCaptureSource)?
     @ObservationIgnored private var journal: (any JournalStore)?
+    @ObservationIgnored private var receivedIDsCache: (revision: UInt64, ids: Set<String>)?
     @ObservationIgnored var presentationChanged: () -> Void = {}
     @ObservationIgnored var runtimeProblem: () -> String? = { nil }
     /// Whether the morning brief request is on (Settings › Assistant); the ledger's empty caption reads it (UX5).
@@ -103,11 +104,22 @@ final class LearningPresentation {
     }
     /// Exact durable receipts outrank a pending snapshot after a ledger write failure.
     /// Nil means the journal is unavailable, not that no receipt exists.
+    /// Read on every journal change: appends extend the last full read; anything else re-reads the journal.
     var receivedLearningDeliveryIDs: Set<String>? {
         guard let journal else { return nil }
-        _ = journal.revision
+        let revision = journal.revision
+        if let cached = receivedIDsCache {
+            if cached.revision == revision { return cached.ids }
+            if let appended = (journal as? any JournalAppendHistory)?.appendedItems(since: cached.revision) {
+                let ids = cached.ids.union(appended.filter { $0.kind == .sentToAssistant }.compactMap { $0.payload.value.details["delivery_id"] })
+                receivedIDsCache = (revision, ids); return ids
+            }
+        }
+        receivedIDsCache = nil
         var query = JournalQuery(); query.kinds = [.sentToAssistant]; query.limit = 100_000
-        return try? Set(journal.items(matching: query).compactMap { $0.payload.value.details["delivery_id"] })
+        guard let ids = try? Set(journal.items(matching: query).compactMap({ $0.payload.value.details["delivery_id"] })) else { return nil }
+        receivedIDsCache = (journal.revision, ids)
+        return ids
     }
     var enabled: Bool { learn.settings.enabled || (2...4).contains { policies.policy($0).enabled && policies.policy($0).consented } }
     /// Read only when building the menu; no notification, announcement, avatar state or thread entry is emitted.
@@ -119,7 +131,7 @@ final class LearningPresentation {
                  source: any FocusCaptureSource = MacFocusCaptureSource()) {
         learn.outboundPolicy = { [weak self] in self?.outboundPolicy }
         focus?.stop()
-        self.journal = journal; self.source = source
+        self.journal = journal; self.source = source; receivedIDsCache = nil
         (source as? MacFocusCaptureSource)?.onContextChange = { [weak self] in self?.captureContextChanged() }
         (source as? MacFocusCaptureSource)?.safariDetailsAllowed = { [weak policies] in policies?.policy(2).permitsSafariDetails ?? false }
         screen?.stop()
@@ -141,6 +153,7 @@ final class LearningPresentation {
         viewer.folder = folder
         viewer.learningEnabled = { [weak self] in self?.enabled ?? false }
         viewer.briefEnabled = { [weak self] in self?.briefEnabled() ?? false }
+        viewer.isShown = false // ShellController shows it with the journal window.
         self.viewer = viewer; self.rules = RulesPaneModel(store: rules, journal: viewer)
         focus = FocusObserver(source: source, policies: policies,
             privateApps: { [weak learn] in learn?.settings.excludedApps ?? ExcludedApp.defaults },

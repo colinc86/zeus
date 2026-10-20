@@ -27,6 +27,18 @@ import UniformTypeIdentifiers
     @ObservationIgnored private var workID = UUID()
     @ObservationIgnored private var work: Task<Void, Never>?
     @ObservationIgnored private var itemPaths: [String: String] = [:]
+    /// What each journal day last wrote, keyed by the journal's day token. A day whose token, levels and folder are
+    /// unchanged is not re-read, re-rendered or re-applied; its paths are still kept from pruning.
+    @ObservationIgnored private var dayMemos: [Date: DayMemo] = [:]
+    @ObservationIgnored private var memoEpoch: UInt64 = 0
+    @ObservationIgnored private var pendingRefresh: Task<Void, Never>?
+    @ObservationIgnored private var refreshedRevision: UInt64?
+    @ObservationIgnored private var formatters: [String: DateFormatter] = [:]
+    /// Journal days rendered (not skipped) by refreshes; used by the performance regression tests.
+    @ObservationIgnored private(set) var renderedDayCount = 0
+    /// Journal appends are coalesced for this long before a refresh. Other changes refresh at once.
+    @ObservationIgnored var journalDebounce: Duration = .milliseconds(500)
+    private struct DayMemo { let token: String; let levels: Set<JournalLevel>; let root: URL; let paths: Set<String> }
 
     init(journal: any JournalStore, rules: (any RulesStore)?, stateURL: URL,
          enabledLevels: @escaping () -> Set<JournalLevel>, redactor: any Redactor = LocalRedactor(), calendar: Calendar = .current) {
@@ -35,7 +47,8 @@ import UniformTypeIdentifiers
         do { let disk = try LearningFolderDisk(stateURL: stateURL); self.disk = disk; ownFolder = disk.ownFolder; folderURL = ownFolder }
         catch { lastWriteError = "Zeus couldn't read its folder record. Your existing files were left alone." }
     }
-    isolated deinit { work?.cancel(); disk?.invalidate() }
+    isolated deinit { work?.cancel(); pendingRefresh?.cancel(); disk?.invalidate() }
+    private func forgetDayMemos() { dayMemos.removeAll(); memoEpoch &+= 1 }
     func setFolder(_ folder: URL?) {
         guard let disk else { return }
         let normalized = folder?.standardizedFileURL.resolvingSymlinksInPath()
@@ -49,15 +62,15 @@ import UniformTypeIdentifiers
     private func updateFolder() {
         let selected = managedFolder ?? ownFolder
         guard folderURL != selected else { refresh(); return }
-        work?.cancel(); disk?.invalidate(); generation = UUID()
+        work?.cancel(); disk?.invalidate(); generation = UUID(); forgetDayMemos()
         folderURL = selected; itemPaths.removeAll(); observe(); refresh()
     }
     func start(learnings: any LearningsProviding) {
         self.learnings = learnings
-        guard !running else { refresh(); return }; running = true; generation = UUID()
+        guard !running else { refresh(); return }; running = true; generation = UUID(); forgetDayMemos()
         (journal as? any JournalFolderSource)?.onFolderDeletion = { [weak self] ids in
             guard let self else { return }
-            self.work?.cancel(); self.disk?.invalidate()
+            self.work?.cancel(); self.disk?.invalidate(); self.forgetDayMemos()
             if ids == nil { self.safeLearnings.removeAll(); self.reflections.removeAll() }
             if let root = self.folderURL {
                 do { try self.disk?.erase(root: root, ids: ids) }
@@ -69,10 +82,11 @@ import UniformTypeIdentifiers
     }
     func stop() {
         running = false; generation = UUID(); work?.cancel(); work = nil; disk?.invalidate()
+        pendingRefresh?.cancel(); pendingRefresh = nil; forgetDayMemos()
         (journal as? any JournalFolderSource)?.onFolderDeletion = nil
     }
     func deleteFolderContents(includeAssistantNotes: Bool) throws {
-        work?.cancel(); disk?.invalidate(); safeLearnings.removeAll(); reflections.removeAll()
+        work?.cancel(); disk?.invalidate(); safeLearnings.removeAll(); reflections.removeAll(); forgetDayMemos()
         guard let root = folderURL, let disk else { return }
         do { try disk.erase(root: root, ids: nil, includeNotes: includeAssistantNotes); itemPaths.removeAll(); lastWriteError = nil; exportRevision &+= 1 }
         catch { lastWriteError = "Zeus couldn't empty its learnings folder."; throw error }
@@ -90,7 +104,7 @@ import UniformTypeIdentifiers
     private func observe() {
         guard running else { return }; let token = generation
         withObservationTracking {
-            _ = journal.revision; _ = rules?.revision; _ = enabledLevels()
+            _ = rules?.revision; _ = enabledLevels()
             _ = (learnings as? any LearningHistoryProviding)?.allLearnings
             _ = learnings?.unreadLearnings()
         } onChange: { [weak self] in
@@ -99,36 +113,73 @@ import UniformTypeIdentifiers
                 self.refresh(); self.observe()
             }
         }
+        observeJournal(token)
+    }
+    /// Appends arrive with every activity event; coalesce them. Deletions reach the folder through `onFolderDeletion` at once.
+    private func observeJournal(_ token: UUID) {
+        withObservationTracking { _ = journal.revision } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, self.running, self.generation == token else { return }
+                self.scheduleRefresh(); self.observeJournal(token)
+            }
+        }
+    }
+    private func scheduleRefresh() {
+        guard pendingRefresh == nil else { return }
+        let delay = journalDebounce
+        pendingRefresh = Task(priority: .utility) { @MainActor [weak self] in
+            do { try await Task.sleep(for: delay) } catch { return }
+            guard let self else { return }
+            self.pendingRefresh = nil; self.refresh()
+        }
     }
     /// Rebuild in bounded day/file batches. Changing folders or erasing invalidates every old batch.
+    /// Days whose journal partition, levels and folder are unchanged since they were last written are skipped.
     func refresh() {
-        work?.cancel(); workID = UUID()
+        work?.cancel(); workID = UUID(); pendingRefresh?.cancel(); pendingRefresh = nil; refreshedRevision = journal.revision
         guard running, let root = folderURL, let disk else { return }
-        let token = disk.invalidate(), generation = generation
+        let token = disk.invalidate(), generation = generation, epoch = memoEpoch
         work = Task(priority: .utility) { [weak self] in
             guard let self else { return }
             do {
                 let source = self.journal as? any JournalFolderSource
-                let days: [Date?] = try (source?.folderDays() ?? []).map { Optional($0) } + [nil]
+                let folderDays = try source?.folderDays() ?? []
+                let days: [Date?] = folderDays.map { Optional($0) } + [nil]
                 var kept = Set<String>()
                 for day in days {
+                    let levels = self.enabledLevels()
+                    // Read before the items so a change during rendering is never memoized as written.
+                    let dayToken = day.flatMap { source?.folderDayToken(on: $0) }
+                    if let day, let dayToken, let memo = self.dayMemos[day], memo.token == dayToken, memo.levels == levels, memo.root == root {
+                        kept.formUnion(memo.paths); continue
+                    }
+                    if day != nil { self.renderedDayCount += 1 }
                     let (files, streamed) = try await self.files(on: day, root: root, disk: disk, token: token)
                     try Task.checkCancellation()
                     guard self.running, self.generation == generation, self.folderURL == root else { return }
-                    kept.formUnion(streamed); kept.formUnion(files.map(\.path))
+                    let paths = streamed.union(files.map(\.path))
+                    kept.formUnion(paths)
                     for start in stride(from: 0, to: files.count, by: 20) {
                         let batch = Array(files[start..<min(files.count, start + 20)])
                         try await Task.detached(priority: .utility) { try disk.apply(batch, root: root, token: token) }.value
                         try Task.checkCancellation()
                     }
+                    // A collision must be retried (and reported) on every refresh, as before.
+                    if let day, let dayToken, self.memoEpoch == epoch, levels == self.enabledLevels(), paths.isDisjoint(with: disk.collisionPaths) {
+                        self.dayMemos[day] = .init(token: dayToken, levels: levels, root: root, paths: paths)
+                    } else if let day { self.dayMemos.removeValue(forKey: day) }
                     await Task.yield()
                 }
                 let keep = kept
                 try await Task.detached(priority: .utility) { try disk.prune(root: root, keeping: keep, token: token) }.value
+                if self.memoEpoch == epoch { let live = Set(folderDays); self.dayMemos = self.dayMemos.filter { live.contains($0.key) } }
                 self.lastWriteError = Self.collisionMessage(disk.collisionPaths); self.exportRevision &+= 1
             } catch is CancellationError { }
             catch LearningFolderError.stale { }
-            catch { self.lastWriteError = "Zeus couldn't update its learnings folder. The retained journal is unchanged." }
+            catch {
+                self.forgetDayMemos()
+                self.lastWriteError = "Zeus couldn't update its learnings folder. The retained journal is unchanged."
+            }
         }
     }
     static func collisionMessage(_ paths: [String]) -> String? {
@@ -144,6 +195,17 @@ import UniformTypeIdentifiers
             let id = workID, task = work
             await task?.value
             if id == workID { return }
+        }
+    }
+    /// Waits for any coalesced or running refresh without starting a new one. Used by tests and benchmarks.
+    func settle() async {
+        while !Task.isCancelled {
+            // The observation callback may still be queued behind this call.
+            if running, pendingRefresh == nil, refreshedRevision != journal.revision { scheduleRefresh() }
+            if let pending = pendingRefresh { await pending.value; continue }
+            let id = workID, task = work
+            await task?.value
+            if id == workID && pendingRefresh == nil { return }
         }
     }
     func recordLearning(_ learning: Learning) async -> [String] {
@@ -166,7 +228,9 @@ import UniformTypeIdentifiers
         return [path]
     }
     private func formatted(_ date: Date, _ pattern: String) -> String {
+        if let f = formatters[pattern] { return f.string(from: date) }
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.calendar = calendar; f.timeZone = calendar.timeZone; f.dateFormat = pattern
+        formatters[pattern] = f
         return f.string(from: date)
     }
     private func day(_ date: Date) -> String { formatted(date, "yyyy-MM-dd") }

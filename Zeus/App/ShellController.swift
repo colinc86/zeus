@@ -1159,17 +1159,22 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     func showJournal(reload: Bool = true) {
         guard let viewer = learning.viewer else { return }
         if reload { viewer.reload() }
+        viewer.isShown = true
         if journalWindow == nil {
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 720, height: 520),
                 styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
             window.title = "What Zeus Kept"; window.isReleasedWhenClosed = false
             window.minSize = NSSize(width: 600, height: 400)
             window.contentView = NSHostingView(rootView: JournalWindowView(model: viewer, settings: settings))
-            window.center(); journalWindow = window
+            window.center(); window.delegate = self; journalWindow = window
         }
         NSApp.activate(); journalWindow?.makeKeyAndOrderFront(nil)
     }
 
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow, window === journalWindow else { return }
+        learning.viewer?.isShown = false
+    }
     func windowDidResize(_ notification: Notification) {
         guard let window = notification.object as? NSWindow, window === settingsWindow else { return }
         SettingsWindowSize.save(window.contentRect(forFrameRect: window.frame).size, to: defaults)

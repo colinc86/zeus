@@ -500,6 +500,14 @@ extension LearningFolderProviding {
     var onFolderDeletion: ((Set<String>?) -> Void)? { get set }
     func folderDays() throws -> [Date]
     func folderItems(on day: Date) throws -> [JournalItem]
+    /// A value that changes whenever the day's retained items may have changed; nil means "always re-read".
+    func folderDayToken(on day: Date) -> String?
+}
+extension JournalFolderSource { func folderDayToken(on day: Date) -> String? { nil } }
+/// Lets readers of the whole journal update cached results from appends alone.
+@MainActor protocol JournalAppendHistory: AnyObject {
+    /// The items appended after `revision`, oldest first; nil when anything was rewritten or removed since then.
+    func appendedItems(since revision: UInt64) -> [JournalItem]?
 }
 @MainActor protocol LearningHistoryProviding: AnyObject { var allLearnings: [Learning] { get } }
 /// Runtime dependency remains optional, including in isolated headless hosts.

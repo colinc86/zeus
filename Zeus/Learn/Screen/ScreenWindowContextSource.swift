@@ -85,11 +85,12 @@ import Carbon
         guard !locked(), policy().permits(candidate), !ScreenObserver.sensitiveApp(bundle) else { return }
         // Watching focus/title notifications carries no captured text. current() alone authorizes a particular window.
         var observer: AXObserver?
-        let callback: AXObserverCallback = { _, _, _, refcon in
+        let callback: AXObserverCallback = { _, _, notification, refcon in
             guard let refcon else { return }
             // The observer is removed synchronously in stop before the owner can be released.
             let source = Unmanaged<ScreenWindowContextSource>.fromOpaque(refcon).takeUnretainedValue()
-            MainActor.assumeIsolated { source.connectAX(); source.onChange?() }
+            let name = notification as String
+            MainActor.assumeIsolated { source.axNotification(name); source.onChange?() }
         }
         guard AXObserverCreate(app.processIdentifier, callback, &observer) == .success, let observer else { return }
         axObserver = observer; let element = AXUIElementCreateApplication(app.processIdentifier); observedApp = element
@@ -100,6 +101,25 @@ import Carbon
             observedWindow = window; AXObserverAddNotification(observer, window, kAXTitleChangedNotification as CFString, refcon)
         }
         CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .commonModes)
+    }
+    /// Focus and title events arrive constantly while the user works. Keep the app's observer and re-attach only the
+    /// title watch when the focused window changes; still drop everything as soon as the app is no longer permitted.
+    private func axNotification(_ name: String) {
+        guard let axObserver, let observedApp else { connectAX(); return }
+        guard policy().enabled, policy().consented, AXIsProcessTrusted(), let app = NSWorkspace.shared.frontmostApplication,
+              let bundle = app.bundleIdentifier, !locked(), !ScreenObserver.sensitiveApp(bundle),
+              policy().permits(ScreenContext(bundleID: bundle, appName: "", windowTitle: "", windowID: 0, processID: app.processIdentifier)) else {
+            disconnectAX(); return
+        }
+        var pid: pid_t = 0
+        guard AXUIElementGetPid(observedApp, &pid) == .success, pid == app.processIdentifier else { connectAX(); return }
+        guard name == kAXFocusedWindowChangedNotification as String else { return }
+        if let observedWindow { AXObserverRemoveNotification(axObserver, observedWindow, kAXTitleChangedNotification as CFString) }
+        observedWindow = nil
+        if let window = Self.element(observedApp, kAXFocusedWindowAttribute) {
+            observedWindow = window
+            AXObserverAddNotification(axObserver, window, kAXTitleChangedNotification as CFString, Unmanaged.passUnretained(self).toOpaque())
+        }
     }
     static func frontWindow(processID: Int32, windows: [[String: Any]]) -> [String: Any]? {
         windows.first { ($0[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value == processID &&
