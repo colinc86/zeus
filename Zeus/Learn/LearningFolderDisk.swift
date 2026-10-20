@@ -12,8 +12,8 @@ enum LearningFolderError: Error { case unsafePath, tooLarge, stale, invalidPictu
 /// A short lock serializes atomic file operations with synchronous erasure. Encoding
 /// and ordinary writes run in detached utility work; deletion invalidates that work first.
 final class LearningFolderDisk: @unchecked Sendable {
-    private struct Entry: Codable { var hash: String; var ids: Set<String> }
-    private struct Folder: Codable {
+    private struct Entry: Codable, Equatable { var hash: String; var ids: Set<String> }
+    private struct Folder: Codable, Equatable {
         var files: [String: Entry] = [:]
         var finderDeleted: Set<String> = []
         var erasedHashes: [String: String] = [:]
@@ -30,7 +30,18 @@ final class LearningFolderDisk: @unchecked Sendable {
         self.stateURL = stateURL
         state = FileManager.default.fileExists(atPath: stateURL.path)
             ? try JSONDecoder().decode(State.self, from: Data(contentsOf: stateURL)) : State()
+        // Temporary paths recorded by an interrupted write join the manifest so erasure still finds them.
+        if let data = try? Data(contentsOf: pendingURL),
+           let pending = try? JSONDecoder().decode([String: Set<String>].self, from: data) {
+            for (k, paths) in pending where !paths.isEmpty {
+                var folder = state.folders[k] ?? Folder()
+                folder.temporaryFiles = (folder.temporaryFiles ?? []).union(paths); state.folders[k] = folder
+            }
+            try save()
+        }
     }
+    /// A small sidecar that records temporary paths before they are created, instead of rewriting the whole manifest.
+    private var pendingURL: URL { stateURL.appendingPathExtension("pending") }
     var ownFolder: URL? { lock.withLock { state.ownFolder } }
     func setOwnFolder(_ url: URL?) throws { try lock.withLock { state.ownFolder = url; try save() } }
     @discardableResult func invalidate() -> UInt64 { lock.withLock { epoch &+= 1; collisions.removeAll(); return epoch } }
@@ -41,6 +52,12 @@ final class LearningFolderDisk: @unchecked Sendable {
         try FileManager.default.createDirectory(at: stateURL.deletingLastPathComponent(), withIntermediateDirectories: true,
                                                attributes: [.posixPermissions: 0o700])
         try Self.atomic(JSONEncoder().encode(state), at: stateURL)
+        if unlink(pendingURL.path) != 0 && errno != ENOENT { throw POSIXError(.init(rawValue: errno) ?? .EIO) }
+    }
+    private func recordPendingTemporaryFiles() throws {
+        try FileManager.default.createDirectory(at: stateURL.deletingLastPathComponent(), withIntermediateDirectories: true,
+                                               attributes: [.posixPermissions: 0o700])
+        try Self.atomic(JSONEncoder().encode(state.folders.compactMapValues(\.temporaryFiles)), at: pendingURL)
     }
     static func atomic(_ data: Data, at target: URL, temporaryURL: URL? = nil, replacing: Bool = true) throws {
         guard data.count <= 16_000_000 else { throw LearningFolderError.tooLarge }
@@ -105,10 +122,18 @@ final class LearningFolderDisk: @unchecked Sendable {
         try lock.withLock {
             guard epoch == token else { throw LearningFolderError.stale }
             let k = key(root); var folder = state.folders[k] ?? Folder()
+            var changed = state.folders[k] == nil
+            func accept(_ file: LearningFolderFile, hash: String) {
+                collisions.remove(file.path)
+                if folder.erasedHashes.removeValue(forKey: file.path) != nil { changed = true }
+                let entry = Entry(hash: hash, ids: file.ids)
+                if folder.files[file.path] != entry { folder.files[file.path] = entry; changed = true }
+            }
+            var writes: [(file: LearningFolderFile, url: URL, hash: String, temp: String, replacing: Bool)] = []
             for file in files {
                 let url = try target(root, file.path, create: false), hash = Self.hash(file.data)
                 if folder.files[file.path] != nil && !FileManager.default.fileExists(atPath: url.path) {
-                    folder.finderDeleted.insert(file.path); folder.files.removeValue(forKey: file.path)
+                    folder.finderDeleted.insert(file.path); folder.files.removeValue(forKey: file.path); changed = true
                 }
                 if folder.finderDeleted.contains(file.path) || folder.erasedHashes[file.path] == hash { continue }
                 let exists = FileManager.default.fileExists(atPath: url.path)
@@ -124,22 +149,32 @@ final class LearningFolderDisk: @unchecked Sendable {
                 } else if folder.files[file.path]?.hash != hash {
                     try prepareDirectories(root: root, path: file.path, folder: &folder)
                     let tempPath = (file.path as NSString).deletingLastPathComponent + "/.zeus-write-" + UUID().uuidString
-                    folder.temporaryFiles = (folder.temporaryFiles ?? []).union([tempPath])
-                    state.folders[k] = folder; try save()
-                    do {
-                        try Self.atomic(file.data, at: url, temporaryURL: target(root, tempPath, create: false), replacing: folder.files[file.path] != nil)
-                    } catch let error as POSIXError where error.code == .EEXIST {
-                        collisions.insert(file.path); folder.temporaryFiles?.remove(tempPath)
-                        continue
-                    }
-                    folder.temporaryFiles?.remove(tempPath)
+                    writes.append((file, url, hash, tempPath, folder.files[file.path] != nil))
+                    continue
                 }
-                collisions.remove(file.path)
-                folder.erasedHashes.removeValue(forKey: file.path)
-                folder.files[file.path] = Entry(hash: hash, ids: file.ids)
+                accept(file, hash: hash)
+            }
+            if !writes.isEmpty {
+                // Every temporary path is recorded durably (one small sidecar write per batch) before any temporary file exists.
+                folder.temporaryFiles = (folder.temporaryFiles ?? []).union(writes.map(\.temp))
+                state.folders[k] = folder; try recordPendingTemporaryFiles(); changed = true
+            }
+            for write in writes {
+                do {
+                    try Self.atomic(write.file.data, at: write.url, temporaryURL: target(root, write.temp, create: false), replacing: write.replacing)
+                } catch let error as POSIXError where error.code == .EEXIST {
+                    collisions.insert(write.file.path); folder.temporaryFiles?.remove(write.temp)
+                    continue
+                } catch {
+                    state.folders[k] = folder; throw error
+                }
+                folder.temporaryFiles?.remove(write.temp)
+                accept(write.file, hash: write.hash)
                 state.folders[k] = folder
             }
-            state.folders[k] = folder; try save()
+            // The record is rewritten only when it changed; an unchanged day costs no state write.
+            state.folders[k] = folder
+            if changed { try save() }
         }
     }
     private func prepareDirectories(root: URL, path: String, folder: inout Folder) throws {
@@ -168,14 +203,17 @@ final class LearningFolderDisk: @unchecked Sendable {
         try lock.withLock {
             guard epoch == token else { throw LearningFolderError.stale }
             let k = key(root); var folder = state.folders[k] ?? Folder()
+            var changed = state.folders[k] == nil
             for path in folder.files.keys where !keeping.contains(path) {
                 let url = try target(root, path, create: false)
                 if FileManager.default.fileExists(atPath: url.path) { try removeFile(url) }
                 else { folder.finderDeleted.insert(path) }
-                folder.files.removeValue(forKey: path)
+                folder.files.removeValue(forKey: path); changed = true
             }
+            let directories = folder.directories
             try removeEmptyDirectories(root: root, folder: &folder)
-            state.folders[k] = folder; try save()
+            state.folders[k] = folder
+            if changed || folder.directories != directories { try save() }
         }
     }
     func erase(root: URL, ids: Set<String>?, includeNotes: Bool = false) throws {

@@ -4,11 +4,16 @@ import Observation
 import ZeusProtocol
 
 /// Per-day AES-GCM storage. Full-text matching is indexed in memory only; no plaintext index is written.
-@MainActor @Observable final class EncryptedJournalStore: JournalSnapshotProviding, FrameJournalStoring, TypingJournalStoring, LearningStorageRecovering, JournalDeletionObserving, JournalFolderSource {
+@MainActor @Observable final class EncryptedJournalStore: JournalSnapshotProviding, FrameJournalStoring, TypingJournalStoring, LearningStorageRecovering, JournalDeletionObserving, JournalFolderSource, JournalAppendHistory {
     @ObservationIgnored var onFolderDeletion: ((Set<String>?) -> Void)?
     @ObservationIgnored var onJournalDeletion: ((Set<String>?) -> Void)?
     private(set) var revision: UInt64 = 0 {
-        didSet { snapshotCache = nil; snapshotKey = nil; snapshotStamp = nil }
+        didSet {
+            snapshotCache = nil; snapshotKey = nil; snapshotStamp = nil
+            if let appended = pendingAppend, appendLog.count < 4_096 { appendLog.append((revision, appended)) }
+            else { appendLog.removeAll(); appendLogFloor = revision }
+            pendingAppend = nil
+        }
     }
     private(set) var lastError: String?
     private(set) var storageWaitingForUnlock = false
@@ -25,7 +30,24 @@ import ZeusProtocol
     @ObservationIgnored private var typingForgetEpoch = UUID()
     @ObservationIgnored private var typingWordsPreference: TypingWordsRetention?
     @ObservationIgnored private var typingTopicsPreference = 30
+    /// Search text, filled lazily by text queries only. In memory only, like `partitionCache`.
     @ObservationIgnored private var index: [String: String] = [:]
+    /// Decrypted day partitions, valid only for the file identity they were read from and for the current key.
+    /// Never written to disk. Every read still asks the key provider once per operation, so a locked keychain fails closed.
+    @ObservationIgnored private var partitionCache: [String: CachedPartition] = [:]
+    @ObservationIgnored private var partitionCacheKey: Data?
+    /// Bumped whenever this store writes or removes a partition; part of the folder writer's per-day token.
+    @ObservationIgnored private var partitionWrites: [String: UInt64] = [:]
+    @ObservationIgnored private var partitionWriteCount: UInt64 = 0
+    /// Items appended since `appendLogFloor` (the last revision that rewrote or removed anything).
+    @ObservationIgnored private var appendLog: [(revision: UInt64, item: JournalItem)] = []
+    @ObservationIgnored private var appendLogFloor: UInt64 = 0
+    @ObservationIgnored private var pendingAppend: JournalItem?
+    @ObservationIgnored private let scopedKey: OperationScopedJournalKey
+    /// Number of partitions decrypted and decoded; used by the performance regression tests.
+    @ObservationIgnored private(set) var partitionDecodeCount = 0
+    private struct FileStamp: Equatable { let inode: UInt64; let size: Int64; let modified: Int; let modifiedNanos: Int; let changed: Int; let changedNanos: Int }
+    private struct CachedPartition { let stamp: FileStamp; let items: [JournalItem]; let ids: Set<String> }
     @ObservationIgnored private var forgetEpoch = UUID()
     @ObservationIgnored var snapshotRead: @Sendable ([URL], Data) async throws -> [JournalSnapshotPartition] = { urls, secret in
         try await JournalSnapshotReader.read(urls, secret: secret)
@@ -47,6 +69,7 @@ import ZeusProtocol
          keyProvider: any JournalKeyProviding = KeychainJournalKeyProvider(), calendar: Calendar = .current,
          clock: @escaping () -> Date = Date.init) {
         self.root = root; self.keyProvider = keyProvider; self.calendar = calendar; retentionClock = clock
+        scopedKey = OperationScopedJournalKey(keyProvider)
     }
     isolated deinit { typingExpiryTask?.cancel(); recoveryTask?.cancel() }
     func append(_ item: JournalItem) throws {
@@ -104,12 +127,13 @@ import ZeusProtocol
             let url = file(item.time)
             var day = try read(url)
             // Idempotent append supports recovery of sent receipts; conflicting IDs are never silently replaced.
-            if let existing = try all().first(where: { $0.id == item.id }) {
+            if let existing = try existingItem(id: item.id) {
                 guard existing == item else { throw LearningStorageError.invalidItem }; return
             }
             day.append(item)
-            try LearningEncryption.write(day, to: url, key: keyProvider)
-            index[item.id] = searchable(item); revision &+= 1
+            try writePartition(day, to: url)
+            if !index.isEmpty { index[item.id] = searchable(item) }
+            pendingAppend = item; revision &+= 1
             if item.level == .typed, item.kind == .typedText {
                 let expiry = item.payload.value.text == nil ? Self.topicExpiry(item) : min(Self.wordsExpiry(item), Self.topicExpiry(item))
                 if nextTypingExpiry.map({ expiry < $0 }) ?? true { scheduleTypingExpiry(expiry) }
@@ -131,7 +155,7 @@ import ZeusProtocol
                       box.x + box.width <= 1.000001 && box.y + box.height <= 1.000001
                   }) else { throw LearningStorageError.invalidItem }
             let url = frameFile(item.id)
-            if let existing = try all().first(where: { $0.id == item.id }) {
+            if let existing = try existingItem(id: item.id) {
                 guard existing == item, try self.frame(id: item.id) == frame else { throw LearningStorageError.invalidItem }; return
             }
             try LearningEncryption.write(frame, to: url, key: keyProvider)
@@ -141,8 +165,8 @@ import ZeusProtocol
     }
     func frame(id: String) throws -> Redacted<FrameItem>? {
         try perform {
-            guard try all().contains(where: { $0.id == id && $0.kind == .frame }) else { return nil }
-            return try LearningEncryption.read(Redacted<FrameItem>.self, at: frameFile(id), key: keyProvider)
+            guard try existingItem(id: id)?.kind == .frame else { return nil }
+            return try LearningEncryption.read(Redacted<FrameItem>.self, at: frameFile(id), key: scopedKey)
         }
     }
     @discardableResult func deleteFrame(id: String, includingDescription: Bool) throws -> FrameDeletionReceipt {
@@ -250,7 +274,7 @@ import ZeusProtocol
                     if kept != partition.items {
                         // Keep the physical partition and the existing expiry commit semantics. A partial failure
                         // retains successful revision increments but publishes nothing; a retry reads committed files.
-                        try LearningEncryption.write(kept, to: partition.url, key: keyProvider)
+                        try writePartition(kept, to: partition.url)
                         index.removeAll(); revision &+= 1
                     }
                     retained += kept
@@ -275,14 +299,23 @@ import ZeusProtocol
             // Enforce expired words before search/export even if the app slept through its timer or capture is off.
             try expireTypingWords(now: retentionClock())
             let needle = query.text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-            return try all().filter { item in
-                if let from = query.from, item.time < from { return false }
-                if let to = query.to, item.time >= to { return false }
-                if !query.levels.isEmpty && !query.levels.contains(item.level) { return false }
-                if !query.apps.isEmpty && !query.apps.contains(item.app ?? "") { return false }
-                if !query.kinds.isEmpty && !query.kinds.contains(item.kind) { return false }
-                return needle.isEmpty || (index[item.id] ?? "").contains(needle)
-            }.sorted { $0.time == $1.time ? $0.id < $1.id : $0.time < $1.time }
+            var matches: [JournalItem] = []
+            for url in try files() {
+                for item in try read(url) {
+                    if let from = query.from, item.time < from { continue }
+                    if let to = query.to, item.time >= to { continue }
+                    if !query.levels.isEmpty && !query.levels.contains(item.level) { continue }
+                    if !query.apps.isEmpty && !query.apps.contains(item.app ?? "") { continue }
+                    if !query.kinds.isEmpty && !query.kinds.contains(item.kind) { continue }
+                    if !needle.isEmpty {
+                        let text = index[item.id] ?? searchable(item)
+                        index[item.id] = text
+                        guard text.contains(needle) else { continue }
+                    }
+                    matches.append(item)
+                }
+            }
+            return matches.sorted { $0.time == $1.time ? $0.id < $1.id : $0.time < $1.time }
                 .prefix(max(0, min(query.limit, 100_000))).map { $0 }
         }
     }
@@ -313,7 +346,7 @@ import ZeusProtocol
             if case .all = selection {
                 // Forget works even with an unavailable key or damaged ciphertext.
                 if FileManager.default.fileExists(atPath: transactionFile.path) { try FileManager.default.removeItem(at: transactionFile) }
-                for url in try physicalFiles() + frameFiles() { try FileManager.default.removeItem(at: url); revision &+= 1 }
+                for url in try physicalFiles() + frameFiles() { try removePartition(url); revision &+= 1 }
                 index.removeAll(); typingExpiryTask?.cancel(); typingExpiryTask = nil
                 nextTypingExpiry = nil; typingExpiryInitialized = true
                 reportDeletion(nil); return
@@ -332,8 +365,8 @@ import ZeusProtocol
                     }
                 }
                 guard kept.count != old.count else { continue }
-                if kept.isEmpty { try FileManager.default.removeItem(at: url) }
-                else { try LearningEncryption.write(kept, to: url, key: keyProvider) }
+                if kept.isEmpty { try removePartition(url) }
+                else { try writePartition(kept, to: url) }
                 for item in old where !kept.contains(where: { $0.id == item.id }) { index.removeValue(forKey: item.id); removed.insert(item.id) }
                 revision &+= 1
             }
@@ -377,8 +410,8 @@ import ZeusProtocol
                                  payload: .init(value, report: item.payload.report))
                 }
                 guard kept != old else { continue }
-                if kept.isEmpty { try FileManager.default.removeItem(at: url) }
-                else { try LearningEncryption.write(kept, to: url, key: keyProvider) }
+                if kept.isEmpty { try removePartition(url) }
+                else { try writePartition(kept, to: url) }
                 index.removeAll(); revision &+= 1
             }
             typingExpiryInitialized = false; try expireTypingWords(now: now)
@@ -461,7 +494,7 @@ import ZeusProtocol
                 return retained
             }
             if kept != old {
-                try LearningEncryption.write(kept, to: url, key: keyProvider); index.removeAll(); revision &+= 1
+                try writePartition(kept, to: url); index.removeAll(); revision &+= 1
             }
         }
         typingExpiryInitialized = true; scheduleTypingExpiry(next)
@@ -516,8 +549,8 @@ import ZeusProtocol
                                        payload: .init(payload, report: item.payload.report))
                 }
                 guard kept != old else { continue }
-                if kept.isEmpty { try FileManager.default.removeItem(at: url) }
-                else { try LearningEncryption.write(kept, to: url, key: keyProvider) }
+                if kept.isEmpty { try removePartition(url) }
+                else { try writePartition(kept, to: url) }
                 index.removeAll(); revision &+= 1
             }
             try removeOrphanFrames()
@@ -532,9 +565,10 @@ import ZeusProtocol
     }
     /// Replay a committed multi-file replacement before any reader or subsequent mutation can see partial state.
     private func finishTransaction() throws {
-        guard let changes = try LearningEncryption.read([String: [JournalItem]].self, at: transactionFile, key: keyProvider) else { return }
+        guard let changes = try LearningEncryption.read([String: [JournalItem]].self, at: transactionFile, key: scopedKey) else { return }
         let targets = try changes.sorted { $0.key < $1.key }.map { (try partitionURL($0.key), $0.value) }
-        for (url, rows) in targets { try LearningEncryption.write(rows, to: url, key: keyProvider) }
+        for (url, rows) in targets { try writePartition(rows, to: url) }
+        index.removeAll()
         try FileManager.default.removeItem(at: transactionFile)
     }
     private func partitions(for ids: Set<String>) throws -> [String: String] {
@@ -559,7 +593,7 @@ import ZeusProtocol
         }
         guard !changes.isEmpty else { return }
         if changes.count == 1, let (name, rows) = changes.first {
-            try LearningEncryption.write(rows, to: partitionURL(name), key: keyProvider)
+            try writePartition(rows, to: partitionURL(name))
         } else {
             try LearningEncryption.write(changes, to: transactionFile, key: keyProvider)
             // The transaction is committed even if checkpointing is interrupted. Reads fail closed until replay succeeds.
@@ -580,8 +614,21 @@ import ZeusProtocol
         return try files().compactMap { format.date(from: $0.deletingPathExtension().lastPathComponent) }
     }
     func folderItems(on day: Date) throws -> [JournalItem] {
-        try expireTypingWords(now: retentionClock())
-        return try read(file(day))
+        try withOperationKey {
+            try expireTypingWords(now: retentionClock())
+            return try read(file(day))
+        }
+    }
+    /// Changes whenever the day's partition does, whoever wrote it: the file identity plus this store's own write count.
+    func folderDayToken(on day: Date) -> String? {
+        let url = file(day), writes = partitionWrites[url.lastPathComponent] ?? 0
+        guard let stamp = Self.stamp(url) else { return "none:\(writes)" }
+        return "\(stamp.inode):\(stamp.size):\(stamp.modified).\(stamp.modifiedNanos):\(stamp.changed).\(stamp.changedNanos):\(writes)"
+    }
+    /// The items appended since `revision`, oldest first, or nil when anything was rewritten or removed since then.
+    func appendedItems(since revision: UInt64) -> [JournalItem]? {
+        guard revision <= self.revision, revision >= appendLogFloor else { return nil }
+        return appendLog.filter { $0.revision > revision }.map(\.item)
     }
     private func files() throws -> [URL] {
         try finishTransaction()
@@ -594,22 +641,90 @@ import ZeusProtocol
     }
     private func read(_ url: URL) throws -> [JournalItem] {
         try finishTransaction()
-        return try LearningEncryption.read([JournalItem].self, at: url, key: keyProvider) ?? []
+        let name = url.lastPathComponent
+        guard let stamp = Self.stamp(url) else { partitionCache.removeValue(forKey: name); return [] }
+        let secret = try scopedKey.key()
+        if partitionCacheKey != secret { partitionCache.removeAll(); partitionCacheKey = secret }
+        if let cached = partitionCache[name], cached.stamp == stamp { return cached.items }
+        let bytes = try Data(contentsOf: url)
+        let items = try LearningEncryption.decode([JournalItem].self, bytes: bytes, url: url, secret: secret)
+        partitionDecodeCount += 1
+        // Cache only if the file did not change while it was read.
+        if Self.stamp(url) == stamp { partitionCache[name] = .init(stamp: stamp, items: items, ids: Set(items.map(\.id))) }
+        return items
     }
     private func all() throws -> [JournalItem] {
-        let items = try files().flatMap { try read($0) }
-        for item in items { index[item.id] = searchable(item) }
-        return items
+        try files().flatMap { try read($0) }
+    }
+    private func existingItem(id: String) throws -> JournalItem? {
+        for url in try files() {
+            let items = try read(url)
+            if let cached = partitionCache[url.lastPathComponent], !cached.ids.contains(id) { continue }
+            if let item = items.first(where: { $0.id == id }) { return item }
+        }
+        return nil
+    }
+    /// Every partition write goes through here so the decrypted cache never serves replaced contents.
+    private func writePartition(_ rows: [JournalItem], to url: URL) throws {
+        let name = url.lastPathComponent
+        partitionCache.removeValue(forKey: name)
+        partitionWriteCount &+= 1; partitionWrites[name] = partitionWriteCount
+        // Writes ask the provider themselves (one call, as before), so losing the key mid-transaction still interrupts it.
+        let secret = try keyProvider.key()
+        try LearningEncryption.write(rows, to: url, key: FetchedJournalKey(secret, protected: keyProvider.requiresProtectedFiles))
+        if partitionCacheKey != secret { partitionCache.removeAll(); partitionCacheKey = secret }
+        if let stamp = Self.stamp(url) { partitionCache[name] = .init(stamp: stamp, items: rows, ids: Set(rows.map(\.id))) }
+    }
+    private func removePartition(_ url: URL) throws {
+        let name = url.lastPathComponent
+        partitionCache.removeValue(forKey: name)
+        partitionWriteCount &+= 1; partitionWrites[name] = partitionWriteCount
+        try FileManager.default.removeItem(at: url)
+    }
+    private static func stamp(_ url: URL) -> FileStamp? {
+        var info = stat()
+        guard lstat(url.path, &info) == 0, (info.st_mode & S_IFMT) == S_IFREG else { return nil }
+        return .init(inode: UInt64(info.st_ino), size: Int64(info.st_size), modified: info.st_mtimespec.tv_sec, modifiedNanos: info.st_mtimespec.tv_nsec,
+                     changed: info.st_ctimespec.tv_sec, changedNanos: info.st_ctimespec.tv_nsec)
+    }
+    /// One keychain read per operation for its reads instead of one per partition; writes still ask each time.
+    private func withOperationKey<T>(_ body: () throws -> T) rethrows -> T {
+        scopedKey.begin(); defer { scopedKey.end() }
+        return try body()
     }
     private func searchable(_ item: JournalItem) -> String {
         (item.payload.value.description + "\n" + (item.payload.value.topic ?? "") + "\n" + (item.payload.value.text ?? ""))
             .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
     private func perform<T>(_ body: () throws -> T) throws -> T {
-        do { let result = try body(); lastError = pendingEntries.isEmpty ? nil : LearningStorageAvailability.waitingMessage; return result }
+        do { let result = try withOperationKey(body); lastError = pendingEntries.isEmpty ? nil : LearningStorageAvailability.waitingMessage; return result }
         catch { lastError = "Zeus couldn't read or save its local journal."; throw error }
     }
     static func isBundleID(_ string: String) -> Bool {
         JournalAppName.isBundleID(string)
+    }
+}
+
+@MainActor private final class FetchedJournalKey: JournalKeyProviding {
+    private let secret: Data
+    let requiresProtectedFiles: Bool
+    init(_ secret: Data, protected: Bool) { self.secret = secret; requiresProtectedFiles = protected }
+    func key() throws -> Data { secret }
+}
+/// Memoizes the key for the duration of one store operation (begin/end may nest). Outside an operation every
+/// call reaches the provider, so lock and key-replacement checks keep their existing behavior.
+@MainActor private final class OperationScopedJournalKey: JournalKeyProviding {
+    private let provider: any JournalKeyProviding
+    private var depth = 0
+    private var cached: Data?
+    init(_ provider: any JournalKeyProviding) { self.provider = provider }
+    var requiresProtectedFiles: Bool { provider.requiresProtectedFiles }
+    func begin() { depth += 1 }
+    func end() { depth -= 1; if depth == 0 { cached = nil } }
+    func key() throws -> Data {
+        if depth > 0, let cached { return cached }
+        let value = try provider.key()
+        if depth > 0 { cached = value }
+        return value
     }
 }

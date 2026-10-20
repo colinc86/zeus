@@ -71,6 +71,8 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored var reflectionTask: Task<Void, Never>?
     @ObservationIgnored var learningCatchUpPending = true
     @ObservationIgnored var learningObservationToken = UUID()
+    /// The journal revision and reflection set whose evidence was last verified retained.
+    @ObservationIgnored var reflectionEvidenceChecked: (revision: UInt64, signature: [String])?
     @ObservationIgnored var erasedLearningDeliveryIDs = Set<String>()
     @ObservationIgnored var hiddenLearningDiscardIDs = Set<String>()
     @ObservationIgnored var checkedUpdateVersions: [String: Set<String>] = [:]

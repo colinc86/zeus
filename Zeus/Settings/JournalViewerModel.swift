@@ -98,10 +98,14 @@ final class JournalViewerModel {
     @ObservationIgnored private var loadTask: Task<Void, Never>?
     @ObservationIgnored private var loadID = UUID()
     @ObservationIgnored private var expiryTask: Task<Void, Never>?
+    /// While the journal window is closed, journal changes only mark the snapshot stale; showing it reloads.
+    /// A snapshot decrypts and indexes the whole retained journal, far too much for every activity event.
+    @ObservationIgnored var isShown = true { didSet { if isShown && !oldValue && changedWhileHidden { reload() } } }
+    @ObservationIgnored private var changedWhileHidden = false
 
     /// Explicit refresh revalidates access and retries pictures, even if the revision is unchanged.
     func reload() {
-        pictures.retryReads()
+        pictures.retryReads(); changedWhileHidden = false
         loadTask?.cancel(); loadTask = nil; expiryTask?.cancel(); expiryTask = nil
         let id = UUID(); loadID = id
         snapshot = nil; searchIndex = [:]
@@ -239,7 +243,11 @@ final class JournalViewerModel {
     private func observe() {
         guard observing else { return }
         withObservationTracking { _ = journal.revision; _ = journal.lastError } onChange: { [weak self] in
-            Task { @MainActor [weak self] in self?.reload(); self?.observe() }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if self.isShown { self.reload() } else { self.changedWhileHidden = true }
+                self.observe()
+            }
         }
     }
 }
