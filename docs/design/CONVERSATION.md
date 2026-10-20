@@ -626,15 +626,9 @@ When FB1-P exposes a `RatingSuggestion` (five quiet signals in seven days for on
 
 `build/fb1-renders/` (FB1-A): the glyph at rest, hovered and open; the row and each collapsed line; a muted row collapsed and expanded, both reasons; the Settings section with all three groups and empty; the suggestion line. Light and dark, both fonts, and the row in every bundled theme.
 
-### 17.5 Held: over today's limit (PA1)
+### 17.5 No daily limit (PA1, removed in 0.3.9)
 
-Zeus counts the assistant's unprompted cards per day (`CardOrigin` unprompted). Past the soft budget (6 by default; `priority: high` never counts and is never held), a new unprompted card is held the way a muted one is (§17.3), after the rating check: a stopped or look-alike kind is muted, not held.
-
-- **Collapsed:** "Held: over today's limit · Show". Notice style, no peek, no sound, no badge, not unread; the strip ignores it. The label never names the kind, so the line reads the same for every held card.
-- **Show** expands the full bubble in the muted style under the line, which then reads "Held: over today's limit · Hide". Show releases the hold for good (the card is read from then on); Hide only collapses the presentation again, and the card stays a budget-held card by provenance. Options stay live. Unlike a muted card it **keeps its ⋯ and its rating row**: nothing has been rated yet, and "Stop these" from here is the natural next step. Caption under the bubble: "Your assistant has sent 6 unprompted messages today. Ones marked high priority still come through."
-- **End of day:** these cards join the §17.3 notice, counted by provenance (every card held that day for budget or rating, shown since or not). When at least one over-limit card is among them the notice reads "3 held messages today · Show" ("1 held message today · Show"); with muted cards only it is unchanged. Midnight resets the count; nothing from yesterday is replayed.
-- **The assistant knows:** every learning delivery ends with "Unprompted messages left today: N" (AGENT_LEARNING.md §8.2), so being held is never a surprise to it, and a high-priority message is the escape hatch for something that really can't wait.
-- Renders: `pa1/pa1-held-collapsed`, `pa1-held-expanded`, `pa1-held-day` (AGENT_LEARNING.md §8.6).
+0.3.8 held unprompted cards past six a day as "Held: over today's limit · Show". The user rejected count-based holding: Zeus never holds back a message because of how many the assistant has sent. Ratings set the amount (§17.1: More like this, Neutral for need-to-know, Stop these). There is no held line, no held caption and no "held" end-of-day notice; the §17.3 notice counts muted cards only. Cards that 0.3.8 held load as ordinary messages, without a peek or sound.
 
 ## 18. Attachment chips (AT1)
 

@@ -19,9 +19,9 @@ The agent-facing side of Learn from me (LM2 Phase D). `PRIVACY.md` covers what t
 | Session start | Active and shadow rules, and the user's "New rules" dial | `zeus_get_rules` (call it once at the start of every session, and again after a reflection) | Rule sentences, triggers, kind, status, a confidence *word* (Sure / Fairly sure / Unsure). Never a number to repeat. |
 | Each morning | Summary of the day before | `notifications/zeus/learning`; `zeus_get_learnings` | Level 1 timing, plus redacted window titles (Level 2), screen descriptions (Level 3) and typing topics (Level 4) for the levels that are on |
 | During the day | Up to four short notes ("back from a break", "winding down") | the same | One line each |
-| Start of the day (PA1, §8.2) | **Brief request** | A delivery marked `kind: brief`, at the first activity or the set time; works with learning off | The date, the ask for one `zeus_present` labelled "Morning brief", the day's remaining budget, and a `Files:` line when there is a summary |
-| A rule's trigger matches (PA1, §8.2) | **Rule trigger** | A delivery marked `kind: ruleTrigger`, once per rule per window; acting and "prepare" rules only | Rule id, text and status, what matched and the window, what to call (`zeus_rule_acted` or `zeus_rule_shadow`), the remaining budget |
-| First idle ≥ 10 min after 18:00 (once a day) | **Reflection** | A delivery marked `kind: reflection`, through the normal message path. It's not a user request. | (RF1, §9) The ask in order (update `Notes/`, propose rules for patterns that held on two or more days, prepare for tomorrow or ack within budget), then a 28-local-day pattern digest (rhythm, focus, sequences, topics, engagement, today vs usual, today's last records) with evidence ids from different local days, the **outcomes** of every rule since the last reflection (§5), and the rules the user turned off, edited or deleted |
+| Start of the day (PA1, §8.2) | **Brief request** | A delivery marked `kind: brief`, at the first activity or the set time; works with learning off | The date, the ask for one `zeus_present` labelled "Morning brief", and a `Files:` line when there is a summary |
+| A rule's trigger matches (PA1, §8.2) | **Rule trigger** | A delivery marked `kind: ruleTrigger`, once per rule per window; acting and "prepare" rules only | Rule id, text and status, what matched and the window, what to call (`zeus_rule_acted` or `zeus_rule_shadow`) |
+| First idle ≥ 10 min after 18:00 (once a day) | **Reflection** | A delivery marked `kind: reflection`, through the normal message path. It's not a user request. | (RF1, §9) The ask in order (update `Notes/`, propose rules for patterns that held on two or more days, prepare for tomorrow or ack), then a 28-local-day pattern digest (rhythm, focus, sequences, topics, engagement, today vs usual, today's last records) with evidence ids from different local days, the **outcomes** of every rule since the last reflection (§5), and the rules the user turned off, edited or deleted |
 | When the assistant asks | Journal answers | `zeus_get_journal` (§3) | Redacted items for a time range. Pictures or words only if the user allowed "raw on request" for that level |
 | After a rule acts or is shown in shadow | Nothing new | — | The assistant reported it itself (§5) |
 
@@ -185,15 +185,15 @@ New semantics:
 
 ## 8. PA1 · A proactive assistant
 
-**Status:** in build (platform PA1-P deliveries and budget, appdev PA1-A Settings and the held line, designer PA1-D the prose). User direction 2026-10-17: "a true assistant that learns about me to provide proactive feedback, tasks, and whatever else I need. This is how a human would work next to me as my assistant in real life."
+**Status:** shipped in 0.3.8; the daily budget and its held line were removed in 0.3.9 (§8.2, §8.5). User direction 2026-10-17: "a true assistant that learns about me to provide proactive feedback, tasks, and whatever else I need. This is how a human would work next to me as my assistant in real life."
 
 ### 8.1 The stance
 
-Every delivery from Zeus used to end in "ack and stay quiet". From template v6 the rule is: **on any learning, moment, brief request or rule trigger, decide whether something needs preparing or flagging now. If yes, prepare it and send one short message with an `about` label. If not, ack and stay quiet.** "Now" means: a meeting soon, a task the user put off, a reply they owe, a pattern the assistant can take off their hands. The guardrails stay and are restated wherever the stance is: never comment on habits or quote the journal; at most a few unprompted messages a day unless urgent (the budget below); ratings and "Stop these" always win; acting rules stay shadow until approved; every purchase asks.
+Every delivery from Zeus used to end in "ack and stay quiet". From template v6 the rule is: **on any learning, moment, brief request or rule trigger, decide whether something needs preparing or flagging now. If yes, prepare it and send one short message with an `about` label. If not, ack and stay quiet.** "Now" means: a meeting soon, a task the user put off, a reply they owe, a pattern the assistant can take off their hands. The guardrails stay and are restated wherever the stance is: never comment on habits or quote the journal; send only what's worth the user's attention, and let ratings set the amount (§8.2); ratings and "Stop these" always win; acting rules stay shadow until approved; every purchase asks.
 
-### 8.2 Two new deliveries, and the budget line
+### 8.2 Two new deliveries
 
-Both go through the ordinary delivery path (`Delivery.Kind.brief` and `.ruleTrigger`), held while the user is drafting or the session is busy like other learnings, and end with the usual `Files:` line of existing folder-relative paths (omitted when none exist). Every learning-type delivery (digest, moment, brief, rule trigger) carries the budget line as its last line before `Files:`. The text is written in the user's voice, like a message from them, because the template says to treat Zeus messages as messages from the user.
+Both go through the ordinary delivery path (`Delivery.Kind.brief` and `.ruleTrigger`), held while the user is drafting or the session is busy like other learnings, and end with the usual `Files:` line of existing folder-relative paths (omitted when none exist). The text is written in the user's voice, like a message from them, because the template says to treat Zeus messages as messages from the user.
 
 **Brief request** (`kind: brief`), at the first activity of a new day, or at the fixed time the Morning brief setting names (§8.4). The brief carries its **own** short summary of yesterday, built from the levels that are on and already redacted (typing as topics only), so it never waits for the morning digest: the digest still goes out as its own learning delivery, and there is no ordering between the two. With learning off there is no summary block, only the date and "start of my day".
 
@@ -204,7 +204,6 @@ Yesterday (from Zeus's journal, private details removed):
 - Active 9:20–18:05, about 7 h at the Mac; lunch 12:30–13:10.
 - Top apps: Xcode 3 h 10 min, Safari 1 h 20 min, Mail 40 min.
 - Typing topics: release notes, a reply to ‹name›.
-Unprompted messages left today: 6 (high priority doesn't count).
 Files: Zeus/rules.md
 ```
 
@@ -216,7 +215,6 @@ The "Yesterday" block is at most 6 lines and only from the levels that are on (l
 Rule trigger (active): "Send “Running late, 10 min” to the team chat when a meeting starts while I'm away" · rule r_ab12.
 Matched: Calendar meeting at 14:00 while the Mac was idle since 13:48. Window until 14:30.
 This rule is active: act on it now, then call zeus_rule_acted {ruleID: "r_ab12", did, undo} right away. If this trigger doesn't call for anything, zeus_ack and stay quiet.
-Unprompted messages left today: 4 (high priority doesn't count).
 Files: Zeus/rules.md
 ```
 
@@ -224,12 +222,12 @@ Shadow rule: the first line reads `Rule trigger (shadow, waiting for my OK): "�
 
 **Ledger and waiting rows (LM4 surfaces).** The two kinds get their own labels so the LM4 fallback never calls them "Daily summary": waiting-row titles **"Morning brief request"** and **"Rule trigger"**; the quiet prepared line **"Morning brief request ready for your assistant"** and **"Rule trigger ready for your assistant"** (never "Sent" before the receipt); once received, **"Sent the morning brief request"** and **"Sent a rule trigger: “<rule text>”"**, the rule text tail-truncated like a note's.
 
-**Budget line.** `Unprompted messages left today: N (high priority doesn't count).` N is the day's remaining soft budget (default 6). At zero: `Unprompted messages left today: 0. Anything more arrives held unless it's high priority.` A held card is not deferred: it lands in the thread at once, collapsed (§8.5), and midnight resets the count without replaying anything. The line also goes on digests and moments so the assistant always knows.
+**No budget line (0.3.9).** Deliveries used to end with `Unprompted messages left today: N`, and cards past six a day arrived held. The user rejected any count-based holding: Zeus must never hold back something the assistant needs them to see. The amount is learned from ratings instead: **More like this** for more of a kind, **Neutral** (the assistant receives "Need-to-know") for only what the user needs to see, **Stop these** to mute a kind. No delivery carries a count.
 
 ### 8.3 Template v6, the MCP instructions and the managed launch prompt
 
 The three say the same stance in their own register; the template is the long form and the source of truth.
-- **Template v6** (`AssistantTemplate/AGENTS.md`): the "Learnings and rules" section gains the stance (§8.1) in place of "use them for timing and tone"; a "Start of my day" bullet for the brief (one `zeus_present`, `about: "Morning brief"`, title "Today", at most 6 lines, lead with the one thing that matters most; use calendar, mail and task tools when available; if nothing, ack); the rule bullet says Zeus delivers the trigger, so the assistant never has to watch for it; the budget line is explained next to the hourly rule of thumb; the session-start bullet reads rules, `Zeus/preferences.md` and `Notes/`; the Crons TODO says the morning brief is already asked for. Nothing else moves.
+- **Template v6** (`AssistantTemplate/AGENTS.md`): the "Learnings and rules" section gains the stance (§8.1) in place of "use them for timing and tone"; a "Start of my day" bullet for the brief (one `zeus_present`, `about: "Morning brief"`, title "Today", at most 6 lines, lead with the one thing that matters most; use calendar, mail and task tools when available; if nothing, ack); the rule bullet says Zeus delivers the trigger, so the assistant never has to watch for it; next to the hourly rule of thumb, ratings set how much to send (template v9; v6–v8 explained a daily budget line here); the session-start bullet reads rules, `Zeus/preferences.md` and `Notes/`; the Crons TODO says the morning brief is already asked for. Nothing else moves.
 - **MCP instructions** (`ZeusMCP.instructions`): the delivery kinds list gains `brief` and `ruleTrigger`; the learning bullet says decide, prepare or flag, else ack; a bullet each for brief and rule trigger; the closing "timing and tone" line becomes "decide what to prepare or flag now, and timing and tone".
 - **Managed launch prompt** (`ZeusManagedCopy.defaultLaunchPrompt`, MANAGED.md §6) adds two lines: read `zeus_get_rules` and the folder at the start of a session, and the stance; its last line now waits "for me or for a Zeus delivery". It stays under 2,400 characters.
 
@@ -245,13 +243,13 @@ A section **"Morning brief"** on Settings › Assistant, in both modes, directly
 - Seam (platform): `enabled` is a persisted override; until the user toggles it, the effective value is the mode's default (managed on, Connect your own off, explicit opt-in allowed). `schedule` is `firstActivity` or `fixedTime` with hour and minute, default 08:00.
 - VoiceOver: the checkbox by its label; the list as "When, After my first activity, selected" etc.; the time field "Brief time".
 
-### 8.5 The thread: held over today's limit
+### 8.5 The thread: no held line
 
-When an unprompted card past the day's soft budget arrives (platform counts; `priority: high` is exempt, and ratings or "Stop these" are evaluated first, so a stopped kind is muted, not held), it reuses the muted presentation (CONVERSATION.md §17.5): it lands at once as one collapsed notice line "Held: over today's limit · Show", silent, not unread, expanding to the full bubble with a caption. Show releases the hold durably (the card stays a budget-held card by provenance; Hide collapses it again, presentation only). It keeps its ⋯ and rating row, because unlike a muted card nothing has been rated yet.
+Removed in 0.3.9. Zeus no longer holds unprompted cards by count, so there is no "Held: over today's limit" line. Cards held by 0.3.8 become ordinary messages when the history loads (CONVERSATION.md §17.5). Only a rating mutes a card (§17.3 there).
 
 ### 8.6 Renders
 
-`pa1/pa1-<state>-<theme>-<scheme>` from `build/pa1-renders/`: `settings` (the Morning brief section, managed mode, both schedule choices), `held-collapsed`, `held-expanded`, and `held-day` (the end-of-day notice), in both fonts. Approved by the designer.
+`pa1/pa1-<state>-<theme>-<scheme>` from `build/pa1-renders/`: `settings` (the Morning brief section, managed mode, both schedule choices), and, since 0.3.9, `held-collapsed`, `held-expanded` and `held-day` show a rating-muted card and its end-of-day notice, in both fonts. Approved by the designer.
 
 ## 9. RF1 · The reflection asks for notes, patterns and prep
 
@@ -259,7 +257,7 @@ When an unprompted card past the day's soft budget arrives (platform counts; `pr
 
 ### 9.1 What the reflection asks, in order
 
-The request is the first thing in the delivery, in the user's voice like every Zeus delivery, and asks for three things in this order: **notes first, then rules, then prep or a quiet ack.** The budget line (§8.2) sits inside step 3 so the assistant reads it at the moment it matters.
+The request is the first thing in the delivery, in the user's voice like every Zeus delivery, and asks for three things in this order: **notes first, then rules, then prep or a quiet ack.**
 
 ```
 Zeus reflection for Friday 17 October. A redacted summary of how I've used my Mac over the last 28 days, built on this Mac. It isn't a new request from me; it's your evening to learn and get ahead.
@@ -267,7 +265,7 @@ Zeus reflection for Friday 17 October. A redacted summary of how I've used my Ma
 Do these, in this order:
 1. Update your notes. Revise Notes/about-you.md (what you've concluded about me) and Notes/patterns.md (my routines and recurring tasks) from the patterns below. Date each change and say what changed your mind. Conclusions, not copies: don't paste these lines in.
 2. Propose rules, if any. Call zeus_get_rules, then zeus_propose_rules with at most three, only for a pattern that held on two or more days, each with two evidence IDs from different days taken from the lines below. Don't propose anything listed under "Don't propose again", even reworded. Acting rules start in shadow; every purchase asks.
-3. Get ahead of tomorrow. If one thing needs preparing or flagging (something due, a meeting, a reply I owe, a task I keep putting off), do the prep and send me one short message with an about label. Otherwise zeus_ack and stay quiet. Unprompted messages left today: 4 (high priority doesn't count).
+3. Get ahead of tomorrow. If one thing needs preparing or flagging (something due, a meeting, a reply I owe, a task I keep putting off), do the prep and send me one short message with an about label. Otherwise zeus_ack and stay quiet.
 Never repeat my habits, numbers or private details back to me. A placeholder like ‹name› is something Zeus removed: don't guess it, don't ask me for it.
 ```
 
@@ -319,4 +317,4 @@ When a proposal's evidence isn't from two local days, the error names the ids an
 
 ### 9.3 Template v7 and the MCP bullet
 
-The template's "Each evening" bullet and the MCP reflection bullet say the same order: notes, then rules only for patterns that held on two or more days, then prepare or ack within budget. Template v7 carries the change (`<!-- zeus-template: 7 -->`); platform records the hashes.
+The template's "Each evening" bullet and the MCP reflection bullet say the same order: notes, then rules only for patterns that held on two or more days, then prepare or ack. Template v7 carries the change (`<!-- zeus-template: 7 -->`); platform records the hashes.

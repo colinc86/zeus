@@ -218,7 +218,7 @@ struct FixtureLearningRedactor: Redactor {
             let receipt = try #require(f.journal.items(matching: .init()).first)
             #expect(receipt.kind == .sentToAssistant)
             #expect(reply.structured?["learnings"]?[0]?["text"] == receipt.payload.value.text.map(JSONValue.string))
-            #expect(receipt.payload.value.text?.contains("Unprompted messages left today:") == true)
+            #expect(receipt.payload.value.text?.contains("Unprompted messages left today") == false)
             #expect(receipt.payload.value.details["kind"] == "digest")
             #expect(receipt.payload.value.details["sessionLabel"] == "Claude · Assistant")
             #expect(!String(decoding: try JSONEncoder().encode(receipt), as: UTF8.self).contains("/fixture"))

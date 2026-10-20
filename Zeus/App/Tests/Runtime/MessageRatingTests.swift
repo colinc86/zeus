@@ -38,20 +38,71 @@ struct FixtureRatingSimilarity: MessageSimilarityComparing {
         f.clock.advance(86400)
         #expect(f.runtime.mutedToday.isEmpty && f.runtime.mutedDecisions.count == 2)
     }
-    @Test func onlyUserInputResponseRowsMakeReplies() async throws {
+    func turnEnded(_ f: LearningRuntimeFixture, id: String?) -> TurnEnded {
+        .init(agent: .claude, pid: 99, ppid: 123, cwd: "/fixture", ancestors: [.init(pid: 123, startTime: 1)],
+              firedAt: f.clock.now.timeIntervalSince1970, reason: .completed, nativeSessionID: nil, deliveryID: id)
+    }
+    /// Regression: only the first message of an answer was a reply; the rest were unprompted and a Stop rating muted them.
+    @Test func everyMessageInAnAnswerIsAReplyUntilAnotherDeliveryArrives() async throws {
         let f = try LearningRuntimeFixture(messageRatings: true, ratingSimilarity: FixtureRatingSimilarity()); defer { f.stop() }
         let first = try await post(f)
         _ = try await f.runtime.rate(cardID: first.id, rating: .down, scope: .kind, label: "On-call reminder")
         try await eventually { f.runtime.ratingDeliveryTask == nil && f.runtime.sends.isEmpty }
+        // A status alone never makes a reply.
         f.runtime.noteWorkingActivity(sessionKey: key, detail: nil, progress: nil, ttl: 60)
         let autonomous = try await post(f)
         #expect(autonomous.origin == .unprompted && autonomous.muteDecision != nil)
         _ = await f.runtime.sendUserMessage("Tell me about my shift", deliveryID: "d_user_rating")
         try await eventually { f.runtime.sends.isEmpty }
-        let reply = try await post(f)
-        #expect(reply.origin == .reply && reply.muteDecision == nil)
+        // The first, second and third messages of the answer are all replies; Stop these never mutes a reply.
+        for _ in 0..<3 {
+            let reply = try await post(f)
+            #expect(reply.origin == .reply && reply.muteDecision == nil && !reply.isRatingHeld)
+        }
+        f.runtime.noteWorkingActivity(sessionKey: key, detail: "Checking", progress: nil, ttl: 60)
+        #expect(try await post(f).origin == .reply)
+        // Any delivery from Zeus that isn't the user's (here a restart notice) reaching the session ends the answer.
+        try f.runtime.ledger?.insert(.init(delivery: .init(id: "restart_note", kind: .restart, sessionKey: key, content: "Synthetic restart notice", createdAt: f.clock.now)))
+        f.runtime.processDueDeliveries()
+        try await eventually { f.connector.deliveries.last?.id == "restart_note" && f.runtime.sends.isEmpty }
         let after = try await post(f)
         #expect(after.origin == .unprompted && after.muteDecision != nil)
+    }
+    @Test func anAnswerEndsWithItsTurnOrAfterHalfAnHourIdle() async throws {
+        let f = try LearningRuntimeFixture(messageRatings: true); defer { f.stop() }
+        _ = await f.runtime.sendUserMessage("First question", deliveryID: "d_turn")
+        try await eventually { f.runtime.sends.isEmpty }
+        #expect(try await post(f).origin == .reply)
+        #expect(try await post(f).origin == .reply)
+        // A hook naming another input belongs to another turn.
+        await f.runtime.bridgeTurnEnded(turnEnded(f, id: "d_other"))
+        #expect(try await post(f).origin == .reply)
+        await f.runtime.bridgeTurnEnded(turnEnded(f, id: "d_turn"))
+        #expect(try await post(f).origin == .unprompted)
+        // A hook without an input ID still ends the turn it fired after.
+        _ = await f.runtime.sendUserMessage("Second question", deliveryID: "d_turn_2")
+        try await eventually { f.runtime.sends.isEmpty }
+        #expect(try await post(f).origin == .reply)
+        await f.runtime.bridgeTurnEnded(turnEnded(f, id: nil))
+        #expect(try await post(f).origin == .unprompted)
+        // External sessions without hooks: tool traffic keeps the answer open; half an hour of quiet ends it.
+        _ = await f.runtime.sendUserMessage("Third question", deliveryID: "d_idle")
+        try await eventually { f.runtime.sends.isEmpty }
+        #expect(try await post(f).origin == .reply)
+        f.clock.advance(29 * 60, wake: false)
+        _ = await f.runtime.callTool("zeus_set_status", arguments: ["state": "auto"], sessionKey: key)
+        f.clock.advance(29 * 60, wake: false)
+        #expect(try await post(f).origin == .reply)
+        f.clock.advance(ZeusRuntime.replyWindowIdleCap, wake: false)
+        #expect(try await post(f).origin == .unprompted)
+    }
+    @Test func reconnectingTheSessionEndsTheAnswer() async throws {
+        let f = try LearningRuntimeFixture(messageRatings: true); defer { f.stop() }
+        _ = await f.runtime.sendUserMessage("A question", deliveryID: "d_reconnect")
+        try await eventually { f.runtime.sends.isEmpty }
+        #expect(try await post(f).origin == .reply)
+        f.runtime.registerSession(.init(id: UUID(), sessionKey: key, agent: .claude, cwd: "/fixture", clientName: "Fixture", supportsChannel: true, tmuxPane: nil, connectedAt: f.clock.now))
+        #expect(try await post(f).origin == .unprompted)
     }
     @Test func justOneNeutralLabelEditsAndGuardedDurableUndo() async throws {
         let f = try LearningRuntimeFixture(messageRatings: true, ratingSimilarity: FixtureRatingSimilarity(score: 0)); defer { f.stop() }
@@ -161,7 +212,7 @@ struct FixtureRatingSimilarity: MessageSimilarityComparing {
         _ = try await f.runtime.rate(cardID: first.id, rating: .down, scope: .kind, label: "On-call reminder")
         for _ in 0..<6 {
             let card = try await post(f, about: "Build results", text: "Your requested build passed.")
-            #expect(card.muteDecision == nil || card.muteDecision?.source == .dailyBudget)
+            #expect(card.muteDecision == nil)
             f.runtime.ratingCardOpened(id: card.id)
         }
         f.clock.advance(86400); f.runtime.scheduleRatingSuggestions()

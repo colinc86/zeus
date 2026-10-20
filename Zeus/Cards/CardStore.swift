@@ -552,7 +552,19 @@ final class CardStore: CardStoring {
             outgoingDeliveryIDs = snapshot.outgoingDeliveryIDs.filter { ids.contains($0.key) }
             notices = snapshot.notices
             contextIntents = (snapshot.contextIntents ?? [:]).filter { ids.contains($0.value.cardID) }
-        } catch { persistenceError = "Zeus couldn't read your conversation history. \(error.localizedDescription)" }
+        } catch { persistenceError = "Zeus couldn't read your conversation history. \(error.localizedDescription)"; return }
+        releaseDailyLimitHolds()
+    }
+
+    /// Zeus 0.3.8 and earlier held unprompted messages over a daily count. That limit is gone:
+    /// those messages become ordinary ones. They arrived long ago, so nothing peeks or plays again.
+    private func releaseDailyLimitHolds() {
+        guard cards.contains(where: { $0.muteDecision?.source == .dailyBudget }) else { return }
+        for index in cards.indices where cards[index].muteDecision?.source == .dailyBudget {
+            cards[index].muteDecision = nil
+        }
+        // A failed save keeps the release in memory; the next successful save persists it.
+        save()
     }
 
     @discardableResult private func save(snapshot: Snapshot? = nil) -> Bool {

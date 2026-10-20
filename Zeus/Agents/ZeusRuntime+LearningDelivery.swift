@@ -46,6 +46,7 @@ extension ZeusRuntime: LearningDeliveryPresenting, LearningOutboundPolicyControl
 
     func journalEvidenceDeleted(_ ids: Set<String>?) {
         if ids == nil {
+            replyWindows.removeAll()
             clearMessageRatings()
             do { try managedController.discardRestartNotices() }
             catch { learningError = "Zeus couldn't save the cleared restart notices." }

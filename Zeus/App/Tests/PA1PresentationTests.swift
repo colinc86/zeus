@@ -31,11 +31,11 @@ import ZeusProtocol
         #expect(settings.effectiveEnabled(managed: false))
         #expect(MorningBriefSettings(defaults: defaults).effectiveEnabled(managed: false))
     }
-    @Test func heldDisclosureUsesNativeShowAndLocalHideWithoutChangingRatings() async throws {
+    @Test func mutedDisclosureUsesNativeShowAndLocalHideWithoutChangingRatings() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("pa1-disclosure-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json")), fake = FB1RatingsFake()
-        let model = MessageRatingsModel(cards: cards, source: { fake }), card = PA1AppTests.card()
+        let model = MessageRatingsModel(cards: cards, source: { fake }), card = PA1PresentationTests.ratingMuted()
         cards.add(card); fake.mutedDecisions[card.id] = card.muteDecision
         let (host, window) = try await mount(MutedMessageLine(card: card, model: model), width: 400, height: 100, scheme: .light, font: .pixel)
         defer { window.contentView = nil; window.close() }
@@ -43,12 +43,19 @@ import ZeusProtocol
             let node = try #require(jumpAXNodes(host).first { ($0 as AnyObject).accessibilityRole?() == .button && ($0 as AnyObject).accessibilityLabel?() == label })
             #expect((node as AnyObject).accessibilityPerformPress?() == true)
         }
-        try press("Show held message")
+        #expect(!jumpAXNodes(host).contains { (($0 as AnyObject).accessibilityLabel?() ?? "").contains("held") })
+        try press("Show muted message")
         for _ in 0..<4 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
-        #expect(!model.isCollapsed(card) && fake.mutedDecisions[card.id]?.releasedAt != nil)
-        try press("Hide held message")
-        #expect(model.isCollapsed(card) && fake.mutedDecisions[card.id]?.releasedAt != nil)
+        #expect(!model.isCollapsed(card) && fake.mutedDecisions[card.id]?.releasedAt == nil)
+        try press("Hide muted message")
+        #expect(model.isCollapsed(card))
         #expect(fake.ratings.isEmpty)
+    }
+    static func ratingMuted() -> Card {
+        var card = FB1RatingsTests.card("rating-muted")
+        card.muteDecision = .init(ratingID: "r1", kindLabel: "On-call reminder", reason: "kind: On-call reminder", engine: "exact",
+                                  score: 1, threshold: 1, decidedAt: .now, source: .rating)
+        return card
     }
     @Test(.enabled(if: ProcessInfo.processInfo.environment["TEST_RUNNER_PA1_RENDER"] == "1" || ProcessInfo.processInfo.environment["PA1_RENDER"] == "1"))
     func proactiveFixtures() async throws {
@@ -57,7 +64,7 @@ import ZeusProtocol
         defer { defaults.removePersistentDomain(forName: suite); try? FileManager.default.removeItem(at: root) }
         let settings = MorningBriefSettings(defaults: defaults)
         let cards = CardStore(fileURL: root.appendingPathComponent("cards.json")), fake = FB1RatingsFake()
-        let model = MessageRatingsModel(cards: cards, source: { fake }), card = PA1AppTests.card()
+        let model = MessageRatingsModel(cards: cards, source: { fake }), card = Self.ratingMuted()
         cards.add(card); fake.mutedDecisions[card.id] = card.muteDecision
         for scheme in [ColorScheme.light, .dark] {
             for font in [ZeusFontChoice.pixel, .system] {

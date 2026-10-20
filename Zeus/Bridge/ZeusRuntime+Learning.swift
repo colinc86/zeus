@@ -261,7 +261,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
             if calendar.isDate(day, inSameDayAs: today) {
                 guard let idle = self.learningContext().idleSince, self.clock.now.timeIntervalSince(idle) >= 600 else { return }
             }
-            let request = Self.reflectionRequest(date: local.label(day, "EEEE d MMMM"), budget: self.proactiveBudgetLine)
+            let request = Self.reflectionRequest(date: local.label(day, "EEEE d MMMM"))
             var content = request + "\n\n" + digest.text
             if !safeFeedback.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 content += "\n\n" + Self.boundedReflectionText(safeFeedback, bytes: 1_600)
@@ -383,7 +383,7 @@ extension ZeusRuntime: LearningRuntimeControlling {
         let safe = Learning(id: learning.id, kind: learning.kind, createdAt: learning.createdAt, text: text)
         guard !learningWasErased(learning.id) else { return safe }
         let files = await learningFolder?.recordLearning(safe) ?? []
-        return .init(id: safe.id, kind: safe.kind, createdAt: safe.createdAt, text: Self.withLearningFiles(text + "\n" + proactiveBudgetLine, paths: files))
+        return .init(id: safe.id, kind: safe.kind, createdAt: safe.createdAt, text: Self.withLearningFiles(text, paths: files))
     }
     func recordLearningToolReceipts(_ items: [JSONValue], sessionKey: String) {
         for value in items {

@@ -35,7 +35,7 @@ Template v7 asks the assistant to read its rules, current message preferences an
 
 The [evening reflection](LEARNING.md#evening-reflection) gives it a four-week pattern summary built on your Mac. Template v7 asks it to revise `Notes/about-you.md` and `Notes/patterns.md` first, propose rules only for patterns supported across days, then prepare one useful thing for tomorrow or stay quiet.
 
-The [morning brief](LEARNING.md#morning-brief) gives it a daily chance to look ahead, even with learning off. [Acting-rule triggers](LEARNING.md#rules) tell it when an approved task is due or when it should show what it would have done in shadow. The [daily message limit](CONVERSATION.md#daily-limit-on-unprompted-messages) keeps ordinary unprompted messages bounded. Its tools and permissions still determine what it can do; Zeus does not add calendar or mail access.
+The [morning brief](LEARNING.md#morning-brief) gives it a daily chance to look ahead, even with learning off. [Acting-rule triggers](LEARNING.md#rules) tell it when an approved task is due or when it should show what it would have done in shadow. Your [ratings](CONVERSATION.md#rate-what-you-hear-about) tell it how much to send. Its tools and permissions still determine what it can do; Zeus does not add calendar or mail access.
 
 ## Session controls
 

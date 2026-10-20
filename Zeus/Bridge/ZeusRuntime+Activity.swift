@@ -25,6 +25,7 @@ extension ZeusRuntime {
     func noteAgentActivity(sessionKey: String) {
         guard running, sessions.contains(where: { $0.sessionKey == sessionKey }) else { return }
         expireActivityRecords()
+        noteReplyWindowActivity(sessionKey: sessionKey)
         if var record = activityRecords[sessionKey] {
             if record.value.phase != .working {
                 record.value = activityValue(phase: .thinking, sessionKey: sessionKey, since: record.value.since)
@@ -43,6 +44,8 @@ extension ZeusRuntime {
               sessionID == nil || session.id == sessionID,
               activityDeliveryIDs.insert(.init(sessionKey: sessionKey, deliveryID: deliveryID)).inserted else { return }
         expireActivityRecords()
+        noteReplyWindowDelivery(sessionKey: sessionKey, deliveryID: deliveryID,
+                                startedAt: inputStartedAt ?? ledger?.record(id: deliveryID)?.delivery.lastAttemptAt)
         if let token, activityTokens[sessionKey] != token {
             // A post/end or explicit working status superseded this in-flight receipt.
             // An ack alone never changes this token: its delivery-specific evidence
@@ -90,7 +93,13 @@ extension ZeusRuntime {
     /// before the agent has even started, is not treated as finished.
     static let managedIdleEndsActivityAfter: TimeInterval = 20
     func noteManagedScreenActivity() {
-        guard running, let key = managedController.sessionKey, let record = activityRecords[key] else { return }
+        guard running, let key = managedController.sessionKey else { return }
+        // The answer ends with the native turn, even after zeus_say has already ended the typing row.
+        if let window = replyWindows[key], managedTurnCompleted(since: window.openedAt, completionAtStart: window.completionAtStart, sessionKey: key)
+            || managedNativeDeliveryCompleted(window.deliveryID, since: window.openedAt, sessionKey: key) {
+            closeReplyWindow(sessionKey: key)
+        }
+        guard let record = activityRecords[key] else { return }
         let classification: ManagedPaneClassifier.Classification
         switch managedStatus {
         case .running(.working): classification = .working
@@ -98,7 +107,8 @@ extension ZeusRuntime {
         default: return
         }
         noteScreenActivity(sessionKey: key, classification: classification,
-                           completed: managedTurnCompleted(since: record, sessionKey: key) || managedNativeDeliveryCompleted(record, sessionKey: key))
+                           completed: managedTurnCompleted(since: record.value.since, completionAtStart: record.managedCompletionAtStart, sessionKey: key)
+                            || record.deliveryID.map { managedNativeDeliveryCompleted($0, since: record.value.since, sessionKey: key) } == true)
     }
 
     /// Common managed/selected-own evidence rules; never creates activity or changes an explicit TTL.
@@ -123,11 +133,11 @@ extension ZeusRuntime {
     /// A short Claude turn can begin and end between the three-second samples. A *new* native completion footer,
     /// attached to its user turn and followed by a positive idle sample, is completion evidence even then.
     /// Other agents and unrecognized screens retain the conservative working/grace rules.
-    private func managedTurnCompleted(since record: ActivityRecord, sessionKey: String) -> Bool {
+    private func managedTurnCompleted(since start: Date, completionAtStart: String?, sessionKey: String) -> Bool {
         guard managedController.sessionKey == sessionKey, let sample = managedController.latestInputSample,
-              sample.agent == .claude, sample.capturedAt >= record.value.since, sample.classification == .idle,
+              sample.agent == .claude, sample.capturedAt >= start, sample.classification == .idle,
               let completed = Self.claudeCompletedTurn(sample.snapshot) else { return false }
-        return completed != record.managedCompletionAtStart
+        return completed != completionAtStart
     }
 
     nonisolated static func claudeCompletedTurn(_ snapshot: ManagedPaneSnapshot) -> String? {
@@ -145,9 +155,9 @@ extension ZeusRuntime {
     /// A complete native turn can fall between monitor samples. Only the same
     /// delivered ID in history, its native completion and a fresh positive idle
     /// sample can release it early. Explicit statuses continue to own their TTL.
-    private func managedNativeDeliveryCompleted(_ record: ActivityRecord, sessionKey: String) -> Bool {
-        guard managedController.sessionKey == sessionKey, let id = record.deliveryID,
-              let sample = managedController.latestInputSample, sample.capturedAt >= record.value.since,
+    private func managedNativeDeliveryCompleted(_ id: String, since start: Date, sessionKey: String) -> Bool {
+        guard managedController.sessionKey == sessionKey,
+              let sample = managedController.latestInputSample, sample.capturedAt >= start,
               sample.classification == .idle else { return false }
         return ManagedTurnCompletion.deliveryID(in: sample.snapshot, agent: sample.agent) == id
     }
@@ -162,6 +172,7 @@ extension ZeusRuntime {
 
     func discardAssistantActivities(deliveryIDs: Set<String>) {
         for id in deliveryIDs { activityEarlyAcknowledgments.removeValue(forKey: id) }
+        for (key, window) in replyWindows where deliveryIDs.contains(window.deliveryID) { closeReplyWindow(sessionKey: key) }
         for (key, record) in activityRecords where record.deliveryID.map(deliveryIDs.contains) == true {
             activityRecords.removeValue(forKey: key)
             activityTokens[key] = UUID()
@@ -173,6 +184,7 @@ extension ZeusRuntime {
         activityTimer?.cancel(); activityTimer = nil
         activityRecords.removeAll(); activityTokens.removeAll(); activityDeliveryIDs.removeAll()
         activityEarlyAcknowledgments.removeAll(); activityWorkingSeen.removeAll()
+        replyWindows.removeAll()
         publishAssistantActivity(nil)
         reconcileOwnScreenSampling()
     }
@@ -183,9 +195,14 @@ extension ZeusRuntime {
         activityWorkingSeen.remove(sessionKey)
         activityRecords[sessionKey] = ActivityRecord(value: activityValue(phase: phase, sessionKey: sessionKey,
             since: clock.now, detail: detail, progress: progress), deadline: deadline, order: activityOrder, deliveryID: deliveryID,
-            managedCompletionAtStart: managedController.sessionKey == sessionKey
-                ? managedController.latestInputSample.flatMap { $0.agent == .claude ? Self.claudeCompletedTurn($0.snapshot) : nil } : nil,
+            managedCompletionAtStart: managedCompletion(sessionKey: sessionKey),
             responseBeganAt: inputStartedAt ?? clock.now)
+    }
+
+    /// The last completed native Claude turn on the managed pane, if this is that session.
+    func managedCompletion(sessionKey: String) -> String? {
+        managedController.sessionKey == sessionKey
+            ? managedController.latestInputSample.flatMap { $0.agent == .claude ? Self.claudeCompletedTurn($0.snapshot) : nil } : nil
     }
 
     private func activityValue(phase: AssistantActivity.Phase, sessionKey: String, since: Date,

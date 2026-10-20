@@ -40,6 +40,30 @@ struct Round5ManagedWorkingTests {
         #expect(f.runtime.assistantActivity == nil, "Completion evidence must not revive an ended response")
     }
 
+    /// zeus_say ends the typing row, but the answer (and its reply classification) lasts until the native turn completes.
+    @Test func aNewNativeCompletionEndsTheAnswerAfterZeusSayEndedTheRow() async throws {
+        let f = try ManagedDeliveryFixture(); defer { f.cleanup() }
+        try await f.start(); try await f.idle()
+        let previous = "❯ previous delivery\n⏺ Previous answer\n✻ Cogitated for 0s · done 2:10 PM"
+        await f.managed.host.setSnapshot(try claudeIdle(completed: previous))
+        f.managed.controller.refresh(); try await f.managed.settle()
+        let key = try #require(f.managed.controller.sessionKey)
+        #expect(await f.runtime.sendUserMessage("Two messages, please", deliveryID: "d_answer") == .delivered)
+        func say(_ text: String) async throws -> CardOrigin? {
+            #expect(!(await f.runtime.callTool("zeus_say", arguments: ["text": .string(text)], sessionKey: key)).isError)
+            return try #require(f.cards.values.last).origin
+        }
+        #expect(try await say("First") == .reply)
+        #expect(f.runtime.assistantActivity == nil)
+        #expect(try await say("Second") == .reply)
+        // An idle repaint with only the submitted input is not the end of the turn.
+        await f.managed.host.setSnapshot(try claudeIdle(completed: previous + "\n❯ new delivery"))
+        f.managed.clock.advance(3, wake: false); f.managed.controller.refresh(); try await f.managed.settle()
+        #expect(try await say("Third") == .reply)
+        await f.managed.host.setSnapshot(try claudeIdle(completed: previous + "\n❯ new delivery\n⏺ New answer\n✻ Cogitated for 0s · done 2:10 PM"))
+        f.managed.clock.advance(1, wake: false); f.managed.controller.refresh(); try await f.managed.settle()
+        #expect(try await say("Later, on its own") == .unprompted)
+    }
     @Test func completionParsingRejectsIndentedContentAndMissingNativeFooter() throws {
         #expect(ZeusRuntime.claudeCompletedTurn(try claudeIdle(completed: "❯ user\n  ✻ Cogitated for 0s · done 2:10 PM")) == nil)
         #expect(ZeusRuntime.claudeCompletedTurn(try claudeIdle(completed: "❯ user\n⏺ Still thinking")) == nil)

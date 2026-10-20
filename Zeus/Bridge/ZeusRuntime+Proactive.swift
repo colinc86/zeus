@@ -3,40 +3,9 @@ import CryptoKit
 import ZeusProtocol
 
 extension ZeusRuntime: ProactiveAssistantControlling {
-    static let dailyUnpromptedBudget = 6
-
     func proactiveDay(_ date: Date) -> String {
         let c = learningCalendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
-    }
-    var remainingUnpromptedBudget: Int {
-        max(0, Self.dailyUnpromptedBudget - (proactiveState?.count(day: proactiveDay(clock.now)) ?? 0))
-    }
-    var proactiveBudgetLine: String {
-        let remaining = remainingUnpromptedBudget
-        return remaining == 0
-            ? "Unprompted messages left today: 0. Anything more arrives held unless it's high priority."
-            : "Unprompted messages left today: \(remaining) (high priority doesn't count)."
-    }
-    func applyProactiveBudget(_ original: Card) throws -> Card {
-        guard original.origin == .unprompted, original.priority != .high else { return original }
-        var card = original
-        let day = proactiveDay(clock.now)
-        if cards.card(id: card.id) == nil {
-            if card.muteDecision == nil, remainingUnpromptedBudget == 0 {
-                card.muteDecision = .init(ratingID: "budget:" + day, kindLabel: "over today's limit",
-                    reason: "over today's limit", engine: "dailyBudget", score: 1, threshold: 1,
-                    decidedAt: clock.now, source: .dailyBudget)
-            }
-            try proactiveState?.record(cardID: card.id, day: day)
-        }
-        return card
-    }
-    func showBudgetHeldCard(id: String) throws {
-        guard cards.card(id: id)?.muteDecision?.source == .dailyBudget else { return }
-        let releasedAt = cards.card(id: id)?.muteDecision?.releasedAt ?? clock.now
-        _ = cards.update(id: id) { $0.muteDecision?.releasedAt = releasedAt }
-        try checkCardPersistence()
     }
 
     func noteProactiveActivity(at date: Date) {
@@ -96,7 +65,6 @@ extension ZeusRuntime: ProactiveAssistantControlling {
                 return String(text.split(whereSeparator: \.isWhitespace).joined(separator: " ").prefix(240))
             }
             if !samples.isEmpty { content += "\nYesterday (from Zeus's journal, private details removed):\n" + samples.map { "- " + $0 }.joined(separator: "\n") }
-            content += "\n" + proactiveBudgetLine
             content = Self.withLearningFiles(content, paths: proactiveRuleFiles)
             var delivery = Delivery(id: id, kind: .brief, sessionKey: assistantTarget ?? "", content: content, createdAt: now)
             delivery.meta = ["kind": "brief", "brief_day": day, "evidence": evidence.map(\.id).joined(separator: ","),
@@ -164,7 +132,7 @@ extension ZeusRuntime: ProactiveAssistantControlling {
                 let instruction = shadow
                     ? "This rule isn't approved yet: call zeus_rule_shadow {ruleID: \"\(rule.id)\", wouldHave} with what you would have done, and don't do it. Then zeus_ack."
                     : "This rule is active: act on it now, then call zeus_rule_acted {ruleID: \"\(rule.id)\", did, undo} right away. If this trigger doesn't call for anything, zeus_ack and stay quiet."
-                let content = Self.withLearningFiles("Rule trigger (\(status)): \"\(rule.sentence)\" · rule \(rule.id).\nMatched: \(triggerDescription(rule.trigger)).\n\(instruction)\n\(proactiveBudgetLine)", paths: proactiveRuleFiles)
+                let content = Self.withLearningFiles("Rule trigger (\(status)): \"\(rule.sentence)\" · rule \(rule.id).\nMatched: \(triggerDescription(rule.trigger)).\n\(instruction)", paths: proactiveRuleFiles)
                 var delivery = Delivery(id: id, kind: .ruleTrigger, sessionKey: assistantTarget ?? "", content: content, createdAt: clock.now)
                 delivery.meta = ["kind": "ruleTrigger", "rule_id": rule.id, "window_key": key, "window_open": "true", "rule_status": rule.status.rawValue, "rule_sentence": rule.sentence,
                                  "evidence": rule.evidence.joined(separator: ",")]

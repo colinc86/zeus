@@ -93,12 +93,6 @@ extension ZeusRuntime: MessageRatingsProviding {
         catch { ratingError = error.localizedDescription }
     }
 
-    func ratingOrigin(sessionKey: String) -> CardOrigin {
-        guard let record = activityRecords[sessionKey], record.deadline > clock.now, let id = record.deliveryID else { return .unprompted }
-        if id.hasPrefix("ask:") { return .reply }
-        guard let kind = ledger?.record(id: id)?.delivery.kind else { return .unprompted }
-        return kind == .reply || kind == .userMessage ? .reply : .unprompted
-    }
     func prepareRatedCard(_ original: Card, about: String?) async throws -> Card {
         var card = original
         card.about = try about.map(MessageRatingStore.validateLabel)

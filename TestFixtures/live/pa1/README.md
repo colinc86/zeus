@@ -1,6 +1,6 @@
 # PA1 proactive delivery proof
 
-Recorded 2026-10-17 using real Claude Code 2.1.302, the production managed
+Re-recorded 2026-10-20 (0.3.9, no budget line) using real Claude Code 2.1.304, the production managed
 controller/runtime, bundled zeus-mcp, a private tmux socket, disposable HOME and
 project, a localhost deterministic model, and an injected encryption key. No
 user agent config, credentials, default tmux server or assistant folder is used.

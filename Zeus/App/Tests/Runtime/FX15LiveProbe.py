@@ -63,11 +63,11 @@ def main():
                     return state if state and len(state['deliveries']) == count and all(d['acked'] for d in state['deliveries']) else None
                 state = eventually(received, f'resume {count} -> real model -> zeus_ack -> receipt', timeout=90)
                 assert state['nativeID'] == before['nativeID'], state
-                assert state['budget'] == before['budget'] == 6, state
+                assert not any('Unprompted messages left today' in d['content'] for d in state['deliveries']), state
                 assert len(state['receipts']) == count and len(seen) == count, state
                 assert all(d['kind'] == 'restart' and d['attempts'] == 1 for d in state['deliveries']), state
             proof = scrub_paths({'agent': version, 'fresh_notices': 0, 'resumed_notices': 2,
-                'same_native_conversation': True, 'budget_unchanged': True, 'state': state,
+                'same_native_conversation': True, 'state': state,
                 'isolation': 'private tmux, disposable HOME/config, localhost model, fixture key'},
                 {str(pane.root): '/FIXTURE', str(REPO): '/WORKTREE'})
             (out/'proof.json').write_text(json.dumps(proof, indent=2)+'\n')

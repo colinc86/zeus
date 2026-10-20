@@ -4,7 +4,7 @@ import ZeusProtocol
 @testable import Zeus
 
 @Suite @MainActor struct ManagedRestartNoticeTests {
-    @Test func resumesQueueOncePerLaunchWithoutSpendingBudgetAndFreshStartsDoNot() async throws {
+    @Test func resumesQueueOncePerLaunchAndFreshStartsDoNot() async throws {
         let f = try ManagedFixture(auto: false); defer { f.cleanup() }
         let r = try RuntimeFixture(); defer { r.stop() }
         let runtime = ZeusRuntime(cards: r.cards, status: r.status, characters: r.characters, routing: r.routing, clock: f.clock,
@@ -20,7 +20,6 @@ import ZeusProtocol
         }
         f.controller.startManagedSession(); try await f.settle(); try checkIn()
         #expect(runtime.ledger?.records.isEmpty == true)
-        let budget = runtime.remainingUnpromptedBudget
         for expected in 1...2 {
             try await f.prepareIdleRestart()
             f.controller.restartManagedSession(); try await f.settle(); try checkIn()
@@ -30,7 +29,7 @@ import ZeusProtocol
             #expect(Set(notices.map { $0.delivery.id }).count == expected)
             #expect(notices.last?.delivery.content.contains("because you pressed Restart Assistant") == true)
             #expect(f.controller.record?.restartNotices?.isEmpty == true)
-            #expect(runtime.remainingUnpromptedBudget == budget)
+            #expect(notices.last?.delivery.content.contains("Unprompted messages left today") == false)
         }
         runtime.stop(); try runtime.start(); try await f.settle(); try checkIn()
         #expect(runtime.ledger?.records.filter { $0.delivery.kind == .restart }.count == 2)

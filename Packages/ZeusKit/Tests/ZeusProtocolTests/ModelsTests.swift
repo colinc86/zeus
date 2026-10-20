@@ -104,7 +104,8 @@ private let date = Date(timeIntervalSince1970: 1_700_000_000.125)
 }
 
 
-@Test func budgetHoldSourceIsAdditiveAndLegacyRatingDecisionsDecode() throws {
+/// The daily limit is gone, but history saved by 0.3.8 still holds `dailyBudget` decisions and must load.
+@Test func removedDailyBudgetSourceStillDecodesAndLegacyRatingDecisionsDecode() throws {
     let old = CardMuteDecision(ratingID: "rating", kindLabel: "Updates", reason: "kind", engine: "exact", score: 1, threshold: 1, decidedAt: date)
     let encoded = try ZeusJSON.encoder().encode(old)
     #expect(!String(decoding: encoded, as: UTF8.self).contains("source"))

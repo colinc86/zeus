@@ -113,6 +113,8 @@ extension ZeusRuntime {
                 let requested = try args.string("id")
                 let batch = try pollingBatch(try requested.map { [try fetchedDelivery(id: $0, sessionKey: sessionKey, learning: false)] } ?? pending)
                 if !deferResultCommit { _ = try acknowledge(ids: Set(batch.map { $0.delivery.id }), sessionKey: sessionKey) }
+                // A learning, brief, trigger, reflection or restart read here ends any answer to the user.
+                if batch.contains(where: { !isReplyDelivery($0.delivery.id) }) { closeReplyWindow(sessionKey: sessionKey) }
                 let transport = transport(for: sessionKey)
                 let mode: String = transport?.0 is ChannelDeliveryConnector ? "channel" : (transport == nil ? "polling" : routing.deliveryMethod.rawValue)
                 let active = transport.map { connector, session, context in
@@ -187,8 +189,7 @@ extension ZeusRuntime {
         let handedOff = (ledger?.records ?? []).contains { $0.delivery.cardID == id && $0.delivery.sessionKey == sessionKey }
         guard card.sessionKey == sessionKey || handedOff else { throw ToolArgumentError("Agent tools cannot read or change another session's card.") }
     }
-    private func addCard(_ original: Card) throws {
-        let card = try applyProactiveBudget(original)
+    private func addCard(_ card: Card) throws {
         if !card.options.isEmpty || card.input != nil { try responseJournal?.prepare(card.id) }
         try prepareLearningCard(card)
         cards.add(card)

@@ -43,6 +43,4 @@ final class MorningBriefSettings {
     /// A timestamp-only user activity edge, never wake alone, an app name, or typed content.
     func noteProactiveActivity(at date: Date)
     func proactiveSettingsDidChange()
-    /// Releases only a daily-budget hold. No rating change, alert replay, or queue-wide release.
-    func showBudgetHeldCard(id: String) throws
 }
