@@ -28,12 +28,14 @@ enum N1Messages {
 
 private actor N1PasteRunner: ProcessRunning {
     var frame: ManagedPaneSnapshot
+    let before: ManagedPaneSnapshot
     let pasted: ManagedPaneSnapshot
     var calls: [RecordedProcess] = []
     var interrupted = false
     var interruptAfterPaste = false
+    var didPaste = false
     init(before: ManagedPaneSnapshot, pasted: ManagedPaneSnapshot, interrupt: Bool = false) {
-        frame = before; self.pasted = pasted; interruptAfterPaste = interrupt
+        frame = before; self.before = before; self.pasted = pasted; interruptAfterPaste = interrupt
     }
     func resume() { interrupted = false }
     func run(executable: URL, arguments: [String], input: Data?) async throws -> ProcessResult {
@@ -43,7 +45,9 @@ private actor N1PasteRunner: ProcessRunning {
             if interrupted { throw ConnectorError.processTimeout }
             return .init(status: 0, stdout: Data(frame.screen.utf8))
         }
-        if arguments.contains("paste-buffer") { frame = pasted; interrupted = interruptAfterPaste }
+        if arguments.contains("paste-buffer") { frame = pasted; interrupted = interruptAfterPaste; didPaste = true }
+        // The real CLI clears its input when Enter submits Zeus's paste.
+        if arguments.contains("send-keys"), arguments.last == "Enter", didPaste { frame = before }
         return .init(status: 0)
     }
 }

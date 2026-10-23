@@ -20,6 +20,7 @@ extension ZeusRuntime {
             else { state = record.transportDeliveredAt == nil ? .queued : .delivered }
             let reason: String? = state == .queued
                 ? (delivery.meta["tmux_hidden_paste"] == "true" ? TmuxPasteRecoveryError.hidden.localizedDescription
+                    : delivery.meta["tmux_unsent_paste"] == "true" ? TmuxPasteRecoveryError.unsent.localizedDescription
                     : delivery.meta["tmux_paste_destination"] != nil ? "Finishing Zeus's saved message in Terminal."
                     : delivery.failedAt == nil ? record.queueReason ?? "Waiting for your assistant." : "Your assistant hasn't confirmed this after several tries. Retry when it's ready.") : nil
             return UserMessageDelivery(id: delivery.id, text: userMessageText(record),
