@@ -6,6 +6,30 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.3.9</title>
+      <pubDate>Fri, 23 Oct 2026 15:14:28 GMT</pubDate>
+      <sparkle:version>32</sparkle:version>
+      <sparkle:shortVersionString>0.3.9</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<h1 dir="auto">Zeus 0.3.9</h1>
+<ul dir="auto">
+<li><strong>No more daily limit on your assistant's messages.</strong> Zeus used to collapse unprompted messages after the sixth of the day into a "Held: over today's limit" line, with no pop-up or sound. That's gone: every message comes through. Messages that were held before are released when you update.</li>
+<li><strong>Your ratings decide how much your assistant sends.</strong> Thumbs up means more like this, Neutral means only when you need to know, and Stop these mutes that kind. Your assistant's instructions now say so; managed sessions will offer the updated instructions.</li>
+<li><strong>Whole answers count as replies.</strong> When your assistant answered you in more than one message, only the first counted as a reply. The rest could be muted by a Stop rating. Every message in an answer now counts as a reply until the assistant finishes.</li>
+<li><strong>Zeus's messages no longer get stuck in Terminal.</strong> Sometimes Zeus pasted a message into your assistant's Terminal but the Enter didn't take, leaving <code class="notranslate">[Pasted text …]</code> unsent. Zeus then mistook its own message for something you were typing and held everything behind it. Zeus now checks that each message sent, presses Enter again if its own paste is still there, and remembers the paste is its own across relaunches. It still never sends text you typed. If a message is already stuck after you update, press Enter once in Terminal.</li>
+<li><strong>Labelled messages send while your Mac is locked.</strong> If your assistant sent a labelled message while your Mac was locked (for example, an early-morning digest), Zeus couldn't save its rating data and rejected the message, so it arrived without its label. The message now goes through with its label, and Zeus saves the rating data once you unlock.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.3.9/Zeus-0.3.9.zip" type="application/octet-stream" sparkle:edSignature="py22uxRkPvpSUwy3eTkXNpoXWcGO43uIsRDuctc5hFAopvF82fB6Y0Ip/74k+fAOhT/EAzTPUmMaScVmLkv8DQ==" length="15147658"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.3.8</title>
       <pubDate>Tue, 20 Oct 2026 16:20:16 GMT</pubDate>
       <sparkle:version>31</sparkle:version>
