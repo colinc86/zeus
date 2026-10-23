@@ -259,7 +259,56 @@ struct FixtureRatingSimilarity: MessageSimilarityComparing {
         #expect(throws: (any Error).self) { try MessageRatingStore(fileURL: url, keyProvider: key) }
         #expect(try Data(contentsOf: url) == Data("corrupt fixture".utf8))
     }
+    /// Regression: with complete file protection a locked Mac refuses the write (Cocoa 513), and a labelled
+    /// zeus_say failed, so the assistant resent it without its label.
+    @Test func lockedPreferencesFileNeverFailsALabelledCardAndSignalsSaveAfterUnlock() async throws {
+        let key = LockedFileKey()
+        let f = try LearningRuntimeFixture(messageRatings: true, ratingSimilarity: FixtureRatingSimilarity(score: 0.2), ratingKey: key); defer { f.stop() }
+        let store = try #require(f.ratingStore), url = f.root.appendingPathComponent("ratings.zratings")
+        let stop = try await post(f, about: "Build results")
+        _ = try await f.runtime.rate(cardID: stop.id, rating: .down, scope: .kind, label: "Build results")
+        try await eventually { f.runtime.ratingDeliveryTask == nil && store.state.outbox.isEmpty }
+        let saved = try Data(contentsOf: url)
+        key.locked = true
+        let card = try await post(f)
+        #expect(card.about == "On-call reminder" && f.cards.card(id: card.id)?.about == "On-call reminder" && card.muteDecision == nil)
+        #expect(store.state.signals[card.id] != nil)
+        let held = try await post(f, about: "Build results")
+        #expect(held.muteDecision?.engine == "exact" && f.runtime.mutedDecisions[held.id] != nil)
+        f.runtime.ratingCardShown(id: card.id); f.runtime.ratingCardOpened(id: card.id)
+        #expect(store.state.signals[card.id]?.opened != nil)
+        #expect(store.storageWaitingForUnlock && store.pendingStorageWrites > 0)
+        #expect(store.lastError == MessageRatingStore.signalsWaitingMessage)
+        #expect(try Data(contentsOf: url) == saved)
+        key.locked = false; store.retryPendingWrites()
+        #expect(!store.storageWaitingForUnlock && store.pendingStorageWrites == 0 && store.lastError == nil)
+        let reopened = try MessageRatingStore(fileURL: url, keyProvider: key)
+        #expect(reopened.state.signals[card.id]?.opened != nil && reopened.state.signals[card.id]?.shown != nil)
+        #expect(reopened.state.decisions[held.id] != nil && reopened.state.ratings.count == 1)
+    }
+    @Test func lockedUserEditFailsVisiblyAndTheNextSaveKeepsPendingSignals() async throws {
+        let key = LockedFileKey()
+        let f = try LearningRuntimeFixture(messageRatings: true, ratingKey: key); defer { f.stop() }
+        let store = try #require(f.ratingStore), url = f.root.appendingPathComponent("ratings.zratings")
+        key.locked = true
+        let card = try await post(f)
+        await #expect(throws: (any Error).self) { _ = try await f.runtime.rate(cardID: card.id, rating: .up, scope: .kind, label: "On-call reminder") }
+        #expect(store.lastError == MessageRatingStore.lockedSaveMessage && store.state.ratings.isEmpty)
+        key.locked = false
+        _ = try await f.runtime.rate(cardID: card.id, rating: .up, scope: .kind, label: "On-call reminder")
+        #expect(store.pendingStorageWrites == 0 && !store.storageWaitingForUnlock)
+        let reopened = try MessageRatingStore(fileURL: url, keyProvider: key)
+        #expect(reopened.state.signals[card.id] != nil && reopened.state.ratings.count == 1)
+    }
+}
 
+/// Fails like a complete-protection file while the Mac is locked: NSFileWriteNoPermissionError (513).
+@MainActor private final class LockedFileKey: FixtureLearningKeyProviding {
+    var locked = false
+    func key() throws -> Data {
+        if locked { throw CocoaError(.fileWriteNoPermission) }
+        return Data(repeating: 9, count: 32)
+    }
 }
 
 @MainActor private final class RatingFixtureKey: FixtureLearningKeyProviding {

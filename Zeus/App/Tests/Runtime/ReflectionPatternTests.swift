@@ -148,7 +148,7 @@ import ZeusProtocol
         for (id, offset) in [("c_first", -86400.0), ("c_second", 0.0)] {
             var card = Card(id: id, kind: .message, body: "Synthetic reminder", createdAt: f.clock.now.addingTimeInterval(offset))
             card.about = "Meeting prep"; card.origin = .unprompted
-            f.cards.add(card); try store.observeCard(card); try store.signal(id: id, edge: "opened", at: f.clock.now)
+            f.cards.add(card); store.observeCard(card); store.signal(id: id, edge: "opened", at: f.clock.now)
         }
         let dates = f.runtime.reflectionFeedbackDates().mapValues { $0.timeIntervalSince1970 }
         var delivery = Delivery(id: "feedback-reflection", kind: .reflection, sessionKey: "claude:/fixture#123.1", content: "Fixture", createdAt: f.clock.now)
