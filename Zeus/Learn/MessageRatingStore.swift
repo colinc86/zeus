@@ -39,7 +39,8 @@ struct RatingDelivery: Codable, Sendable {
     private(set) var revision: UInt64 = 0
     private(set) var lastError: String?
     private(set) var storageWaitingForUnlock = false
-    var pendingStorageWrites: Int { 0 } // User edits fail visibly until saved; no false success.
+    /// Passive signals and hold decisions applied in memory but not yet saved. User edits fail visibly until saved; no false success.
+    private(set) var pendingStorageWrites = 0
     @ObservationIgnored var onChange: (() -> Void)?
     @ObservationIgnored private var recovery: Task<Void, Never>?
     private var awaitingInitialRead = false
@@ -66,7 +67,7 @@ struct RatingDelivery: Codable, Sendable {
         }
     }
     func retryPendingWrites() {
-        guard awaitingInitialRead else { return }
+        guard awaitingInitialRead else { return savePendingSignals() }
         do {
             state = try LearningEncryption.read(State.self, at: url, key: key) ?? State()
             awaitingInitialRead = false; storageWaitingForUnlock = false; lastError = nil; revision &+= 1; onChange?()
@@ -76,17 +77,56 @@ struct RatingDelivery: Codable, Sendable {
             else { lastError = "Zeus couldn't read its message preferences. Existing files were left alone." }
         }
     }
+    static let lockedSaveMessage = "Zeus can't save your message preferences while your Mac is locked. Unlock it and try again."
+    static let signalsWaitingMessage = "Zeus can't save message signals while your Mac is locked. They stay in memory until it unlocks."
+    /// A user edit. It includes any unsaved passive signals (they are already in `state`) and throws when it can't be saved.
     func commit(_ next: State) throws {
         guard !awaitingInitialRead else { throw LearningStorageError.keyUnavailable }
         do {
             try LearningEncryption.write(next, to: url, key: key)
-            state = next; revision &+= 1; lastError = nil; onChange?()
-        } catch { lastError = "Zeus couldn't save your message preferences. Your previous preferences are unchanged."; throw error }
+            state = next; revision &+= 1; markSaved(); onChange?()
+        } catch {
+            lastError = LearningStorageAvailability.isUnavailable(error) ? Self.lockedSaveMessage
+                : "Zeus couldn't save your message preferences. Your previous preferences are unchanged."
+            throw error
+        }
+    }
+    /// A passive signal or hold decision never fails its caller. When the file can't be written (for example
+    /// complete file protection while the Mac is locked) the change stays in memory, is merged into the next
+    /// save, and is retried while storage is unavailable. Memory stays bounded by the 7-day signal pruning.
+    private func commitPassive(_ next: State) {
+        guard !awaitingInitialRead else { return }
+        do {
+            try LearningEncryption.write(next, to: url, key: key)
+            state = next; revision &+= 1; markSaved(); onChange?()
+        } catch {
+            state = next; revision &+= 1; pendingStorageWrites += 1
+            storageWaitingForUnlock = LearningStorageAvailability.isUnavailable(error)
+            lastError = storageWaitingForUnlock ? Self.signalsWaitingMessage
+                : "Zeus couldn't save message signals. It will try again with your next change."
+            if storageWaitingForUnlock { scheduleRecovery() }
+            onChange?()
+        }
+    }
+    private func markSaved() { pendingStorageWrites = 0; storageWaitingForUnlock = false; lastError = nil }
+    private func savePendingSignals() {
+        guard pendingStorageWrites > 0 else { return }
+        do {
+            try LearningEncryption.write(state, to: url, key: key)
+            revision &+= 1; markSaved(); onChange?()
+        } catch {
+            storageWaitingForUnlock = LearningStorageAvailability.isUnavailable(error)
+            if storageWaitingForUnlock { scheduleRecovery() }
+        }
+    }
+    /// Records the automatic hold decision for a card. Passive: it never fails the card.
+    func recordDecision(_ decision: CardMuteDecision, cardID: String) {
+        var next = state; next.decisions[cardID] = decision; commitPassive(next)
     }
     func clear() throws {
         // Erasure must work with a locked keychain, without decrypting or resurrecting old data.
         if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
-        recovery?.cancel(); recovery = nil; awaitingInitialRead = false; storageWaitingForUnlock = false
+        recovery?.cancel(); recovery = nil; awaitingInitialRead = false; storageWaitingForUnlock = false; pendingStorageWrites = 0
         state = State(); lastError = nil; revision &+= 1; onChange?()
     }
     static func kindKey(_ label: String) -> String {
@@ -109,12 +149,12 @@ struct RatingDelivery: Codable, Sendable {
         }
         return parts.joined(separator: "\n\n")
     }
-    func observeCard(_ card: Card) throws {
+    func observeCard(_ card: Card) {
         guard card.origin == .unprompted, let label = card.about, card.muteDecision == nil, state.signals[card.id] == nil else { return }
         var next = state; next.signals[card.id] = .init(id: card.id, label: label, created: card.createdAt)
-        try commit(next)
+        commitPassive(next)
     }
-    func signal(id: String, edge: String, at date: Date) throws {
+    func signal(id: String, edge: String, at date: Date) {
         guard var signal = state.signals[id] else { return }
         switch edge {
         case "shown": if signal.shown == nil { signal.shown = date }
@@ -122,9 +162,9 @@ struct RatingDelivery: Codable, Sendable {
         case "dismissed": if signal.dismissed == nil { signal.dismissed = date }
         default: return
         }
-        var next = state; next.signals[id] = signal; try commit(next)
+        var next = state; next.signals[id] = signal; commitPassive(next)
     }
-    func refreshSuggestions(at now: Date) throws {
+    func refreshSuggestions(at now: Date) {
         var next = state
         next.signals = next.signals.filter { now.timeIntervalSince($0.value.created) <= 7 * 86400 }
         let eligible = next.signals.values.filter { signal in
@@ -137,6 +177,6 @@ struct RatingDelivery: Codable, Sendable {
             next.suggested.insert(key)
             next.suggestions.append(.init(id: key, kindLabel: example.label, count: group.count, exampleCardID: example.id))
         }
-        if next.signals.count != state.signals.count || next.suggestions.count != state.suggestions.count { try commit(next) }
+        if next.signals.count != state.signals.count || next.suggestions.count != state.suggestions.count { commitPassive(next) }
     }
 }

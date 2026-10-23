@@ -63,7 +63,7 @@
 | A single-message rating is absent from Settings or `preferences.md` | Those lists contain kind ratings only. Check the original message's rating row or the received delivery in **Sent to your assistant**. |
 | Undo is no longer available | A later preference change invalidates the earlier Undo. Edit the current preference under **Settings › Rules › What you hear about**. |
 | A rating has not reached the assistant | Open **What Zeus Kept › Sent to your assistant** and check **Waiting**. The saved confirmation is not a delivery receipt; a disconnected/busy assistant or an unsent Terminal draft can delay delivery. |
-| Message preferences are locked or cannot be saved | Unlock the Mac/Keychain and retry. Zeus preserves existing preferences; failed edits are not silently saved in memory. If startup preferences cannot be read, unprompted tool posts wait for recovery. |
+| Message preferences are locked or cannot be saved | Unlock the Mac/Keychain and retry. Zeus preserves existing preferences; failed edits are not silently saved in memory. Messages still post with their kind label; how you read them is kept in memory and saved after unlock. If startup preferences cannot be read, unprompted tool posts wait for recovery. |
 | Ratings still work with Learn from me off | Intentional. Explicit feedback, its delivery and the preferences file are independent of observation switches. |
 
 [How to rate and inspect muted messages](CONVERSATION.md#rate-what-you-hear-about) · [Rating storage and delivery](PRIVACY.md#message-ratings-and-quiet-signals)

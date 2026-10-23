@@ -89,8 +89,7 @@ extension ZeusRuntime: MessageRatingsProviding {
     func ratingCardOpened(id: String) { recordRatingSignal(id: id, edge: "opened") }
     func ratingCardDismissed(id: String) { recordRatingSignal(id: id, edge: "dismissed") }
     private func recordRatingSignal(id: String, edge: String) {
-        do { try messageRatings?.signal(id: id, edge: edge, at: clock.now); try messageRatings?.refreshSuggestions(at: clock.now) }
-        catch { ratingError = error.localizedDescription }
+        messageRatings?.signal(id: id, edge: edge, at: clock.now); messageRatings?.refreshSuggestions(at: clock.now)
     }
 
     func prepareRatedCard(_ original: Card, about: String?) async throws -> Card {
@@ -122,12 +121,12 @@ extension ZeusRuntime: MessageRatingsProviding {
             guard running, token == generation else { throw CancellationError() }
             if version != store.state.version { continue }
             card.muteDecision = decision
-            if let decision { var next = store.state; next.decisions[card.id] = decision; try store.commit(next) }
+            if let decision { store.recordDecision(decision, cardID: card.id) }
             if card.origin == .unprompted, decision == nil, let about = card.about {
                 var safe = card; safe.about = await (learningRedactor ?? LocalRedactor()).redact(about).value
                 guard running, token == generation else { throw CancellationError() }
                 if version != store.state.version { continue }
-                try store.observeCard(safe)
+                store.observeCard(safe)
                 scheduleRatingSuggestions()
             }
             return card
@@ -146,7 +145,7 @@ extension ZeusRuntime: MessageRatingsProviding {
                 if self.running, self.generation == token, store.state.version != startingVersion { self.scheduleRatingDelivery() }
             }
             do {
-                try store.refreshSuggestions(at: self.clock.now)
+                store.refreshSuggestions(at: self.clock.now)
                 let version = store.state.version
                 let paths = await (self.learningFolder as? any RatingFolderRecording)?.recordRatings(store.state.ratings) ?? []
                 guard self.running, self.generation == token, version == store.state.version else { return }
@@ -199,7 +198,7 @@ extension ZeusRuntime: MessageRatingsProviding {
     }
     func scheduleRatingSuggestions() {
         ratingSignalTimer?.cancel(); ratingSignalTimer = nil
-        do { try messageRatings?.refreshSuggestions(at: clock.now) } catch { ratingError = error.localizedDescription }
+        messageRatings?.refreshSuggestions(at: clock.now)
         guard let date = messageRatings?.state.signals.values.filter({ $0.opened == nil }).map({ $0.created.addingTimeInterval(86400) }).filter({ $0 > clock.now }).min() else { return }
         ratingSignalTimer = Task { [weak self] in
             guard let self else { return }

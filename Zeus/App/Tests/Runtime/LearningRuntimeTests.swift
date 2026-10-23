@@ -22,7 +22,7 @@ struct FixtureLearningRedactor: Redactor {
     let rules: PersistentRulesStore
     let folder: LearningFolderWriter?
     let ratingStore: MessageRatingStore?
-    init(learnings: (any LearningsProviding)? = nil, redactor: any Redactor = FixtureLearningRedactor(), exportFolder: Bool = false, messageRatings: Bool = false, ratingSimilarity: any MessageSimilarityComparing = LocalMessageSimilarity(), morningBriefSettings: MorningBriefSettings? = nil, morningBriefLevels: @escaping () -> Set<JournalLevel> = { [] }, calendar overrideCalendar: Calendar? = nil, deliveryConnector: (any DeliveryConnector)? = nil) throws {
+    init(learnings: (any LearningsProviding)? = nil, redactor: any Redactor = FixtureLearningRedactor(), exportFolder: Bool = false, messageRatings: Bool = false, ratingSimilarity: any MessageSimilarityComparing = LocalMessageSimilarity(), morningBriefSettings: MorningBriefSettings? = nil, morningBriefLevels: @escaping () -> Set<JournalLevel> = { [] }, calendar overrideCalendar: Calendar? = nil, deliveryConnector: (any DeliveryConnector)? = nil, ratingKey: (any JournalKeyProviding)? = nil) throws {
         clock.now = ISO8601DateFormatter().date(from: "2026-10-14T18:15:00Z") ?? clock.now
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = .gmt
         if let overrideCalendar { calendar = overrideCalendar }
@@ -37,7 +37,7 @@ struct FixtureLearningRedactor: Redactor {
                 enabledLevels: { [.activity, .focus] }, redactor: redactor, calendar: calendar)
             folder?.setFolder(destination)
         } else { folder = nil }
-        ratingStore = messageRatings ? try MessageRatingStore(fileURL: root.appendingPathComponent("ratings.zratings"), keyProvider: FixtureJournalKey()) : nil
+        ratingStore = messageRatings ? try MessageRatingStore(fileURL: root.appendingPathComponent("ratings.zratings"), keyProvider: ratingKey ?? FixtureJournalKey()) : nil
         let box = box
         runtime = ZeusRuntime(cards: cards, status: FakeStatus(), characters: FakeCharacters(), routing: FakeRouting(),
             clock: clock, socketPath: root.appendingPathComponent("bridge.sock").path, ledgerURL: root.appendingPathComponent("deliveries.json"),
