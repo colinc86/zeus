@@ -3,6 +3,10 @@ import ZeusDesign
 import ZeusProtocol
 
 extension ZeusRuntime {
+    /// Ledger meta for one owned paste's submission: the exact Claude label recorded
+    /// before Enter, how many attempts left it unsent, and whether Zeus now asks the user.
+    static let tmuxPasteSubmissionKeys = ["tmux_paste_label", "tmux_enter_rounds", "tmux_unsent_paste"]
+    static let waitingForEarlierPaste = "Waiting for Zeus's earlier message in Terminal. Open Terminal to send it or clear it."
     /// Finish a previous input mutation before another message can acquire its pane.
     func pendingPasteAhead(of record: DeliveryRecord) -> DeliveryRecord? {
         (ledger?.records ?? []).first { $0.isPending && $0.delivery.id != record.delivery.id
@@ -69,7 +73,15 @@ extension ZeusRuntime {
                     let managed = managedQueueReason(record)
                     let owned = record.delivery.meta["tmux_paste_destination"] != nil || pendingPasteAhead(of: record) != nil
                     let hidden = record.delivery.meta["tmux_hidden_paste"] == "true"
-                    var reason: String? = hidden ? TmuxPasteRecoveryError.hidden.localizedDescription : owned ? "Finishing Zeus's saved message in Terminal." : native ?? managed
+                    let unsent = record.delivery.meta["tmux_unsent_paste"] == "true"
+                    // A later message behind an owned paste that needs the user says so.
+                    let ownerNeedsUser = record.delivery.meta["tmux_paste_destination"] == nil && pendingPasteAhead(of: record).map {
+                        $0.delivery.meta["tmux_hidden_paste"] == "true" || $0.delivery.meta["tmux_unsent_paste"] == "true"
+                    } == true
+                    var reason: String? = hidden ? TmuxPasteRecoveryError.hidden.localizedDescription
+                        : unsent ? TmuxPasteRecoveryError.unsent.localizedDescription
+                        : ownerNeedsUser ? Self.waitingForEarlierPaste
+                        : owned ? "Finishing Zeus's saved message in Terminal." : native ?? managed
                     if owned { records[index].queueReasonSource = .managedGate }
                     else if native != nil { records[index].queueReasonSource = .nativeRoute }
                     else if managed != nil { records[index].queueReasonSource = .managedGate }

@@ -59,6 +59,8 @@ extension ZeusRuntime: ManagedDraftAlertControlling {
         for record in ledger?.records ?? [] where record.isPending && record.delivery.meta["tmux_paste_destination"] == destination {
             let paste = AgentInjectionText.format(record.delivery)
             if input.containsOnlyClaudePaste(paste) || input.containsOnlyCodexPaste(paste) { return nil }
+            // A collapsed Claude paste is Zeus's only by the exact label journaled for it.
+            if let label = record.delivery.meta["tmux_paste_label"], input.containsRecordedClaudePasteLabel(label, text: paste) { return nil }
             // OpenCode's recovery verifier also has hidden/collapsed pastes. A
             // journaled mutation owns this pane until the connector settles it.
             if sample.agent == .opencode { return nil }
@@ -135,7 +137,10 @@ extension ZeusRuntime: ManagedDraftAlertControlling {
         let id = managedDraftEpisode?.cardID ?? (Self.managedDraftPrefix + UUID().uuidString)
         let count = queued.count
         let preview = String((text.split(separator: "\n", omittingEmptySubsequences: false).first ?? "").trimmingCharacters(in: .whitespaces).prefix(80))
-        let body = preview + "\n\nZeus is holding \(count) \(count == 1 ? "message" : "messages") until it's sent or cleared."
+        let holding = "Zeus is holding \(count) \(count == 1 ? "message" : "messages")"
+        let body = Self.mayBeUnownedZeusPaste(text, queued: queued)
+            ? preview + "\n\nThis may be a message from Zeus that didn't send. Open Terminal and press Enter to send it, or clear it. \(holding) until then."
+            : preview + "\n\n\(holding) until it's sent or cleared."
         let options: [CardOption] = [.init(id: "open-terminal", label: "Open in Terminal", style: .primary),
             .init(id: "cancel-draft-queue", label: count == 1 ? "Cancel queued message" : "Cancel queued messages", style: .secondary)]
         managedDraftEpisode?.cardID = id
@@ -151,6 +156,23 @@ extension ZeusRuntime: ManagedDraftAlertControlling {
         }
         if cards.card(id: id)?.status == .open { managedDraftAlertCardID = id }
         updateManagedPresentation()
+    }
+
+    /// Wording only, never authority: a collapsed Claude paste whose line count matches
+    /// an attempted, unreceipted queued delivery may be Zeus's own paste from a version
+    /// that did not journal its label. Zeus still never submits or clears it.
+    static func mayBeUnownedZeusPaste(_ draft: String, queued: [DeliveryRecord]) -> Bool {
+        let prefix = "[Pasted text #", suffix = " lines]"
+        guard draft.hasPrefix(prefix), draft.hasSuffix(suffix), !draft.contains("\n"),
+              let plus = draft.range(of: " +", options: .backwards) else { return false }
+        let number = draft[draft.index(draft.startIndex, offsetBy: prefix.count)..<plus.lowerBound]
+        let count = draft[plus.upperBound..<draft.index(draft.endIndex, offsetBy: -suffix.count)]
+        guard !number.isEmpty, number.allSatisfy(\.isASCII), number.allSatisfy(\.isNumber),
+              let lines = Int(count), String(lines) == count else { return false }
+        return queued.contains { record in
+            record.delivery.attempts > 0 && record.transportDeliveredAt == nil
+                && AgentInjectionText.format(record.delivery).filter { $0 == "\n" }.count == lines
+        }
     }
 
     var managedDraftDeadline: Date? {

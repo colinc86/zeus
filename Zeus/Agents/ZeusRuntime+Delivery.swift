@@ -103,6 +103,8 @@ extension ZeusRuntime {
             try self.ledger?.updateRecord(id: id) {
                 $0.delivery.meta["tmux_paste_destination"] = destination
                 $0.delivery.meta.removeValue(forKey: "tmux_hidden_paste")
+                // A new or settled ownership starts without an old label or Enter count.
+                for key in Self.tmuxPasteSubmissionKeys { $0.delivery.meta.removeValue(forKey: key) }
                 if destination != nil { $0.delivery.meta["tmux_pointer"] = context?.usesTmuxPointer == true ? "true" : nil }
                 if recoveringPaste && destination == nil && context?.didSubmitRecordedTmuxPaste == true {
                     $0.delivery.failedAt = nil
@@ -112,11 +114,28 @@ extension ZeusRuntime {
                 }
             }
         }
+        let ownsPaste: @MainActor () -> Bool = { [weak self] in
+            guard let self, self.running, self.generation == token, self.sendTokens[id] == sendToken,
+                  let current = self.ledger?.record(id: id), current.isPending, current.delivery.meta["tmux_paste_destination"] != nil,
+                  self.learningPolicyAllows(saved.delivery) else { return false }
+            return true
+        }
+        context.confirmTmuxPasteLabel = { [weak self] label in
+            guard let self, ownsPaste() else { throw CancellationError() }
+            try self.ledger?.update(id: id) { $0.meta["tmux_paste_label"] = label }
+        }
+        context.noteUnconfirmedTmuxEnter = { [weak self] in
+            guard let self, ownsPaste() else { throw CancellationError() }
+            try self.ledger?.update(id: id) {
+                $0.meta["tmux_enter_rounds"] = String((Int($0.meta["tmux_enter_rounds"] ?? "") ?? 0) + 1)
+            }
+        }
         let bridge = bridges[session.sessionKey]
         let activityToken = activityTokens[session.sessionKey]
         let task: Task<MessageSendResult, Never> = Task { [weak self] in
             var outcome: MessageSendResult
             var postponed = false
+            var enterUnconfirmed = false
             do {
                 try Task.checkCancellation()
                 guard let self, self.learningPolicyAllows(saved.delivery) else { throw CancellationError() }
@@ -128,6 +147,15 @@ extension ZeusRuntime {
                    self.ledger?.record(id: id)?.isPending == true {
                     do { try self.ledger?.update(id: id) { $0.meta["tmux_hidden_paste"] = "true" } }
                     catch { self.storageProblem = "Couldn't save the paste review state." }
+                }
+                if let recovery = error as? TmuxPasteRecoveryError, recovery == .unsent || recovery == .unconfirmed, let self,
+                   self.generation == token, self.sendTokens[id] == sendToken,
+                   self.ledger?.record(id: id)?.isPending == true {
+                    enterUnconfirmed = true
+                    if recovery == .unsent {
+                        do { try self.ledger?.update(id: id) { $0.meta["tmux_unsent_paste"] = "true" } }
+                        catch { self.storageProblem = "Couldn't save the paste review state." }
+                    }
                 }
                 postponed = (error as? ConnectorError)?.postponesDelivery == true
                     && self?.ledger?.record(id: id)?.delivery.meta["tmux_paste_destination"] == nil && !context.didMutateTmuxInput
@@ -169,7 +197,7 @@ extension ZeusRuntime {
             } else { self.activityEarlyAcknowledgments.removeValue(forKey: id) }
             self.sends.removeValue(forKey: id); self.sendTokens.removeValue(forKey: id)
             self.managedController.reconsiderSettingsApplication()
-            if recoveringPaste, outcome != .delivered {
+            if recoveringPaste || enterUnconfirmed, outcome != .delivered {
                 self.deferredSends[id] = self.clock.now.addingTimeInterval(5)
             }
             if self.ledger?.record(id: id)?.delivery.ackedAt == nil {

@@ -54,6 +54,11 @@ final class DeliveryRoutingContext: AgentRoutingSettings, OpenCodeSessionRouting
     var didMutateTmuxInput = false
     /// Durably records/clears an unsubmitted paste before mutating Terminal input.
     var confirmTmuxPaste: ((String?) throws -> Void)?
+    /// Durably records the exact numbered collapsed label (Claude) seen for Zeus's own
+    /// fresh paste, before Enter. Only this label can later prove the hidden paste is Zeus's.
+    var confirmTmuxPasteLabel: ((String) throws -> Void)?
+    /// Durably counts an attempt whose Enter left Zeus's paste in the input.
+    var noteUnconfirmedTmuxEnter: (() throws -> Void)?
     /// Persisted with paste ownership so recovery uses the same representation.
     var usesTmuxPointer = false
     /// Recovery may submit only the exact journaled input, never load/paste text.

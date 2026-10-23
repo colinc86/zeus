@@ -5,13 +5,32 @@ import ZeusLink
 import ZeusProtocol
 
 enum TmuxPasteRecoveryError: Error, LocalizedError, Equatable {
-    case absent, hidden
+    /// `unconfirmed`: Enter was pressed but Zeus's paste is still in the input; ownership is kept and Zeus tries again.
+    /// `unsent`: Zeus has stopped pressing Enter on its own paste and asks the user to send or clear it.
+    case absent, hidden, unconfirmed, unsent
     var errorDescription: String? {
         switch self {
         case .absent: "Zeus's saved paste is no longer in Terminal. It was not pasted again."
         case .hidden: "OpenCode is holding text Zeus pasted before the relaunch, and Zeus can't read it back. Open Terminal to send it or clear it. Zeus never submits text it can't see."
+        case .unconfirmed: "Zeus's message is in Terminal but hasn't sent yet. Zeus will press Enter again."
+        case .unsent: "Zeus's message is in your assistant's Terminal but didn't send. Open Terminal and press Enter to send it, or clear it."
         }
     }
+}
+
+/// Bounds for confirming that Enter submitted Zeus's paste. Production uses
+/// `standard`; tests inject shorter windows.
+struct TmuxSubmitTiming: Sendable {
+    /// Pause between a verified collapsed paste label and the first Enter.
+    var settle: Duration
+    /// How long each Enter may take to clear the input before Zeus checks again.
+    var window: Duration
+    var poll: Duration
+    /// Enter presses per attempt, each after a fresh check that only Zeus's paste remains.
+    var enters: Int
+    /// Attempts (fresh or recovered) that may press Enter before Zeus asks the user instead.
+    var rounds: Int
+    static let standard = TmuxSubmitTiming(settle: .milliseconds(60), window: .milliseconds(600), poll: .milliseconds(40), enters: 3, rounds: 3)
 }
 
 /// Shared discovery for managed launch, Settings and per-attempt tmux delivery.
@@ -494,17 +513,31 @@ struct TmuxInputSnapshot: Equatable, Sendable {
         return remaining == lines[y] && suffix(self) == suffix(before)
     }
 
+    /// Claude's single-row collapsed paste, e.g. `[Pasted text #34 +11 lines]`,
+    /// when its line count matches `text`. Claude numbers every paste in a process
+    /// monotonically (clearing the input does not reuse a number), so the exact
+    /// label observed right after Zeus's own fresh paste identifies that paste.
+    func claudePasteLabel(for text: String) -> String? {
+        guard text.contains("\n"), let rows = claudeInputRows, rows.count == 1 else { return nil }
+        var body = String(lines[rows.lowerBound].dropFirst(2))
+        if !cursorVisible, body.hasSuffix(" "), Self.cellWidth(lines[y]) == x + 1 { body.removeLast() }
+        let prefix = "[Pasted text #", suffix = " +\(text.filter { $0 == "\n" }.count) lines]"
+        guard body.hasPrefix(prefix), body.hasSuffix(suffix) else { return nil }
+        let number = body.dropFirst(prefix.count).dropLast(suffix.count)
+        guard !number.isEmpty, number.unicodeScalars.allSatisfy({ (48...57).contains($0.value) }) else { return nil }
+        return body
+    }
+    /// The composer holds exactly the label Zeus recorded for its own paste. A
+    /// different number, line count or any added input never matches.
+    func containsRecordedClaudePasteLabel(_ label: String, text: String) -> Bool {
+        claudePasteLabel(for: text) == label
+    }
+
     private func containsFreshPasteLabel(_ text: String, agent: AgentKind, before: TmuxInputSnapshot) -> Bool {
         guard text.contains("\n") else { return false }
         switch agent {
         case .claude:
-            guard before.claudeInputRows != nil, let rows = claudeInputRows, rows.count == 1 else { return false }
-            var body = String(lines[rows.lowerBound].dropFirst(2))
-            if !cursorVisible, body.hasSuffix(" "), Self.cellWidth(lines[y]) == x + 1 { body.removeLast() }
-            let prefix = "[Pasted text #", suffix = " +\(text.filter { $0 == "\n" }.count) lines]"
-            guard body.hasPrefix(prefix), body.hasSuffix(suffix) else { return false }
-            let number = body.dropFirst(prefix.count).dropLast(suffix.count)
-            return !number.isEmpty && number.unicodeScalars.allSatisfy { (48...57).contains($0.value) }
+            return before.claudeInputRows != nil && claudePasteLabel(for: text) != nil
         case .codex:
             guard before.codexInputRows != nil, let rows = codexInputRows, rows.count == 1 else { return false }
             // Codex counts Unicode scalars (Rust chars), not UTF-8 bytes or graphemes.
@@ -526,7 +559,7 @@ struct TmuxInputSnapshot: Equatable, Sendable {
 /// runtime metadata also permits known composer recovery across a Zeus relaunch.
 @MainActor
 private final class PendingTmuxPastes {
-    struct Paste { let deliveryID: String; let before: TmuxInputSnapshot }
+    struct Paste { let deliveryID: String; let before: TmuxInputSnapshot; var label: String? = nil }
     var values: [String: Paste] = [:]
 }
 
@@ -538,17 +571,21 @@ struct TmuxConnector: DeliveryConnector {
     private let runner: any ProcessRunning
     private let gate = ConnectorSendGate()
     private let pastes = PendingTmuxPastes()
+    private let timing: TmuxSubmitTiming
     /// Production resolves on each send so installing tmux repairs a running app.
     init(runner: any ProcessRunning = FoundationProcessRunner()) {
         self.init(executableResolver: { TmuxExecutable.resolve() }, runner: runner)
     }
     /// An explicit executable (including nil) remains fixed for deterministic tests.
-    init(executable: URL?, runner: any ProcessRunning = FoundationProcessRunner()) {
-        self.init(executableResolver: { executable }, runner: runner)
+    init(executable: URL?, runner: any ProcessRunning = FoundationProcessRunner(), timing: TmuxSubmitTiming = .standard) {
+        self.init(executableResolver: { executable }, runner: runner, timing: timing)
     }
-    init(executableResolver: @escaping @MainActor () -> URL?, runner: any ProcessRunning = FoundationProcessRunner()) {
-        self.resolveExecutable = executableResolver; self.runner = runner
+    init(executableResolver: @escaping @MainActor () -> URL?, runner: any ProcessRunning = FoundationProcessRunner(), timing: TmuxSubmitTiming = .standard) {
+        self.resolveExecutable = executableResolver; self.runner = runner; self.timing = timing
     }
+    /// What the input looked like after Enter.
+    private enum Observation: Equatable { case ours, cleared, other, unknown }
+    private enum Submission { case confirmed, changed, unconfirmed }
     var isAvailable: Bool { resolveExecutable() != nil }
     /// Local readiness for Retry: a pane and its namespace must agree, and the
     /// executable must exist. Actual draft/permission checks happen before typing.
@@ -634,6 +671,53 @@ struct TmuxConnector: DeliveryConnector {
             context?.didSubmitRecordedTmuxPaste = didSubmit
             try context?.confirmTmuxPaste?(nil)
         }
+        /// Read-only look at the input after Enter. A working or blocked agent
+        /// has taken the input; managed gates are not consulted for this read.
+        func observe(_ isOurs: (TmuxInputSnapshot) -> Bool) async throws -> Observation {
+            try Task.checkCancellation()
+            try validateTarget()
+            let metadata = try await runner.run(executable: executable, arguments: namespace + ["display-message", "-p", "-t", target, "#{cursor_x}|#{cursor_y}|#{pane_width}|#{pane_dead}|#{cursor_flag}|#{bracket_paste_flag}"], input: nil)
+            let screen = try await runner.run(executable: executable, arguments: namespace + ["capture-pane", "-p", "-e", "-t", target], input: nil)
+            try Task.checkCancellation()
+            guard metadata.status == 0, screen.status == 0 else { return .unknown }
+            let input = TmuxInputSnapshot(metadata: metadata.stdout, screen: screen.stdout)
+            if let input, isOurs(input) { return .ours }
+            if input?.isEmpty == true { return .cleared }
+            let classificationMetadata = String(decoding: metadata.stdout, as: UTF8.self).trimmingCharacters(in: .newlines).components(separatedBy: "|").prefix(5).joined(separator: "|")
+            let classification = ManagedPaneClassifier.classify(.init(screen: String(decoding: screen.stdout, as: UTF8.self), inputMetadata: classificationMetadata), agent: session.agent)
+            if case .blocked = classification { return .cleared }
+            if classification == .working { return .cleared }
+            return input == nil ? .unknown : .other
+        }
+        /// Enter, then confirm the input cleared. Enter is pressed again only after a
+        /// fresh, fully guarded snapshot still shows exactly Zeus's paste.
+        func submitConfirmed(_ isOurs: (TmuxInputSnapshot) -> Bool) async throws -> Submission {
+            for press in 0..<max(1, timing.enters) {
+                if press > 0 {
+                    let current: TmuxInputSnapshot
+                    do { current = try await snapshot() } catch ConnectorError.inputBusy { return .unconfirmed }
+                    guard isOurs(current) else { return current.isEmpty ? .confirmed : .changed }
+                }
+                try await command(["send-keys", "-t", target, "Enter"])
+                let deadline = ContinuousClock.now + timing.window
+                var last = Observation.unknown
+                repeat {
+                    try await Task.sleep(for: timing.poll)
+                    last = try await observe(isOurs)
+                    if last == .cleared { return .confirmed }
+                    if last == .other { return .changed }
+                } while ContinuousClock.now < deadline
+                // Never press again without seeing that only Zeus's paste remains.
+                guard last == .ours else { return .unconfirmed }
+            }
+            return .unconfirmed
+        }
+        let rounds = Int(delivery.meta["tmux_enter_rounds"] ?? "") ?? 0
+        /// Ownership stays recorded so recovery, not the human-draft gate, owns what remains.
+        func unconfirmed(after rounds: Int) throws -> Never {
+            try context?.noteUnconfirmedTmuxEnter?()
+            throw rounds + 1 >= timing.rounds ? TmuxPasteRecoveryError.unsent : TmuxPasteRecoveryError.unconfirmed
+        }
         do {
             let initial = try await snapshot()
             let pending = pastes.values[destination]
@@ -651,14 +735,24 @@ struct TmuxConnector: DeliveryConnector {
                 }
             }
             if recovering, !initial.isEmpty {
-                let matches = pending.map { initial.containsOnlyPaste(text, after: $0.before) }
-                    ?? (initial.containsOnlyClaudePaste(text) || initial.containsOnlyCodexPaste(text) || initial.containsOnlyOpenCodePaste(text))
-                guard matches else {
+                // A collapsed Claude paste is proven only by the exact numbered label
+                // recorded during Zeus's own fresh paste, never by its size alone.
+                let label = (pending?.deliveryID == delivery.id ? pending?.label : nil) ?? delivery.meta["tmux_paste_label"]
+                let isOurs: (TmuxInputSnapshot) -> Bool = { input in
+                    (pending.map { input.containsOnlyPaste(text, after: $0.before) }
+                        ?? (input.containsOnlyClaudePaste(text) || input.containsOnlyCodexPaste(text) || input.containsOnlyOpenCodePaste(text)))
+                        || label.map { input.containsRecordedClaudePasteLabel($0, text: text) } == true
+                }
+                guard isOurs(initial) else {
                     if initial.openCodePasteIsHidden { throw TmuxPasteRecoveryError.hidden }
                     throw ConnectorError.inputChanged
                 }
-                try await command(["send-keys", "-t", target, "Enter"])
-                try submitted(didSubmit: true)
+                // After repeated swallowed Enters, the user decides; ownership stays recorded.
+                guard rounds < timing.rounds else { throw TmuxPasteRecoveryError.unsent }
+                switch try await submitConfirmed(isOurs) {
+                case .confirmed, .changed: try submitted(didSubmit: true)
+                case .unconfirmed: try unconfirmed(after: rounds)
+                }
                 return
             }
             if pending != nil, !initial.isEmpty { throw ConnectorError.inputBusy }
@@ -680,12 +774,29 @@ struct TmuxConnector: DeliveryConnector {
             try await command(["paste-buffer", "-p"] + (text.contains("\n") ? ["-r"] : []) + ["-d", "-b", buffer, "-t", target])
             loaded = false
             let deadline = ContinuousClock.now + .milliseconds(500)
-            while !(try await snapshot().containsOnlyPaste(text, after: before, freshOwnedAgent: session.agent)) {
+            var pasted = try await snapshot()
+            while !pasted.containsOnlyPaste(text, after: before, freshOwnedAgent: session.agent) {
                 guard ContinuousClock.now < deadline else { throw ConnectorError.inputChanged }
                 try await Task.sleep(for: .milliseconds(20))
+                pasted = try await snapshot()
             }
-            try await command(["send-keys", "-t", target, "Enter"])
-            try submitted(didSubmit: true)
+            // Journal the exact numbered label before Enter: if Enter is swallowed,
+            // recovery and the draft gate can still prove this collapsed paste is Zeus's.
+            let label = session.agent == .claude ? pasted.claudePasteLabel(for: text) : nil
+            if let label {
+                try context?.confirmTmuxPasteLabel?(label)
+                pastes.values[destination]?.label = label
+                // Claude can still be settling a collapsed paste when it first renders.
+                try await Task.sleep(for: timing.settle)
+            }
+            // After Enter only the exact visible text or recorded label is ours; a
+            // size-only label could be a human's replacement paste.
+            switch try await submitConfirmed({ input in
+                input.containsOnlyPaste(text, after: before) || label.map { input.containsRecordedClaudePasteLabel($0, text: text) } == true
+            }) {
+            case .confirmed, .changed: try submitted(didSubmit: true)
+            case .unconfirmed: try unconfirmed(after: 0)
+            }
         } catch {
             if loaded {
                 // Cleanup must run even when the parent send was cancelled.

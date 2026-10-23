@@ -24,6 +24,8 @@ actor LivePasteRunner: ProcessRunning {
             return .init(status: 0, stdout: Data(snapshot.screen.utf8))
         }
         if arguments.contains("display-message") { return .init(status: 0, stdout: Data(snapshot.inputMetadata.utf8)) }
+        // A submitted input clears; Zeus confirms Enter by seeing that.
+        if arguments.contains("send-keys"), arguments.last == "Enter" { snapshot = .init(screen: "\n\n", inputMetadata: "0|0|120|0|1") }
         return .init(status: 0)
     }
 }

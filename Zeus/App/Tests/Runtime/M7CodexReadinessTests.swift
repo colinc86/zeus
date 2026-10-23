@@ -56,6 +56,7 @@ struct M7CodexReadinessTests {
         try await connector.deliver(delivery, to: session, bridge: nil, routing: context)
         #expect(await runner.calls.filter { $0.contains("send-keys") }.count == 1)
         #expect(await runner.calls.allSatisfy { !$0.contains("paste-buffer") })
+        await runner.set(live) // The same text typed again, now with no Zeus ownership.
         var unowned = delivery; unowned.meta.removeValue(forKey: "tmux_paste_destination")
         await #expect(throws: ConnectorError.inputBusy) { try await connector.deliver(unowned, to: session, bridge: nil, routing: context) }
         await runner.set(.init(screen: live.screen.replacingOccurrences(of: "delivery_id)", with: "delivery_id)x"), inputMetadata: live.inputMetadata))
