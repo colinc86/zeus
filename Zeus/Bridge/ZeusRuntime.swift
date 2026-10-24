@@ -99,6 +99,9 @@ final class ZeusRuntime: AgentMessaging, BridgeServerDelegate {
     @ObservationIgnored var generation = UUID()
     @ObservationIgnored var retryTimer: Task<Void, Never>?
     @ObservationIgnored var deferredSends: [String: Date] = [:]
+    /// No tmux paste or Enter starts before this time: the Mac just woke or unlocked
+    /// and the assistant's Terminal pane may still be resizing and redrawing.
+    @ObservationIgnored var terminalSettleUntil: Date?
     @ObservationIgnored var sends: [String: Task<MessageSendResult, Never>] = [:]
     @ObservationIgnored var storageProblem: String?
     var managedDraftAlertCardID: String?

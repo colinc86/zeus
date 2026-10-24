@@ -603,13 +603,18 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
     @objc private func workspaceChanged(_ notification: Notification) {
         switch notification.name {
         case NSWorkspace.screensDidSleepNotification: displayAsleep = true
-        case NSWorkspace.screensDidWakeNotification: displayAsleep = false
+        case NSWorkspace.screensDidWakeNotification:
+            displayAsleep = false
+            (messaging.runtime as? any TerminalSettleNotifying)?.noteTerminalMayResize()
         case NSWorkspace.willSleepNotification: systemAsleep = true
-        case NSWorkspace.didWakeNotification: systemAsleep = false
+        case NSWorkspace.didWakeNotification:
+            systemAsleep = false
+            (messaging.runtime as? any TerminalSettleNotifying)?.noteTerminalMayResize()
         case NSWorkspace.sessionDidResignActiveNotification: sessionInactive = true
         case NSWorkspace.sessionDidBecomeActiveNotification:
             sessionInactive = false
             learning.retryLearningStorage()
+            (messaging.runtime as? any TerminalSettleNotifying)?.noteTerminalMayResize()
         default: break
         }
         refreshTimedState()
@@ -619,7 +624,10 @@ final class ShellController: NSObject, NSWindowDelegate, NSPopoverDelegate {
 
     @objc private func lockChanged(_ notification: Notification) {
         screenLocked = notification.name.rawValue == "com.apple.screenIsLocked"
-        if !screenLocked { learning.retryLearningStorage() }
+        if !screenLocked {
+            learning.retryLearningStorage()
+            (messaging.runtime as? any TerminalSettleNotifying)?.noteTerminalMayResize()
+        }
         refreshTimedState()
         refreshSurfaceActivity()
         scheduleDeadline()
