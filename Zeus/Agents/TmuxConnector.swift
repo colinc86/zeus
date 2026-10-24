@@ -23,14 +23,35 @@ enum TmuxPasteRecoveryError: Error, LocalizedError, Equatable {
 struct TmuxSubmitTiming: Sendable {
     /// Pause between a verified collapsed paste label and the first Enter.
     var settle: Duration
-    /// How long each Enter may take to clear the input before Zeus checks again.
+    /// How long each Enter may take to start clearing the input before Zeus checks again.
     var window: Duration
     var poll: Duration
     /// Enter presses per attempt, each after a fresh check that only Zeus's paste remains.
     var enters: Int
     /// Attempts (fresh or recovered) that may press Enter before Zeus asks the user instead.
     var rounds: Int
+    /// Submission is proven only when the input stays clear (empty, working or
+    /// blocked) for this long, over at least `confirmSamples` consecutive fresh
+    /// reads with unchanged pane geometry. One repaint frame proves nothing.
+    var confirmSpan: Duration = .seconds(1)
+    var confirmSamples: Int = 4
+    /// Zeus pastes or presses Enter only after the pane's size has been unchanged
+    /// this long. Display wake and reconnects resize the pane and redraw the agent.
+    var geometrySettle: Duration = .milliseconds(1500)
+    /// The longest Zeus waits for a resizing pane before postponing.
+    var settleLimit: Duration = .seconds(6)
     static let standard = TmuxSubmitTiming(settle: .milliseconds(60), window: .milliseconds(600), poll: .milliseconds(40), enters: 3, rounds: 3)
+}
+
+/// The pane metadata Zeus reads before typing: cursor, size, liveness and paste mode.
+enum TmuxPaneFormat {
+    static let input = "#{cursor_x}|#{cursor_y}|#{pane_width}|#{pane_dead}|#{cursor_flag}|#{bracket_paste_flag}|#{pane_height}"
+    /// Width and height from one metadata read. A capture without a height uses the width alone.
+    static func geometry(_ metadata: Data) -> String? {
+        let fields = String(decoding: metadata, as: UTF8.self).trimmingCharacters(in: .newlines).split(separator: "|", omittingEmptySubsequences: false)
+        guard fields.count >= 5, let width = Int(fields[2]) else { return nil }
+        return fields.count >= 7 ? "\(width)x\(fields[6])" : String(width)
+    }
 }
 
 /// Shared discovery for managed launch, Settings and per-attempt tmux delivery.
@@ -81,15 +102,16 @@ struct TmuxInputSnapshot: Equatable, Sendable {
     private let mutedBody: [Bool]
     init?(metadata: Data, screen: Data) {
         let fields = String(decoding: metadata, as: UTF8.self).trimmingCharacters(in: .newlines).split(separator: "|", omittingEmptySubsequences: false)
-        guard (5...6).contains(fields.count), let x = Int(fields[0]), let y = Int(fields[1]), let width = Int(fields[2]),
+        guard (5...7).contains(fields.count), let x = Int(fields[0]), let y = Int(fields[1]), let width = Int(fields[2]),
               fields[3] == "0", ["0", "1"].contains(fields[4]), x >= 0, y >= 0, width > 0 else { return nil }
-        if fields.count == 6, !["", "0", "1"].contains(fields[5]) { return nil }
+        if fields.count >= 6, !["", "0", "1"].contains(fields[5]) { return nil }
+        if fields.count == 7, Int(fields[6]) == nil { return nil }
         let rawLines = String(decoding: screen, as: UTF8.self).components(separatedBy: "\n")
         let decoded = rawLines.map(Self.decodeLine)
         lines = decoded.map { $0.0 }; mutedBody = decoded.map { $0.1 }
         guard lines.indices.contains(y) else { return nil }
         self.x = x; self.y = y; self.width = width; cursorVisible = fields[4] == "1"
-        bracketedPaste = fields.count == 6 && !fields[5].isEmpty ? fields[5] == "1" : nil
+        bracketedPaste = fields.count >= 6 && !fields[5].isEmpty ? fields[5] == "1" : nil
         // Claude draws its own inverse-video caret and hides the hardware cursor.
         // Only its positively bounded composer may use that logical cursor.
         guard cursorVisible || claudeInputStart != nil else { return nil }
@@ -106,6 +128,9 @@ struct TmuxInputSnapshot: Equatable, Sendable {
         }
         return nil
     }
+    /// A known agent composer bounds the input. A plain stdin program has none: after
+    /// Enter it echoes the line, and nothing else can be said about its input.
+    var hasBoundedComposer: Bool { claudeInputRows != nil || codexInputRows != nil || openCodeBoxStart != nil }
     /// A cursor-bound Claude composer; content below its upper rule is editor/footer chrome.
     var claudeInputStart: Int? { claudeInputRows?.lowerBound }
     /// Codex's prompt, indented continuation rows and blank separator bound the
@@ -561,6 +586,16 @@ struct TmuxInputSnapshot: Equatable, Sendable {
 private final class PendingTmuxPastes {
     struct Paste { let deliveryID: String; let before: TmuxInputSnapshot; var label: String? = nil }
     var values: [String: Paste] = [:]
+    /// The last pane size Zeus read per destination and when it first saw that size.
+    /// A pane Zeus has not read before counts as settled; wake settling covers that gap.
+    struct Geometry { let size: String; let since: ContinuousClock.Instant }
+    var geometry: [String: Geometry] = [:]
+    func note(_ size: String?, at destination: String) {
+        guard let size else { return }
+        if let known = geometry[destination] {
+            if known.size != size { geometry[destination] = .init(size: size, since: .now) }
+        } else { geometry[destination] = .init(size: size, since: .now - .seconds(3600)) }
+    }
 }
 
 /// Literal tmux paste, then Enter. Each delivery owns its named buffer; concurrent
@@ -583,9 +618,13 @@ struct TmuxConnector: DeliveryConnector {
     init(executableResolver: @escaping @MainActor () -> URL?, runner: any ProcessRunning = FoundationProcessRunner(), timing: TmuxSubmitTiming = .standard) {
         self.resolveExecutable = executableResolver; self.runner = runner; self.timing = timing
     }
-    /// What the input looked like after Enter.
-    private enum Observation: Equatable { case ours, cleared, other, unknown }
-    private enum Submission { case confirmed, changed, unconfirmed }
+    /// What one read of the input showed. `clear` is an empty composer or an agent
+    /// that is working or blocked; it proves nothing until it persists.
+    private enum Observation: Equatable { case ours, clear, other, unknown }
+    /// `confirmed` needs sustained proof. `unconfirmed` keeps ownership and the
+    /// recorded label so recovery, never the human-draft gate, owns what remains.
+    /// `unsettled`: the pane kept resizing, so Zeus pressed nothing this attempt.
+    private enum Submission { case confirmed, unconfirmed, unsettled }
     var isAvailable: Bool { resolveExecutable() != nil }
     /// Local readiness for Retry: a pane and its namespace must agree, and the
     /// executable must exist. Actual draft/permission checks happen before typing.
@@ -649,10 +688,11 @@ struct TmuxConnector: DeliveryConnector {
             try Task.checkCancellation()
             try validateTarget() // Settings may change while subprocess I/O is suspended.
             try await (routing as? DeliveryRoutingContext)?.managedValidateDestination?()
-            let metadata = try await runner.run(executable: executable, arguments: namespace + ["display-message", "-p", "-t", target, "#{cursor_x}|#{cursor_y}|#{pane_width}|#{pane_dead}|#{cursor_flag}|#{bracket_paste_flag}"], input: nil)
+            let metadata = try await runner.run(executable: executable, arguments: namespace + ["display-message", "-p", "-t", target, TmuxPaneFormat.input], input: nil)
             let screen = try await runner.run(executable: executable, arguments: namespace + ["capture-pane", "-p", "-e", "-t", target], input: nil)
             try Task.checkCancellation()
             guard metadata.status == 0, screen.status == 0 else { throw ConnectorError.processExit(metadata.status != 0 ? metadata.status : screen.status) }
+            pastes.note(TmuxPaneFormat.geometry(metadata.stdout), at: destination)
             if let context = routing as? DeliveryRoutingContext, let allowed = context.managedInputAllowed {
                 guard allowed() else { throw ConnectorError.inputBusy }
                 let classificationMetadata = String(decoding: metadata.stdout, as: UTF8.self).trimmingCharacters(in: .newlines).components(separatedBy: "|").prefix(5).joined(separator: "|")
@@ -671,44 +711,84 @@ struct TmuxConnector: DeliveryConnector {
             context?.didSubmitRecordedTmuxPaste = didSubmit
             try context?.confirmTmuxPaste?(nil)
         }
-        /// Read-only look at the input after Enter. A working or blocked agent
-        /// has taken the input; managed gates are not consulted for this read.
-        func observe(_ isOurs: (TmuxInputSnapshot) -> Bool) async throws -> Observation {
+        /// Read-only look at the input and the pane size. A working or blocked agent
+        /// reads as `clear`; managed gates are not consulted for this read.
+        /// Zeus pasted into a pane without a known composer (a plain stdin program). There,
+        /// any steady output other than the paste counts as clear; it still has to persist.
+        var plainPane = false
+        func observe(_ isOurs: (TmuxInputSnapshot) -> Bool) async throws -> (Observation, String?) {
             try Task.checkCancellation()
             try validateTarget()
-            let metadata = try await runner.run(executable: executable, arguments: namespace + ["display-message", "-p", "-t", target, "#{cursor_x}|#{cursor_y}|#{pane_width}|#{pane_dead}|#{cursor_flag}|#{bracket_paste_flag}"], input: nil)
+            let metadata = try await runner.run(executable: executable, arguments: namespace + ["display-message", "-p", "-t", target, TmuxPaneFormat.input], input: nil)
             let screen = try await runner.run(executable: executable, arguments: namespace + ["capture-pane", "-p", "-e", "-t", target], input: nil)
             try Task.checkCancellation()
-            guard metadata.status == 0, screen.status == 0 else { return .unknown }
+            guard metadata.status == 0, screen.status == 0 else { return (.unknown, nil) }
+            let geometry = TmuxPaneFormat.geometry(metadata.stdout)
+            pastes.note(geometry, at: destination)
             let input = TmuxInputSnapshot(metadata: metadata.stdout, screen: screen.stdout)
-            if let input, isOurs(input) { return .ours }
-            if input?.isEmpty == true { return .cleared }
+            if let input, isOurs(input) { return (.ours, geometry) }
+            if input?.isEmpty == true { return (.clear, geometry) }
             let classificationMetadata = String(decoding: metadata.stdout, as: UTF8.self).trimmingCharacters(in: .newlines).components(separatedBy: "|").prefix(5).joined(separator: "|")
             let classification = ManagedPaneClassifier.classify(.init(screen: String(decoding: screen.stdout, as: UTF8.self), inputMetadata: classificationMetadata), agent: session.agent)
-            if case .blocked = classification { return .cleared }
-            if classification == .working { return .cleared }
-            return input == nil ? .unknown : .other
+            if case .blocked = classification { return (.clear, geometry) }
+            if classification == .working { return (.clear, geometry) }
+            return (input == nil ? .unknown : plainPane ? .clear : .other, geometry)
         }
-        /// Enter, then confirm the input cleared. Enter is pressed again only after a
-        /// fresh, fully guarded snapshot still shows exactly Zeus's paste.
+        /// Reads the input until it has stayed `clear` for `confirmSpan`, over at least
+        /// `confirmSamples` consecutive reads at one pane size, and returns `clear`.
+        /// Any other read restarts that streak. Without a streak under way, it stops
+        /// after `window` and returns the last read; an unfinished streak is `unknown`.
+        func watch(_ isOurs: (TmuxInputSnapshot) -> Bool, window: Duration) async throws -> Observation {
+            let deadline = ContinuousClock.now + window
+            let limit = deadline + timing.confirmSpan + timing.window
+            var streak: (start: ContinuousClock.Instant, size: String, count: Int)?
+            while true {
+                try await Task.sleep(for: timing.poll)
+                let (seen, size) = try await observe(isOurs)
+                if seen == .clear, let size {
+                    if let current = streak, current.size == size { streak?.count += 1 }
+                    else { streak = (.now, size, 1) }
+                } else { streak = nil }
+                let now = ContinuousClock.now
+                if let streak, streak.count >= max(1, timing.confirmSamples), now - streak.start >= timing.confirmSpan { return .clear }
+                if now >= limit || (streak == nil && now >= deadline) { return seen == .clear ? .unknown : seen }
+            }
+        }
+        /// The pane's size has held for `geometrySettle` (or Zeus has no earlier read of it).
+        func paneSettled() -> Bool {
+            pastes.geometry[destination].map { ContinuousClock.now - $0.since >= timing.geometrySettle } ?? true
+        }
+        /// A pane that just changed size is still redrawing its agent. Wait, bounded by
+        /// `settleLimit`, until its size has held for `geometrySettle`. Every read must
+        /// still show `expected` (or nothing readable); otherwise Zeus stops waiting.
+        func settled(_ isOurs: (TmuxInputSnapshot) -> Bool, expected: Observation) async throws -> Bool {
+            let limit = ContinuousClock.now + timing.settleLimit
+            while !paneSettled() {
+                guard ContinuousClock.now < limit else { return false }
+                try await Task.sleep(for: timing.poll)
+                let (seen, _) = try await observe(isOurs)
+                guard seen == expected || seen == .unknown else { return false }
+            }
+            return true
+        }
+        /// Enter, then confirm submission by sustained proof. Enter is pressed again
+        /// only after a fresh, fully guarded snapshot still shows exactly Zeus's paste.
+        /// Anything else keeps ownership: a later recovery re-checks the input.
         func submitConfirmed(_ isOurs: (TmuxInputSnapshot) -> Bool) async throws -> Submission {
             for press in 0..<max(1, timing.enters) {
                 if press > 0 {
                     let current: TmuxInputSnapshot
                     do { current = try await snapshot() } catch ConnectorError.inputBusy { return .unconfirmed }
-                    guard isOurs(current) else { return current.isEmpty ? .confirmed : .changed }
+                    guard isOurs(current) else { return .unconfirmed }
                 }
+                // Never press Enter into a pane that is resizing; nothing was pressed yet this round.
+                guard try await settled(isOurs, expected: .ours) else { return press == 0 ? .unsettled : .unconfirmed }
                 try await command(["send-keys", "-t", target, "Enter"])
-                let deadline = ContinuousClock.now + timing.window
-                var last = Observation.unknown
-                repeat {
-                    try await Task.sleep(for: timing.poll)
-                    last = try await observe(isOurs)
-                    if last == .cleared { return .confirmed }
-                    if last == .other { return .changed }
-                } while ContinuousClock.now < deadline
-                // Never press again without seeing that only Zeus's paste remains.
-                guard last == .ours else { return .unconfirmed }
+                switch try await watch(isOurs, window: timing.window) {
+                case .clear: return .confirmed
+                case .ours: continue
+                case .other, .unknown: return .unconfirmed
+                }
             }
             return .unconfirmed
         }
@@ -729,12 +809,8 @@ struct TmuxConnector: DeliveryConnector {
             let recovering = pending?.deliveryID == delivery.id || delivery.meta["tmux_paste_destination"] == destination
             if context?.onlySubmitRecordedTmuxPaste == true {
                 guard delivery.meta["tmux_paste_destination"] == destination else { throw ConnectorError.mismatchedTmuxSocket }
-                if initial.isEmpty {
-                    try submitted()
-                    throw TmuxPasteRecoveryError.absent
-                }
             }
-            if recovering, !initial.isEmpty {
+            if recovering {
                 // A collapsed Claude paste is proven only by the exact numbered label
                 // recorded during Zeus's own fresh paste, never by its size alone.
                 let label = (pending?.deliveryID == delivery.id ? pending?.label : nil) ?? delivery.meta["tmux_paste_label"]
@@ -743,29 +819,57 @@ struct TmuxConnector: DeliveryConnector {
                         ?? (input.containsOnlyClaudePaste(text) || input.containsOnlyCodexPaste(text) || input.containsOnlyOpenCodePaste(text)))
                         || label.map { input.containsRecordedClaudePasteLabel($0, text: text) } == true
                 }
-                guard isOurs(initial) else {
-                    if initial.openCodePasteIsHidden { throw TmuxPasteRecoveryError.hidden }
-                    throw ConnectorError.inputChanged
+                plainPane = pending.map { !$0.before.hasBoundedComposer } ?? false
+                var current = initial
+                if current.isEmpty {
+                    // One empty frame proves nothing: a resize or repaint can blank the
+                    // composer and then redraw Zeus's paste. Only sustained emptiness ends ownership.
+                    switch try await watch(isOurs, window: .zero) {
+                    case .clear:
+                        try submitted()
+                        if context?.onlySubmitRecordedTmuxPaste == true { throw TmuxPasteRecoveryError.absent }
+                    case .ours:
+                        current = try await snapshot()
+                        guard !current.isEmpty else { throw ConnectorError.inputBusy }
+                    case .other: throw ConnectorError.inputChanged
+                    case .unknown: throw ConnectorError.inputBusy
+                    }
                 }
-                // After repeated swallowed Enters, the user decides; ownership stays recorded.
-                guard rounds < timing.rounds else { throw TmuxPasteRecoveryError.unsent }
-                switch try await submitConfirmed(isOurs) {
-                case .confirmed, .changed: try submitted(didSubmit: true)
-                case .unconfirmed: try unconfirmed(after: rounds)
+                if !current.isEmpty {
+                    // Different input keeps ownership and is never submitted. The draft
+                    // gate treats it as the user's; Zeus re-checks on the next recovery.
+                    guard isOurs(current) else {
+                        if current.openCodePasteIsHidden { throw TmuxPasteRecoveryError.hidden }
+                        throw ConnectorError.inputChanged
+                    }
+                    // After repeated swallowed Enters, the user decides; ownership stays recorded.
+                    guard rounds < timing.rounds else { throw TmuxPasteRecoveryError.unsent }
+                    switch try await submitConfirmed(isOurs) {
+                    case .confirmed: try submitted(didSubmit: true)
+                    case .unconfirmed: try unconfirmed(after: rounds)
+                    case .unsettled: throw TmuxPasteRecoveryError.unconfirmed
+                    }
+                    return
                 }
-                return
             }
             if pending != nil, !initial.isEmpty { throw ConnectorError.inputBusy }
             guard initial.isEmpty else { throw ConnectorError.inputBusy }
-            if pending != nil || recovering { try submitted() }
+            if pending != nil, !recovering { try submitted() }
             if text.contains("\n"), !initial.acceptsMultilinePaste { throw ConnectorError.inputBusy }
             guard initial.canVerifyPaste(text) else { throw ConnectorError.inputTooLong }
             try await command(["load-buffer", "-b", buffer, "-"], input: Data(text.utf8))
             loaded = true
-            let before = try await snapshot()
+            var before = try await snapshot()
+            // Paste only into a pane whose size has settled after a wake or reconnect.
+            if !paneSettled() {
+                guard try await settled({ _ in false }, expected: .clear) else { throw ConnectorError.inputBusy }
+                before = try await snapshot()
+                guard paneSettled() else { throw ConnectorError.inputBusy }
+            }
             guard before.isEmpty else { throw ConnectorError.inputBusy }
             if text.contains("\n"), !before.acceptsMultilinePaste { throw ConnectorError.inputBusy }
             guard before.canVerifyPaste(text) else { throw ConnectorError.inputTooLong }
+            plainPane = !before.hasBoundedComposer
             // Save ownership before any mutation. A lost completion or cancelled
             // verifier must never turn our own paragraph into a human draft.
             try context?.confirmTmuxPaste?(destination)
@@ -794,8 +898,9 @@ struct TmuxConnector: DeliveryConnector {
             switch try await submitConfirmed({ input in
                 input.containsOnlyPaste(text, after: before) || label.map { input.containsRecordedClaudePasteLabel($0, text: text) } == true
             }) {
-            case .confirmed, .changed: try submitted(didSubmit: true)
+            case .confirmed: try submitted(didSubmit: true)
             case .unconfirmed: try unconfirmed(after: 0)
+            case .unsettled: throw TmuxPasteRecoveryError.unconfirmed
             }
         } catch {
             if loaded {

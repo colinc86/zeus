@@ -4,6 +4,14 @@ import ZeusProtocol
 import ZeusLink
 import ZeusDesign
 
+/// Optional app integration: the display woke, the Mac woke or the session unlocked.
+/// Terminal windows may resize while displays reconnect, so tmux delivery waits briefly.
+@MainActor protocol TerminalSettleNotifying: AnyObject {
+    func noteTerminalMayResize()
+}
+
+extension ZeusRuntime: TerminalSettleNotifying {}
+
 extension ZeusRuntime {
     /// Central transport selection; a connected polling session intentionally has no push transport.
     func transport(for key: String, delivery: Delivery? = nil) -> ((any DeliveryConnector), ConnectedSession, DeliveryRoutingContext)? {
@@ -67,6 +75,15 @@ extension ZeusRuntime {
             return nil
         }
         context.onlySubmitRecordedTmuxPaste = recoveringPaste
+        // Right after a wake or unlock, displays reconnect and the pane resizes. Neither
+        // a paste nor a recovery Enter starts until that settle period ends.
+        // A clock set backwards never stretches the wait beyond one settle period.
+        if connector is TmuxConnector, let until = terminalSettleUntil, clock.now < until,
+           until.timeIntervalSince(clock.now) <= Self.terminalWakeSettle {
+            deferredSends[id] = until
+            scheduleRetry()
+            return nil
+        }
         if !recoveringPaste, record.delivery.meta["managed_channel_fallback"] != "true",
            let raw = record.delivery.meta["managed_channel_sent_at"], let sent = Double(raw),
            clock.now.timeIntervalSince1970 < sent + 30 { return nil }
@@ -209,6 +226,17 @@ extension ZeusRuntime {
         sends[id] = task
         scheduleRetry()
         return task
+    }
+
+    /// How long tmux delivery waits after the display wakes or the session unlocks.
+    static let terminalWakeSettle: TimeInterval = 5
+    /// The display woke, the Mac woke or the session unlocked. Hold tmux pastes and
+    /// Enters for a few seconds while the Terminal window and its pane settle.
+    func noteTerminalMayResize() {
+        guard running else { return }
+        let until = clock.now.addingTimeInterval(Self.terminalWakeSettle)
+        terminalSettleUntil = max(terminalSettleUntil ?? until, until)
+        scheduleRetry()
     }
 
     func markExhausted(id: String) {

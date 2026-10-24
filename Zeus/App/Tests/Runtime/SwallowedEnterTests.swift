@@ -33,7 +33,8 @@ actor SwallowedEnterRunner: ProcessRunning {
 
 @MainActor
 struct SwallowedEnterTests {
-    static let fast = TmuxSubmitTiming(settle: .zero, window: .milliseconds(30), poll: .milliseconds(5), enters: 3, rounds: 3)
+    static let fast = TmuxSubmitTiming(settle: .zero, window: .milliseconds(30), poll: .milliseconds(5), enters: 3, rounds: 3,
+        confirmSpan: .milliseconds(40), confirmSamples: 3, geometrySettle: .milliseconds(80), settleLimit: .milliseconds(400))
     static let label = "[Pasted text #1 +7 lines]"
     func frames() throws -> (empty: ManagedPaneSnapshot, pasted: ManagedPaneSnapshot) {
         (try N1Messages.frame(.claude, "eight-lines-before"), try N1Messages.frame(.claude, "eight-lines"))
