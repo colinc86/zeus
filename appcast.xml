@@ -6,6 +6,27 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.3.10</title>
+      <pubDate>Sun, 25 Oct 2026 13:53:58 GMT</pubDate>
+      <sparkle:version>33</sparkle:version>
+      <sparkle:shortVersionString>0.3.10</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<h1 dir="auto">Zeus 0.3.10</h1>
+<ul dir="auto">
+<li><strong>Zeus's messages no longer get stuck in Terminal when your Mac wakes.</strong> When you came back to your Mac, Zeus could paste your morning brief into your assistant's Terminal at the same moment the screen was redrawing. One look at the redrawing screen convinced Zeus the message had been sent, so it stopped watching it and later mistook its own <code class="notranslate">[Pasted text …]</code> for your draft. Zeus now waits a few seconds after your Mac wakes and until the Terminal stops resizing before it pastes. It also only counts a message as sent once the input has stayed clear for a full second, and it keeps track of its own paste until then.</li>
+<li>If a message from an earlier version is still sitting unsent in Terminal, press Enter there once to send it.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.3.10/Zeus-0.3.10.zip" type="application/octet-stream" sparkle:edSignature="mOK1pDOEAMEljZadMDVhISPbaiEGIE8QB0P8MvKpmQKaTu+JCtx/Sk8Xna95bnWQ1XBSUwb5KOqI4bXDg2KBDg==" length="15191544"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.3.9</title>
       <pubDate>Fri, 23 Oct 2026 15:14:28 GMT</pubDate>
       <sparkle:version>32</sparkle:version>
