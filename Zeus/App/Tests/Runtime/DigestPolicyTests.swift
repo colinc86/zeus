@@ -133,6 +133,27 @@ import ZeusProtocol
             payload: .init(.init(description: "Typing", topic: "Safe topic", details: ["appName": "Private Editor"])))
         #expect(!policy.allows(item))
     }
+    /// The batch filter decides each level, app and recorded name once; it must agree with `allows` row by row.
+    @Test func batchFilterAgreesWithPerItemPolicy() {
+        let policy = LearningOutboundPolicy(
+            scopes: [.init(level: .activity, chosenApps: nil),
+                     .init(level: .focus, chosenApps: [.init(name: "Editor", bundleIDs: ["com.example.Editor"]), .init(name: "Mail", bundleIDs: [])])],
+            privateApps: [.init(name: "Private Editor", bundleIDs: []), .init(name: "Vault", bundleIDs: ["com.example.vault"])])
+        var items: [JournalItem] = []
+        for level in JournalLevel.allCases {
+            for app in [nil, "", "com.example.Editor", "COM.EXAMPLE.EDITOR", "com.example.vault", "com.example.Other", "com.apple.mail"] {
+                for details in [[:], ["appName": "Private Editor"], ["name": "Mail"], ["name": "‹name›", "appName": "Editor"]] {
+                    for _ in 0..<2 {
+                        items.append(.init(time: Date(), level: level, app: app, kind: .focus, payload: .init(.init(description: "Row", details: details))))
+                    }
+                }
+            }
+        }
+        let expected = items.filter { policy.allows($0) }
+        #expect(!expected.isEmpty && expected.count < items.count)
+        #expect(items.allowed(by: policy) == expected)
+        #expect(items.allowed(by: nil) == items)
+    }
     @Test func consumedSummaryKeepsItsExactHistoricalText() async throws {
         let f = try DigestPolicyFixture(); defer { f.stop() }
         f.learn.sendDigestIfDue(now: f.clock.now)

@@ -49,7 +49,7 @@ extension ZeusRuntime: ProactiveAssistantControlling {
                 query.from = learningCalendar.date(byAdding: .day, value: -1, to: learningCalendar.startOfDay(for: now))
                 query.to = learningCalendar.startOfDay(for: now); query.levels = levels
                 query.kinds = [.activity, .focus, .description, .typedText]; query.limit = 100_000
-                evidence = try journal.items(matching: query).filter { policy?.allows($0) ?? true }
+                evidence = try journal.items(matching: query).allowed(by: policy)
             }
             let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX")
             formatter.calendar = learningCalendar; formatter.timeZone = learningCalendar.timeZone

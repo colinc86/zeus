@@ -210,4 +210,59 @@ import ZeusProtocol
         print(String(format: "BENCH per event (%dd x %d): wall %.1f ms, cpu %.1f ms; append %.1f, context %.1f, receivedIDs %.1f, folder %.1f",
             days, perDay, mean(walls), mean(cpus), mean(parts.map { $0[0] }), mean(parts.map { $0[1] }), mean(parts.map { $0[2] }), mean(parts.map { $0[3] })))
     }
+
+    /// A chosen-apps outbound policy of realistic size (the Settings app list is dozens of apps).
+    static func chosenAppsPolicy(_ count: Int = 45) -> LearningOutboundPolicy {
+        let apps = (0..<count).map { LearningOutboundPolicy.App(name: "App \($0)", bundleIDs: ["com.example.app\($0)"]) }
+            + [.init(name: "Safari", bundleIDs: ["com.apple.Safari"]), .init(name: "Xcode", bundleIDs: ["com.apple.dt.Xcode"])]
+        return .init(scopes: JournalLevel.allCases.map { .init(level: $0, chosenApps: apps) },
+                     privateApps: [.init(name: "Private", bundleIDs: ["com.example.private"])])
+    }
+    /// One retained reflection per evening, each hashing its 28-day window under the policy it was sent with.
+    static func insertHashedReflections(_ f: LearningRuntimeFixture, count: Int, policy: LearningOutboundPolicy) throws {
+        var query = JournalQuery(); query.limit = 100_000
+        let items = try f.journal.items(matching: query)
+        let levels = Set(JournalLevel.allCases)
+        for back in stride(from: 1, through: count, by: 1) {
+            let to = f.clock.now.addingTimeInterval(Double(-back) * 86_400), from = to.addingTimeInterval(-28 * 86_400)
+            let ids = items.filter { policy.allows($0) && ReflectionPatternDigest.eligible($0, levels: levels, from: from, to: to) }.map(\.id)
+            var reflection = Delivery(id: "hashed_reflection_\(back)", kind: .reflection, sessionKey: "claude:/fixture#123.1", content: "Fixture reflection", createdAt: to)
+            reflection.ackedAt = to
+            reflection.meta = ["source_hash": ReflectionPatternDigest.sourceHash(ids), "source_from": String(from.timeIntervalSince1970),
+                               "source_to": String(to.timeIntervalSince1970), "levels": levels.map { String($0.rawValue) }.sorted().joined(separator: ",")]
+            try f.runtime.ledger?.insert(.init(delivery: reflection, outboundPolicySnapshot: policy))
+        }
+    }
+
+    /// Benchmark: a journal rewrite (typing expiry, retention, a deletion) re-checks every retained reflection.
+    /// Opt-in like `appendBenchmark`: `TEST_RUNNER_ZEUS_LEARNING_BENCH=1`.
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["ZEUS_LEARNING_BENCH"] == "1"), .timeLimit(.minutes(10)))
+    func reflectionEvidenceBenchmark() async throws {
+        let env = ProcessInfo.processInfo.environment
+        let days = Int(env["ZEUS_LEARNING_BENCH_DAYS"] ?? "") ?? 28, perDay = Int(env["ZEUS_LEARNING_BENCH_ITEMS"] ?? "") ?? 3000
+        let reflections = Int(env["ZEUS_LEARNING_BENCH_REFLECTIONS"] ?? "") ?? 12
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        _ = try LearningBenchmarkJournal.seed(f, days: days, perDay: perDay)
+        // Outcome rows fall inside every reflection window but never count toward its hash: deleting one is a pure rewrite.
+        for back in 0..<6 {
+            try f.journal.append(.init(id: "bench-outcome-\(back)", time: f.clock.now.addingTimeInterval(Double(-back - 1) * 86_400), level: .activity,
+                kind: .outcome, payload: .init(.init(description: "Synthetic outcome"))))
+        }
+        let policy = Self.chosenAppsPolicy()
+        f.runtime.outboundLearningPolicy = { policy }
+        try Self.insertHashedReflections(f, count: reflections, policy: policy)
+        f.runtime.learningContextDidChange()
+        let clock = ContinuousClock()
+        var deletes: [Double] = [], contexts: [Double] = []
+        for back in 0..<6 {
+            let t0 = clock.now
+            try f.journal.delete(.item("bench-outcome-\(back)"))
+            let t1 = clock.now
+            f.runtime.learningContextDidChange()
+            deletes.append(LearningBenchmarkJournal.ms(t1 - t0)); contexts.append(LearningBenchmarkJournal.ms(clock.now - t1))
+        }
+        #expect(f.runtime.ledger?.records.filter { $0.delivery.kind == .reflection && !$0.delivery.content.isEmpty }.count == reflections)
+        func mean(_ v: [Double]) -> Double { v.reduce(0, +) / Double(v.count) }
+        print(String(format: "BENCH after a rewrite (%dd x %d, %d reflections): delete %.1f ms, context %.1f ms", days, perDay, reflections, mean(deletes), mean(contexts)))
+    }
 }
