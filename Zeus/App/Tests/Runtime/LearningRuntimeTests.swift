@@ -274,6 +274,23 @@ struct FixtureLearningRedactor: Redactor {
         for _ in 0..<20 { await Task.yield() }
         #expect(f.runtime.ledger?.records.count == 1)
     }
+    /// A catch-up reads only earlier days, so activity logged while it is being prepared must not restart it.
+    /// Restarting rebuilt the whole digest on the main thread for every new journal row and never sent.
+    @Test func catchupSendsWhileLiveActivityKeepsArriving() async throws {
+        let f = try LearningRuntimeFixture(); defer { f.stop() }
+        try f.journal.append(.init(id: "earlier", time: f.clock.now.addingTimeInterval(-2*86400), level: .focus, kind: .focus, payload: .init(.init(description: "Earlier synthetic activity"))))
+        f.box.enabled = true
+        for i in 0..<40 where f.runtime.ledger?.records.contains(where: { $0.delivery.kind == .reflection }) != true {
+            f.runtime.learningContextDidChange()
+            // Lands after the reflection is prepared and before its task resumes, as live typing does.
+            try f.journal.append(.init(id: "live-\(i)", time: f.clock.now, level: .focus, kind: .focus, payload: .init(.init(description: "Live activity \(i)"))))
+            await Task.yield()
+        }
+        #expect(f.runtime.ledger?.records.contains(where: { $0.delivery.kind == .reflection }) == true)
+        try await eventually { f.connector.deliveries.count == 1 }
+        #expect(f.connector.deliveries[0].meta["reflection_day"] == "20261012")
+        #expect(!f.connector.deliveries[0].content.contains("Live activity"))
+    }
     @Test func reflectionRequiresExplicitCaptureConsentAndIsDurableOncePerDay() async throws {
         let f = try LearningRuntimeFixture(); defer { f.stop() }
         try f.journal.append(.init(id: "evidence", time: f.clock.now, level: .focus, app: "com.example.Editor", kind: .focus,

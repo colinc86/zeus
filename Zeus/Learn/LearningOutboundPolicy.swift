@@ -34,6 +34,24 @@ struct LearningOutboundPolicy: Codable, Equatable, Sendable {
         guard !privateApps.contains(where: { $0.matches(bundleID: app, name: name) }) else { return false }
         return scope.chosenApps.map { $0.contains { $0.matches(bundleID: app, name: name) } } ?? true
     }
+    /// The items `allows`, deciding each distinct level, app and recorded app name once.
+    /// Weeks of journal hold a few dozen apps; matching every row against every chosen app stalled the main thread.
+    func allowing(_ items: [JournalItem]) -> [JournalItem] {
+        struct Key: Hashable { let level: JournalLevel, app: String?, name: String?, appName: String? }
+        var verdicts: [Key: Bool] = [:]
+        return items.filter { item in
+            let details = item.payload.value.details
+            let key = Key(level: item.level, app: item.app, name: details["name"], appName: details["appName"])
+            if let verdict = verdicts[key] { return verdict }
+            let verdict = allows(item); verdicts[key] = verdict
+            return verdict
+        }
+    }
+}
+
+extension Array where Element == JournalItem {
+    /// All items when there is no outbound policy, otherwise the ones it allows.
+    func allowed(by policy: LearningOutboundPolicy?) -> [JournalItem] { policy?.allowing(self) ?? self }
 }
 
 @MainActor protocol LearningOutboundPolicyControlling: AnyObject {

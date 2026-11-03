@@ -3,7 +3,9 @@ import ZeusProtocol
 
 extension ZeusRuntime {
     /// Bound provenance independently of the displayed citations; deletion of an uncited contributor still invalidates the aggregate.
-    func reflectionSourcesRetained(_ delivery: Delivery, items: [JournalItem]) -> Bool {
+    /// `allowed` returns `items` filtered by a policy snapshot; pass a cached one when checking many reflections.
+    func reflectionSourcesRetained(_ delivery: Delivery, items: [JournalItem],
+                                   allowed: (LearningOutboundPolicy?) -> [JournalItem]? = { _ in nil }) -> Bool {
         guard let expected = delivery.meta["source_hash"] else {
             let retained = Set(items.map(\.id))
             return delivery.meta["evidence", default: ""].split(separator: ",").allSatisfy { retained.contains(String($0)) }
@@ -11,7 +13,8 @@ extension ZeusRuntime {
         guard let from = Double(delivery.meta["source_from", default: ""]), let to = Double(delivery.meta["source_to", default: ""]) else { return false }
         let levels = Set(delivery.meta["levels", default: ""].split(separator: ",").compactMap { Int($0).flatMap(JournalLevel.init(rawValue:)) })
         let snapshot = ledger?.record(id: delivery.id)?.outboundPolicySnapshot
-        let ids = items.filter { (snapshot?.allows($0) ?? true) && ReflectionPatternDigest.eligible($0, levels: levels, from: Date(timeIntervalSince1970: from), to: Date(timeIntervalSince1970: to)) }.map(\.id)
+        let ids = (allowed(snapshot) ?? items.allowed(by: snapshot))
+            .filter { ReflectionPatternDigest.eligible($0, levels: levels, from: Date(timeIntervalSince1970: from), to: Date(timeIntervalSince1970: to)) }.map(\.id)
         return ReflectionPatternDigest.sourceHash(ids) == expected
     }
 
