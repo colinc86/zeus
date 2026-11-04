@@ -12,7 +12,7 @@ struct LearningFolderView: View {
             Text("Your assistant's folder").settingsHeading()
             Text(model.path.map { "Kept in " + $0 } ?? (managed ? "Not kept in a folder yet. Choose your assistant's folder under Assistant." : "Not kept in a folder. Choose one and Zeus writes what it keeps there for your assistant."))
                 .settingsBody().textSelection(.enabled)
-                .accessibilityLabel("Your assistant's folder, " + (model.path.map { "kept in " + $0 } ?? "no folder chosen"))
+                .selectableTextAccessibilityLabel("Your assistant's folder, " + (model.path.map { "kept in " + $0 } ?? "no folder chosen"))
             HStack {
                 if model.folderURL != nil {
                     KeyboardButton("Show in Finder", action: model.showFolder).accessibilityLabel("Show assistant's folder in Finder")

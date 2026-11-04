@@ -60,6 +60,8 @@ import ZeusProtocol
         #expect(at1Nodes(host).contains { at1Label($0) == "Show the full summary" })
     }
     @Test func oneNativePressAndReturnOpenTheChipAndVoiceOverOffersReveal() async throws {
+        await NativeEventTestGate.acquire()
+        defer { NativeEventTestGate.release() }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("at1-press-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }

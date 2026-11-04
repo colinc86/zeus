@@ -45,7 +45,7 @@ struct WaitingLearningRow: View {
             }
             if expanded {
                 ZeusFieldChrome { Text(item.text).settingsBody().textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
-                    .accessibilityLabel("Prepared text, not yet received: \(item.text)")
+                    .selectableTextAccessibilityLabel("Prepared text, not yet received: \(item.text)")
             }
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
