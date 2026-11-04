@@ -21,7 +21,7 @@ struct DiscardedLearningRow: View {
             Text(item.queueReason).settingsCaption()
             if expanded {
                 ZeusFieldChrome { Text(item.text).settingsBody().textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
-                    .accessibilityLabel("Not sent: \(item.text)")
+                    .selectableTextAccessibilityLabel("Not sent: \(item.text)")
             }
         }.frame(maxWidth: .infinity, alignment: .leading)
     }

@@ -56,6 +56,8 @@ import ZeusProtocol
         try #require(state.contains("\"IOConsoleLocked\" = No"), "Live cliclick proof requires an unlocked console; never post into the lock screen")
     }
     private func conversationPress(tallThread: Bool, live: Bool, typewriter: Bool) async throws {
+        await NativeEventTestGate.acquire()
+        defer { NativeEventTestGate.release() }
         ZeusFonts.registerBundled()
         let enhanced = NSSelectorFromString("accessibilitySetValue:forAttribute:")
         let previousEnhanced = NSApp.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? NSNumber(value: false)
@@ -172,6 +174,8 @@ import ZeusProtocol
         try await peekPress(typewriter: true, live: true)
     }
     private func peekPress(typewriter: Bool, live: Bool) async throws {
+        await NativeEventTestGate.acquire()
+        defer { NativeEventTestGate.release() }
         ZeusFonts.registerBundled()
         let enhanced = NSSelectorFromString("accessibilitySetValue:forAttribute:")
         let previous = NSApp.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? NSNumber(value: false)

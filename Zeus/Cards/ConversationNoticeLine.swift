@@ -80,7 +80,7 @@ struct ConversationNoticeLine: View {
                     .padding(ZeusTheme.Spacing.s)
                     .background(palette.field)
                     .overlay(Rectangle().strokeBorder(palette.fieldBorder, lineWidth: ZeusTheme.pixel))
-                    .accessibilityLabel("Exact text: \(detail)")
+                    .selectableTextAccessibilityLabel("Exact text: \(detail)")
             }
         }
         .frame(maxWidth: maxWidth, alignment: .leading)

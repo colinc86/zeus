@@ -87,6 +87,8 @@ import ZeusProtocol
         }
     }
     @Test func productionThreadFirstClickAndKeyboardToggle() async throws {
+        await NativeEventTestGate.acquire()
+        defer { NativeEventTestGate.release() }
         let enhanced = NSSelectorFromString("accessibilitySetValue:forAttribute:")
         let previous = NSApp.perform(NSSelectorFromString("accessibilityAttributeValue:"), with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? NSNumber(value: false)
         NSApp.perform(enhanced, with: NSNumber(value: true), with: "AXEnhancedUserInterface")
