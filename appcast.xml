@@ -6,6 +6,28 @@
     <description>Zeus releases</description>
     <language>en</language>
     <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <title>Zeus 0.3.11</title>
+      <pubDate>Wed, 04 Nov 2026 15:17:05 GMT</pubDate>
+      <sparkle:version>34</sparkle:version>
+      <sparkle:shortVersionString>0.3.11</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<style>
+:root { color-scheme: light dark; }
+body { font: 13px -apple-system, system-ui, sans-serif; line-height: 1.45; margin: 0 4px; }
+h1, h2, h3 { font-size: 1.05em; margin: 1em 0 .4em; }
+ul, ol { padding-left: 1.4em; }
+code { font: 12px ui-monospace, SF Mono, Menlo, monospace; }
+a { color: -apple-system-control-accent; }
+</style>
+<h1 dir="auto">Zeus 0.3.11</h1>
+<ul dir="auto">
+<li><strong>Zeus no longer slows down your Mac.</strong> After a few weeks of Learn From Me, Zeus could freeze for seconds at a time while it double-checked its past evening reflections against your journal. You'd see a spinning cursor when you clicked Zeus, choppy animations, and lag while typing in other apps. Those checks are now 10 to 40 times faster.</li>
+<li><strong>The evening reflection you missed now sends after a relaunch.</strong> When you relaunched Zeus while working, it kept restarting the catch-up reflection for the previous day, so it never went out. Zeus now sends it even while you keep working.</li>
+<li><strong>VoiceOver no longer crashes Zeus.</strong> With VoiceOver or another assistive app running, reading a message or opening the exact text of a summary could make Zeus quit. Those labels now read correctly without crashing.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/colinc86/zeus/releases/download/v0.3.11/Zeus-0.3.11.zip" type="application/octet-stream" sparkle:edSignature="ogyozi0OekLIuOjm0jmHNMTBs2FKagilPi9MdnkF++615EG53Errbh8xctDR2bU3OzS8YLhqr1QJVivC5TlEDQ==" length="15222794"/>
+    </item>
+    <item xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
       <title>Zeus 0.3.10</title>
       <pubDate>Sun, 25 Oct 2026 13:53:58 GMT</pubDate>
       <sparkle:version>33</sparkle:version>
